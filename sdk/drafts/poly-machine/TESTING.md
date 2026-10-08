@@ -5,6 +5,41 @@ Historical 0.2.0 tests on 7 October 2026 used a locally verified Octatrack 1.40C
 ColdFire/DSP port and the separate octemu/QEMU front-panel emulator. Firmware,
 project/card images, raw memory dumps and compiled executables remain private.
 
+## POLY8T03 hardware regression (8 October 2026)
+
+The owner reports transport stuck at step 1 and no audio on any channel,
+including sample preview. Returning to stock 1.40C restores operation in the
+same project. This blocks further hardware testing of T03. The physical cause
+is open; no replacement image or fixed hardware result is claimed.
+
+The original battery-only restart gate checks Part identity and frame progress,
+not playback or sound. The additional `native-warm-audio-gate.py` exercises
+POLY and ordinary FLEX chromatic sound, REC+PLAY and recording on multiple
+advancing steps after restoring the same private
+battery RAM. It requires every boot/run slice to finish emulated time before
+sending another key. An earlier diagnostic sent keys after a wall-limited
+partial boot and never entered chromatic mode; its silent result is invalid.
+The new gate asserts the mode and checks signal above idle output residue.
+The optional `--preview` probe opens native FLEX slots and presses FUNC+YES,
+but did not confirm the expected 440 Hz signal in either stock or T03. That
+preview test remains unqualified; small nonzero output alone is not a pass.
+
+Native frame interrupts come from the DSP bank-word handshake by default,
+not the optional frame timer. Emulator timing, IRQ scheduling and generated
+fixtures still cannot certify the physical device or the owner's project.
+The completed strict gate on the exact shipped T03 image produces 8,820
+PCM frames per key-audio capture (POLY peak 361, ordinary FLEX peak 3,042)
+and records notes 72/76/79 on steps 2/4/6. Its metadata and private log hashes
+are in `evidence/hardware-regression-t03.json`. Native build/runtime inputs are
+unchanged from the shipped image; no replacement firmware was compiled.
+The exact shipped T03 MAIN OS hash is used; these are test-only changes with
+no module behavior/version change. The original build remains private. The rebased test/documentation update
+passes `npm run check -- --base origin/main`: 188 test files / 1,266 tests,
+SDK/catalog/licences/lint/typecheck/build. The initial run under emulator load
+hit the existing five-second module-doctor timeout; the isolated full rerun
+passes without changing the timeout. `verify-source.py` also passes, and all
+shipped module runtime/build input hashes are unchanged.
+
 ## 0.2.2 one-machine/headroom candidate (8 October 2026)
 
 The user reports POLY8T02 chromatic REC+PLAY makes sound with a flashing REC

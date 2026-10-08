@@ -3,6 +3,25 @@
 Symptom → cause (measured, inferred or open) → fix. Add an entry the moment
 a mode is seen on hardware.
 
+## POLY8T03 stops transport at step 1 and silences every channel — reported 8 October 2026, cause open
+
+**Hardware report.** After testing the private POLY8T03 image, the owner reports
+that the sequencer remains on step 1, no channel plays audio and sample
+preview is silent. Whether this starts at boot or after a POLY operation is
+still being established. Reinstalling stock 1.40C restores playback and
+sample preview in the same project, according to the owner. Treat this as a
+new blocking regression, distinct
+from POLY8T02's missing recording and clipping reports.
+
+**Validation gap.** The 0.2.2 battery-only emulator gate checked restored Part
+identity and frame progress, but did not exercise PLAY or assert audio after
+restart. Those checks do not establish working hardware transport/audio.
+A warm-start probe produces POLY/FLEX key audio and records notes on steps
+2, 4 and 6 in both T02 and T03 with the same restored battery RAM. This does
+not reproduce the hardware stall. The sample-preview probe fails to confirm
+the expected tone even in unmodified stock, so that test is unqualified. The
+cause and a physical fix remain unconfirmed.
+
 ## POLY rapid chromatic trigs stall the MKII until voices end — reported 8 October 2026, cause open
 
 **Symptom.** The owner reports temporary unresponsiveness in the private POLY

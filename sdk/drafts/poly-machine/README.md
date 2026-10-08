@@ -11,7 +11,7 @@ PTCH tunes the whole chord. Panel and MIDI notes add their own semitone offset
 without moving PTCH or overwriting its live lock. The machine follows the
 instrument's audio frames and sequencer; it has no independent clock.
 
-This is an experimental source draft, outside the public catalog. MKII recording and responsiveness still require a hardware retest. The user reports no recorded chromatic trigs on POLY8T02 despite active transport; both POLY8T02 and the revised build record in the native emulator. That hardware failure remains open.
+This is an experimental source draft, outside the public catalog. **POLY8T03 is blocked for further hardware testing:** the owner reports transport stuck at step 1 and silence on all channels, including sample preview; stock 1.40C restores operation. The cause remains open. MKII recording and responsiveness still require a hardware retest. The user reports no recorded chromatic trigs on POLY8T02 despite active transport; both POLY8T02 and the revised build record in the native emulator. That hardware failure remains open.
 
 ## Controls and flow
 
