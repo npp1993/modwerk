@@ -10,7 +10,7 @@ parser.add_argument('work',type=Path)
 parser.add_argument('--image',default='out/mainos_bus.bin')
 parser.add_argument('--prefix',default='warm-audio')
 parser.add_argument('--preview',action='store_true',help='Also collect the currently unqualified native sample-preview probe.')
-args=parser.parse_args();w=args.work.resolve();env=os.environ.copy();env['OT_PERSIST_SRAM_IN']=str(w/'t05-sram.bin')
+args=parser.parse_args();w=args.work.resolve();env=os.environ.copy();env['OT_PERSIST_SRAM_IN']=str(w/'t06-sram.bin')
 card=w/(args.prefix+'-card.img');shutil.copyfile(w/'fresh.img',card)
 image=Path(args.image).resolve();report={'image_sha256':hashlib.sha256(image.read_bytes()).hexdigest()}
 p=subprocess.Popen([str(w/'ot_emu_warm'),'--image',str(image),'--card',str(card),'--card-rw','--mkii','--dsp','--main-level','64','--interactive'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1,env=env)
@@ -85,7 +85,7 @@ try:
     frames=lambda s:int(re.search(r'frames=(\d+)',s)[1])
     assert frames(report['play_end'])-frames(report['play_start'])>=2000,report
     report['result']='POLY/FLEX key audio and advancing-step recording pass; sample preview not qualified'
-    sym={r[2]:int(r[0],16) for l in (w/'t05-symbols.txt').read_text().splitlines() if len(r:=l.split())==3}
+    sym={r[2]:int(r[0],16) for l in (w/'t06-symbols.txt').read_text().splitlines() if len(r:=l.split())==3}
     # Relocate a valid active tail to the highest physical extension index.
     key(0,True);run(100);key(4,True);run(100)
     extra=sym['poly_extra_voices'];owner=sym['poly_extra_track'];mask=sym['poly_extra_mask']

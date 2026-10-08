@@ -79,6 +79,7 @@ unsigned pm_assign(volatile uint8_t *part, unsigned t, unsigned enabled) {
     volatile uint8_t *mirror=(volatile uint8_t *)(uintptr_t)(SRAM_PART+offset);
     unsigned pool=1; /* STATIC needs an independent streaming-cache implementation. */
     unsigned sig=SIGNATURE+30u*t;
+    unsigned was_poly=signed_track(part,t) || part[0x22u+t]==5;
     if(pool_direct && pool_context() && part==current_part() && t==pool_track)
         enabled=2; /* Slot YES preserves POLY without scheduling another popup. */
     if(enabled) {
@@ -100,7 +101,8 @@ unsigned pm_assign(volatile uint8_t *part, unsigned t, unsigned enabled) {
     if(enabled==1) {
         /* Only a new machine assignment takes the default; sample-browser
          * confirmation and saved Parts retain the musician's LOOP choice. */
-        part[0x1dau+30u*t+6u*pool]=mirror[0x1dau+30u*t+6u*pool]=0;
+        if(!was_poly)
+            part[0x1dau+30u*t+6u*pool]=mirror[0x1dau+30u*t+6u*pool]=0;
         pool_bank=U32(BANK_PTR); pool_part=offset/PART_STRIDE; pool_track=t;
         pool_pending=1;
     }
@@ -118,7 +120,13 @@ void pm_pool_choice_open(void) {
 }
 void pm_pool_left(unsigned key,unsigned edge) {
     if(!U32(0x460e70e0u)) return;
+    /* The slot browser was opened with FLEX's id. Restore the native list
+     * cursor as well as the POLY identity before drawing its machine pane.
+     * Repeated LEFT must not reset a machine the user has since browsed to. */
+    unsigned returning=pool_direct && pool_context() && U32(0x460e739au);
     pool_direct=0;
+    if(returning)
+        ((void (*)(unsigned,unsigned))0x4007edb0u)(0x460e7386u,5);
     ((void (*)(unsigned,unsigned))0x4007893cu)(key,edge);
 }
 void pm_pool_right(unsigned key,unsigned edge) {

@@ -11,9 +11,9 @@ PTCH tunes the whole chord. Panel and MIDI notes add their own semitone offset
 without moving PTCH or overwriting its live lock. The machine follows the
 instrument's audio frames and sequencer; it has no independent clock.
 
-This is an experimental source draft, outside the public catalog. **POLY8T05 is the next private diagnostic candidate.** It preserves both original 1.40C DSP upload payloads and opts out of the SDK's automatically added stock-effect dynamic loader. Its build refuses any DSP payload drift or implicit loader. This isolates an unnecessary dependency; it is not a confirmed hardware cause or fix.
+This is an experimental source draft, outside the public catalog. **POLY8T06 is the private consistency/performance candidate.** It preserves the existing LOOP choice when reselecting POLY, restores the correct machine cursor when leaving the FLEX slots, and reduces ColdFire interpolation/mixer work. Both original 1.40C DSP upload payloads remain byte-identical; the private build refuses an automatic dynamic loader or DSP drift.
 
-**POLY8T03 and POLY8T04 failed MKII transport testing.** T04's physical logs match its exact source/configuration identity, show continuing UI activity and zero sample-render entries during the captured PLAY state, and contain no exception. T04 therefore does not reach POLY mixing in that capture. T05 adds native command-consumer/AMP-builder counts beside the existing core logger. MKII recording, responsiveness and physical reboot still need this exact version's hardware test. Stock 1.40C reportedly restores operation in the same project.
+**POLY8T03 and POLY8T04 failed MKII transport testing.** T04's physical logs match its exact source/configuration identity, show continuing UI activity and zero sample-render entries during the captured PLAY state, and contain no exception. T04 therefore does not reach POLY mixing in that capture. The user subsequently described T05 as “works in theory”; no individual hardware gates were reported. T06 retains native command-consumer/AMP-builder counts beside the existing core logger. MKII recording, responsiveness and physical reboot still need this exact version's hardware test. Stock 1.40C reportedly restores operation in the same project.
 ## Controls and flow
 
 | Control | Behaviour |
@@ -73,7 +73,7 @@ LOOP OFF manually when testing this build.
 
 ## Compatibility and limitations
 
-- Octatrack OS 1.40C only; this 0.2.4 diagnostic candidate has not yet been tested on physical hardware.
+- Octatrack OS 1.40C only; this 0.2.5 candidate has not yet been tested on physical hardware.
 - FLEX only. STATIC was excluded after an exploratory audio test lost chord
   components as independent streaming heads diverged.
 - Panel recording is limited to four notes within an octave; extended MIDI recording is incomplete.
@@ -109,8 +109,17 @@ Sam Banks' original POLY is MIT; full terms are in [LICENSE](LICENSE).
 The pool adapter follows repeat98's MIT VECTOR code and the Analog BD/FM
 registration conventions. New integration and allocator work is MIT.
 
-## T05 diagnostic build
+## T06 private build
 
 Stage this draft as `modules/poly-machine` in a disposable native SDK together with the current `sdk/runtime/logging`. Regenerate `registration.s` using `prepare-registration.py`, then run `python3 -B modules/poly-machine/build-diagnostic.py` from that private SDK. It installs the pinned `remix.py` profile with resident stock DSP effects, verifies both original DSP uploads byte for byte, and links the unchanged core logger beside POLY, excludes its retained 8 KiB from initialized runtime/staging, reserves sixteen additional recorder pages, checks original 1.40C guards and installs seven non-overlapping logger hooks. The ordinary native build resolves the optional logging call to zero; this diagnostic recipe is required for the logging candidate.
 
-See [diagnostic records and collection](DIAGNOSTICS.md). Logs cannot guarantee capture of a hard lockup or recovery after a power cycle. Hardware recording and transport/audio failures remain open.
+See [diagnostic records and collection](DIAGNOSTICS.md). Logs cannot guarantee capture of a hard lockup or recovery after a power cycle. T06 physical recording, reboot and worst-case deadlines remain unqualified.
+
+## T06 panel consistency
+
+Reselecting an existing POLY retains LOOP, including AUTO and PIPO; assigning POLY to a stock track defaults to OFF. LEFT from its FLEX slots selects and labels POLY in the machine list; RIGHT reopens the FLEX sample pool. The pool intentionally names FLEX, the sample storage it browses.
+
+![Native POLY chooser after LEFT](media/t06/left-machine-chooser.png)
+![Native POLY SRC SETUP with retained LOOP choice](media/t06/loop-encoder.png)
+
+These are actual LCD captures from the exact private image, with provenance in [capture.json](media/t06/capture.json). Historical 0.2.0 screenshots remain in the parent media directory.

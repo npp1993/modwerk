@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: MIT
- * Private T05 diagnostics. Audio paths only increment fixed RAM counters.
+ * Private T06 diagnostics. Audio paths only increment fixed RAM counters.
  * The existing core logger appends these snapshots; its engine task alone
  * checkpoints them with the normal stopped/recorder/USB gates and backoff.
  */
@@ -32,7 +32,7 @@ void pm_diagnostic_tick(void) {
         if(valid_bank() && pm_is_poly_track(t) && U8(0x800049d8u+168u*t)) ++active;
     for(unsigned i=0;i<31;++i) if(poly_extra_voices[i][0]) {++active;highest=i+1;}
     uint32_t keys=poly_diag_key_calls,records=poly_diag_record_calls;
-    if(!diag_started) {diag_emit(4,0x00020400u,8);diag_started=1;}
+    if(!diag_started) {diag_emit(4,0x00020500u,8);diag_started=1;}
     /* A stopped, unchanged unit produces no periodic records/card writes. */
     if(state==diag_state && !state && !active && keys==diag_keys && records==diag_records) return;
     diag_state=state;diag_keys=keys;diag_records=records;

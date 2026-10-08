@@ -750,24 +750,16 @@ polyphony_call:
         andi.l  #0xffff,%d1
         lsr.l   #3,%d1                    | 13-bit fraction
         move.l  (%a0),%d3                 | left a
-        move.l  8(%a0),%d0                | left b
-        swap    %d0
-        ext.l   %d0
-        move.l  %d3,%d5
-        swap    %d5
-        ext.l   %d5
+        mvs.w   8(%a0),%d0                | signed high half of b (big-endian PCM)
+        mvs.w   (%a0),%d5                | signed high half of a
         sub.l   %d5,%d0
         muls.l  %d1,%d0
         asl.l   #3,%d0
         add.l   %d3,%d0
         move.l  %d0,(%a3)+
         move.l  4(%a0),%d3                | right a
-        move.l  12(%a0),%d0               | right b
-        swap    %d0
-        ext.l   %d0
-        move.l  %d3,%d5
-        swap    %d5
-        ext.l   %d5
+        mvs.w   12(%a0),%d0                | signed high half of b (big-endian PCM)
+        mvs.w   4(%a0),%d5                | signed high half of a
         sub.l   %d5,%d0
         muls.l  %d1,%d0
         asl.l   #3,%d0
@@ -1089,12 +1081,14 @@ polyphony_call:
         bne.s   .mx_gain
         lea     poly_sum(%pc),%a1
         move.l  %d5,%d7
-        add.l   %d7,%d7
         subq.l  #1,%d7
+        moveq   #9,%d0
 .mx_unity:
+        move.l  (%a0)+,%d4                | stereo pair, one loop branch
+        asr.l   %d0,%d4                   | Q25 with 1/8 headroom for eight voices
+        add.l   %d4,(%a1)+
         move.l  (%a0)+,%d4
-        asr.l   #8,%d4
-        asr.l   #1,%d4                    | Q25 with 1/8 headroom for eight voices
+        asr.l   %d0,%d4
         add.l   %d4,(%a1)+
         subq.l  #1,%d7
         bpl.s   .mx_unity
@@ -1136,6 +1130,14 @@ polyphony_call:
         tst.l   %d6
         bne.w   .mx_voice
 
+| Eight signed 32-bit samples at 1/8 gain, with envelopes <= unity, fit
+| the Q25 sum exactly. Skip the redundant peak scan while the limiter is at
+| unity; retain the old recovery path and final saturation defensively.
+        lea     poly_lim(%pc),%a0
+        move.l  (%a0,%d2.l*4),%d6
+        move.l  %d6,%d1
+        cmpi.l  #LIM_UNITY,%d6
+        beq.w   .mx_output
 | The limiter: recover toward unity (time constant ~23 ms), never above the
 | gain that keeps this chunk's peak inside full scale.
         lea     poly_sum(%pc),%a0
@@ -1172,7 +1174,7 @@ polyphony_call:
         move.l  %d3,%d1
 .mx_lim:
         move.l  %d1,(%a0,%d2.l*4)         | this chunk ends at d1
-
+.mx_output:
         lea     poly_sum(%pc),%a0
         movea.l 40(%a5),%a1
         move.l  %d5,%d7

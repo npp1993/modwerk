@@ -5,6 +5,80 @@ Historical 0.2.0 tests on 7 October 2026 used a locally verified Octatrack 1.40C
 ColdFire/DSP port and the separate octemu/QEMU front-panel emulator. Firmware,
 project/card images, raw memory dumps and compiled executables remain private.
 
+
+## 0.2.5 POLY8T06 consistency and performance (8 October 2026)
+
+The user described T05 as “works in theory.” This is not a per-test hardware
+qualification. T06 remains private, pending physical recording, reboot and
+worst-case CPU deadlines. `module:doctor -- poly-machine` cannot discover a
+module kept under `sdk/drafts`; the public catalog and downloads are unchanged.
+Private version-matched release notes remain in `release-notes.json` until a
+first catalog release; that release must migrate them into the community changelog.
+
+T05's actual panel flow reproduced two defects: SRC SETUP re-selection reset
+LOOP PIPO to OFF, and LEFT from the FLEX sample pool left the chooser cursor/title
+on FLEX while highlighting the assigned POLY. T06 retains AUTO and PIPO across
+re-selection (the entire 6,322-byte Part stays unchanged), restores the POLY
+cursor/title on LEFT, and returns to FLEX slots on RIGHT. Sample confirmation,
+browse/cancel, changing to ordinary FLEX, and assigning POLY again all pass;
+a fresh assignment still defaults to LOOP OFF. See the actual native LCD
+captures and their provenance under `media/t06`.
+
+The ColdFire changes use signed high-half word loads for interpolation, process
+held stereo pairs with one loop branch, and skip a redundant peak scan at unity
+limiter gain. Eight voices with fixed 1/8 gain and envelopes at or below unity
+fit the Q25 sum; defensive output saturation and limiter recovery remain.
+Both original stock DSP uploads are byte-identical. There is no DSP loader,
+per-note DSP chain, new timing source or allocator change.
+
+Twelve native A/B cases each measure 1,000 blocks of 16 samples after warm-up.
+Counts include the whole ColdFire system and are averages, not chip cycles,
+CPU utilization or a maximum interrupt-latency measurement. All twelve compare
+16,000 frames of all eight captured output channels identically; the native
+host needs at most a one-sample stream alignment (listed in the evidence).
+The previous SDK base differs only in the unselected PLAY MODES module.
+
+| Workload | T05 instructions/block | T06 | Reduction |
+|---|---:|---:|---:|
+| Idle | 23,629.985 | 23,629.985 | 0% |
+| One held root | 25,682.827 | 25,682.827 | 0% |
+| Eight held notes | 39,851.352 | 38,218.173 | 4.10% |
+| Eight notes plus seven FLEX tracks | 51,803.551 | 50,176.347 | 3.14% |
+| Eight notes at admission cost 40 plus seven FLEX tracks | 60,608.979 | 58,606.766 | 3.30% |
+| Eight POLY + seven FLEX, 24 LFOs including POLY PTCH | 53,925.871 | 51,873.998 | 3.81% |
+
+The highest measured case average is 58,606.766 instructions/block, a 3.30%
+reduction. Pitch pressure at CC16=127 retires to two voices as intended; it
+uses 45,804.979 instructions/block, 1.31% less. This is a bounded stress matrix,
+not an exhaustive timing bound. Stock FILTER/DELAY are selected on all tracks;
+all stock-FX combinations and hardware deadlines still need qualification.
+Startup-dominated DSP stopwatch summaries are deliberately excluded.
+
+Eight coherent +32767 and -32768 PCM inputs stay within the signed Q25 mix
+range, with identical T05/T06 sums. The stock fetch path places the positive
+sum a fraction of one 16-bit LSB below the ideal bound; the gate allows at most
+one LSB and checks both limits. This does not certify downstream physical clipping.
+
+Fresh assignment records a four-note chord. At HOLD/REL MAX, 128 physical-panel
+UART presses (10 ms down/up in emulated time) keep at most eight active voices
+and complete 7,077 further DSP-driven frames. Both refusal-modal paths
+leave the Part unchanged; NO and the native timeout dismiss the modal.
+Battery-RAM-only restart preserves both markers and LOOP OFF, plays POLY and
+ordinary FLEX, records three advancing steps, and renders sparse selector 31
+without changing adjacent cache bytes. These are native-port results only.
+The completed SAVE checkpoint writes both 32 KiB logs, with CRCs, source/version
+identity, recording and engine-stage counters accepted by the production parser.
+Its directed backoff test advances the UI tick counter by 2,100; it does not
+claim a measured real-time 30-second checkpoint deadline.
+
+CF BIN and MIDI SYX independently round-trip to the exact tested MAIN, preserving
+stock header/seed. The full repository check passes 191 files / 1,286 tests,
+SDK/catalog/licences, lint, typecheck and build with one Vitest worker and all
+original assertions/timeouts. The remaining documentation/provenance changes
+receive the lightweight checks. Firmware, audio, card images and raw logs stay
+private. Exact fingerprints are in `evidence/build.json`, `diagnostic-t06.json`
+and `performance-t06.json`; the original T05 evidence is retained.
+
 ## 0.2.3 POLY8T04 diagnostic candidate (8 October 2026)
 
 T04 includes core logger 0.2.0 without shared logger/build changes. The private

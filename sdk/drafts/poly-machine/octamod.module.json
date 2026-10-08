@@ -3,7 +3,7 @@
   "id": "poly-machine",
   "key": "POLY MACHINE",
   "name": "Poly Machine",
-  "version": "0.2.4-experimental",
+  "version": "0.2.5-experimental",
   "category": "machines",
   "source": {
     "repository": "https://github.com/repeat98/octamad",
@@ -12,7 +12,7 @@
   },
   "build": {
     "status": "pending",
-    "reason": "Private POLY8T05 diagnostic candidate retains original DSP payloads and bypasses the SDK automatic stock-effect loader; bounded engine-stage counters supplement the core logs. T04 still failed hardware transport; T05 physical results pending."
+    "reason": "Private POLY8T06 improves native chooser/LOOP consistency and ColdFire mixing cost while retaining stock DSP payloads. Physical deadlines, recording and reboot qualification remain pending."
   },
   "author": {
     "github": "repeat98",
@@ -33,7 +33,7 @@
       "One POLY per Part; refusal modal closes with NO or automatically after 120 native UI ticks.",
       "Eight shared test voices; release tails yield before held notes.",
       "Independent ATK/HOLD/REL, with no per-note DSP or heap allocation.",
-      "Ten panel octave positions and dedicated-route MIDI notes 0\u2013127.",
+      "Ten panel octave positions and dedicated-route MIDI notes 0–127.",
       "PTCH tunes the chord; POLY opens FLEX samples directly.",
       "LOOP OFF on new assignments; panel chords record into native bank locks.",
       "Fixed -18.06 dB per voice keeps eight full-scale voices within the mix range."
@@ -43,7 +43,7 @@
       "Only one POLY can be assigned in each Part. A second assignment is refused without changing the track; press NO to dismiss the modal. Inactive Parts can each hold one POLY.",
       "POLY opens the FLEX sample pool directly. Load a sample with the stock file browser, then confirm its slot with YES. NO leaves the browser.",
       "Return to SRC, open the trig-mode menu with FUNC+DOWN, select CHROMATIC and confirm with YES. Hold several trig keys; FUNC+LEFT/RIGHT changes octave from -6 to +3.",
-      "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0\u2013127; note 84 plays the tuned sample root.",
+      "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0–127; note 84 plays the tuned sample root.",
       "New assignments default to LOOP OFF. POLY has a maximum of eight voices, subject to the pitch-work limit, with fixed -18.06 dB gain per voice.",
       "Use REC+PLAY in chromatic mode to record up to four held panel notes spanning at most eleven semitones. Recorded duration follows AMP HOLD."
     ]
@@ -55,7 +55,7 @@
       "Only one POLY can be assigned in each Part. A second assignment is refused without changing the track; press NO to dismiss the modal. Inactive Parts can each hold one POLY.",
       "POLY opens the FLEX sample pool directly. Load a sample with the stock file browser, then confirm its slot with YES. NO leaves the browser.",
       "Return to SRC, open the trig-mode menu with FUNC+DOWN, select CHROMATIC and confirm with YES. Hold several trig keys; FUNC+LEFT/RIGHT changes octave from -6 to +3.",
-      "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0\u2013127; note 84 plays the tuned sample root.",
+      "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0–127; note 84 plays the tuned sample root.",
       "New assignments default to LOOP OFF. POLY has a maximum of eight voices, subject to the pitch-work limit, with fixed -18.06 dB gain per voice.",
       "Use REC+PLAY in chromatic mode to record up to four held panel notes spanning at most eleven semitones. Recorded duration follows AMP HOLD."
     ],
@@ -68,7 +68,7 @@
     },
     {
       "name": "Chromatic octave",
-      "description": "FUNC+LEFT/RIGHT selects -6 to +3; the display shows the full signed value. Panel covers MIDI 0\u2013124."
+      "description": "FUNC+LEFT/RIGHT selects -6 to +3; the display shows the full signed value. Panel covers MIDI 0–124."
     },
     {
       "name": "Sample pool",
@@ -92,9 +92,9 @@
       "TSTR is OFF while POLY is active.",
       "FLEX only; STATIC requires independent streaming-cache support.",
       "Panel recording supports up to four notes within an octave; wider/larger chords and recorded key-up duration are unsupported. Extended-range MIDI recording remains incomplete.",
-      "MIDI channels shared with non-POLY audio tracks keep stock note-command mapping outside 72\u201396.",
+      "MIDI channels shared with non-POLY audio tracks keep stock note-command mapping outside 72–96.",
       "Linear interpolation can alias at high pitches; no anti-aliasing upgrade is claimed.",
-      "Ratios saturate below 32\u00d7 rather than fold by octaves; very low pitches are limited by Q16 playback phase.",
+      "Ratios saturate below 32× rather than fold by octaves; very low pitches are limited by Q16 playback phase.",
       "The octave selector is a global live control; it is not saved per Part.",
       "No coexistence with other row-five custom machines is claimed.",
       "Recorded chord steps use PTCH lock storage for their root. Stock PTCH lock editing/display for those steps is not qualified; native SAMPLE locks remain available."
@@ -107,7 +107,7 @@
       "value": 10487808,
       "unit": "bytes",
       "method": "measured",
-      "conditions": "Reserved once by the shared platform; POLY runtime sits inside it. Sample RAM is reduced by this reservation. Diagnostic T05 also reserves sixteen logger pages (98,304 bytes).",
+      "conditions": "Reserved once by the shared platform; POLY runtime sits inside it. Sample RAM is reduced by this reservation. Diagnostic T06 also reserves sixteen logger pages (98,304 bytes).",
       "source": "TESTING.md"
     },
     "processing": {
@@ -122,7 +122,7 @@
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "Native fresh assignment/REC+PLAY/stress, modal refusal through both menus, battery-RAM-only restart, full-scale eight-voice gain and one-instance MIDI regression. MKII recording remains unconfirmed on hardware.",
+    "summary": "T06 native UI lifecycle, twelve before/after CPU/audio comparisons, full-scale gain, fresh REC+PLAY/stress, modal, battery-RAM restart and completed log checkpoint pass. Physical CPU deadlines, recording and reboot qualification remain pending.",
     "hardwareStatus": "untested",
     "gates": [
       "verify-source.py",
@@ -137,7 +137,10 @@
       "verify-gain.py",
       "native-diagnostic-limit-gate.py",
       "native-diagnostic-gate.py",
-      "native-diagnostic-checkpoint-gate.py"
+      "native-diagnostic-checkpoint-gate.py",
+      "native-ui-consistency-gate.py",
+      "native-load-matrix.py",
+      "native-gain-bound.py"
     ]
   },
   "license": {
