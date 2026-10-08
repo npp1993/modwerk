@@ -1,11 +1,52 @@
 # POLY draft validation
 
 Status: experimental source draft, **not hardware-qualified or in the catalog**.
-Tests on 7 October 2026 used a locally verified Octatrack 1.40C, the native
+Historical 0.2.0 tests on 7 October 2026 used a locally verified Octatrack 1.40C, the native
 ColdFire/DSP port and the separate octemu/QEMU front-panel emulator. Firmware,
 project/card images, raw memory dumps and compiled executables remain private.
 
-## Measured results
+## 0.2.1 recording/stability candidate (8 October 2026)
+
+The user reported MKII unresponsiveness while rapidly pressing panel trigs, with
+HOLD/REL INF. This candidate reduces the shared limit to eight active heads
+and enforces a conservative pitch-weighted fetch budget. Release tails yield
+before held notes. Emulator results do not certify hardware deadlines.
+
+- Current-main SDK native build after rebase: passes 51 guarded non-overlapping
+  edits. Four stock replay holes stay private.
+- ASan/UBSan allocator: eight-head limit, 10,000 cross-track steals, released
+  tail preference, retuning work limit, independent release and machine cleanup.
+- ASan/UBSan recorder: all 232 supported chord shapes round-trip; native context
+  and step routing, bounds, trigless behavior, recording off and SAMPLE retention.
+- Native sequencer: two four-note captures play independently at offsets
+  0/9/10/11, with eight heads active and the track tuning at unity.
+  11,130,303 ColdFire instructions in 250 measured blocks = 44,521/block;
+  instruction counts are not physical cycles. Full project loading completes.
+- Native new assignment: LOOP OFF in both Part copies. Setting LOOP ON then
+  confirming the sample browser retains ON in both copies.
+- Native MKII panel UART input: REC+PLAY captures notes 72/73/74/75 in step 3
+  (root 72, shape 67). All held owners clear after release/STOP.
+- 128 real panel presses at 10 ms down / 10 ms up, HOLD/REL 127 and LOOP OFF:
+  7,075 additional frame interrupts complete; at most eight active heads.
+  No illegal/fault/stalled run reply. This is emulated time, not physical timing.
+- Native PROJECT > SAVE > YES writes 6,932 sectors to the disposable card with
+  zero write errors. A fresh emulator process fully loads that saved card,
+  runs 1,300 blocks and reproduces all four pitches at offsets -12/-11/-10/-9.
+  Stored Part PTCH stays 64 and track tuning stays at unity. No sidecar used.
+- Fresh native MIDI regression completes 2,400 blocks: notes 0/127/71/72/84/96/
+  97/126, velocity-zero off, finite envelope reclamation, three-note tuning
+  and PTCH-lock preservation all pass.
+- Final C regeneration and native rebuild are byte-identical to the tested
+  image. Final rebase to main 8304186 changes only SDK credit prose, leaving
+  native build inputs unchanged. Repository check passes 179 files/1,188 tests,
+  lint (existing warnings), typecheck, production build and SDK/catalog/licences.
+- Independent CF ELUP/ELEK decoding/checksums and MIDI extraction recover the
+  exact same tested MAIN OS. Private wrapper POLY8T02 retains internal code
+  0178 and the original ELUP seed. No firmware is committed or uploaded.
+  Current metadata is in `evidence/recording.json`; older pool/panel/pitch
+  reports explicitly identify their historical 0.2.0 version.
+
+## Historical 0.2.0 results
 
 - Native guarded build: passes, with 50 non-overlapping stock edits. Authored
   C is compiled for MCF5475 and linked with the assembly; four replay holes are
@@ -57,12 +98,6 @@ prints a denominator covering the whole run. `benchmark-result.py --window 1200`
 uses the actual steady window, not that misleading printed per-frame figure.
 Host wall time and emulator “real time” ratios are not hardware evidence.
 
-The SDK records [earlier hardware freezes under added ColdFire audio work](../../octabam/docs/remixer/FAILURE_MODES.md#freeze-without-an-exception-screen-as-coldfire-delay-routine-work-grows--his-unit-open),
-with a missed frame deadline inferred as the cause despite fixed memory use.
-That report concerns Tape Echo, not a POLY hardware test. It reinforces why
-bounded allocation alone does not establish crash-free playback, and why the
-32-voice count is an experimental capacity rather than a qualified operating limit.
-
 ## Reproduction
 
 The native SDK must be available separately, with the developer's own verified
@@ -83,11 +118,21 @@ Firmware-free checks from this draft directory:
 
 ```sh
 python3 verify-source.py
+cc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined recording-test.c -o /private/tmp/poly-recording-test
+/private/tmp/poly-recording-test
 cc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined pool-test.c -o /private/tmp/poly-pool-test
 /private/tmp/poly-pool-test
 ```
 
-`native-fixture.py` stages generated sample/project fixtures and command lists
+`native-panel-gate.py WORK` checks panel recording and rapid presses against a
+private `keys.img` fixture with HOLD/REL 127, LOOP OFF and no existing trigs.
+It requires the Linux native emulator and symbol map in WORK and runs from the
+native SDK directory. It explicitly mounts the card, dismisses the date prompt
+and asserts the signed POLY Part and chromatic mode before issuing notes.
+
+`verify-recording.py WORK` checks the private cold-reload dumps used above;
+those are taken at block 1,000 of a 1,300-block native run after the stock
+PROJECT SAVE flow. `native-fixture.py` stages generated sample/project fixtures and command lists
 for the native emulator. `verify-midi.py PRIVATE_OUTPUT_DIRECTORY` verifies
 its `final-*` dumps. `pitch-probe.cpp` executes the linked helper using the SDK
 native port; pass image, runtime blob, runtime base and helper symbol address.
@@ -102,11 +147,12 @@ The source-only checks do not substitute for native execution.
 - A STATIC prototype lost quieter chord components as streaming positions
   diverged. STATIC is therefore excluded; FLEX is the only current source.
 - Reverse/slices, parameter locks/LFOs/scenes, mixed machines, sample replacement
-  during notes, transport/Part/project changes, recorders and save/reload:
+  during notes, transport/Part/project changes, recorders and broader save/reload combinations:
   require broader end-to-end stress coverage. Do not infer these from allocator
   unit tests.
-- Panel note recording and extended-range MIDI recording are incomplete.
-- Browser/website composition, downloadable firmware package and public catalog
+- Panel recording is bounded to four notes spanning eleven semitones. Recorded
+  key-up duration and extended-range MIDI recording remain incomplete.
+- Browser/website composition, public downloadable firmware and public catalog
   qualification are intentionally pending. `module:doctor poly-machine` does
   not discover modules under `sdk/drafts`; it cannot certify this unpublished
   draft. Repository checks and exact outcomes are recorded in the PR.

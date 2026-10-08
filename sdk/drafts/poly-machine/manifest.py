@@ -5,7 +5,7 @@ H=bytes.fromhex
 U32=lambda value:value.to_bytes(4,"big")
 MODULE=Module(
  name="poly-machine", key="POLY MACHINE",kind=Kind.CF_PATCH, category=Category.MACHINES,
- doc="Experimental 32-voice sample machine; independent track tuning and chromatic notes.",
+ doc="Experimental eight-voice test sample machine; independent track tuning and chromatic notes.",
  linked=(Linked("polyphony","modules/poly-machine/polyphony.s",cpu="5475",dram=True),
 Linked("polyui", "modules/poly-machine/registration.s", cpu="5475", dram=True, stock_copies=(
         StockCopy("pm_name_replay", stock_guard(0x400334d8, 6, "d6c9f1f60272197a17511f496fc19dd21ddd7df5f1f1ec0cab7a16cad60b0609")),
@@ -19,10 +19,11 @@ Linked("polyui", "modules/poly-machine/registration.s", cpu="5475", dram=True, s
         SymbolRef(0x400cf714, 0x4007909c, "polyui", "pm_pool_right", note="RIGHT on POLY opens its FLEX sample pool"),
     ),
  detours=(
+Detour(0x4000bb0e, stock_guard(0x4000bb0e, 10, "c2185de7c8fe041ae6db7b404b6468189f8926804fd8949e20b8b54f59406fe0"), "polyui", "pm_sequence_publish", "Decode recorded POLY chords before stock pitch locks", pad_to=10),
 Detour(0x4000e39e, stock_guard(0x4000e39e, 6, "ff541bcd2e77d57be960d6a3bd08cc9d092f40e2d89577e0911790b34fad811c"), "polyphony", "poly_midi_wide_on", "Extended chromatic notes only for exclusively POLY routing"),
 Detour(0x4000dd44, stock_guard(0x4000dd44, 6, "d4d24bccc66fb654e8a1352ec71b82b200d3f6d44d57565a26c9cfe16ea00f87"), "polyphony", "poly_midi_wide_off", "Extended chromatic notes only for exclusively POLY routing"),
 Detour(0x400041C4, stock_guard(0x400041C4, 8, "935fcfbfbcb323efa9fe7bada6974a125a8ea86989b79c535d556fc72d4d138d"), "polyphony", "polyphony_call",
-               "Render the shared 32-head pool for POLY tracks", pad_to=8),
+               "Render the shared eight-head test pool for POLY tracks", pad_to=8),
 Detour(0x40006820, stock_guard(0x40006820, 8, "87faf47c9893d1a9506259f68551bf06eb1ce723ac12cfae49a5b10b8b169fb6"), "polyphony", "poly_stop_voice",
                "stop the selected POLY extension without clearing the primary", pad_to=8),
 Detour(0x40007978, stock_guard(0x40007978, 6, "011b4b83d7dc63e935a7ec80a79800eda595c9cabd93bfb5d0517aac35583153"), "polyphony", "voice_pointer",

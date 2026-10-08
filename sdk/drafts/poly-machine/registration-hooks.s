@@ -218,3 +218,20 @@ pm_pool_title:
         jmp 0x40077b62
 .title_plain:
         jmp 0x40077b70
+
+/* After native step-lock publication. Preserve every live caller register. */
+.global pm_sequence_publish
+pm_sequence_publish:
+        lea -16(%sp),%sp
+        movem.l %d0-%d1/%a0-%a1,(%sp)
+        move.l 114(%sp),-(%sp)     | original sp+98: trigger command
+        move.l %a3,-(%sp)          | published lock masks
+        move.l %a2,-(%sp)          | published lock values
+        move.l 142(%sp),-(%sp)     | original sp+114: track (16+12)
+        jsr pm_sequence_stage
+        lea 16(%sp),%sp
+        movem.l (%sp),%d0-%d1/%a0-%a1
+        lea 16(%sp),%sp
+        movea.l 180(%sp),%a1      | displaced instruction
+        adda.l #0x80000110,%a1
+        jmp 0x4000bb18

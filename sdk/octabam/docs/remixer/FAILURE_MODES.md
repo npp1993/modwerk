@@ -3,6 +3,24 @@
 Symptom → cause (measured, inferred or open) → fix. Add an entry the moment
 a mode is seen on hardware.
 
+## POLY rapid chromatic trigs stall the MKII until voices end — reported 8 October 2026, cause open
+
+**Symptom.** The owner reports temporary unresponsiveness in the private POLY
+32-voice experiment while rapidly pressing trig keys, usually with AMP HOLD
+and REL at INF. Polyphonic panel recording also failed. This is a hardware
+report, not a reproduced physical measurement.
+
+**Candidate mitigation.** The unpublished `sdk/drafts/poly-machine` 0.2.1
+test limits admission to eight shared heads with a pitch-weighted fetch budget,
+steals release tails first, ignores duplicate held-key presses and defaults
+new assignments to LOOP OFF. Existing saved LOOP choices remain unchanged.
+The native MKII port records a four-note chord and completes 128 rapid presses
+with HOLD/REL INF. Emulator progress does not certify physical deadlines.
+
+**Still open.** Retest this exact candidate on the MKII with the owner's sample
+and AMP settings; confirm UI response during notes and save/reload. The
+reported hang remains unconfirmed as fixed until that hardware result exists.
+
 ## Pops and clicks from T1 with BusDelay when T1 plays its own trigs 🔴 reported (29 Sep 2026), cause open
 
 **Symptom.** Reported on Discord by Arcdmd_, 29 Sep 2026: sounds programmed

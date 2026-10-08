@@ -88,6 +88,9 @@ unsigned pm_assign(volatile uint8_t *part, unsigned t, unsigned enabled) {
     }
     for(unsigned k=0;k<3;++k) mirror[sig+k]=part[sig+k];
     if(enabled==1) {
+        /* Only a new machine assignment takes the default; sample-browser
+         * confirmation and saved Parts retain the musician's LOOP choice. */
+        part[0x1dau+30u*t+6u*pool]=mirror[0x1dau+30u*t+6u*pool]=0;
         pool_bank=U32(BANK_PTR); pool_part=offset/PART_STRIDE; pool_track=t;
         pool_pending=1;
     }

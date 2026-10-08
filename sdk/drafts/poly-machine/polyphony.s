@@ -1,6 +1,6 @@
-| POLY MACHINE -- a shared pool of 32 active untimestretched sample heads.
+| POLY MACHINE -- a shared pool of eight active untimestretched test heads.
 | Eight stock primary records bridge native triggers into 31 preallocated
-| extension records; the allocator limits their combined active count to 32.
+| extension records; the allocator limits their combined active count to eight.
 | One track can take all free heads. Samples are resampled, enveloped and
 | mixed into one track buffer before the ordinary shared filter/FX chain.
 |
@@ -14,6 +14,7 @@
 | one-command mailbox, and releases address the voices that own the key.
 | RATE, sample selection, FX and p-locks remain track-wide.
         .text
+        .global poly_primary_shift, poly_extra_shift, poly_pending_shift, poly_track_inc
         .global polyphony_call
         .global poly_config_type
         .global poly_live_type
@@ -84,7 +85,7 @@
         .equ    MIDI_KEY, 0x80
         .equ    PANEL_KEYS, 125
         .equ    VOICE_SIZE, 168
-        .equ    POOL_CAPACITY, 32
+        .equ    POOL_CAPACITY, 8
         .equ    EXTRA_CAPACITY, 31
         .equ    STATE_SIZE, 40
         .equ    MAX_SOURCE_FRAMES, 64
@@ -293,10 +294,52 @@ poly_stop_voice:
         move.l  12(%sp),%d1
         jmp     (CONTINUE_STOP).l
 
-| Common sample trigger: reserve one of 32 active heads across all POLY
+| Common sample trigger: reserve one of eight active heads across all POLY
 | tracks. Preserve a sounding primary in fixed extension storage; at capacity
-| steal the globally oldest head. Envelopes and resampler state move together.
+| steal released tails before held notes, then oldest. Envelopes and resampler state move together.
 poly_voice_trigger:
+        lea     -16(%sp),%sp
+        movem.l %d2-%d4/%a2,(%sp)
+        move.l  20(%sp),%d2
+        move.l  %d2,%d0
+        bsr.w   poly_is_track
+        tst.l   %d0
+        beq.w   .pvt_passthrough
+        moveq   #0,%d4
+.pvt_chord_next:
+        move.l  %d2,-(%sp)
+        jsr     pm_sequence_next
+        addq.l  #4,%sp
+        tst.l   %d0
+        bmi.s   .pvt_chord_end
+        subi.l  #POLY_KEY_ZERO,%d0
+        lea     poly_pending_shift(%pc),%a0
+        move.b  %d0,(%a0,%d2.l)
+        addq.l  #1,%d4
+.pvt_chord_play:
+        move.l  28(%sp),-(%sp)
+        move.l  28(%sp),-(%sp)
+        move.l  %d2,-(%sp)
+        bsr.w   .poly_voice_one
+        lea     12(%sp),%sp
+        move.l  %d0,%d3
+        movea.l %d1,%a2
+        tst.l   %d4
+        bne.s   .pvt_chord_next
+        bra.s   .pvt_chord_return
+.pvt_chord_end:
+        tst.l   %d4
+        beq.s   .pvt_chord_play
+.pvt_chord_return:
+        move.l  %d3,%d0
+        move.l  %a2,%d1
+        movem.l (%sp),%d2-%d4/%a2
+        lea     16(%sp),%sp
+        rts
+.pvt_passthrough:
+        movem.l (%sp),%d2-%d4/%a2
+        lea     16(%sp),%sp
+.poly_voice_one:
         lea     -40(%sp),%sp
         movem.l %d0-%d5/%a0-%a3,(%sp)
         move.l  44(%sp),%d2               | track
@@ -460,6 +503,9 @@ polyphony_call:
         cmpi.l  #MAX_SOURCE_FRAMES,%d5
         bhi.w   .reset_mono
 
+        move.l  %d2,-(%sp)
+        jsr     pm_enforce_budget
+        addq.l  #4,%sp
         bsr.w   .active_track
         bsr.w   .env_track                | d6 = mask of active voices
         tst.l   %d6
@@ -1447,6 +1493,10 @@ poly_chromatic_key:
         move.l  20(%sp),%d0
         move.l  %d3,%d1
         bsr.w   poly_press_key
+        move.l  %d3,-(%sp)
+        move.l  24(%sp),-(%sp)
+        jsr     pm_record_key
+        addq.l  #8,%sp
         tst.l   (NOTE_OUT_HOLD).l
         bne.s   .pck_done
         bra.s   .pck_note_out
@@ -1734,7 +1784,7 @@ poly_press_key:
         move.l  %d1,%d3
         bsr.w   .hold_find
         tst.l   %d0
-        bpl.s   .ppk_capacity
+        bpl.s   .ppk_done
         moveq   #0,%d0
 1:      mvz.b   (%a0,%d0.l),%d1
         cmpi.l  #0xff,%d1

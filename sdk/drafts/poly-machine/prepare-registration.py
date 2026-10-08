@@ -27,7 +27,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='poly-cf.') as directory:
         work=Path(directory)
         unity=work/'vector.c'
-        unity.write_text('#include "registration.c"\n#include "pool.c"\n')
+        unity.write_text('#include "registration.c"\n#include "pool.c"\n#include "recording.c"\n')
         assembly=work/'vector.s'
         subprocess.run(['m68k-elf-gcc',*FLAGS,'-I',str(here),'-S',str(unity),'-o',str(assembly)],check=True)
         text=assembly.read_text()+'\n#APP\n'+(here/'registration-hooks.s').read_text()+'\n.text\n.balign 2\n'

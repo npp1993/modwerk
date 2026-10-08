@@ -3,7 +3,7 @@
   "id": "poly-machine",
   "key": "POLY MACHINE",
   "name": "Poly Machine",
-  "version": "0.2.0-experimental",
+  "version": "0.2.1-experimental",
   "category": "machines",
   "source": {
     "repository": "https://github.com/repeat98/octamad",
@@ -12,7 +12,7 @@
   },
   "build": {
     "status": "pending",
-    "reason": "Source development draft. Shared allocation, native input and emulator playback tested; hardware deadlines, broad lifecycle/recording regressions and browser composition remain unqualified."
+    "reason": "MKII recording/stability test draft. Eight shared voices with pitch-weighted admission, panel chord recording and LOOP OFF default; physical deadlines and broad lifecycle qualification remain pending."
   },
   "author": {
     "github": "repeat98",
@@ -25,22 +25,24 @@
   },
   "nativeManifest": "manifest.py",
   "presentation": {
-    "label": "32 shared sample voices",
+    "label": "8 shared sample voices",
     "family": "Sample machines",
-    "summary": "Polyphonic FLEX playback with a shared 32-voice pool and independent track tuning.",
-    "overview": "One POLY track can use all 32 free voices. Each head has a preallocated AMP envelope; filters and FX remain shared per track. Draft outside the catalog.",
+    "summary": "Polyphonic FLEX playback with eight shared test voices and native panel chord recording.",
+    "overview": "Eight shared voices with independent AMP envelopes. Panel recording supports up to four notes within one octave. Draft outside the catalog.",
     "highlights": [
-      "32 voices shared across tracks; up to 32 on one track.",
+      "Eight shared test voices; release tails yield before held notes.",
       "Independent ATK/HOLD/REL, with no per-note DSP or heap allocation.",
-      "Ten panel octave positions and dedicated-route MIDI notes 0–127.",
-      "PTCH tunes the chord; POLY opens FLEX samples directly."
+      "Ten panel octave positions and dedicated-route MIDI notes 0\u2013127.",
+      "PTCH tunes the chord; POLY opens FLEX samples directly.",
+      "LOOP OFF on new assignments; panel chords record into native bank locks."
     ],
     "usage": [
       "Select an audio track, open SRC SETUP, choose POLY and press YES.",
       "POLY opens the FLEX sample pool directly. Load a sample with the stock file browser, then confirm its slot with YES. NO leaves the browser.",
-      "Return to SRC and enter chromatic mode with FUNC+DOWN. Hold several trig keys; FUNC+LEFT/RIGHT changes octave from -6 to +3.",
-      "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0–127; note 84 plays the tuned sample root.",
-      "Set AMP REL to a finite value for notes that end after key-up. All POLY tracks share 32 voices, and one track can use the entire free pool."
+      "Return to SRC, open the trig-mode menu with FUNC+DOWN, select CHROMATIC and confirm with YES. Hold several trig keys; FUNC+LEFT/RIGHT changes octave from -6 to +3.",
+      "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0\u2013127; note 84 plays the tuned sample root.",
+      "New POLY assignments default to LOOP OFF. HOLD/REL INF sustain until the sample ends or the head is stolen; this test build shares eight voices with a pitch-weighted work limit.",
+      "Use REC+PLAY in chromatic mode to record up to four held panel notes spanning at most eleven semitones. Recorded duration follows AMP HOLD."
     ]
   },
   "access": {
@@ -48,9 +50,10 @@
     "steps": [
       "Select an audio track, open SRC SETUP, choose POLY and press YES.",
       "POLY opens the FLEX sample pool directly. Load a sample with the stock file browser, then confirm its slot with YES. NO leaves the browser.",
-      "Return to SRC and enter chromatic mode with FUNC+DOWN. Hold several trig keys; FUNC+LEFT/RIGHT changes octave from -6 to +3.",
-      "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0–127; note 84 plays the tuned sample root.",
-      "Set AMP REL to a finite value for notes that end after key-up. All POLY tracks share 32 voices, and one track can use the entire free pool."
+      "Return to SRC, open the trig-mode menu with FUNC+DOWN, select CHROMATIC and confirm with YES. Hold several trig keys; FUNC+LEFT/RIGHT changes octave from -6 to +3.",
+      "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0\u2013127; note 84 plays the tuned sample root.",
+      "New POLY assignments default to LOOP OFF. HOLD/REL INF sustain until the sample ends or the head is stolen; this test build shares eight voices with a pitch-weighted work limit.",
+      "Use REC+PLAY in chromatic mode to record up to four held panel notes spanning at most eleven semitones. Recorded duration follows AMP HOLD."
     ],
     "screenshots": []
   },
@@ -61,7 +64,7 @@
     },
     {
       "name": "Chromatic octave",
-      "description": "FUNC+LEFT/RIGHT selects -6 to +3; the display shows the full signed value. Panel covers MIDI 0–124."
+      "description": "FUNC+LEFT/RIGHT selects -6 to +3; the display shows the full signed value. Panel covers MIDI 0\u2013124."
     },
     {
       "name": "Sample pool",
@@ -83,12 +86,13 @@
       "Draft outside the catalog; no downloadable firmware or public build package.",
       "TSTR is OFF while POLY is active.",
       "FLEX only; STATIC requires independent streaming-cache support.",
-      "Panel/MIDI note recording is incomplete; extended pitches are a live-play feature.",
-      "MIDI channels shared with non-POLY audio tracks keep stock note-command mapping outside 72–96.",
+      "Panel recording supports up to four notes within an octave; wider/larger chords and recorded key-up duration are unsupported. Extended-range MIDI recording remains incomplete.",
+      "MIDI channels shared with non-POLY audio tracks keep stock note-command mapping outside 72\u201396.",
       "Linear interpolation can alias at high pitches; no anti-aliasing upgrade is claimed.",
-      "Ratios saturate below 32× rather than fold by octaves; very low pitches are limited by Q16 playback phase.",
+      "Ratios saturate below 32\u00d7 rather than fold by octaves; very low pitches are limited by Q16 playback phase.",
       "The octave selector is a global live control; it is not saved per Part.",
-      "No coexistence with other row-five custom machines is claimed."
+      "No coexistence with other row-five custom machines is claimed.",
+      "Recorded chord steps use PTCH lock storage for their root. Stock PTCH lock editing/display for those steps is not qualified; native SAMPLE locks remain available."
     ]
   },
   "resources": {
@@ -107,19 +111,21 @@
       "value": null,
       "unit": "cycles/frame",
       "method": "unmeasured",
-      "conditions": "Native emulator instruction counts are not hardware cycles. Maximum-pitch 32-voice deadlines need qualification.",
+      "conditions": "Native emulator instruction counts are not hardware cycles. Pitch-weighted eight-voice physical deadlines need qualification.",
       "source": "TESTING.md"
     }
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "Native build, bounded allocator and stealing, current-pool MIDI/release checks, emulator audio and UI. Physical hardware is untested.",
+    "summary": "Native guarded build, bounded allocation, 232 chord encodings, native sequencer playback, MKII panel recording/stress, project save/cold reload and MIDI regression. Physical MKII retest pending.",
     "hardwareStatus": "untested",
     "gates": [
       "verify-source.py",
       "pool-test.c",
       "verify-midi.py",
-      "verify-pool.py"
+      "recording-test.c",
+      "native-panel-gate.py",
+      "verify-recording.py"
     ]
   },
   "license": {

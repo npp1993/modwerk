@@ -1,4 +1,6 @@
 {
+  "tested_version": "0.2.0-experimental",
+  "historical": true,
   "observations": {
     "flex-direct": {
       "track": 1,

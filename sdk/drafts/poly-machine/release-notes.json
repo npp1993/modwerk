@@ -1,12 +1,24 @@
 {
-  "version": "0.2.0-experimental",
-  "date": "2026-10-07",
+  "version": "0.2.1-experimental",
+  "date": "2026-10-08",
   "publication": "unpublished draft; migrate these notes to the community changelog when this module receives a catalog ID",
   "changes": [
-    "32 active POLY voices share one global pool; one track can use all free voices.",
-    "Independent preallocated AMP envelopes with shared per-track filters and FX.",
-    "PTCH tuning is independent of chromatic and MIDI notes, with ten panel octave positions and dedicated-route MIDI 0\u2013127.",
-    "Selecting POLY opens native FLEX samples directly; STATIC is excluded.",
-    "Hardware deadlines, broad lifecycle combinations, note recording and public packaging remain unqualified."
+    "Restore the native panel recorder for up to four-note chords spanning eleven semitones; consume encoded roots before normal PTCH locks, retaining native SAMPLE locks.",
+    "Limit this hardware test to eight shared voices with pitch-weighted admission; steal released tails before held notes and ignore duplicate held-key presses.",
+    "New POLY assignments default to LOOP OFF. Browser confirmations and existing saved LOOP choices retain their value.",
+    "Recorded duration follows AMP HOLD; wider chords, extended MIDI recording, grid root editing and physical MKII deadlines remain unqualified."
+  ],
+  "history": [
+    {
+      "version": "0.2.0-experimental",
+      "date": "2026-10-07",
+      "changes": [
+        "32 active POLY voices share one global pool; one track can use all free voices.",
+        "Independent preallocated AMP envelopes with shared per-track filters and FX.",
+        "PTCH tuning is independent of chromatic and MIDI notes, with ten panel octave positions and dedicated-route MIDI 0\u2013127.",
+        "Selecting POLY opens native FLEX samples directly; STATIC is excluded.",
+        "Hardware deadlines, broad lifecycle combinations, note recording and public packaging remain unqualified."
+      ]
+    }
   ]
 }

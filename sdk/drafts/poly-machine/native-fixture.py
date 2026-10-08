@@ -56,7 +56,7 @@ card,_=emu_card.stage_project(project,'OCTABAM','POLYBENCH',tree=a.out/'tree',im
 
 def base(label,events,frames):
  midi=a.out/f'{label}.txt';midi.write_text('\n'.join(str(frame)+' '+' '.join(f'{v:02x}' for v in values) for frame,values in events)+'\n')
- return [str(a.emulator),'--image',str(a.image),'--card',str(a.out/'fixture.img'),'--set','OCTABAM','--project','POLYBENCH','--sequencer','--internal-clock','--frames',str(frames),'--load-ms','5000','--dsp','--main-level','64','--midi',str(midi),'--audio-out',str(a.out/label)]
+ return [str(a.emulator),'--image',str(a.image),'--card',str(a.out/'fixture.img'),'--set','OCTABAM','--project','POLYBENCH','--sequencer','--internal-clock','--frames',str(frames),'--names-early','--mkii','--load-ms','90000','--dsp','--main-level','64','--midi',str(midi),'--audio-out',str(a.out/label)]
 def dump(cmd,frame,label,name,size,address=None):
  cmd+=['--step',f'{frame}:dump:{sym[name] if address is None else address:#x},{size}={a.out}/{label}-{name}.bin']
 
@@ -70,7 +70,7 @@ for frame,label in points:
  dump(cmd,frame,'final-'+label,'locks',1,0x46c7dfda)
 (a.out/'midi-final-command.json').write_text(json.dumps(cmd,indent=2)+'\n')
 one=[(100+i*20,[0x90,n,100]) for i,n in enumerate(range(53,85))]
-for label,events,frames in [('pool-one',one,1700),('pool-many',[(100+t*100,[v for n in [72,76,79,84] for v in [0x90+t,n,100]]) for t in range(8)],2400),('pool-steal',one+[(1000,[0x90,85,100]),(1300,[0x91,84,100]),(1600,[0x80,53,0])],2200)]:
+for label,events,frames in [('pool-one',one,1700),('pool-many',[(100+t*100,[v for n in [84] for v in [0x90+t,n,100]]) for t in range(8)],2400),('pool-steal',one+[(1000,[0x90,85,100]),(1300,[0x91,84,100]),(1600,[0x80,53,0])],2200)]:
  cmd=base(label,events,frames)
  dump(cmd,1200,label+'-warm','voices',1344,0x800049d8)
  cmd+=['--mem-dump',';'.join(f'{address:#x},{size}={a.out}/{label}-{name}.bin' for name,address,size in [('voices',0x800049d8,1344),('extra',sym['poly_extra_voices'],31*168),('track',sym['poly_extra_track'],31),('note',sym['poly_extra_note'],31),('primary',sym['poly_primary_note'],8),('inc',sym['poly_voice_inc'],156)])]
