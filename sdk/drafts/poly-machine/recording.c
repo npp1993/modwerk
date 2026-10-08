@@ -35,6 +35,10 @@ static unsigned chord_encode(uint16_t mask) {
  * Wider/larger chords do not overwrite a previously captured valid chord.
  */
 void pm_record_key(unsigned track,unsigned key) {
+    #ifndef POLY_RECORD_HOST_TEST
+    extern volatile uint32_t poly_diag_key_calls,poly_diag_record_calls,poly_diag_record_last;
+    ++poly_diag_key_calls;
+    #endif
     if(track>=8 || key>124 || !REC_READ(0x460d172au)) return;
     unsigned root=125, count=0; uint16_t mask=0;
     for(unsigned i=0;i<64;++i) {
@@ -52,6 +56,10 @@ void pm_record_key(unsigned track,unsigned key) {
     int step=rec_place(track,ctx,!!REC_READ(0x46c7dd26u));
     if(step<0 || step>=64) return;
     rec_lock(track,0,root,step,ctx); rec_lock(track,30,shape,step,ctx);
+    #ifndef POLY_RECORD_HOST_TEST
+    ++poly_diag_record_calls;
+    poly_diag_record_last=(track<<24)|((unsigned)step<<16)|(root<<8)|shape;
+    #endif
 }
 /* Values and their masks have just been copied to the stock per-track
  * playback buffers. Remove only the encoded root from normal PTCH locking;

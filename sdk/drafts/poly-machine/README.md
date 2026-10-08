@@ -11,7 +11,7 @@ PTCH tunes the whole chord. Panel and MIDI notes add their own semitone offset
 without moving PTCH or overwriting its live lock. The machine follows the
 instrument's audio frames and sequencer; it has no independent clock.
 
-This is an experimental source draft, outside the public catalog. **POLY8T03 is blocked for further hardware testing:** the owner reports transport stuck at step 1 and silence on all channels, including sample preview; stock 1.40C restores operation. The cause remains open. MKII recording and responsiveness still require a hardware retest. The user reports no recorded chromatic trigs on POLY8T02 despite active transport; both POLY8T02 and the revised build record in the native emulator. That hardware failure remains open.
+This is an experimental source draft, outside the public catalog. **POLY8T04 is the next private diagnostic candidate.** It includes the core logger, bounded POLY snapshots, physical-slot scratch bounds and a timed refusal modal. **POLY8T03 failed hardware testing:** the owner reports transport stuck at step 1 and silence on all channels, including sample preview; stock 1.40C restores operation. The cause remains open. MKII recording and responsiveness still require a hardware retest. The user reports no recorded chromatic trigs on POLY8T02 despite active transport; both POLY8T02 and the revised build record in the native emulator. That hardware failure remains open.
 
 ## Controls and flow
 
@@ -72,7 +72,7 @@ LOOP OFF manually when testing this build.
 
 ## Compatibility and limitations
 
-- Octatrack OS 1.40C only; this 0.2.2 candidate has not yet been retested on physical hardware.
+- Octatrack OS 1.40C only; this 0.2.3 diagnostic candidate has not yet been retested on physical hardware.
 - FLEX only. STATIC was excluded after an exploratory audio test lost chord
   components as independent streaming heads diverged.
 - Panel recording is limited to four notes within an octave; extended MIDI recording is incomplete.
@@ -107,3 +107,9 @@ no firmware, extracted stock spans, card images or memory dumps are included.
 Sam Banks' original POLY is MIT; full terms are in [LICENSE](LICENSE).
 The pool adapter follows repeat98's MIT VECTOR code and the Analog BD/FM
 registration conventions. New integration and allocator work is MIT.
+
+## T04 diagnostic build
+
+Stage this draft as `modules/poly-machine` in a disposable native SDK together with the current `sdk/runtime/logging`. Regenerate `registration.s` using `prepare-registration.py`, then run `python3 -B modules/poly-machine/build-diagnostic.py` from that private SDK. It links the unchanged core logger beside POLY, excludes its retained 8 KiB from initialized runtime/staging, reserves sixteen additional recorder pages, checks original 1.40C guards and installs seven non-overlapping logger hooks. The ordinary native build resolves the optional logging call to zero; this diagnostic recipe is required for the logging candidate.
+
+See [diagnostic records and collection](DIAGNOSTICS.md). Logs cannot guarantee capture of a hard lockup or recovery after a power cycle. Hardware recording and transport/audio failures remain open.

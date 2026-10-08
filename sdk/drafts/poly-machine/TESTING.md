@@ -5,12 +5,56 @@ Historical 0.2.0 tests on 7 October 2026 used a locally verified Octatrack 1.40C
 ColdFire/DSP port and the separate octemu/QEMU front-panel emulator. Firmware,
 project/card images, raw memory dumps and compiled executables remain private.
 
+## 0.2.3 POLY8T04 diagnostic candidate (8 October 2026)
+
+T04 includes core logger 0.2.0 without shared logger/build changes. The private
+`build-diagnostic.py` composes it with the native POLY runtime, reserves sixteen
+extra pages and excludes the retained 8 KiB from the initialized image/stage.
+Seven logger hooks are guarded against original stock and against POLY overlap.
+Audio instrumentation only increments fixed RAM counters; five snapshots at
+most once per sixty stock UI ticks append to the existing bounded ring.
+
+Scratch storage covers all 32 physical selectors, while admission remains eight
+active voices. The native gate relocates a sounding extension to selector 31,
+hears it and verifies adjacent tuning-cache bytes are unchanged. This corrects
+a bounds mismatch defensively; it is not the confirmed physical-stall cause.
+The single-machine modal automatically closes after 120 stock UI ticks; both
+native assignment menus refuse before changing the target Part.
+
+The exact final MAIN OS is `792dde58d775fc7dcb8de7bd00c9e9fdd1e47fe909ef8d21dae898bea409a549`.
+Warm battery-RAM boot retains both markers, native FLEX backing and LOOP OFF.
+POLY/FLEX key audio captures each contain 8,820 frames, peaks 361/3,042;
+REC+PLAY records notes 72/76/79 on advancing steps 2/4/6. Sparse-selector audio
+peaks 712. Fresh assignment at HOLD/REL MAX records a four-note chord and
+128 rapid presses retain at most eight voices with 7,072 further DSP-driven
+frames. These are native-port results, not physical-device success.
+
+ASan/UBSan allocator/recorder tests and unchanged core logger host/controller/
+file-adapter tests pass. CF/MIDI container round trips recover the exact MAIN,
+with original header/seed preserved. Detailed fingerprints and checkpoint scope
+are in `evidence/diagnostic-t04.json`; collection steps are in DIAGNOSTICS.md.
+The SAVE checkpoint gate waits for actual completion/readback, then the strict
+site parser accepts both 32 KiB files with valid CRCs and exact configuration/
+source identity. The newer slot includes recent successful recording counters.
+The stock UI counter is advanced by 2,100 ticks for this directed backoff probe;
+no real-time thirty-second persistence deadline is claimed. The original shorter
+probe stopped while SAVING PROJECT was still visible and only captured the
+earlier checkpoint; it was not accepted as evidence of the recent log tail.
+
+The complete current-main `npm run check -- --base origin/main` passes with
+Vitest limited to one worker: 189 files / 1,275 tests, SDK/catalog/licences,
+lint, typecheck and production build. The private Node preload only adds the
+standard `--maxWorkers=1` CLI option to the Vitest child; every suite, assertion
+and original timeout remains enabled. A direct one-worker test run also passes.
+Earlier default parallel runs hit existing timeout failures under machine
+contention; no timeout or unrelated application code was changed.
+
 ## POLY8T03 hardware regression (8 October 2026)
 
 The owner reports transport stuck at step 1 and no audio on any channel,
 including sample preview. Returning to stock 1.40C restores operation in the
 same project. This blocks further hardware testing of T03. The physical cause
-is open; no replacement image or fixed hardware result is claimed.
+remains open. T04 below is a new diagnostic candidate; no fixed hardware result is claimed.
 
 The original battery-only restart gate checks Part identity and frame progress,
 not playback or sound. The additional `native-warm-audio-gate.py` exercises
@@ -48,7 +92,7 @@ when summing voices. These are actual MKII failure observations, not a hardware
 pass. The reboot marker-copy defect is reproduced; the recording failure is
 not reproduced in either image's fresh-assignment native gate.
 
-Current evidence: `evidence/recording.json` (0.2.2); previous image evidence
+Historical evidence: `evidence/recording.json` (0.2.2); previous image evidence
 is retained as `evidence/recording-0.2.1.json`. The native gate now starts from
 unsigned FLEX and uses actual panel SRC SETUP assignment, checks both marker
 copies and LOOP OFF, then records with REC+PLAY. The modal uses the native

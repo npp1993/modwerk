@@ -481,6 +481,7 @@ poly_voice_trigger:
 | (.env_reap).  The DSP's one envelope per track is held open meanwhile
 | (poly_amp_hook).
 polyphony_call:
+        addq.l  #1,poly_diag_render_begin
         lea     -40(%sp),%sp
         movem.l %d2-%d7/%a2-%a5,(%sp)
         movea.l %sp,%a5                   | fixed frame; original args at +40
@@ -552,6 +553,7 @@ polyphony_call:
         movea.l 40(%a5),%a4
         bsr.s   .render
 .done:
+        addq.l  #1,poly_diag_render_end
         clr.l   poly_voice_selector
         movem.l (%sp),%d2-%d7/%a2-%a5
         lea     40(%sp),%sp
@@ -573,6 +575,8 @@ polyphony_call:
 
 | .render with the fetch count in d0 and the destination in a4.
 .render_count:
+        addq.l  #1,poly_diag_fetch_calls
+        add.l   %d0,poly_diag_fetch_frames
         move.l  60(%a5),-(%sp)
         move.l  56(%a5),-(%sp)
         move.l  %d0,-(%sp)
@@ -2268,7 +2272,7 @@ poly_fetch:
 poly_extra_voices:
         .zero   EXTRA_CAPACITY*VOICE_SIZE    | fixed global extension storage
 poly_scratch:
-        .zero   POOL_CAPACITY*512            | reused across tracks
+        .zero   (EXTRA_CAPACITY+1)*512            | reused across tracks
 
         .balign 4
 poly_cached_tuning:
@@ -2279,3 +2283,11 @@ poly_cached_note:
 | Keep explicit state inside the copied image, including the pitch cache.
 poly_runtime_end_marker:
         .long 0x504f4c59
+
+        .balign 4
+        .global poly_diag_render_begin, poly_diag_render_end
+        .global poly_diag_fetch_calls, poly_diag_fetch_frames
+poly_diag_render_begin: .long 0
+poly_diag_render_end: .long 0
+poly_diag_fetch_calls: .long 0
+poly_diag_fetch_frames: .long 0

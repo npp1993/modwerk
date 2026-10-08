@@ -1,14 +1,24 @@
 {
-  "version": "0.2.2-experimental",
+  "version": "0.2.3-experimental",
   "date": "2026-10-08",
   "publication": "unpublished draft; migrate these notes to the community changelog when this module receives a catalog ID",
   "changes": [
-    "Retain the eight-head cap and pitch-work budget; allow one POLY assignment per Part. Refuse a second machine before any settings/sample writes, with a native NO-dismissed modal.",
-    "Apply fixed 1/8 (-18.06 dB) gain in both the single-voice fast path and envelope-weighted mix; leave headroom for eight coherent full-scale voices without voice-count pumping.",
-    "Correct the PL/1 marker copy into battery RAM by staging its reads before writes; normal restart can retain POLY identity.",
-    "Fresh-assignment native REC+PLAY succeeds, but the previous image also succeeds in that emulator path. The reported MKII recording failure remains unresolved on hardware; do not claim this gain/persistence update fixes it. LOOP OFF default remains unchanged."
+    "POLY8T04 private diagnostic candidate includes the existing core OCTAMOD.LOG logger and bounded once-per-second POLY transport, render/fetch, key/record, voice and modal snapshots. No filesystem work occurs in audio or UI callbacks.",
+    "Reserve scratch buffers for all 32 physical selectors while retaining the eight-active-voice cap; sparse extension indices can no longer address beyond scratch storage. This is a defensive bounds correction, not a confirmed cause of the MKII stall.",
+    "Keep the one-POLY refusal modal but automatically dismiss it after 120 native UI ticks, so an overlooked dialog cannot indefinitely capture panel input.",
+    "Retain fixed 1/8 gain, LOOP OFF for new assignments and the battery-RAM marker copy correction. MKII recording and transport/audio failures remain open until this exact build is tested on hardware."
   ],
   "history": [
+    {
+      "version": "0.2.2-experimental",
+      "date": "2026-10-08",
+      "changes": [
+        "Retain the eight-head cap and pitch-work budget; allow one POLY assignment per Part. Refuse a second machine before any settings/sample writes, with a native NO-dismissed modal.",
+        "Apply fixed 1/8 (-18.06 dB) gain in both the single-voice fast path and envelope-weighted mix; leave headroom for eight coherent full-scale voices without voice-count pumping.",
+        "Correct the PL/1 marker copy into battery RAM by staging its reads before writes; normal restart can retain POLY identity.",
+        "Fresh-assignment native REC+PLAY succeeds, but the previous image also succeeds in that emulator path. The reported MKII recording failure remains unresolved on hardware; do not claim this gain/persistence update fixes it. LOOP OFF default remains unchanged."
+      ]
+    },
     {
       "version": "0.2.1-experimental",
       "date": "2026-10-08",

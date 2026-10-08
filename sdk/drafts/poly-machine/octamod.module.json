@@ -3,7 +3,7 @@
   "id": "poly-machine",
   "key": "POLY MACHINE",
   "name": "Poly Machine",
-  "version": "0.2.2-experimental",
+  "version": "0.2.3-experimental",
   "category": "machines",
   "source": {
     "repository": "https://github.com/repeat98/octamad",
@@ -12,7 +12,7 @@
   },
   "build": {
     "status": "pending",
-    "reason": "MKII eight-voice test draft with one POLY assignment per Part, fixed 1/8 voice gain and corrected battery-RAM marker. Hardware recording and responsiveness retest pending."
+    "reason": "Private POLY8T04 diagnostic candidate: core logger, bounded POLY snapshots, physical scratch bounds and timed modal. MKII recording/transport/audio failures remain unresolved on hardware."
   },
   "author": {
     "github": "repeat98",
@@ -30,7 +30,7 @@
     "summary": "Polyphonic FLEX playback with eight shared test voices and native panel chord recording.",
     "overview": "One POLY machine per Part, up to eight independent sample voices, and fixed headroom. Panel recording supports four notes within one octave. Draft outside the catalog.",
     "highlights": [
-      "One POLY per Part; a second assignment opens a modal dismissed with NO.",
+      "One POLY per Part; refusal modal closes with NO or automatically after 120 native UI ticks.",
       "Eight shared test voices; release tails yield before held notes.",
       "Independent ATK/HOLD/REL, with no per-note DSP or heap allocation.",
       "Ten panel octave positions and dedicated-route MIDI notes 0\u2013127.",
@@ -107,7 +107,7 @@
       "value": 10487808,
       "unit": "bytes",
       "method": "measured",
-      "conditions": "Reserved once by the shared platform; POLY runtime sits inside it. Sample RAM is reduced by this reservation.",
+      "conditions": "Reserved once by the shared platform; POLY runtime sits inside it. Sample RAM is reduced by this reservation. Diagnostic T04 also reserves sixteen logger pages (98,304 bytes).",
       "source": "TESTING.md"
     },
     "processing": {
@@ -134,7 +134,10 @@
       "native-assignment-fixture.py",
       "native-limit-gate.py",
       "native-warm-gate.py",
-      "verify-gain.py"
+      "verify-gain.py",
+      "native-diagnostic-limit-gate.py",
+      "native-diagnostic-gate.py",
+      "native-diagnostic-checkpoint-gate.py"
     ]
   },
   "license": {

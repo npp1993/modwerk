@@ -22,6 +22,8 @@ not reproduce the hardware stall. The sample-preview probe fails to confirm
 the expected tone even in unmodified stock, so that test is unqualified. The
 cause and a physical fix remain unconfirmed.
 
+**Next experiment.** Private 0.2.3 / POLY8T04 adds the existing core logger and bounded POLY state/counters, reserves scratch for all physical selectors while retaining eight active voices, and times out the one-machine modal after 120 native UI ticks. Native key audio, recording and rapid presses pass; this does not resolve the hardware report. Copy both CF checkpoints after a stopped, completed SAVE job; hard lockup/reset-tail recovery remains unproven.
+
 ## POLY rapid chromatic trigs stall the MKII until voices end — reported 8 October 2026, cause open
 
 **Symptom.** The owner reports temporary unresponsiveness in the private POLY

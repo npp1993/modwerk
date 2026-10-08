@@ -24,6 +24,7 @@ extern void pm_stock_pool_open(void);
 static uint32_t pool_bank = 0, pool_part = 0, pool_track = 0;
 static uint32_t pool_pending = 0, pool_direct = 0;
 static uint32_t pool_browse = 0, limit_pending = 0;
+void pm_diagnostic_tick(void);
 unsigned pm_selected(void);
 void pm_pool_choice_open(void);
 static unsigned pool_context(void) {
@@ -132,12 +133,13 @@ void pm_pool_right(unsigned key,unsigned edge) {
 /* Legacy POLY95 raw type 5 is upgraded to signed FLEX in both Part copies.
  * No sample, SRC, AMP or FX settings are changed. */
 void pm_ui_tick(void) {
+    pm_diagnostic_tick();
     if(!valid_bank()) return;
     /* The stock commit finishes installing its menu layer before the next
      * UI tick. Opening here keeps the acknowledgement above that layer. */
     if(limit_pending) {
         limit_pending=0;
-        ((void (*)(const char *,unsigned))0x4005a2b8u)("ONE POLY PER PART",0);
+        ((void (*)(const char *,unsigned))0x4005a2b8u)("ONE POLY PER PART",120);
     }
     unsigned part=U8(PART_IDX)&3u;
     volatile uint8_t *p=current_part();
