@@ -8,10 +8,10 @@ Never commit generated card images, firmware, LCD planes or memory dumps.
 from pathlib import Path
 import json,subprocess,argparse,re
 parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('work',type=Path)
-w=parser.parse_args().work.resolve();sym={r[2]:int(r[0],16) for l in (w/'t04-symbols.txt').read_text().splitlines() if len(r:=l.split())==3}
-cmd=[str(w/'ot_emu'),'--image','out/mainos_bus.bin','--card',str(w/'t04-checkpoint.img'),'--card-rw','--mount','--set','OCTABAM','--project','POLYBENCH','--names-early','--load-ms','90000','--mkii','--dsp','--main-level','64','--interactive','--lcd',str(w/'t04-checkpoint-lcd.bin')]
+w=parser.parse_args().work.resolve();sym={r[2]:int(r[0],16) for l in (w/'t05-symbols.txt').read_text().splitlines() if len(r:=l.split())==3}
+cmd=[str(w/'ot_emu'),'--image','out/mainos_bus.bin','--card',str(w/'t05-checkpoint.img'),'--card-rw','--mount','--set','OCTABAM','--project','POLYBENCH','--names-early','--load-ms','90000','--mkii','--dsp','--main-level','64','--interactive','--lcd',str(w/'t05-checkpoint-lcd.bin')]
 p=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1)
-log=(w/'t04-checkpoint-protocol.log').open('w')
+log=(w/'t05-checkpoint-protocol.log').open('w')
 def until(prefix):
  while True:
   l=p.stdout.readline();log.write(l);log.flush()
@@ -53,7 +53,7 @@ try:
  report['live']=peek(0x460d172a,4).hex();report['transport']=peek(0x800065b8,4).hex();report['note_config']=peek(0x8000004c,1).hex()
  for k in [0,1,2,3]:key(k,1);run(10)
  report['guards']={hex(a):peek(a,4).hex() for a in [0x460d1a90,0x460d1a94,0x46c7e956,0x46c7dd26]};report['held']=list(peek(sym['poly_held'],64));report['record_hits']=send('hits','hits ')
- pat=peek(0x400e21e0,2330);(w/'t04-panel-recorded-pattern.bin').write_bytes(pat)
+ pat=peek(0x400e21e0,2330);(w/'t05-panel-recorded-pattern.bin').write_bytes(pat)
  assert sorted(k for k in report['held'] if k!=255)==[72,73,74,75]
  report['chord_records']=[{'step':i+1,'root':pat[0x59+i*32],'shape':pat[0x59+i*32+30]} for i in range(64) if pat[0x59+i*32+30]<232]
  assert any(r['root']==72 and r['shape']==67 for r in report['chord_records']), 'Four-note capture missing'
@@ -74,13 +74,13 @@ try:
  assert int.from_bytes(peek(sym['octamod_log_retained']+68+24,4),'big')>=target,'SAVE checkpoint did not complete'
  report['checkpoint_target']=target
  data=peek(0x46c7e0ea,1024)+peek(0x46c7d34c,280)+b''.join(peek(0x460d1f7b+i,min(4096,0x2800-i)) for i in range(0,0x2800,4096))
- (w/'t04-save-menu.lcd').write_bytes(data)
+ (w/'t05-save-menu.lcd').write_bytes(data)
  report['card_status']=send('card status','card ')
  h=[int.from_bytes(peek(sym['octamod_log_retained']+68+i*4,4),'big') for i in range(8)]
  report['logger_ring']={'head':h[3],'count':h[4],'flushed':h[6]}
  report['image_sha256']=__import__('hashlib').sha256(Path('out/mainos_bus.bin').read_bytes()).hexdigest()
  send('quit');p.wait(timeout=30)
 finally:
- (w/'t04-checkpoint-report.json').write_text(json.dumps(report,indent=2)+'\n');log.close()
+ (w/'t05-checkpoint-report.json').write_text(json.dumps(report,indent=2)+'\n');log.close()
  if p.poll() is None:p.kill()
 print(json.dumps({k:v for k,v in report.items() if k not in ['held','held_after_stop','record_hits']},indent=2))

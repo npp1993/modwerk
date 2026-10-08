@@ -1,14 +1,23 @@
 {
-  "version": "0.2.3-experimental",
+  "version": "0.2.4-experimental",
   "date": "2026-10-08",
   "publication": "unpublished draft; migrate these notes to the community changelog when this module receives a catalog ID",
   "changes": [
-    "POLY8T04 private diagnostic candidate includes the existing core OCTAMOD.LOG logger and bounded once-per-second POLY transport, render/fetch, key/record, voice and modal snapshots. No filesystem work occurs in audio or UI callbacks.",
-    "Reserve scratch buffers for all 32 physical selectors while retaining the eight-active-voice cap; sparse extension indices can no longer address beyond scratch storage. This is a defensive bounds correction, not a confirmed cause of the MKII stall.",
-    "Keep the one-POLY refusal modal but automatically dismiss it after 120 native UI ticks, so an overlooked dialog cannot indefinitely capture panel input.",
-    "Retain fixed 1/8 gain, LOOP OFF for new assignments and the battery-RAM marker copy correction. MKII recording and transport/audio failures remain open until this exact build is tested on hardware."
+    "POLY8T05 private test preserves both original 1.40C DSP uploads byte for byte and bypasses the SDK automatic stock-effect dynamic loader. The build refuses DSP drift or an implicit loader. This isolates a dependency candidate after T04 hardware logs showed no sample-render entries; it is not a confirmed hardware fix.",
+    "Add bounded counts for native command-consumer and AMP-builder calls, including stock tracks. The existing core logger snapshots them outside audio callbacks.",
+    "Retain eight voices, one POLY per Part, fixed 1/8 gain, LOOP OFF for new assignments, scratch bounds, timed modal and marker persistence correction. Physical recording, reboot and transport/audio results remain unverified on this version."
   ],
   "history": [
+    {
+      "version": "0.2.3-experimental",
+      "date": "2026-10-08",
+      "changes": [
+        "POLY8T04 private diagnostic candidate includes the existing core OCTAMOD.LOG logger and bounded once-per-second POLY transport, render/fetch, key/record, voice and modal snapshots. No filesystem work occurs in audio or UI callbacks.",
+        "Reserve scratch buffers for all 32 physical selectors while retaining the eight-active-voice cap; sparse extension indices can no longer address beyond scratch storage. This is a defensive bounds correction, not a confirmed cause of the MKII stall.",
+        "Keep the one-POLY refusal modal but automatically dismiss it after 120 native UI ticks, so an overlooked dialog cannot indefinitely capture panel input.",
+        "Retain fixed 1/8 gain, LOOP OFF for new assignments and the battery-RAM marker copy correction. MKII recording and transport/audio failures remain open until this exact build is tested on hardware."
+      ]
+    },
     {
       "version": "0.2.2-experimental",
       "date": "2026-10-08",

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import json,subprocess,argparse
-parser=argparse.ArgumentParser(description='Native single-instance modal and battery-RAM export gate; outputs stay private.');parser.add_argument('work',type=Path);w=parser.parse_args().work.resolve();sym={r[2]:int(r[0],16) for l in (w/'t04-symbols.txt').read_text().splitlines() if len(r:=l.split())==3}
+parser=argparse.ArgumentParser(description='Native single-instance modal and battery-RAM export gate; outputs stay private.');parser.add_argument('work',type=Path);w=parser.parse_args().work.resolve();sym={r[2]:int(r[0],16) for l in (w/'t05-symbols.txt').read_text().splitlines() if len(r:=l.split())==3}
 cmd=[str(w/'ot_emu_warm'),'--image','out/mainos_bus.bin','--card',str(w/'fresh.img'),'--mount','--set','OCTABAM','--project','POLYBENCH','--names-early','--load-ms','90000','--mkii','--dsp','--main-level','64','--interactive','--lcd',str(w/'limit-lcd.bin')]
-p=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1);log=(w/'t04-limit-protocol.log').open('w');report={};rows=[0]*8
+p=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1);log=(w/'t05-limit-protocol.log').open('w');report={};rows=[0]*8
 
 def until(pre):
  while True:
@@ -49,9 +49,9 @@ try:
  tap(50);tap(50);tap(50);tap(16)
  report['commit_hits']=send('hits','hits ');send('watch off')
  report['marker']=peek(0x40170f9c,3).hex();report['mirror']=peek(0x100a4f0a,3).hex();report['loop']=peek(0x40171140,1).hex()
- dump(0x10000000,1048576,'t04-sram.bin');dump(0x40170f60,6322,'t04-assigned-part.bin')
+ dump(0x10000000,1048576,'t05-sram.bin');dump(0x40170f60,6322,'t05-assigned-part.bin')
  send('quit');p.wait(timeout=30)
 finally:
- (w/'t04-limit-report.json').write_text(json.dumps(report,indent=2)+'\n');log.close()
+ (w/'t05-limit-report.json').write_text(json.dumps(report,indent=2)+'\n');log.close()
  if p.poll() is None:p.kill()
 print(json.dumps(report,indent=2))

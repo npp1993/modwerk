@@ -11,8 +11,9 @@ PTCH tunes the whole chord. Panel and MIDI notes add their own semitone offset
 without moving PTCH or overwriting its live lock. The machine follows the
 instrument's audio frames and sequencer; it has no independent clock.
 
-This is an experimental source draft, outside the public catalog. **POLY8T04 is the next private diagnostic candidate.** It includes the core logger, bounded POLY snapshots, physical-slot scratch bounds and a timed refusal modal. **POLY8T03 failed hardware testing:** the owner reports transport stuck at step 1 and silence on all channels, including sample preview; stock 1.40C restores operation. The cause remains open. MKII recording and responsiveness still require a hardware retest. The user reports no recorded chromatic trigs on POLY8T02 despite active transport; both POLY8T02 and the revised build record in the native emulator. That hardware failure remains open.
+This is an experimental source draft, outside the public catalog. **POLY8T05 is the next private diagnostic candidate.** It preserves both original 1.40C DSP upload payloads and opts out of the SDK's automatically added stock-effect dynamic loader. Its build refuses any DSP payload drift or implicit loader. This isolates an unnecessary dependency; it is not a confirmed hardware cause or fix.
 
+**POLY8T03 and POLY8T04 failed MKII transport testing.** T04's physical logs match its exact source/configuration identity, show continuing UI activity and zero sample-render entries during the captured PLAY state, and contain no exception. T04 therefore does not reach POLY mixing in that capture. T05 adds native command-consumer/AMP-builder counts beside the existing core logger. MKII recording, responsiveness and physical reboot still need this exact version's hardware test. Stock 1.40C reportedly restores operation in the same project.
 ## Controls and flow
 
 | Control | Behaviour |
@@ -72,7 +73,7 @@ LOOP OFF manually when testing this build.
 
 ## Compatibility and limitations
 
-- Octatrack OS 1.40C only; this 0.2.3 diagnostic candidate has not yet been retested on physical hardware.
+- Octatrack OS 1.40C only; this 0.2.4 diagnostic candidate has not yet been tested on physical hardware.
 - FLEX only. STATIC was excluded after an exploratory audio test lost chord
   components as independent streaming heads diverged.
 - Panel recording is limited to four notes within an octave; extended MIDI recording is incomplete.
@@ -108,8 +109,8 @@ Sam Banks' original POLY is MIT; full terms are in [LICENSE](LICENSE).
 The pool adapter follows repeat98's MIT VECTOR code and the Analog BD/FM
 registration conventions. New integration and allocator work is MIT.
 
-## T04 diagnostic build
+## T05 diagnostic build
 
-Stage this draft as `modules/poly-machine` in a disposable native SDK together with the current `sdk/runtime/logging`. Regenerate `registration.s` using `prepare-registration.py`, then run `python3 -B modules/poly-machine/build-diagnostic.py` from that private SDK. It links the unchanged core logger beside POLY, excludes its retained 8 KiB from initialized runtime/staging, reserves sixteen additional recorder pages, checks original 1.40C guards and installs seven non-overlapping logger hooks. The ordinary native build resolves the optional logging call to zero; this diagnostic recipe is required for the logging candidate.
+Stage this draft as `modules/poly-machine` in a disposable native SDK together with the current `sdk/runtime/logging`. Regenerate `registration.s` using `prepare-registration.py`, then run `python3 -B modules/poly-machine/build-diagnostic.py` from that private SDK. It installs the pinned `remix.py` profile with resident stock DSP effects, verifies both original DSP uploads byte for byte, and links the unchanged core logger beside POLY, excludes its retained 8 KiB from initialized runtime/staging, reserves sixteen additional recorder pages, checks original 1.40C guards and installs seven non-overlapping logger hooks. The ordinary native build resolves the optional logging call to zero; this diagnostic recipe is required for the logging candidate.
 
 See [diagnostic records and collection](DIAGNOSTICS.md). Logs cannot guarantee capture of a hard lockup or recovery after a power cycle. Hardware recording and transport/audio failures remain open.

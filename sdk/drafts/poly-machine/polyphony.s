@@ -1299,6 +1299,7 @@ polyphony_call:
 | retriggers only on a note that starts from silence.  The real values are
 | kept for .env_track first.
 poly_amp_hook:
+        addq.l  #1,poly_diag_amp_calls
         movea.w 54(%sp),%a0               | displaced
         move.w  %a0,62(%a2)               | displaced
         lea     -12(%sp),%sp
@@ -2113,6 +2114,7 @@ poly_release_note:
 | pitch under the wrong key and octave, and the chord's last voice owned no
 | key and never released (octemu, 22 Sep 2026).  d4 = track (stock's).
 poly_chord_dequeue:
+        addq.l  #1,poly_diag_command_calls
         lea     -24(%sp),%sp
         movem.l %d0-%d3/%a0-%a1,(%sp)
         move.l  (%a0,%d4.l*4),%d3         | the command being consumed
@@ -2291,3 +2293,11 @@ poly_diag_render_begin: .long 0
 poly_diag_render_end: .long 0
 poly_diag_fetch_calls: .long 0
 poly_diag_fetch_frames: .long 0
+
+| T05 stage counters: fixed RAM only; no logger calls in engine/audio hooks.
+        .balign 4
+        .global poly_diag_command_calls,poly_diag_amp_calls
+poly_diag_command_calls:
+        .long 0
+poly_diag_amp_calls:
+        .long 0

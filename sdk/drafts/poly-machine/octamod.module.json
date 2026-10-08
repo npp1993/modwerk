@@ -3,7 +3,7 @@
   "id": "poly-machine",
   "key": "POLY MACHINE",
   "name": "Poly Machine",
-  "version": "0.2.3-experimental",
+  "version": "0.2.4-experimental",
   "category": "machines",
   "source": {
     "repository": "https://github.com/repeat98/octamad",
@@ -12,7 +12,7 @@
   },
   "build": {
     "status": "pending",
-    "reason": "Private POLY8T04 diagnostic candidate: core logger, bounded POLY snapshots, physical scratch bounds and timed modal. MKII recording/transport/audio failures remain unresolved on hardware."
+    "reason": "Private POLY8T05 diagnostic candidate retains original DSP payloads and bypasses the SDK automatic stock-effect loader; bounded engine-stage counters supplement the core logs. T04 still failed hardware transport; T05 physical results pending."
   },
   "author": {
     "github": "repeat98",
@@ -107,7 +107,7 @@
       "value": 10487808,
       "unit": "bytes",
       "method": "measured",
-      "conditions": "Reserved once by the shared platform; POLY runtime sits inside it. Sample RAM is reduced by this reservation. Diagnostic T04 also reserves sixteen logger pages (98,304 bytes).",
+      "conditions": "Reserved once by the shared platform; POLY runtime sits inside it. Sample RAM is reduced by this reservation. Diagnostic T05 also reserves sixteen logger pages (98,304 bytes).",
       "source": "TESTING.md"
     },
     "processing": {

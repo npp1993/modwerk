@@ -24,6 +24,12 @@ cause and a physical fix remain unconfirmed.
 
 **Next experiment.** Private 0.2.3 / POLY8T04 adds the existing core logger and bounded POLY state/counters, reserves scratch for all physical selectors while retaining eight active voices, and times out the one-machine modal after 120 native UI ticks. Native key audio, recording and rapid presses pass; this does not resolve the hardware report. Copy both CF checkpoints after a stopped, completed SAVE job; hard lockup/reset-tail recovery remains unproven.
 
+**T04 hardware follow-up, 8 October 2026.** On the MKII, the owner reports: "loaded the poly machine, pressed play, sequencer is stuck" and "earlier couldn't even cue samples". T04 has not resolved the transport failure. The timing of the earlier cue failure and its image are unspecified; do not treat it as a measured T04 audition result.
+
+**Physical logs.** Both Desktop copies validate as complete v2 checkpoints with the exact T04 configuration/source identity. They share the first boot's history; the larger checkpoint also recovers that history into a second logger boot. No records were dropped and no exception or error is stored. At UI tick 480 the transport snapshot is 1, live/grid REC and modal bits are zero, and render-entry/completion, fetch, panel-key and record counts remain zero. At tick 540 transport is zero and those counts remain zero. UI jobs and a SAVE PROJECT begin/end are recorded later, so this capture does not show a permanently blocked UI or a stuck one-machine modal. The last first-boot event is a transport request at tick 7570; no later engine progress is captured. Zero render calls locates the captured failure before POLY mixing, but does not by itself identify its cause; no sample trigger is recorded and the existing logger does not trace DSP/ISR progress.
+
+**Dependency candidate, not a confirmed cause.** The exact native T04 build implicitly includes DSP DYNLOAD STOCK on both cores, replacing resident stock effect uploads and adding frame/project/Part hooks, although POLY itself is ColdFire-only. Private 0.2.4 / POLY8T05 selects the SDK's existing static-stock profile, asserts both DSP upload spans are byte-identical to original 1.40C and records native command-consumer/AMP-builder call counts. No physical T05 result is available. The existing MKII recording, rapid-key responsiveness and persistence failures remain open.
+
 ## POLY rapid chromatic trigs stall the MKII until voices end — reported 8 October 2026, cause open
 
 **Symptom.** The owner reports temporary unresponsiveness in the private POLY
