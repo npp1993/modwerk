@@ -1,6 +1,6 @@
 # Poly Machine — development draft
 
-POLY is a FLEX sample machine with **eight shared test voices**. Each voice
+POLY is a FLEX sample machine with **up to eight voices and one POLY assignment per Part**. Each voice
 has its own pitch, playback position and AMP envelope; filters and FX remain
 per track. This replaces the earlier 32-voice experiment after an MKII report
 of temporary unresponsiveness during rapid trig presses with HOLD/REL INF.
@@ -11,7 +11,7 @@ PTCH tunes the whole chord. Panel and MIDI notes add their own semitone offset
 without moving PTCH or overwriting its live lock. The machine follows the
 instrument's audio frames and sequencer; it has no independent clock.
 
-This is an experimental source draft, outside the public catalog. Physical MKII deadlines still require a hardware retest.
+This is an experimental source draft, outside the public catalog. MKII recording and responsiveness still require a hardware retest. The user reports no recorded chromatic trigs on POLY8T02 despite active transport; both POLY8T02 and the revised build record in the native emulator. That hardware failure remains open.
 
 ## Controls and flow
 
@@ -32,7 +32,18 @@ This is an experimental source draft, outside the public catalog. Physical MKII 
 2. POLY opens the FLEX sample pool directly. Load a sample with the stock file browser, then confirm its slot with YES. NO leaves the browser.
 3. Return to SRC, open the trig-mode menu with FUNC+DOWN, select CHROMATIC and confirm with YES. Hold several trig keys; FUNC+LEFT/RIGHT changes octave from -6 to +3.
 4. Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0–127; note 84 plays the tuned sample root.
-5. Set AMP REL to a finite value for notes that end after key-up. All POLY tracks share eight test voices, and one track can use the entire free pool, subject to the pitch-work budget.
+5. Set AMP REL to a finite value for notes that end after key-up. The one assigned POLY machine has up to eight voices, subject to the pitch-work budget.
+
+A second POLY assignment in the same Part is refused before changing the target
+track, its sample or settings. The native modal says **ONE POLY PER PART**;
+press **NO** to dismiss it. Each inactive Part may store its own POLY machine.
+Reduce older Parts containing several POLY markers to one before this test.
+
+Every voice is mixed at a fixed **1/8 gain (-18.06 dB)**, including the single
+voice fast path and attack/release ramps. Eight coherent full-scale voices fit
+within the mix range without a gain change each time another note starts.
+A single note is quieter than the previous build; downstream AMP/FX boosts can
+still use that headroom.
 
 ## Runtime and recording
 
@@ -61,7 +72,7 @@ LOOP OFF manually when testing this build.
 
 ## Compatibility and limitations
 
-- Octatrack OS 1.40C only; physical hardware has not been tested.
+- Octatrack OS 1.40C only; this 0.2.2 candidate has not yet been retested on physical hardware.
 - FLEX only. STATIC was excluded after an exploratory audio test lost chord
   components as independent streaming heads diverged.
 - Panel recording is limited to four notes within an octave; extended MIDI recording is incomplete.

@@ -3,7 +3,7 @@
   "id": "poly-machine",
   "key": "POLY MACHINE",
   "name": "Poly Machine",
-  "version": "0.2.1-experimental",
+  "version": "0.2.2-experimental",
   "category": "machines",
   "source": {
     "repository": "https://github.com/repeat98/octamad",
@@ -12,7 +12,7 @@
   },
   "build": {
     "status": "pending",
-    "reason": "MKII recording/stability test draft. Eight shared voices with pitch-weighted admission, panel chord recording and LOOP OFF default; physical deadlines and broad lifecycle qualification remain pending."
+    "reason": "MKII eight-voice test draft with one POLY assignment per Part, fixed 1/8 voice gain and corrected battery-RAM marker. Hardware recording and responsiveness retest pending."
   },
   "author": {
     "github": "repeat98",
@@ -28,20 +28,23 @@
     "label": "8 shared sample voices",
     "family": "Sample machines",
     "summary": "Polyphonic FLEX playback with eight shared test voices and native panel chord recording.",
-    "overview": "Eight shared voices with independent AMP envelopes. Panel recording supports up to four notes within one octave. Draft outside the catalog.",
+    "overview": "One POLY machine per Part, up to eight independent sample voices, and fixed headroom. Panel recording supports four notes within one octave. Draft outside the catalog.",
     "highlights": [
+      "One POLY per Part; a second assignment opens a modal dismissed with NO.",
       "Eight shared test voices; release tails yield before held notes.",
       "Independent ATK/HOLD/REL, with no per-note DSP or heap allocation.",
       "Ten panel octave positions and dedicated-route MIDI notes 0\u2013127.",
       "PTCH tunes the chord; POLY opens FLEX samples directly.",
-      "LOOP OFF on new assignments; panel chords record into native bank locks."
+      "LOOP OFF on new assignments; panel chords record into native bank locks.",
+      "Fixed -18.06 dB per voice keeps eight full-scale voices within the mix range."
     ],
     "usage": [
       "Select an audio track, open SRC SETUP, choose POLY and press YES.",
+      "Only one POLY can be assigned in each Part. A second assignment is refused without changing the track; press NO to dismiss the modal. Inactive Parts can each hold one POLY.",
       "POLY opens the FLEX sample pool directly. Load a sample with the stock file browser, then confirm its slot with YES. NO leaves the browser.",
       "Return to SRC, open the trig-mode menu with FUNC+DOWN, select CHROMATIC and confirm with YES. Hold several trig keys; FUNC+LEFT/RIGHT changes octave from -6 to +3.",
       "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0\u2013127; note 84 plays the tuned sample root.",
-      "New POLY assignments default to LOOP OFF. HOLD/REL INF sustain until the sample ends or the head is stolen; this test build shares eight voices with a pitch-weighted work limit.",
+      "New assignments default to LOOP OFF. POLY has a maximum of eight voices, subject to the pitch-work limit, with fixed -18.06 dB gain per voice.",
       "Use REC+PLAY in chromatic mode to record up to four held panel notes spanning at most eleven semitones. Recorded duration follows AMP HOLD."
     ]
   },
@@ -49,10 +52,11 @@
     "location": "SRC SETUP > POLY > FLEX samples",
     "steps": [
       "Select an audio track, open SRC SETUP, choose POLY and press YES.",
+      "Only one POLY can be assigned in each Part. A second assignment is refused without changing the track; press NO to dismiss the modal. Inactive Parts can each hold one POLY.",
       "POLY opens the FLEX sample pool directly. Load a sample with the stock file browser, then confirm its slot with YES. NO leaves the browser.",
       "Return to SRC, open the trig-mode menu with FUNC+DOWN, select CHROMATIC and confirm with YES. Hold several trig keys; FUNC+LEFT/RIGHT changes octave from -6 to +3.",
       "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0\u2013127; note 84 plays the tuned sample root.",
-      "New POLY assignments default to LOOP OFF. HOLD/REL INF sustain until the sample ends or the head is stolen; this test build shares eight voices with a pitch-weighted work limit.",
+      "New assignments default to LOOP OFF. POLY has a maximum of eight voices, subject to the pitch-work limit, with fixed -18.06 dB gain per voice.",
       "Use REC+PLAY in chromatic mode to record up to four held panel notes spanning at most eleven semitones. Recorded duration follows AMP HOLD."
     ],
     "screenshots": []
@@ -84,6 +88,7 @@
     ],
     "limitations": [
       "Draft outside the catalog; no downloadable firmware or public build package.",
+      "Only one newly assigned POLY machine per Part; older multi-POLY Parts must be reduced to one before this test. Fixed headroom makes a single note 18.06 dB quieter than 0.2.1.",
       "TSTR is OFF while POLY is active.",
       "FLEX only; STATIC requires independent streaming-cache support.",
       "Panel recording supports up to four notes within an octave; wider/larger chords and recorded key-up duration are unsupported. Extended-range MIDI recording remains incomplete.",
@@ -117,7 +122,7 @@
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "Native guarded build, bounded allocation, 232 chord encodings, native sequencer playback, MKII panel recording/stress, project save/cold reload and MIDI regression. Physical MKII retest pending.",
+    "summary": "Native fresh assignment/REC+PLAY/stress, modal refusal through both menus, battery-RAM-only restart, full-scale eight-voice gain and one-instance MIDI regression. MKII recording remains unconfirmed on hardware.",
     "hardwareStatus": "untested",
     "gates": [
       "verify-source.py",
@@ -125,7 +130,11 @@
       "verify-midi.py",
       "recording-test.c",
       "native-panel-gate.py",
-      "verify-recording.py"
+      "verify-recording.py",
+      "native-assignment-fixture.py",
+      "native-limit-gate.py",
+      "native-warm-gate.py",
+      "verify-gain.py"
     ]
   },
   "license": {

@@ -1,14 +1,24 @@
 {
-  "version": "0.2.1-experimental",
+  "version": "0.2.2-experimental",
   "date": "2026-10-08",
   "publication": "unpublished draft; migrate these notes to the community changelog when this module receives a catalog ID",
   "changes": [
-    "Restore the native panel recorder for up to four-note chords spanning eleven semitones; consume encoded roots before normal PTCH locks, retaining native SAMPLE locks.",
-    "Limit this hardware test to eight shared voices with pitch-weighted admission; steal released tails before held notes and ignore duplicate held-key presses.",
-    "New POLY assignments default to LOOP OFF. Browser confirmations and existing saved LOOP choices retain their value.",
-    "Recorded duration follows AMP HOLD; wider chords, extended MIDI recording, grid root editing and physical MKII deadlines remain unqualified."
+    "Retain the eight-head cap and pitch-work budget; allow one POLY assignment per Part. Refuse a second machine before any settings/sample writes, with a native NO-dismissed modal.",
+    "Apply fixed 1/8 (-18.06 dB) gain in both the single-voice fast path and envelope-weighted mix; leave headroom for eight coherent full-scale voices without voice-count pumping.",
+    "Correct the PL/1 marker copy into battery RAM by staging its reads before writes; normal restart can retain POLY identity.",
+    "Fresh-assignment native REC+PLAY succeeds, but the previous image also succeeds in that emulator path. The reported MKII recording failure remains unresolved on hardware; do not claim this gain/persistence update fixes it. LOOP OFF default remains unchanged."
   ],
   "history": [
+    {
+      "version": "0.2.1-experimental",
+      "date": "2026-10-08",
+      "changes": [
+        "Restore the native panel recorder for up to four-note chords spanning eleven semitones; consume encoded roots before normal PTCH locks, retaining native SAMPLE locks.",
+        "Limit this hardware test to eight shared voices with pitch-weighted admission; steal released tails before held notes and ignore duplicate held-key presses.",
+        "New POLY assignments default to LOOP OFF. Browser confirmations and existing saved LOOP choices retain their value.",
+        "Recorded duration follows AMP HOLD; wider chords, extended MIDI recording, grid root editing and physical MKII deadlines remain unqualified."
+      ]
+    },
     {
       "version": "0.2.0-experimental",
       "date": "2026-10-07",

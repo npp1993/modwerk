@@ -23,7 +23,7 @@
 extern void pm_stock_pool_open(void);
 static uint32_t pool_bank = 0, pool_part = 0, pool_track = 0;
 static uint32_t pool_pending = 0, pool_direct = 0;
-static uint32_t pool_browse = 0;
+static uint32_t pool_browse = 0, limit_pending = 0;
 unsigned pm_selected(void);
 void pm_pool_choice_open(void);
 static unsigned pool_context(void) {
@@ -81,12 +81,21 @@ unsigned pm_assign(volatile uint8_t *part, unsigned t, unsigned enabled) {
     if(pool_direct && pool_context() && part==current_part() && t==pool_track)
         enabled=2; /* Slot YES preserves POLY without scheduling another popup. */
     if(enabled) {
+        /* One POLY per Part (the eight audio tracks), including both SRC
+         * commit paths and sample-browser confirmation. Refusal occurs before
+         * marker, settings or sample writes. Inactive Parts may each own one. */
+        for(unsigned other=0;other<8;++other)
+            if(other!=t && (signed_track(part,other) || part[0x22u+other]==5))
+                { limit_pending=1; return (unsigned)-1; }
         part[sig]='P'; part[sig+1]='L'; part[sig+2]=1;
         no_timestretch(part,mirror,t);
     } else if(signed_track(part,t)) {
         part[sig]=part[sig+1]=part[sig+2]=0;
     }
-    for(unsigned k=0;k<3;++k) mirror[sig+k]=part[sig+k];
+    /* Stage all reads before stores: MOVE.B (a0)+,(a0,delta) otherwise
+     * shifts the battery-RAM marker by one byte on this m68k backend. */
+    uint8_t sig0=part[sig],sig1=part[sig+1],sig2=part[sig+2];
+    mirror[sig]=sig0; mirror[sig+1]=sig1; mirror[sig+2]=sig2;
     if(enabled==1) {
         /* Only a new machine assignment takes the default; sample-browser
          * confirmation and saved Parts retain the musician's LOOP choice. */
@@ -124,6 +133,12 @@ void pm_pool_right(unsigned key,unsigned edge) {
  * No sample, SRC, AMP or FX settings are changed. */
 void pm_ui_tick(void) {
     if(!valid_bank()) return;
+    /* The stock commit finishes installing its menu layer before the next
+     * UI tick. Opening here keeps the acknowledgement above that layer. */
+    if(limit_pending) {
+        limit_pending=0;
+        ((void (*)(const char *,unsigned))0x4005a2b8u)("ONE POLY PER PART",0);
+    }
     unsigned part=U8(PART_IDX)&3u;
     volatile uint8_t *p=current_part();
     volatile uint8_t *mirror=(volatile uint8_t *)(uintptr_t)(SRAM_PART+part*PART_STRIDE);

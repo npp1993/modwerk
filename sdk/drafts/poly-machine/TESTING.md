@@ -5,7 +5,31 @@ Historical 0.2.0 tests on 7 October 2026 used a locally verified Octatrack 1.40C
 ColdFire/DSP port and the separate octemu/QEMU front-panel emulator. Firmware,
 project/card images, raw memory dumps and compiled executables remain private.
 
-## 0.2.1 recording/stability candidate (8 October 2026)
+## 0.2.2 one-machine/headroom candidate (8 October 2026)
+
+The user reports POLY8T02 chromatic REC+PLAY makes sound with a flashing REC
+light and moving playhead, but records no trigs, reboots as FLEX and clips
+when summing voices. These are actual MKII failure observations, not a hardware
+pass. The reboot marker-copy defect is reproduced; the recording failure is
+not reproduced in either image's fresh-assignment native gate.
+
+Current evidence: `evidence/recording.json` (0.2.2); previous image evidence
+is retained as `evidence/recording-0.2.1.json`. The native gate now starts from
+unsigned FLEX and uses actual panel SRC SETUP assignment, checks both marker
+copies and LOOP OFF, then records with REC+PLAY. The modal uses the native
+NO acknowledgement. `native-limit-gate.py` checks both SRC SETUP and the machine
+chooser without altering the target Part. `native-warm-gate.py` restores battery
+RAM before boot, runs the DSP with 1 GiB shared memory, and never requests an
+explicit project load. It requires the private persistence-audit emulator's
+full SRAM mapping and `OT_PERSIST_SRAM_IN`; this is still emulator evidence.
+
+The full-scale DC gate measures both signs, one and eight active heads, and
+uses the exact built image. `verify-gain.py` checks eight heads and the raw
+Q25 sum before downstream DSP: +33,546,240 and -33,554,432 fit the
+[-33,554,432, 33,554,431] range. The single-voice output falls by a factor of
+eight versus 0.2.1. No physical clipping/deadline result is claimed.
+
+## Historical 0.2.1 recording/stability candidate (8 October 2026)
 
 The user reported MKII unresponsiveness while rapidly pressing panel trigs, with
 HOLD/REL INF. This candidate reduces the shared limit to eight active heads
@@ -24,15 +48,15 @@ before held notes. Emulator results do not certify hardware deadlines.
   instruction counts are not physical cycles. Full project loading completes.
 - Native new assignment: LOOP OFF in both Part copies. Setting LOOP ON then
   confirming the sample browser retains ON in both copies.
-- Native MKII panel UART input: REC+PLAY captures notes 72/73/74/75 in step 3
+- Native MKII panel UART input (pre-signed fixture, not fresh assignment): REC+PLAY captures notes 72/73/74/75 in step 3
   (root 72, shape 67). All held owners clear after release/STOP.
 - 128 real panel presses at 10 ms down / 10 ms up, HOLD/REL 127 and LOOP OFF:
   7,075 additional frame interrupts complete; at most eight active heads.
   No illegal/fault/stalled run reply. This is emulated time, not physical timing.
 - Native PROJECT > SAVE > YES writes 6,932 sectors to the disposable card with
-  zero write errors. A fresh emulator process fully loads that saved card,
+  zero write errors. A fresh emulator process explicitly loads that saved card,
   runs 1,300 blocks and reproduces all four pitches at offsets -12/-11/-10/-9.
-  Stored Part PTCH stays 64 and track tuning stays at unity. No sidecar used.
+  This is a project-load test, not a battery-only reboot test. Stored Part PTCH stays 64 and track tuning stays at unity. No sidecar used.
 - Fresh native MIDI regression completes 2,400 blocks: notes 0/127/71/72/84/96/
   97/126, velocity-zero off, finite envelope reclamation, three-note tuning
   and PTCH-lock preservation all pass.

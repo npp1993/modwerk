@@ -1047,7 +1047,9 @@ polyphony_call:
         add.l   %d7,%d7
         subq.l  #1,%d7
 .mx_copy:
-        move.l  (%a0)+,(%a1)+
+        move.l  (%a0)+,%d0
+        asr.l   #3,%d0                    | fixed 1/8 gain, even for one voice
+        move.l  %d0,(%a1)+
         subq.l  #1,%d7
         bpl.s   .mx_copy
         rts
@@ -1087,7 +1089,8 @@ polyphony_call:
         subq.l  #1,%d7
 .mx_unity:
         move.l  (%a0)+,%d4
-        asr.l   #6,%d4                    | Q25; 32 heads sum without overflow
+        asr.l   #8,%d4
+        asr.l   #1,%d4                    | Q25 with 1/8 headroom for eight voices
         add.l   %d4,(%a1)+
         subq.l  #1,%d7
         bpl.s   .mx_unity
@@ -1112,12 +1115,12 @@ polyphony_call:
         move.l  (%a0)+,%d2                | left: sample (PCM << 16) >> 14 * gain
         asr.l   %d4,%d2
         muls.l  %d6,%d2
-        asr.l   #5,%d2                    | Q25
+        asr.l   #8,%d2                    | Q25 with the same fixed 1/8 gain
         add.l   %d2,(%a1)+
         move.l  (%a0)+,%d2                | right
         asr.l   %d4,%d2
         muls.l  %d6,%d2
-        asr.l   #5,%d2
+        asr.l   #8,%d2
         add.l   %d2,(%a1)+
         add.l   %d1,%d0
         subq.l  #1,%d7

@@ -43,7 +43,7 @@ def mutate(data):
    data[b+0x1e3+t*30+10]=0
    data[b+0x33+t*30+6]=64
    data[b+0x33+t*30+9]=127
-   data[b+0x45+t*30:b+0x48+t*30]=b'PL\x01'
+   data[b+0x45+t*30:b+0x48+t*30]=b'PL\x01' if t==0 else bytes(3)
    # LFO page file +0x123; AMP follows at +0x129, not +0x12c.
    data[b+0x129+t*24:b+0x12f+t*24]=bytes([0,127,20,64,64,0])
  for t in range(8):

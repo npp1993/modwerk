@@ -21,6 +21,31 @@ with HOLD/REL INF. Emulator progress does not certify physical deadlines.
 and AMP settings; confirm UI response during notes and save/reload. The
 reported hang remains unconfirmed as fixed until that hardware result exists.
 
+## POLY8T02 loses identity on reboot, records no hardware trigs and clips chords — reported 8 October 2026
+
+**Observed on MKII.** Chromatic keys sound during REC+PLAY with REC flashing
+and the playhead advancing, but the owner reports no recorded trigs. Reboot
+shows FLEX. More than one sounding voice clips. No physical success is claimed.
+
+**Reboot cause measured.** The three-byte PL/1 marker is valid in the live
+Part but becomes `00 50 4c` in battery RAM. The compiler combines the copy loop
+into a source-postincrement / indexed-destination byte move, shifting stores.
+0.2.2 stages all three reads before stores; both copies match after actual
+panel assignment. Battery-only emulator restart is separate from explicit
+project-load testing. The persistence-audit source patch on main records the
+same defect. Physical reboot remains to be retested on this candidate.
+
+**Gain candidate.** Fixed 1/8 gain in the single-head fast path and both unity
+and ramped accumulation paths leaves headroom for eight coherent full-scale
+voices. Native positive/negative DC probes fit the Q25 mix range. One POLY
+assignment per Part is admitted; the second is refused before settings/sample
+writes and opens a native modal dismissed with NO.
+
+**Recording cause open.** Both POLY8T02 and 0.2.2 record four panel notes from
+fresh native assignment with REC+PLAY. The previous project-reload fixture did
+not prove hardware recording or ordinary reboot. Keep the MKII recording
+failure open; do not attribute a recording fix to the gain/marker changes.
+
 ## Pops and clicks from T1 with BusDelay when T1 plays its own trigs 🔴 reported (29 Sep 2026), cause open
 
 **Symptom.** Reported on Discord by Arcdmd_, 29 Sep 2026: sounds programmed

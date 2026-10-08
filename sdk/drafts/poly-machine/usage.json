@@ -1,8 +1,9 @@
 [
   "Select an audio track, open SRC SETUP, choose POLY and press YES.",
+  "Only one POLY can be assigned in each Part. A second assignment is refused without changing the track; press NO to dismiss the modal. Inactive Parts can each hold one POLY.",
   "POLY opens the FLEX sample pool directly. Load a sample with the stock file browser, then confirm its slot with YES. NO leaves the browser.",
   "Return to SRC, open the trig-mode menu with FUNC+DOWN, select CHROMATIC and confirm with YES. Hold several trig keys; FUNC+LEFT/RIGHT changes octave from -6 to +3.",
   "Turn PTCH to transpose the sounding chord. A dedicated POLY MIDI channel accepts notes 0\u2013127; note 84 plays the tuned sample root.",
-  "New POLY assignments default to LOOP OFF. HOLD/REL INF sustain until the sample ends or the head is stolen; this test build shares eight voices with a pitch-weighted work limit.",
+  "New assignments default to LOOP OFF. POLY has a maximum of eight voices, subject to the pitch-work limit, with fixed -18.06 dB gain per voice.",
   "Use REC+PLAY in chromatic mode to record up to four held panel notes spanning at most eleven semitones. Recorded duration follows AMP HOLD."
 ]

@@ -41,12 +41,18 @@ pm_main_commit:
         moveq #1,%d2
 1:      move.l %d2,8(%sp)
         jsr pm_assign
+        tst.l %d0
+        bmi.s .main_refuse
         cmpi.l #5,%d4
         bne.s 2f
         move.l %d0,%d4
 2:      movem.l 12(%sp),%d0-%d2/%a0-%a1
         lea 32(%sp),%sp
         jmp pm_main_replay
+.main_refuse:
+        movem.l 12(%sp),%d0-%d2/%a0-%a1
+        lea 32(%sp),%sp
+        jmp 0x4007989c
 pm_src_commit:
         pea 0x4005a61c
         bra.s pm_src_common
@@ -68,12 +74,20 @@ pm_src_common:
 1:      move.l %d3,8(%sp)
         move.l %d1,%d3
         jsr pm_assign
+        tst.l %d0
+        bmi.s .src_refuse
         cmpi.l #5,%d3
         beq.s 2f
         move.l %d3,%d0
 2:      move.l %d0,%d1
         movem.l 12(%sp),%d0/%d2-%d3/%a0-%a1
         lea 32(%sp),%sp
+        rts
+.src_refuse:
+        movem.l 12(%sp),%d0/%d2-%d3/%a0-%a1
+        lea 32(%sp),%sp
+        mvz.b (%a0),%d1
+        move.l %d1,0x460d5c30
         rts
 pm_setup_open:
         move.b (%a0),%d3

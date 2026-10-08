@@ -248,148 +248,179 @@ pm_assign:
 	mov3q.l #7,%d0
 	cmp.l 44(%sp),%d0
 	jcs .L53
-	move.l 1187521622,%d1
-	mvz.w #6322,%d3
 	move.l 40(%sp),%d0
-	sub.l %d1,%d0
-	move.l %d0,%d2
-	add.l #-585088,%d2
-	move.l %d1,24(%sp)
-	move.l %d2,20(%sp)
+	mvz.w #6322,%d3
+	sub.l 1187521622,%d0
+	move.l %d0,%d1
+	add.l #-585088,%d1
+	move.l %d1,20(%sp)
+	move.l %d1,%d2
 	remu.l %d3,%d1:%d2
 	tst.l %d1
 	jne .L53
 	move.l 20(%sp),%d2
 	cmp.l #25287,%d2
 	jhi .L53
+	move.l 44(%sp),%d2
+	moveq #30,%d3
 	move.l %d0,%a0
-	moveq #30,%d2
-	move.l 44(%sp),%d0
 	add.l #268525902,%a0
 	move.l %a0,32(%sp)
-	muls.l %d2,%d0
-	move.l %d0,%a0
+	muls.l %d3,%d2
+	move.l %d2,24(%sp)
 	tst.l pool_direct
-	jne .L70
-.L54:
+	jne .L74
+.L56:
 	tst.l 48(%sp)
-	jeq .L71
-	moveq #80,%d0
-	move.l 40(%sp),%a1
-	moveq #1,%d2
-	clr.b %d3
-	move.l 40(%sp),%a2
-	move.b %d0,60(%a1,%a0.l)
-	moveq #76,%d0
-	move.b %d0,61(%a1,%a0.l)
-	move.b %d2,62(%a1,%a0.l)
-	move.l 32(%sp),%a1
-	move.l %a0,%d0
-	add.l #478,%d0
-	move.b %d3,(%a1,%d0.l)
-	move.b %d3,(%a2,%d0.l)
-	move.b %d3,6(%a1,%d0.l)
-	move.b %d3,6(%a2,%d0.l)
-.L57:
-	move.l 40(%sp),%a2
-	move.l #268525902,%d0
-	sub.l 24(%sp),%d0
-	lea 60(%a2,%a0.l),%a1
-	move.l %d0,28(%sp)
+	jeq .L75
+	move.l 40(%sp),%a0
+	lea (34,%a0),%a0
+	move.l %a0,28(%sp)
+.L61:
+	cmp.l 44(%sp),%d1
+	jeq .L59
+	move.l %d1,-(%sp)
+	move.l 44(%sp),-(%sp)
+	move.l %d1,22(%sp)
+	jsr signed_track
+	addq.l #8,%sp
+	move.l 14(%sp),%d1
+	tst.l %d0
+	jne .L60
+	move.l 28(%sp),%a1
+	mvz.b (%a1,%d1.l),%d0
+	subq.l #5,%d0
+	tst.l %d0
+	jeq .L60
 .L59:
-	move.l 28(%sp),%d0
 	addq.l #1,%d1
-	move.b (%a1)+,(%a1,%d0.l)
-	mov3q.l #3,%d0
-	cmp.l %d1,%d0
-	jne .L59
-	mov3q.l #1,%d1
-	cmp.l 48(%sp),%d1
-	jne .L53
-	mvz.w #6322,%d2
-	move.l 20(%sp),%d0
-	move.l #1187521622,%a2
-	clr.b %d3
-	move.l 40(%sp),%a1
-	divu.l %d2,%d0
+	moveq #8,%d3
+	cmp.l %d1,%d3
+	jne .L61
+	move.l 24(%sp),%a1
+	move.l 40(%sp),%a0
+	move.l 40(%sp),%a2
+	move.l 24(%sp),%d2
+	move.l %d2,%d0
+	lea 60(%a0,%a1.l),%a0
+	lea 61(%a2,%a1.l),%a1
+	add.l #478,%d0
 	move.l %a0,%d1
-	add.l #480,%d1
+	lea 62(%a2,%d2.l),%a0
+	clr.b %d2
+	move.l %d1,%a2
+	move.b #80,(%a2)
+	move.l 32(%sp),%a2
+	move.b #76,(%a1)
+	move.b #1,(%a0)
+	move.b %d2,(%a2,%d0.l)
+	move.l 40(%sp),%a2
+	move.b %d2,(%a2,%d0.l)
+	move.l 32(%sp),%a2
+	move.l 24(%sp),%d0
+	add.l #484,%d0
+	move.b %d2,(%a2,%d0.l)
+	move.l 40(%sp),%a2
+	move.b %d2,(%a2,%d0.l)
+	move.l %d1,%a2
+	move.b (%a2),28(%sp)
+	move.b (%a1),%d1
+	move.b (%a0),%d0
 	move.l 32(%sp),%a0
-	move.b %d3,(%a0,%d1.l)
-	move.b %d3,(%a1,%d1.l)
-	move.l (%a2),pool_bank
-	move.l %d0,pool_part
-	move.l 44(%sp),%d0
+	move.l 24(%sp),%a1
+	move.b 28(%sp),%d2
+	move.b %d2,60(%a0,%a1.l)
+	move.b %d1,61(%a0,%a1.l)
+	move.b %d0,62(%a0,%a1.l)
+	mov3q.l #1,%d0
+	cmp.l 48(%sp),%d0
+	jne .L53
+	mvz.w #6322,%d3
+	move.l 20(%sp),%d1
+	clr.b %d2
+	move.l 24(%sp),%a0
+	divu.l %d3,%d1
+	move.l 32(%sp),%a1
+	move.l 40(%sp),%a2
+	lea (480,%a0),%a0
+	move.b %d2,(%a1,%a0.l)
+	move.b %d2,(%a2,%a0.l)
+	move.l #1187521622,%a0
+	mov3q.l #1,%d0
+	movem.l (%sp),#1036
+	move.l (%a0),pool_bank
+	move.l %d1,pool_part
+	move.l 44(%sp),%d1
 	mov3q.l #1,pool_pending
-	move.l %d0,pool_track
+	move.l %d1,pool_track
+	lea (36,%sp),%sp
+	rts
+.L75:
+	move.l 44(%sp),-(%sp)
+	move.l 44(%sp),-(%sp)
+	jsr signed_track
+	move.l 32(%sp),%a2
+	move.l 48(%sp),%a1
+	move.l 32(%sp),%d2
+	lea 62(%a1,%a2.l),%a0
+	lea 61(%a1,%a2.l),%a1
+	move.l 48(%sp),%a2
+	addq.l #8,%sp
+	lea 60(%a2,%d2.l),%a2
+	move.l %a2,%d1
+	tst.l %d0
+	jeq .L63
+	clr.b (%a0)
+	clr.b (%a1)
+	clr.b (%a2)
+.L63:
+	move.l %d1,%a2
+	move.b (%a2),19(%sp)
+	move.b (%a1),%d1
+	move.b (%a0),%d0
+	move.l 32(%sp),%a0
+	move.l 24(%sp),%a1
+	move.b 19(%sp),%d2
+	move.b %d2,60(%a0,%a1.l)
+	move.b %d1,61(%a0,%a1.l)
+	move.b %d0,62(%a0,%a1.l)
 .L53:
 	movem.l (%sp),#1036
 	mov3q.l #1,%d0
 	lea (36,%sp),%sp
 	rts
-.L70:
-	move.l %d1,12(%sp)
-	move.l %d0,16(%sp)
+.L74:
+	move.l %d1,14(%sp)
 	jsr pool_context
-	move.l 12(%sp),%d1
-	move.l 16(%sp),%a0
+	move.l 14(%sp),%d1
 	tst.l %d0
-	jeq .L54
+	jeq .L56
 	move.l 1187521622,%d0
 	add.l #585088,%d0
-	move.b 269161679,%d3
-	move.w %d3,%a1
-	mov3q.l #3,%d3
-	move.l %a1,%d2
-	and.l %d3,%d2
-	mvz.w #6322,%d3
-	muls.l %d3,%d2
-	add.l %d2,%d0
+	move.b 269161679,%d2
+	move.w %d2,%a0
+	mov3q.l #3,%d2
+	move.l %a0,%d3
+	and.l %d2,%d3
+	mvz.w #6322,%d2
+	muls.l %d2,%d3
+	add.l %d3,%d0
 	cmp.l 40(%sp),%d0
-	jne .L54
-	move.l 44(%sp),%a1
-	cmp.l pool_track.l,%a1
-	jne .L54
-	moveq #80,%d0
-	move.l 40(%sp),%a1
-	moveq #1,%d2
-	clr.b %d3
-	move.l 40(%sp),%a2
+	jne .L56
+	move.l 44(%sp),%d3
+	cmp.l pool_track.l,%d3
+	jne .L56
+	move.l 40(%sp),%a0
 	mov3q.l #2,48(%sp)
-	move.b %d0,60(%a1,%a0.l)
-	moveq #76,%d0
-	move.b %d0,61(%a1,%a0.l)
-	move.b %d2,62(%a1,%a0.l)
-	move.l 32(%sp),%a1
-	move.l %a0,%d0
-	add.l #478,%d0
-	move.b %d3,(%a1,%d0.l)
-	move.b %d3,(%a2,%d0.l)
-	move.b %d3,6(%a1,%d0.l)
-	move.b %d3,6(%a2,%d0.l)
-	jra .L57
-.L71:
-	move.l 44(%sp),-(%sp)
-	move.l 44(%sp),-(%sp)
-	move.l %d1,20(%sp)
-	move.l %a0,24(%sp)
-	jsr signed_track
-	addq.l #8,%sp
-	move.l 12(%sp),%d1
-	move.l 16(%sp),%a0
-	tst.l %d0
-	jeq .L57
-	clr.b %d0
-	move.l 40(%sp),%a1
-	move.l 40(%sp),%a2
-	move.b %d0,62(%a1,%a0.l)
-	move.b %d0,61(%a1,%a0.l)
-	move.b %d0,60(%a1,%a0.l)
-	move.l #268525902,%d0
-	sub.l 24(%sp),%d0
-	lea 60(%a2,%a0.l),%a1
-	move.l %d0,28(%sp)
-	jra .L59
+	lea (34,%a0),%a0
+	move.l %a0,28(%sp)
+	jra .L61
+.L60:
+	movem.l (%sp),#1036
+	mov3q.l #-1,%d0
+	mov3q.l #1,limit_pending
+	lea (36,%sp),%sp
+	rts
 	.size	pm_assign, .-pm_assign
 	.align	2
 	.globl	pm_pool_choice_draw
@@ -408,15 +439,15 @@ pm_pool_choice_open:
 	add.l #-1073741824,%d0
 	move.l %d2,-(%sp)
 	cmp.l #133169151,%d0
-	jhi .L74
+	jhi .L78
 	tst.b -2147483627.l
-	jeq .L81
-.L74:
+	jeq .L85
+.L78:
 	move.l (%sp)+,%d2
 	move.l (%sp)+,%a2
 	addq.l #4,%sp
 	rts
-.L81:
+.L85:
 	move.l #269161676,%a1
 	mov3q.l #3,%d2
 	move.b (%a1),%d1
@@ -435,11 +466,11 @@ pm_pool_choice_open:
 	addq.l #8,%sp
 	move.l 8(%sp),%a1
 	tst.l %d0
-	jeq .L74
+	jeq .L78
 	tst.l 1175346736
-	jne .L74
+	jne .L78
 	tst.l 1175351520
-	jne .L74
+	jne .L78
 	move.l #1187521622,%a0
 	mov3q.l #3,%d1
 	move.l (%a0),pool_bank
@@ -468,12 +499,12 @@ pm_pool_left:
 	move.l 4(%sp),%d0
 	move.l 8(%sp),%d1
 	tst.l 1175351520
-	jeq .L82
+	jeq .L86
 	clr.l pool_direct
 	move.l %d1,8(%sp)
 	move.l %d0,4(%sp)
 	jmp 1074235708
-.L82:
+.L86:
 	rts
 	.size	pm_pool_left, .-pm_pool_left
 	.align	2
@@ -484,29 +515,33 @@ pm_pool_right:
 	move.l 12(%sp),%d1
 	move.l 16(%sp),%a0
 	tst.l 1175351520
-	jeq .L87
+	jeq .L91
 	tst.l 1175352218
-	jne .L87
+	jne .L91
 	mov3q.l #5,%d0
 	cmp.l 1175352206.l,%d0
-	jeq .L96
-.L87:
+	jeq .L100
+.L91:
 	move.l %a0,16(%sp)
 	move.l %d1,12(%sp)
 	addq.l #8,%sp
 	jmp 1074237596
-.L96:
+.L100:
 	move.l %d1,4(%sp)
 	move.l %a0,(%sp)
 	jsr pm_selected
 	move.l 4(%sp),%d1
 	move.l (%sp),%a0
 	tst.l %d0
-	jeq .L87
+	jeq .L91
 	jsr 1074235876
 	addq.l #8,%sp
 	jra pm_pool_choice_open
 	.size	pm_pool_right, .-pm_pool_right
+	.section	.rodata.str1.1,"aMS",@progbits,1
+.LC0:
+	.string	"ONE POLY PER PART"
+	.text
 	.align	2
 	.globl	pm_ui_tick
 	.type	pm_ui_tick, @function
@@ -516,13 +551,21 @@ pm_ui_tick:
 	add.l #-1073741824,%d0
 	movem.l #7196,(%sp)
 	cmp.l #133169151,%d0
-	jhi .L97
+	jhi .L101
+	tst.l limit_pending
+	jeq .L103
+	clr.l -(%sp)
+	pea .LC0
+	clr.l limit_pending
+	jsr 1074111160
+	addq.l #8,%sp
+.L103:
+	mov3q.l #3,%d1
+	mvz.w #6322,%d4
 	move.b 269161679,%d2
 	move.l 1187521622,%a2
-	mov3q.l #3,%d1
-	move.b 269161679,%d0
-	mvz.w #6322,%d4
 	add.l #585088,%a2
+	move.b 269161679,%d0
 	clr.l %d3
 	and.l %d2,%d1
 	mov3q.l #3,%d2
@@ -542,43 +585,43 @@ pm_ui_tick:
 	add.l #42,%d2
 	lea (34,%a2),%a0
 	lea (60,%a2),%a1
-.L100:
+.L105:
 	mvz.b (%a0),%d1
 	subq.l #5,%d1
 	tst.l %d1
-	jeq .L120
+	jeq .L125
 	addq.l #1,%a0
 	add.l #30,%d0
 	lea (30,%a1),%a1
 	cmp.l %a0,%d2
-	jne .L100
-.L123:
+	jne .L105
+.L128:
 	tst.l %d3
-	jne .L121
+	jne .L126
 	tst.l pool_direct
-	jeq .L102
-.L126:
+	jeq .L107
+.L131:
 	tst.l 1175351520
-	jne .L103
+	jne .L108
 	clr.l pool_direct
-.L102:
+.L107:
 	tst.l pool_pending
-	jne .L122
-.L105:
+	jne .L127
+.L110:
 	mvz.b 269161676,%d0
 	mov3q.l #7,%d4
 	cmp.l %d0,%d4
-	jcs .L108
-.L125:
+	jcs .L113
+.L130:
 	tst.b 34(%a2,%d0.l)
-	jne .L108
+	jne .L113
 	move.l #1074606108,%d0
 	move.l %d0,1074618188
-.L97:
+.L101:
 	movem.l (%sp),#7196
 	lea (32,%sp),%sp
 	rts
-.L120:
+.L125:
 	move.l %d0,%a3
 	move.l %a1,%a4
 	move.b #80,(%a3)+
@@ -602,27 +645,27 @@ pm_ui_tick:
 	move.b %d1,424(%a3)
 	move.b %d1,394(%a1)
 	cmp.l %a0,%d2
-	jne .L100
-	jra .L123
-.L108:
+	jne .L105
+	jra .L128
+.L113:
 	move.l #1074606510,%d0
 	move.l %d0,1074618188
-	jra .L97
-.L122:
+	jra .L101
+.L127:
 	jsr pool_context
 	tst.l %d0
-	jeq .L124
+	jeq .L129
 	tst.l 1175346736
-	jne .L105
+	jne .L110
 	tst.l 1175351520
-	jne .L105
+	jne .L110
 	jsr pm_pool_choice_open
 	mvz.b 269161676,%d0
 	mov3q.l #7,%d4
 	cmp.l %d0,%d4
-	jcs .L108
-	jra .L125
-.L121:
+	jcs .L113
+	jra .L130
+.L126:
 	move.l 28(%sp),%d2
 	mov3q.l #1,%d0
 	move.l 1187521622,%a0
@@ -640,21 +683,21 @@ pm_ui_tick:
 	mov3q.l #1,269452696
 	jsr 1073905152
 	tst.l pool_direct
-	jeq .L102
-	jra .L126
-.L124:
+	jeq .L107
+	jra .L131
+.L129:
 	clr.l pool_pending
 	mvz.b 269161676,%d0
 	mov3q.l #7,%d4
 	cmp.l %d0,%d4
-	jcs .L108
-	jra .L125
-.L103:
+	jcs .L113
+	jra .L130
+.L108:
 	jsr pool_context
 	tst.l %d0
-	jne .L102
+	jne .L107
 	clr.l pool_direct
-	jra .L102
+	jra .L107
 	.size	pm_ui_tick, .-pm_ui_tick
 	.align	2
 	.globl	pm_is_poly_track
@@ -662,15 +705,15 @@ pm_ui_tick:
 pm_is_poly_track:
 	mov3q.l #7,%d0
 	cmp.l 4(%sp),%d0
-	jcs .L130
+	jcs .L135
 	move.l 1187521622,%d0
 	add.l #-1073741824,%d0
 	cmp.l #133169151,%d0
-	jls .L134
-.L130:
+	jls .L139
+.L135:
 	clr.l %d0
 	rts
-.L134:
+.L139:
 	move.l 1187521622,%a0
 	mov3q.l #3,%d1
 	move.b 269161679,%d0
@@ -683,7 +726,7 @@ pm_is_poly_track:
 	jsr signed_track
 	addq.l #8,%sp
 	tst.l %d0
-	jne .L131
+	jne .L136
 	move.l 1187521622,%a0
 	mov3q.l #3,%d1
 	move.b 269161679,%d0
@@ -701,7 +744,7 @@ pm_is_poly_track:
 	mvs.b %d0,%d0
 	neg.l %d0
 	rts
-.L131:
+.L136:
 	mov3q.l #1,%d0
 	rts
 	.size	pm_is_poly_track, .-pm_is_poly_track
@@ -721,27 +764,27 @@ admit:
 	clr.l %d4
 	lea poly_extra_voices,%a3
 	lea pm_is_poly_track,%a5
-.L152:
+.L157:
 	mov3q.l #7,%d0
 	cmp.l %d2,%d0
-	jcc .L172
-.L136:
+	jcc .L177
+.L141:
 	mvz.w #168,%d0
 	move.l %d2,%d6
 	subq.l #8,%d6
 	move.b (%a6,%d6.l),%d3
 	muls.l %d6,%d0
 	tst.b (%a3,%d0.l)
-	jeq .L142
+	jeq .L147
 	mvz.b %d3,%d3
 	mov3q.l #7,%d0
 	cmp.l %d3,%d0
-	jcs .L145
+	jcs .L150
 	move.l %d3,-(%sp)
 	jsr (%a5)
 	addq.l #4,%sp
 	tst.l %d0
-	jeq .L145
+	jeq .L150
 	lea poly_extra_shift,%a0
 	mvs.b (%a0,%d6.l),%d6
 	lea poly_env_stage,%a1
@@ -756,14 +799,14 @@ admit:
 	mvs.b %d0,%d0
 	neg.l %d0
 	tst.l %d4
-	jeq .L161
-.L174:
+	jeq .L166
+.L179:
 	cmp.l %d0,%d5
-	jcs .L159
-	jeq .L173
+	jcs .L164
+	jeq .L178
 	move.l 44(%sp),%a0
 	move.l %d5,%d0
-.L146:
+.L151:
 	lea poly_track_inc,%a1
 	moveq #26,%d5
 	move.l (%a1,%d3.l*4),%d1
@@ -777,46 +820,46 @@ admit:
 	mvs.b %d1,%d1
 	sub.l %d1,%d5
 	cmp.l %d3,%d1
-	jne .L147
+	jne .L152
 	mov3q.l #1,%d5
-.L147:
+.L152:
 	tst.l %d6
-	jle .L148
+	jle .L153
 	add.l #11,%d6
 	moveq #59,%d1
 	cmp.l %d6,%d1
-	jcs .L162
+	jcs .L167
 	moveq #12,%d3
 	divu.l %d3,%d6
 	lsl.l %d6,%d5
-.L148:
+.L153:
 	moveq #32,%d1
 	cmp.l %d5,%d1
-	jcs .L162
+	jcs .L167
 	lea 1(%a4,%d5.l),%a4
 	move.l %a0,44(%sp)
 	move.l %d0,%d5
-.L142:
+.L147:
 	addq.l #1,%d2
 	moveq #39,%d3
 	cmp.l %d2,%d3
-	jeq .L151
-.L169:
+	jeq .L156
+.L174:
 	add.l #168,%d7
 	addq.l #4,%a2
-.L175:
+.L180:
 	mov3q.l #7,%d0
 	cmp.l %d2,%d0
-	jcs .L136
-.L172:
+	jcs .L141
+.L177:
 	move.l %d7,%a0
 	tst.b (%a0)
-	jeq .L139
+	jeq .L144
 	move.l %d2,-(%sp)
 	jsr (%a5)
 	addq.l #4,%sp
 	tst.l %d0
-	jeq .L139
+	jeq .L144
 	lea poly_primary_shift,%a0
 	mvs.b (%a0,%d2.l),%d6
 	lea poly_env_stage,%a1
@@ -833,32 +876,32 @@ admit:
 	mvs.b %d0,%d0
 	neg.l %d0
 	tst.l %d4
-	jne .L174
-.L161:
+	jne .L179
+.L166:
 	move.l %d2,48(%sp)
-	jra .L146
-.L162:
+	jra .L151
+.L167:
 	moveq #32,%d5
 	lea 1(%a4,%d5.l),%a4
 	move.l %a0,44(%sp)
 	move.l %d0,%d5
-	jra .L142
-.L151:
+	jra .L147
+.L156:
 	tst.l %d4
-	jeq .L135
+	jeq .L140
 	add.l 56(%sp),%d4
 	moveq #8,%d5
 	cmp.l %d4,%d5
-	jcs .L154
+	jcs .L159
 	move.l 60(%sp),%d0
 	moveq #40,%d1
 	add.l %a4,%d0
 	cmp.l %d0,%d1
-	jcc .L135
-.L154:
+	jcc .L140
+.L159:
 	mov3q.l #7,%d3
 	cmp.l 48(%sp),%d3
-	jcs .L155
+	jcs .L160
 	move.w 50(%sp),%d0
 	st %d5
 	move.l 48(%sp),%a1
@@ -878,35 +921,35 @@ admit:
 	lea poly_primary_note,%a0
 	move.b %d5,(%a0,%a1.l)
 	clr.l %d5
-	jra .L152
-.L135:
+	jra .L157
+.L140:
 	movem.l (%sp),#31996
 	lea (52,%sp),%sp
 	rts
-.L145:
+.L150:
 	move.l %d2,-(%sp)
 	moveq #39,%d3
 	jsr (retire.part.0)
 	addq.l #4,%sp
 	addq.l #1,%d2
 	cmp.l %d2,%d3
-	jne .L169
-	jra .L151
-.L139:
+	jne .L174
+	jra .L156
+.L144:
 	addq.l #1,%d2
 	add.l #168,%d7
 	addq.l #4,%a2
-	jra .L175
-.L159:
+	jra .L180
+.L164:
 	move.l %d2,48(%sp)
 	mov3q.l #1,%d0
-	jra .L146
-.L173:
+	jra .L151
+.L178:
 	cmp.l 44(%sp),%a0
-	jhi .L161
+	jhi .L166
 	move.l 44(%sp),%a0
-	jra .L146
-.L155:
+	jra .L151
+.L160:
 	move.l 48(%sp),-(%sp)
 	jsr (retire.part.0)
 	addq.l #4,%sp
@@ -920,7 +963,7 @@ admit:
 	clr.l %d4
 	lea poly_extra_voices,%a3
 	lea pm_is_poly_track,%a5
-	jra .L152
+	jra .L157
 	.size	admit, .-admit
 	.align	2
 	.globl	pm_clear_extensions
@@ -931,23 +974,23 @@ pm_clear_extensions:
 	movem.l #1036,(%sp)
 	move.l 16(%sp),%d2
 	cmp.l %d2,%d0
-	jcs .L176
+	jcs .L181
 	lea dirty,%a0
 	tst.b (%a0,%d2.l)
-	jeq .L176
+	jeq .L181
 	clr.l %d0
 	lea poly_extra_track,%a0
 	lea poly_extra_voices,%a2
 	lea poly_extra_note,%a1
-.L179:
+.L184:
 	mvz.b (%a0,%d0.l),%d1
 	cmp.l %d1,%d2
-	jeq .L185
+	jeq .L190
 	addq.l #1,%d0
 	moveq #31,%d3
 	cmp.l %d0,%d3
-	jne .L179
-.L186:
+	jne .L184
+.L191:
 	st %d1
 	move.l %d2,%d0
 	sub.l %a0,%a0
@@ -958,13 +1001,13 @@ pm_clear_extensions:
 	move.b %d1,(%a1,%d2.l)
 	move.l %d0,%a1
 	add.l #poly_held,%a1
-.L180:
+.L185:
 	st %d3
 	moveq #64,%d0
 	move.b %d3,(%a1,%a0.l)
 	addq.l #1,%a0
 	cmp.l %a0,%d0
-	jne .L180
+	jne .L185
 	clr.b %d1
 	lea poly_chord_count,%a0
 	move.b %d1,(%a0,%d2.l)
@@ -976,11 +1019,11 @@ pm_clear_extensions:
 	move.b %d1,(%a0,%d2.l)
 	lea dirty,%a0
 	move.b %d1,(%a0,%d2.l)
-.L176:
+.L181:
 	movem.l (%sp),#1036
 	lea (12,%sp),%sp
 	rts
-.L185:
+.L190:
 	mvz.w #168,%d1
 	clr.b %d3
 	muls.l %d0,%d1
@@ -991,8 +1034,8 @@ pm_clear_extensions:
 	move.b %d1,(%a1,%d0.l)
 	addq.l #1,%d0
 	cmp.l %d0,%d3
-	jne .L179
-	jra .L186
+	jne .L184
+	jra .L191
 	.size	pm_clear_extensions, .-pm_clear_extensions
 	.align	2
 	.globl	pm_enforce_budget
@@ -1001,19 +1044,19 @@ pm_enforce_budget:
 	move.l 4(%sp),%d0
 	mov3q.l #7,%d1
 	cmp.l %d0,%d1
-	jcs .L187
+	jcs .L192
 	lea poly_track_inc,%a1
 	move.l (%a1,%d0.l*4),%d1
 	lea budget_tuning,%a0
 	cmp.l (%a0,%d0.l*4),%d1
-	jeq .L187
+	jeq .L192
 	lea (%a1,%d0.l*4),%a1
 	move.l (%a1),(%a0,%d0.l*4)
 	clr.l -(%sp)
 	clr.l -(%sp)
 	jsr admit
 	addq.l #8,%sp
-.L187:
+.L192:
 	rts
 	.size	pm_enforce_budget, .-pm_enforce_budget
 	.align	2
@@ -1025,7 +1068,7 @@ pm_reserve:
 	movem.l #3196,(%sp)
 	move.l 40(%sp),%d3
 	cmp.l %d3,%d0
-	jcs .L202
+	jcs .L207
 	lea poly_pending_shift,%a0
 	moveq #26,%d5
 	move.b (%a0,%d3.l),%d2
@@ -1043,24 +1086,24 @@ pm_reserve:
 	mvs.b %d0,%d0
 	sub.l %d0,%d1
 	cmp.l %a0,%d0
-	jeq .L212
-.L193:
+	jeq .L217
+.L198:
 	tst.b %d2
-	jle .L194
+	jle .L199
 	mvs.b %d2,%d2
 	moveq #59,%d6
 	add.l #11,%d2
 	cmp.l %d2,%d6
-	jcs .L203
+	jcs .L208
 	moveq #12,%d5
 	divu.l %d5,%d2
 	lsl.l %d2,%d1
-.L194:
+.L199:
 	moveq #32,%d6
 	cmp.l %d1,%d6
-	jcs .L213
+	jcs .L218
 	addq.l #1,%d1
-.L195:
+.L200:
 	move.l %d1,-(%sp)
 	mov3q.l #1,-(%sp)
 	jsr admit
@@ -1070,39 +1113,39 @@ pm_reserve:
 	move.l %d0,%a0
 	add.l #-2147464744,%a0
 	tst.b (%a0)
-	jeq .L197
-.L215:
+	jeq .L202
+.L220:
 	clr.l %d0
 	lea poly_extra_voices,%a0
-.L201:
+.L206:
 	mvz.w #168,%d2
 	move.l %d0,%d1
 	muls.l %d0,%d2
 	addq.l #1,%d0
 	tst.b (%a0,%d2.l)
-	jeq .L214
+	jeq .L219
 	moveq #31,%d1
 	cmp.l %d0,%d1
-	jne .L201
-.L197:
+	jne .L206
+.L202:
 	moveq #1,%d2
 	lea primary_age,%a0
 	mov3q.l #-1,%d0
 	move.l %d4,(%a0,%d3.l*4)
 	lea dirty,%a0
 	move.b %d2,(%a0,%d3.l)
-.L191:
+.L196:
 	movem.l (%sp),#3196
 	lea (36,%sp),%sp
 	rts
-.L212:
+.L217:
 	mov3q.l #1,%d1
-	jra .L193
-.L213:
+	jra .L198
+.L218:
 	moveq #32,%d1
 	addq.l #1,%d1
-	jra .L195
-.L203:
+	jra .L200
+.L208:
 	moveq #33,%d1
 	move.l %d1,-(%sp)
 	mov3q.l #1,-(%sp)
@@ -1113,9 +1156,9 @@ pm_reserve:
 	move.l %d0,%a0
 	add.l #-2147464744,%a0
 	tst.b (%a0)
-	jeq .L197
-	jra .L215
-.L214:
+	jeq .L202
+	jra .L220
+.L219:
 	lea poly_extra_track,%a0
 	mov3q.l #7,%d5
 	mvz.b (%a0,%d1.l),%d2
@@ -1124,7 +1167,7 @@ pm_reserve:
 	lsl.l %d0,%d2
 	move.l %d1,%d0
 	cmp.l %a1,%d5
-	jcs .L216
+	jcs .L221
 	mvz.b (%a0,%d1.l),%d6
 	lea poly_extra_mask,%a1
 	move.l %d2,%d5
@@ -1137,13 +1180,13 @@ pm_reserve:
 	move.l %d6,28(%sp)
 	or.l %d2,(%a1,%d3.l*4)
 	move.l (%a3),(%a2,%d1.l*4)
-.L217:
+.L222:
 	moveq #1,%d2
 	move.l %d4,(%a0,%d3.l*4)
 	lea dirty,%a0
 	move.b %d2,(%a0,%d3.l)
-	jra .L191
-.L216:
+	jra .L196
+.L221:
 	move.b %d3,(%a0,%d1.l)
 	lea primary_age,%a0
 	lea (%a0,%d3.l*4),%a3
@@ -1151,8 +1194,8 @@ pm_reserve:
 	lea poly_extra_mask,%a1
 	or.l %d2,(%a1,%d3.l*4)
 	move.l (%a3),(%a2,%d1.l*4)
-	jra .L217
-.L202:
+	jra .L222
+.L207:
 	movem.l (%sp),#3196
 	mov3q.l #-1,%d0
 	lea (36,%sp),%sp
@@ -1168,57 +1211,57 @@ pm_release_head:
 	movem.l #3076,(%sp)
 	move.l 20(%sp),%d2
 	cmp.l %a0,%d0
-	jcs .L218
+	jcs .L223
 	lea poly_primary_note,%a1
 	mvz.b (%a1,%a0.l),%d0
 	cmp.l %d0,%d2
-	jeq .L232
-.L220:
+	jeq .L237
+.L225:
 	clr.l %d0
 	lea poly_extra_track,%a1
 	lea poly_extra_note,%a2
 	lea poly_env_stage,%a3
-.L222:
+.L227:
 	mvz.b (%a1,%d0.l),%d1
 	cmp.l %d1,%a0
-	jeq .L233
-.L221:
+	jeq .L238
+.L226:
 	addq.l #1,%d0
 	moveq #31,%d1
 	cmp.l %d0,%d1
-	jne .L222
-.L218:
+	jne .L227
+.L223:
 	movem.l (%sp),#3076
 	lea (12,%sp),%sp
 	rts
-.L233:
+.L238:
 	mvz.b (%a2,%d0.l),%d1
 	cmp.l %d1,%d2
-	jne .L221
+	jne .L226
 	st %d1
 	move.b %d1,(%a2,%d0.l)
 	tst.b 8(%a3,%d0.l)
-	jeq .L221
+	jeq .L226
 	moveq #3,%d1
 	move.b %d1,8(%a3,%d0.l)
 	addq.l #1,%d0
 	moveq #31,%d1
 	cmp.l %d0,%d1
-	jne .L222
-	jra .L218
-.L232:
+	jne .L227
+	jra .L223
+.L237:
 	st %d1
 	move.b %d1,(%a1,%a0.l)
 	lea poly_env_stage,%a1
 	tst.b (%a1,%a0.l)
-	jeq .L220
+	jeq .L225
 	moveq #3,%d0
 	lea poly_extra_note,%a2
 	lea poly_env_stage,%a3
 	move.b %d0,(%a1,%a0.l)
 	clr.l %d0
 	lea poly_extra_track,%a1
-	jra .L222
+	jra .L227
 	.size	pm_release_head, .-pm_release_head
 	.align	2
 	.globl	pm_record_key
@@ -1228,12 +1271,12 @@ pm_record_key:
 	mov3q.l #7,%d0
 	movem.l #124,(%sp)
 	cmp.l 28(%sp),%d0
-	jcs .L234
+	jcs .L239
 	moveq #124,%d4
 	cmp.l 32(%sp),%d4
-	jcs .L234
+	jcs .L239
 	tst.l 1175263018
-	jeq .L234
+	jeq .L239
 	move.l 28(%sp),%d5
 	sub.l %a0,%a0
 	lea poly_held,%a1
@@ -1241,30 +1284,30 @@ pm_record_key:
 	moveq #125,%d2
 	lsl.l #6,%d5
 	add.l %d5,%a1
-.L238:
+.L243:
 	mvz.b (%a1,%a0.l),%d0
 	moveq #124,%d6
 	addq.l #1,%a0
 	cmp.l %d0,%d6
-	jcs .L236
+	jcs .L241
 	cmp.l %d2,%d0
-	jcc .L237
+	jcc .L242
 	move.l %d0,%d2
-.L237:
+.L242:
 	addq.l #1,%d1
-.L236:
+.L241:
 	moveq #64,%d0
 	cmp.l %a0,%d0
-	jne .L238
+	jne .L243
 	subq.l #1,%d1
 	mov3q.l #3,%d4
 	cmp.l %d1,%d4
-	jcs .L234
+	jcs .L239
 	clr.w %d4
 	lea poly_held,%a1
 	sub.l %a0,%a0
 	add.l %d5,%a1
-.L240:
+.L245:
 	mvz.b (%a1,%a0.l),%d0
 	mov3q.l #1,%d3
 	addq.l #1,%a0
@@ -1273,36 +1316,36 @@ pm_record_key:
 	sub.l %d2,%d1
 	lsl.l %d1,%d3
 	cmp.l %d0,%d6
-	jcs .L239
+	jcs .L244
 	moveq #11,%d0
 	cmp.l %d1,%d0
-	jcs .L234
+	jcs .L239
 	or.l %d3,%d4
-.L239:
+.L244:
 	moveq #64,%d6
 	cmp.l %a0,%d6
-	jne .L240
+	jne .L245
 	mvz.w %d4,%d4
 	lea chord_masks,%a0
 	clr.l %d3
-.L242:
+.L247:
 	mvz.w (%a0),%d0
 	addq.l #2,%a0
 	cmp.l %d4,%d0
-	jeq .L241
+	jeq .L246
 	addq.l #1,%d3
 	cmp.l #232,%d3
-	jne .L242
-.L234:
+	jne .L247
+.L239:
 	movem.l (%sp),#124
 	lea (24,%sp),%sp
 	rts
-.L241:
+.L246:
 	move.l 1187506518,%d5
 	tst.l 1187503398
-	jeq .L253
+	jeq .L258
 	move.l #1074013980,%a0
-.L244:
+.L249:
 	move.l %d5,-(%sp)
 	move.l 32(%sp),-(%sp)
 	jsr (%a0)
@@ -1310,7 +1353,7 @@ pm_record_key:
 	move.l %d0,%d4
 	moveq #63,%d0
 	cmp.l %d4,%d0
-	jcs .L234
+	jcs .L239
 	move.l %d5,-(%sp)
 	move.l #1074012504,%a0
 	move.l %d4,-(%sp)
@@ -1330,9 +1373,9 @@ pm_record_key:
 	movem.l (%sp),#124
 	lea (24,%sp),%sp
 	rts
-.L253:
+.L258:
 	move.l #1074015516,%a0
-	jra .L244
+	jra .L249
 	.size	pm_record_key, .-pm_record_key
 	.align	2
 	.globl	pm_sequence_stage
@@ -1343,18 +1386,18 @@ pm_sequence_stage:
 	move.l %d2,-(%sp)
 	mov3q.l #7,%d0
 	cmp.l 20(%sp),%d0
-	jcc .L270
-.L254:
+	jcc .L275
+.L259:
 	move.l (%sp)+,%d2
 	move.l (%sp)+,%a2
 	addq.l #8,%sp
 	rts
-.L270:
+.L275:
 	move.l 20(%sp),-(%sp)
 	jsr pm_is_poly_track
 	addq.l #4,%sp
 	tst.l %d0
-	jeq .L254
+	jeq .L259
 	clr.b %d0
 	move.l 24(%sp),%a0
 	move.l 20(%sp),%d2
@@ -1367,11 +1410,11 @@ pm_sequence_stage:
 	moveq #124,%d2
 	move.b 30(%a0),%d0
 	cmp.l %d1,%d2
-	jcs .L254
+	jcs .L259
 	mvz.b %d0,%d0
 	move.l %d0,%a0
 	cmp.l #231,%d0
-	jhi .L254
+	jhi .L259
 	st %d0
 	move.l 24(%sp),%a2
 	move.l 32(%sp),%d2
@@ -1382,7 +1425,7 @@ pm_sequence_stage:
 	clr.b (%a2)
 	move.b %d0,30(%a2)
 	btst #0,%d2
-	jeq .L254
+	jeq .L259
 	move.l 20(%sp),%d2
 	clr.l %d0
 	lea chord_masks,%a2
@@ -1394,22 +1437,22 @@ pm_sequence_stage:
 	sub.l %a0,%a0
 	move.l %a2,12(%sp)
 	move.l %d2,8(%sp)
-.L257:
+.L262:
 	move.l 8(%sp),%d2
 	btst %d0,%d2
-	jeq .L256
+	jeq .L261
 	moveq #124,%d2
 	cmp.l %d1,%d2
-	jcs .L254
+	jcs .L259
 	move.l 12(%sp),%a2
 	move.b %d1,(%a2,%a0.l)
 	addq.l #1,%a0
-.L256:
+.L261:
 	addq.l #1,%d0
 	addq.l #1,%d1
 	moveq #12,%d2
 	cmp.l %d0,%d2
-	jne .L257
+	jne .L262
 	move.w %a0,%d0
 	move.l 20(%sp),%d1
 	move.b %d0,(%a1,%d1.l)
@@ -1427,11 +1470,11 @@ pm_sequence_next:
 	move.l 12(%sp),%d0
 	mov3q.l #7,%d1
 	cmp.l %d0,%d1
-	jcs .L272
+	jcs .L277
 	lea poly_pending_key,%a0
 	mvz.b (%a0,%d0.l),%d1
 	cmp.l #255,%d1
-	jne .L278
+	jne .L283
 	lea sequence_index,%a2
 	move.b (%a2,%d0.l),%d1
 	lea sequence_count,%a0
@@ -1440,7 +1483,7 @@ pm_sequence_next:
 	mvz.b %d1,%d2
 	move.l %d2,%a1
 	cmp.l %d2,%a0
-	jls .L272
+	jls .L277
 	move.l %d0,%d2
 	addq.l #1,%d1
 	lsl.l #2,%d2
@@ -1451,11 +1494,11 @@ pm_sequence_next:
 	mvz.b (%a0,%a1.l),%d0
 	move.l (%sp)+,%a2
 	rts
-.L278:
+.L283:
 	clr.b %d2
 	lea sequence_count,%a0
 	move.b %d2,(%a0,%d0.l)
-.L272:
+.L277:
 	move.l (%sp)+,%d2
 	mov3q.l #-1,%d0
 	move.l (%sp)+,%a2
@@ -1743,6 +1786,11 @@ primary_age:
 budget_tuning:
 	.zero	32
 	.align	2
+	.type	limit_pending, @object
+	.size	limit_pending, 4
+limit_pending:
+	.zero	4
+	.align	2
 	.type	pool_browse, @object
 	.size	pool_browse, 4
 pool_browse:
@@ -1817,12 +1865,18 @@ pm_main_commit:
         moveq #1,%d2
 1:      move.l %d2,8(%sp)
         jsr pm_assign
+        tst.l %d0
+        bmi.s .main_refuse
         cmpi.l #5,%d4
         bne.s 2f
         move.l %d0,%d4
 2:      movem.l 12(%sp),%d0-%d2/%a0-%a1
         lea 32(%sp),%sp
         jmp pm_main_replay
+.main_refuse:
+        movem.l 12(%sp),%d0-%d2/%a0-%a1
+        lea 32(%sp),%sp
+        jmp 0x4007989c
 pm_src_commit:
         pea 0x4005a61c
         bra.s pm_src_common
@@ -1844,12 +1898,20 @@ pm_src_common:
 1:      move.l %d3,8(%sp)
         move.l %d1,%d3
         jsr pm_assign
+        tst.l %d0
+        bmi.s .src_refuse
         cmpi.l #5,%d3
         beq.s 2f
         move.l %d3,%d0
 2:      move.l %d0,%d1
         movem.l 12(%sp),%d0/%d2-%d3/%a0-%a1
         lea 32(%sp),%sp
+        rts
+.src_refuse:
+        movem.l 12(%sp),%d0/%d2-%d3/%a0-%a1
+        lea 32(%sp),%sp
+        mvz.b (%a0),%d1
+        move.l %d1,0x460d5c30
         rts
 pm_setup_open:
         move.b (%a0),%d3
