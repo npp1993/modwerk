@@ -9,7 +9,7 @@ Everything below marked **here** was run for this import, in the emulator and `d
 | Item | SHA-256 |
 | --- | --- |
 | `lofi2.asm` (unchanged from upstream) | `cecdd20bfca0f7561fa8c34c8066780e50406cf2396d8ee2ed42aad5bdf5d5ab` |
-| `manifest.py` (adapted) | `6119f489410204feefcae2252e2eb90de5fd810ad003caf491495c6ab2af5d87` |
+| `manifest.py` (adapted) | `96b362e87ad633568f8004847bdd31d2f63fb74f788bc07c5f0175e9413aea32` |
 | `verify_lofi2.py` (adapted) | `d8feb6850d283a0a605bf206f81cd52b38cda81890298b3baed8b217ee467537` |
 | Stock MAIN OS 1.40C used (the tester's own, never committed) | `164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e` |
 | Private native image of the `lofi2` test remix (static stock, never committed) | `43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e` |
@@ -138,21 +138,89 @@ Module words in those builds: TapeHead 422, Output Matrix 727 + 42 table, Sidech
 
 Static, `tools/build/cycle_count.py`: **414 cycles/sample** on the dearest path (SHIFT); the merged revision counted 654. Four instances on one core: 1,656 of the 3,120 the counter calls usable.
 
-`dsp_host` benchmark, `benchmark_stock_dsp.py`'s method (one instance per core at positions 0 and 4, audio at X:0, 4,096 blocks of 16 frames, the null stub's peak subtracted), executed instructions per sample, not chip cycles. LOFI2 on the private image, stock effects on the stock image, through the same fixed, moving and trig-split (positions 1-15) cases:
+`python3 modules/lofi2/perf.py bench <out>` (Modwerk's own script, after E-Verb's): `benchmark_stock_dsp.py`'s method (one instance per core at positions 0 and 4, audio at X:0, 4,096 blocks of 16 frames, the null stub's peak subtracted), executed instructions per sample, not chip cycles. LOFI2 on the private image, stock effects on the stock image, through the same fixed, moving and trig-split (positions 1-15) cases:
 
 | Effect | Worst, no split | Worst with splits |
 | --- | --- | --- |
-| LOFI2, SHIFT (UP and DOWN) at the manifest's dearest settings, and the moving pattern | 405.4 | 428.3 |
-| LOFI2, RING at the dearest settings | 251.1 | 274.3 |
-| LOFI2, defaults (passthrough) | 249.9 | not run |
-| stock LO-FI | 275.4 | 290.1 |
-| stock SPRING REV | 257.5 | 314.2 |
-| stock DARK REV | 193.3 | 242.4 |
-| stock DJ EQ | 293.4 | 330.9 |
+| LOFI2, SHIFT DOWN at the manifest's dearest settings | 405.44 | 429.06 |
+| LOFI2, SHIFT UP at the dearest settings | 405.06 | 428.31 |
+| LOFI2, RING at the dearest settings | 251.06 | 274.31 |
+| LOFI2, defaults (passthrough) | 249.88 | not run |
+| stock LO-FI | 275.44 | 290.06 |
+| stock SPRING REV | 257.50 | 314.19 |
+| stock DARK REV | 193.25 | 242.38 |
+| stock DJ EQ | 293.38 | 330.94 |
 
-The stock figures without splits reproduce E-Verb's record (SPRING REV 257.5, DARK REV 193.25, DJ EQ 293.38), a positive control on the method. LOFI2 in SHIFT is 1.36x SPRING REV's worst case and 1.48x stock LO-FI's (the closest stock effect); in RING 0.87x and 0.95x. The merged revision (`a6f41a1d`) measured 596.4 and 347.4 under the same script, 1.90x and 1.11x SPRING REV. SHIFT is still dearer than every stock effect (DJ EQ 330.9), which the performance audit treats as needing a justification and the owner's acceptance. No `evidence/performance.json` is filed, because the stress run was not done. The benchmark was a scratch script and is not committed.
+The stock figures without splits reproduce E-Verb's record (SPRING REV 257.5, DARK REV 193.25, DJ EQ 293.38), a positive control on the method. LOFI2 in SHIFT is 1.37x SPRING REV's worst case and 1.48x stock LO-FI's (the closest stock effect); in RING 0.87x and 0.95x. The merged revision (`a6f41a1d`) measured 596.4 and 347.4 with an earlier scratch script. SHIFT is dearer than every stock effect (DJ EQ 330.94), which the performance audit accepts only with a justification and the owner's acceptance; the justification is in `evidence/performance.json`.
+
+`python3 modules/lofi2/perf.py stress <out> --seconds 32`: LOFI2 on FX2 of all eight tracks (four per core) behind DJ EQ on every FX1; three LFOs per track on FREQ, SRR and LPF; a new random value on all 14 named slots of both effects every sixteenth at 120 BPM, MODE and RANGE included, so the modes switch under load; trig splits of 1, 3, 7, 8, 12 and 15 frames on six tracks; eight different stems, 32 s plus a 2 s tail; `dsp_host -guard 0x4000 -guard-shared -dirty 0x5a`. Result: host exit 0, no hang, 16 guarded instances, LOFI2's eight instances 0 stray write regions and 0 clobbers, 0 clobbers overall; per-core peak 3,009.9 and 3,010.1 executed instructions/sample with all sixteen effects (824 s of wall time). It exercises the DSP side only.
+
+`npm run perf:audit -- check sdk/octabam/modules/lofi2/evidence/performance.json`:
+
+```
+✓ record          dsp record for lofi2@0.1.0-experimental
+· cycles          4 x 414 = 1656 of 3120 per sample per core (53%), measured 429.06 per instance; over half a core: say what stays free for stock effects and other modules
+· stock benchmark 429.06 vs LO-FI 290.06 (1.48x); the dearest stock effect is 330.94; justified in the record
+✓ stress          4 per core, eight tracks, 3 LFOs and 14 locked slots, 32 s, no clobber, no hang
+```
+
+No check failed. What stays free: with four SHIFT instances on a core, 1,464 static cycles remain of the 3,120, about four stock effects at SPRING REV's cost on the same core's FX1 slots. Four RING instances leave more.
 
 The author's own weighting of the SHIFT loop by measured chip move costs (his README, "Cost, and how many fit") gives about 990 against about 1,530 for the September source; he calls those ratios, not cycles. Not reproduced here.
+
+## Sound quality: `npm run fx:audit` (here)
+
+`npm run fx:audit -- plan`, each signal rendered through LOFI2 with `dsp_host` on payload A of the private image (mono in, both channels; one instance; a scratch script, not committed), then `npm run fx:audit -- check`. Audit defaults: aliasing -60 dBc, DC -60 dBFS, idle -90 dBFS.
+
+Defaults (MIX 0, SRR 0, BRR 0, LPF 127), the passthrough: no check failed, idle is digital silence.
+
+| signal | out dBFS | harmonics | aliasing | residual | DC dBFS | rails | verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| tone-1100hz-12db | -12.0 | <-140 | <-140 | -134.5 | <-140 | 0 | ok |
+| tone-1100hz-1db | -1.0 | <-140 | <-140 | <-140 | <-140 | 0 | ok |
+| tone-2701hz-12db | -12.0 | <-140 | <-140 | -134.5 | <-140 | 0 | ok |
+| tone-2701hz-1db | -1.0 | <-140 | <-140 | <-140 | <-140 | 0 | ok |
+| tone-5301hz-12db | -12.0 | <-140 | <-140 | -134.6 | <-140 | 0 | ok |
+| tone-5301hz-1db | -1.0 | <-140 | <-140 | <-140 | <-140 | 0 | ok |
+| tone-9102hz-12db | -12.0 | <-140 | <-140 | -134.5 | <-140 | 0 | ok |
+| tone-9102hz-1db | -1.0 | <-140 | <-140 | <-140 | <-140 | 0 | ok |
+
+LPF 0 (the shelf fully in, everything else at its default): no check failed, idle is digital silence. The level drop is the shelf's -12 dB.
+
+| signal | out dBFS | harmonics | aliasing | residual | DC dBFS | rails | verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| tone-1100hz-12db | -23.5 | <-140 | <-140 | -121.1 | <-140 | 0 | ok |
+| tone-1100hz-1db | -12.5 | <-140 | <-140 | -132.1 | <-140 | 0 | ok |
+| tone-2701hz-12db | -24.0 | <-140 | <-140 | -120.6 | <-140 | 0 | ok |
+| tone-2701hz-1db | -13.0 | <-140 | <-140 | -131.7 | <-140 | 0 | ok |
+| tone-5301hz-12db | -24.0 | <-140 | <-140 | -120.5 | <-140 | 0 | ok |
+| tone-5301hz-1db | -13.0 | <-140 | <-140 | -131.6 | <-140 | 0 | ok |
+| tone-9102hz-12db | -24.0 | <-140 | <-140 | -120.6 | <-140 | 0 | ok |
+| tone-9102hz-1db | -13.0 | <-140 | <-140 | -131.6 | <-140 | 0 | ok |
+
+The three settings that modulate cannot pass this audit by construction, and their figures are recorded, not treated as defects:
+
+- **RING, MIX 127, FREQ 64 HIGH.** The audit looks for the input tone and its harmonics; a ring modulator at full depth removes the tone and leaves the two sidebands, which the audit files under residual (+39 dBc) and, where a sideband lands on a fold frequency, aliasing (-27.5 dBc at 1.1 kHz, -43.2 dBc at 9.1 kHz; 4 checks flagged). DC is under -100 dBFS, no sample on the rails, idle is digital silence.
+- **SHIFT UP, MIX 127, FREQ 64 HIGH, FDBK 127.** Every partial is moved, so the same applies (8 tone checks flagged). No sample on the rails. Idle fails: see below.
+- **The manifest's dearest settings (SRR 127, BRR 127).** Sample-rate and bit reduction alias by design (up to +36 dBc read as aliasing; DC up to -40.8 dBFS from the coarse quantiser at 20.8 bits removed; 8 checks flagged). Idle is digital silence.
+
+### After the input stops, in SHIFT
+
+Found by the audit's idle row and measured separately: a 0.5 s, 440 Hz burst at 0.5 FS, then 12 s of silence, RMS of the left channel in 0.5 s windows starting 0.5, 2.5, 5.5 and 11.5 s after the burst (`dsp_host`, payload A, MIX 127, FREQ 64, RANGE HIGH unless noted).
+
+| Setting | 0.5 s | 2.5 s | 5.5 s | 11.5 s |
+| --- | --- | --- | --- | --- |
+| RING | silence | silence | silence | silence |
+| SHIFT UP, FDBK 0 | -77.0 dBFS | -77.0 | -77.0 | -77.0 |
+| SHIFT UP, FDBK 64 | -83.5 | -83.5 | -83.5 | -83.5 |
+| SHIFT UP, FDBK 127 | -76.9 | -77.0 | -76.9 | -77.0 |
+| SHIFT UP, FDBK 127, FREQ 0 LOW | -74.1 | -77.6 | -78.6 | -79.5 |
+| SHIFT UP, FDBK 127, FREQ 127 | -76.7 | -76.7 | -76.7 | -76.7 |
+| SHIFT DOWN, FDBK 127 | -82.3 | -82.2 | -82.2 | -82.2 |
+| SHIFT UP, FDBK 127, MIX 64 | -82.9 | -82.9 | -82.9 | -82.9 |
+| dearest settings (BRR 127) | silence | silence | silence | silence |
+
+In SHIFT, once signal has passed through, the output does not return to silence: a steady residue of about 1,100 to 2,200 LSB peak (24-bit) stays for as long as measured, with FDBK at 0 too, so it is not the feedback tail. A fresh instance on silence stays silent (`verify_dirtystate`). The merged upstream revision (`a6f41a1d`) rendered the same figures, so this is a property of the author's shifter and not of the port or of the optimisation. The cause was not investigated and the DSP was not changed; it is listed as a limitation and should go to the author. Not checked on hardware.
 
 ## Elekloader path: the Modwerk base and USB loading (here)
 
@@ -212,14 +280,22 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 - Parameter locks, LFO modulation on the unit, scenes and the crossfader.
 - Part save/reload, project save/load, reboot persistence, several instances with different settings.
 - FX1 placement, and LOFI2 beside any Modwerk module on hardware.
-- `npm run fx:audit` (aliasing, clipping, DC, idle). SRR and BRR alias by design.
-- The performance record: `stress_project.py` / `pressure.py render`, `npm run perf:audit`.
 - `rig_render` on both cores, `verify_set` under the ColdFire port, `make check` as a whole.
-- Browser packages (`scripts/build-modules-isolated.sh`) and `npm run module:verify` (native/browser comparison). The module is not in `sdk/catalog.json`.
+- `stress_project.py` on a real Octatrack project and `pressure.py render`: the stress run above drives the same load straight into `dsp_host`.
+- `npm run modules:generate`, `npm run module:verify` (native/browser comparison) and the published USB package: all three need the qualification record, which needs the hardware report first.
 - On the Modwerk base: the effect page recipe, the published package manifest entry, and any install, pick, self-test or soak on a Modwerk base (emulator or unit).
+
+## Packages (here)
+
+- `scripts/build-module-packages.py`: `lofi2` added to the effect order after `everb`, with a descriptor guard for FX2 id 0x09 (DARK REV's descriptor as donor, the one E-Verb uses; the id's stock FX2 slot is NONE). Both guard hashes were recomputed from the tester's own OS 1.40C and equal E-Verb's recorded ones; only hashes are kept.
+- `bash scripts/build-modules-isolated.sh . <new folder> <modwerk-source-tools image id>` (Docker, no network, no firmware): passed, "Compiled loadable DSP modules with four-origin relocation proofs".
+- `npm run modules:import -- <folder>/packages --development`: imported. LOFI2's package in `src/engine/assets/dsp-packages.json`: 1,352 words, init 516, proc 534, words SHA-256 `4090dfd37463d5e75baf17b8b8ccce19d3db59abc9a3d02a4d25a01cc80f29ee`, the same words as the Elekloader-path build above.
 
 ## Repository checks (here)
 
-- `npm run sdk:imports:check`: passes with `sdk/imports/lofi2-e8665fa.json` (81 files checked).
-- The manifest parses under the module contract (`src/catalog/module-contract.ts`).
-- With the folder at `sdk/octabam/modules/lofi2`, `npm run modules:check -- --base origin/main` fails: "lofi2.tests.qualification: publication requires worst-case cycles, exact memory and hardware test evidence". `npm run module:doctor -- lofi2` there marks as missing: the catalog entry, module rules (that failure), packages, the native comparison, the declaration checks and the package fingerprint; it passes the category guide and the thumbnail and asks for `fx:audit`, `evidence/performance.json` and a review of the conflicts. That is why the import is staged in `sdk/drafts/` (STAGING.md), where `module:doctor` does not look.
+- `npm run sdk:imports:check`: passes with `sdk/imports/lofi2-e8665fa.json`.
+- `npm run licenses:generate`: passes with the `lofi2` licence component.
+- `npm run perf:audit -- check`: no check failed (above).
+- `npm run modules:generate`, `npm run modules:check` and `npm run check`: **fail** until `tests.qualification` exists: "lofi2.tests.qualification: publication requires worst-case cycles, exact memory and hardware test evidence". The cycle and memory parts are measured (above); the hardware report is missing, and it is not replaced by a placeholder.
+- `npm run module:verify -- lofi2`: **not run**. It refuses a module the generated catalogue does not offer.
+- `npm run module:doctor -- lofi2`: red on the lines that follow from the two above.

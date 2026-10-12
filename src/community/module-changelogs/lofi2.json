@@ -1,0 +1,12 @@
+[
+  {
+    "version": "0.1.0-experimental",
+    "date": "2026-10-12",
+    "changes": [
+      "First Modwerk import of Bryan T's LOFI2 from octabam: a ring modulator or stereo frequency shifter (MODE RING / DOWN / UP), then sample-rate and bit reduction on stock LO-FI's curves and a high-shelf cut. Stock LO-FI stays in the chooser beside it.",
+      "Upstream implementation, unchanged: the DSP is the author's optimised revision (octabam pull request 704, 414 cycles/sample in SHIFT, down from 654), which was not yet merged upstream on 12 October 2026.",
+      "Modwerk packaging: effect ID 0x09 instead of octabam's 0x1f (TapeHead's here), so a project saved with octabam's LOFI2 does not select it; FX2 only; with stock DSP code built in it takes the space of two adjacent stock reverbs, and it cannot be combined with Analog BD.",
+      "Limits: SHIFT costs about 1.4x stock SPRING REV per instance and is dearer than every stock effect. In DOWN and UP a faint residue (about -77 dBFS) stays after the input stops. This build has not run on hardware; parameter locks, scenes and persistence are untested. The author reports the same loop running on his MKII in his own build."
+    ]
+  }
+]

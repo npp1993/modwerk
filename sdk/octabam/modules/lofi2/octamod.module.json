@@ -114,14 +114,15 @@
     "limitations": [
       "This Modwerk build has not run on hardware. Bryan T's MKII reports (October 2026) are for his octabam builds, where LOFI2 has effect ID 0x1f and a different placement; the DSP source is the same file, byte for byte.",
       "Large: 836 program words and a 516-word table on each DSP core, 1,352 contiguous words. With stock DSP code built in it needs two adjacent stock reverbs given up (PLATE REV + SPRING REV, or SPRING REV + DARK REV); one reverb is not enough.",
-      "Pinned to the head of an upstream pull request (octabam 704, e8665fae) that was open and unmerged on 12 October 2026. SHIFT executes 428 instructions/sample at worst in dsp_host (static 414 cycles), about 1.4x SPRING REV's worst case and dearer than every stock effect; RING is 274. The author ran eight SHIFT instances, four per core, on his MKII with this loop.",
+      "Pinned to the head of an upstream pull request (octabam 704, e8665fae) that was open and unmerged on 12 October 2026. SHIFT executes 429 instructions/sample at worst in dsp_host (static 414 cycles), about 1.4x SPRING REV's worst case and dearer than every stock effect; RING is 274. The author ran eight SHIFT instances, four per core, on his MKII with this loop.",
       "On the Modwerk base (USB loading) the package builds and its 1,352 words fit the arena without giving up a stock effect. Cycle admission is on the line: 726 chip cycles per instance, emulator figures charged at 7/4. Declared as the static 414 it is admitted (725); declared as the worst executed trig-split case, 429, it is refused (751). Read from the base's source; not run.",
+      "In DOWN and UP, once sound has passed through, the output settles at about -77 to -83 dBFS instead of silence and stays there (dsp_host render; the upstream module does the same). RING and the reduction stages return to silence.",
       "Native octabam refuses LOFI2 together with Analog BD: it is not on Analog BD's reviewed DSP companion list. A scratch-only probe with the list widened placed both only with all three reverbs, LO-FI, DJ EQ and CHORUS given up and LOFI2's table moved to X memory; that layout is unreviewed and untested.",
       "Declared FX2 here because only the FX2 chooser was built and captured. The module has no buffers and its author declares it eligible for an FX1 row; FX1 was not built or tested in this tree.",
       "Effect ID 0x09, placement priority 19 and layout letter F are Modwerk's; they were checked free against the modules in this tree and the pending RING MOD (0x0e). A project saved with octabam's LOFI2 (ID 0x1f) selects TAPEHEAD's ID here.",
       "No single-knob bypass: a passthrough is MIX 0, SRR 0, BRR 0 and LPF 127, the defaults.",
       "Parameter locks, scenes, Part/project reload and reboot persistence were not tested in this tree.",
-      "Draft import staged in sdk/drafts/lofi2: no browser package, native/browser comparison, performance record or build approval exists yet, and the module is not listed in sdk/catalog.json."
+      "Not released: the hardware report for this build, the native/browser comparison and the owner's first-release approval are missing."
     ]
   },
   "resources": {
@@ -137,8 +138,8 @@
     },
     "processing": {
       "label": "DSP instruction peak",
-      "display": "428 instructions/sample (SHIFT), 274 (RING)",
-      "value": 428,
+      "display": "429 instructions/sample (SHIFT), 274 (RING)",
+      "value": 429,
       "unit": "instructions/sample",
       "method": "emulator",
       "conditions": "benchmark_stock_dsp.py's method in dsp_host (one instance per core, 16-sample blocks, null stub subtracted), fixed, moving and trig-split cases; stock SPRING REV 314, LO-FI 290, DJ EQ 331 under the same cases. Static cycle_count.py: 414 cycles/sample on the SHIFT path. Executed instructions, not chip cycles.",
@@ -155,7 +156,7 @@
       "dsp": {
         "level": "high",
         "basis": "measured-comparison",
-        "rationale": "428 executed instructions/sample worst case in SHIFT against 314 for stock SPRING REV, 290 for stock LO-FI and 331 for DJ EQ (the dearest stock effect) under the same dsp_host cases; RING is 274. Two Hilbert allpass pairs and nine glides. The author's MKII ran eight SHIFT instances at once, four per core, on his octabam build of this loop.",
+        "rationale": "429 executed instructions/sample worst case in SHIFT against 314 for stock SPRING REV, 290 for stock LO-FI and 331 for DJ EQ (the dearest stock effect) under the same dsp_host cases; RING is 274. Two Hilbert allpass pairs and nine glides. The author's MKII ran eight SHIFT instances at once, four per core, on his octabam build of this loop.",
         "source": "TESTING.md"
       },
       "memory": {
@@ -168,15 +169,16 @@
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "Ported unchanged in DSP from octabam e8665fae, the head of the author's optimisation pull request 704 (unmerged on 12 Oct 2026). A private native build on Modwerk's ID 0x09 passed all 48 checks of the author's render gate (levels, AMPH, GAIN, fade-in, MODE duck, SRR and BRR against stock LO-FI rendered from the tester's own OS 1.40C, the LPF shelf, FREQ fraction and every knob turn), plus dirty-state, init-register, menu, replaces, label and mode-name gates. Static cost 414 cycles/sample; dsp_host benchmark 428 instructions/sample in SHIFT against SPRING REV's 314. The relocatable DSP package for USB loading builds; the base's cycle rule admits it as 414 modeled and refuses it as 429 executed. Not tested here: hardware, parameter locks, scenes, persistence, payload B in the render gate, fx:audit, the stress run, browser packages, native/browser parity and any install on a base. The author reports this loop running on his MKII, eight SHIFT instances at once.",
+    "summary": "Ported unchanged in DSP from octabam e8665fae, the head of the author's optimisation pull request 704 (unmerged on 12 Oct 2026). A private native build on Modwerk's ID 0x09 passed all 48 checks of the author's render gate (SRR and BRR against stock LO-FI rendered from the tester's own OS 1.40C among them), plus dirty-state, init-register, menu, replaces, label and mode-name gates. Static cost 414 cycles/sample; dsp_host benchmark 429 instructions/sample in SHIFT against LO-FI's 290 and SPRING REV's 314; a 32 s eight-instance stress run under memory guards had no hang and no clobber, and perf:audit passes with a justification. fx:audit is clean at the defaults and with the shelf in; in SHIFT the output keeps a residue near -77 dBFS after the input stops, as upstream does. Packages compile. Not tested here: hardware, parameter locks, scenes, persistence, payload B in the render gate, the native/browser comparison and any install on a Modwerk base. The author reports this loop running on his MKII, eight SHIFT instances at once.",
     "hardwareStatus": "untested",
     "evidenceRevision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
     "gates": [
       "verify_lofi2.py: 48 dsp_host checks on payload A, including SRR and BRR against stock LO-FI rendered from the tester's own image",
       "verify_dirtystate, verify_initregs, verify_menu, verify_replaces, verify_labels, verify_modenames on the lofi2 test remix (static stock)",
-      "cycle_count.py static cost and a dsp_host benchmark against stock LO-FI, SPRING REV, DARK REV and DJ EQ",
-      "Elekloader path: relocatable DSP package (1,352 words, 4 relocations) and a private page-less runtime package build; no install was run",
-      "Not run: performance record (stress), fx:audit, native/browser comparison, hardware"
+      "evidence/performance.json: perf:audit (static count, stock benchmark under matched cases, 32 s stress)",
+      "fx:audit at five settings; the SHIFT idle residue measured separately",
+      "Isolated package compile with four-origin relocation proofs; relocatable DSP package and a private page-less runtime package for USB loading",
+      "Not run: hardware, native/browser comparison (module:verify), install on a Modwerk base"
     ],
     "documentation": {
       "tutorial": {
