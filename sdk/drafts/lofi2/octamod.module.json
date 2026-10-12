@@ -1,0 +1,313 @@
+{
+  "schemaVersion": 2,
+  "id": "lofi2",
+  "key": "LOFI2",
+  "name": "LOFI2",
+  "version": "0.1.0-experimental",
+  "category": "effects",
+  "author": {
+    "github": "bryantysinger",
+    "name": "Bryan T",
+    "credits": [
+      "Bryan T (bryantysinger): LOFI2's design, DSP56300 code, tables, declaration, render gate and hardware testing, contributed to octabam (pull request 657, MIT) and optimised in his pull request 704.",
+      "octabam: Sam Banks; SDK, schema and harness (MIT). LOFI2's stereo shifter uses the allpass coefficients of octabam's BodeShift and its ring carrier follows octabam's WarpFold.",
+      "Modwerk contributors: source import, effect ID/placement/letter adaptation, verifier image adaptation, documentation, captures and SVG thumbnail."
+    ]
+  },
+  "nativeManifest": "manifest.py",
+  "presentation": {
+    "label": "RING / SHIFT / CRUSH",
+    "family": "Lo-fi",
+    "summary": "One modulator, ring mod or a stereo frequency shifter, followed by sample-rate and bit reduction on stock LO-FI's curves and a high-shelf cut.",
+    "overview": "LOFI2 is an insert on its own effect ID, so stock LO-FI stays in the chooser beside it. MODE picks the modulator: RING multiplies the track by a carrier, DOWN and UP shift every partial by FREQ Hz with a stereo Hilbert pair. MIX is the modulator's depth; SRR and BRR run after it on stock LO-FI's measured rates and curve and stay live at MIX 0, and LPF is a -12 dB high shelf last in the chain. Every continuous knob glides to its new value over about 1.5 ms. The defaults are a passthrough.",
+    "highlights": [
+      "Ring modulator with an exponential six-octave FREQ, LOW/HIGH range and L/R carrier phase",
+      "Stereo frequency shifter, up or down, with feedback",
+      "SRR and BRR matched to stock LO-FI in a native render (rates within 0.02 dB of droop, steps within 0.01 bit)",
+      "Passthrough at defaults; every continuous knob glides, no zipper steps above -70 dBFS in the render gate"
+    ],
+    "usage": [
+      "On an audio track that plays a sample, hold FUNC and press FX2, turn LEVEL to LOFI2 and press YES. Nothing changes yet: the defaults are a passthrough.",
+      "Press FX2 for the main page. Turn MIX (encoder B) to 127 and FREQ (encoder A) to 64: the track is ring-modulated. Raise SRR or BRR (encoders D and E) for sample-rate and bit reduction, and lower LPF (encoder F) from 127 to darken the result.",
+      "For the frequency shifter, hold FUNC and press FX2 and turn MODE (encoder C) to UP or DOWN; on the main page the third knob is now FDBK. To bypass, set MIX, SRR and BRR to 0 and LPF to 127, or choose NONE in FX2 SETUP."
+    ]
+  },
+  "controls": [
+    {
+      "name": "FREQ",
+      "default": 0,
+      "count": 128,
+      "doc": "Modulator frequency, exponential over six octaves from RANGE's base. RING: 2-130 Hz (LOW) or 60-4,000 Hz (HIGH). SHIFT: 2-128 Hz (LOW) or 31.25-2,000 Hz (HIGH). FREQ 0 is the base frequency, not silence.",
+      "labels": null
+    },
+    {
+      "name": "MIX",
+      "default": 0,
+      "count": 128,
+      "doc": "Modulator depth: crossfades the ring or shift output against the dry signal. Not a global wet/dry: SRR, BRR and LPF still act at MIX 0.",
+      "labels": null
+    },
+    {
+      "name": "FDBK",
+      "default": 0,
+      "count": 128,
+      "doc": "One knob, renamed by MODE. In DOWN and UP it is FDBK, the shifter's feedback (a ladder at f, f+d, f+2d), capped at 0.45. In RING the panel shows GAIN: make-up on the ring product, 0 dB at 0, +6 dB at 64, +11.9 dB at 127.",
+      "labels": null
+    },
+    {
+      "name": "SRR",
+      "default": 0,
+      "count": 128,
+      "doc": "Sample-rate reduction at stock LO-FI's measured rates: no reduction through 7, 8,018 Hz at 64, 3,564 Hz at 127. 0 is off.",
+      "labels": null
+    },
+    {
+      "name": "BRR",
+      "default": 0,
+      "count": 128,
+      "doc": "Bit-depth reduction on stock LO-FI's curve, round-to-nearest: about 13.5 bits removed at 64 and 20.8 at 127. 0 is full depth.",
+      "labels": null
+    },
+    {
+      "name": "LPF",
+      "default": 127,
+      "count": 128,
+      "doc": "High-shelf cut, last in the chain: -12 dB above a corner swept from 100 Hz at 0 to 16 kHz at 126. 127 takes it out of circuit bit for bit; turn down to darken.",
+      "labels": null
+    },
+    {
+      "name": "RANGE",
+      "default": 1,
+      "count": 2,
+      "doc": "FREQ's range: LOW is sub-audio (tremolo in RING, slow swirl in SHIFT), HIGH is the audio range.",
+      "labels": [
+        "LOW",
+        "HIGH"
+      ]
+    },
+    {
+      "name": "MODE",
+      "default": 0,
+      "count": 3,
+      "doc": "RING is the ring modulator; DOWN and UP are the frequency shifter moving every partial down or up. Ring and shift are exclusive. A change ducks the modulator for 5 ms each way so it does not click.",
+      "labels": [
+        "RING",
+        "DOWN",
+        "UP"
+      ]
+    },
+    {
+      "name": "AMPH",
+      "default": 64,
+      "count": 128,
+      "doc": "Ring carrier's L/R phase offset, bipolar: -90 to +88.6 degrees, 0 at the centre. + puts R ahead. RING only.",
+      "labels": null
+    }
+  ],
+  "compatibility": {
+    "firmware": "1.40C",
+    "effectId": 9,
+    "location": "FX2",
+    "conflicts": [
+      "analog-bassdrum"
+    ],
+    "limitations": [
+      "This Modwerk build has not run on hardware. Bryan T's MKII reports (October 2026) are for his octabam builds, where LOFI2 has effect ID 0x1f and a different placement; the DSP source is the same file, byte for byte.",
+      "Large: 836 program words and a 516-word table on each DSP core, 1,352 contiguous words. With stock DSP code built in it needs two adjacent stock reverbs given up (PLATE REV + SPRING REV, or SPRING REV + DARK REV); one reverb is not enough.",
+      "Pinned to the head of an upstream pull request (octabam 704, e8665fae) that was open and unmerged on 12 October 2026. SHIFT executes 428 instructions/sample at worst in dsp_host (static 414 cycles), about 1.4x SPRING REV's worst case and dearer than every stock effect; RING is 274. The author ran eight SHIFT instances, four per core, on his MKII with this loop.",
+      "On the Modwerk base (USB loading) the package builds and its 1,352 words fit the arena without giving up a stock effect. Cycle admission is on the line: 726 chip cycles per instance, emulator figures charged at 7/4. Declared as the static 414 it is admitted (725); declared as the worst executed trig-split case, 429, it is refused (751). Read from the base's source; not run.",
+      "Native octabam refuses LOFI2 together with Analog BD: it is not on Analog BD's reviewed DSP companion list. A scratch-only probe with the list widened placed both only with all three reverbs, LO-FI, DJ EQ and CHORUS given up and LOFI2's table moved to X memory; that layout is unreviewed and untested.",
+      "Declared FX2 here because only the FX2 chooser was built and captured. The module has no buffers and its author declares it eligible for an FX1 row; FX1 was not built or tested in this tree.",
+      "Effect ID 0x09, placement priority 19 and layout letter F are Modwerk's; they were checked free against the modules in this tree and the pending RING MOD (0x0e). A project saved with octabam's LOFI2 (ID 0x1f) selects TAPEHEAD's ID here.",
+      "No single-knob bypass: a passthrough is MIX 0, SRR 0, BRR 0 and LPF 127, the defaults.",
+      "Parameter locks, scenes, Part/project reload and reboot persistence were not tested in this tree.",
+      "Draft import staged in sdk/drafts/lofi2: no browser package, native/browser comparison, performance record or build approval exists yet, and the module is not listed in sdk/catalog.json."
+    ]
+  },
+  "resources": {
+    "recorded": "2026-10-12",
+    "storage": {
+      "label": "DSP program / table",
+      "display": "836 words + 516-word table per core",
+      "value": 1352,
+      "unit": "words",
+      "method": "static",
+      "conditions": "Native build report, both payloads: 836 program words and one 516-word P table, placed contiguously (1,352 words). 132 words of state in each instance's own r7 block ($00-$83). No allocator buffer, no Y memory. A 416-byte descriptor clone and 242 bytes of label formatters in ColdFire flash.",
+      "source": "TESTING.md"
+    },
+    "processing": {
+      "label": "DSP instruction peak",
+      "display": "428 instructions/sample (SHIFT), 274 (RING)",
+      "value": 428,
+      "unit": "instructions/sample",
+      "method": "emulator",
+      "conditions": "benchmark_stock_dsp.py's method in dsp_host (one instance per core, 16-sample blocks, null stub subtracted), fixed, moving and trig-split cases; stock SPRING REV 314, LO-FI 290, DJ EQ 331 under the same cases. Static cycle_count.py: 414 cycles/sample on the SHIFT path. Executed instructions, not chip cycles.",
+      "source": "TESTING.md"
+    },
+    "impact": {
+      "conditions": "One active instance in SHIFT at its dearest settings with moving controls and trig splits; RING is about 64% of that.",
+      "cpu": {
+        "level": "minimal",
+        "basis": "source-estimate",
+        "rationale": "No ColdFire code: a cloned FX2 descriptor and two label formatters; the stock parameter pages publish the knobs as for any effect.",
+        "source": "TESTING.md"
+      },
+      "dsp": {
+        "level": "high",
+        "basis": "measured-comparison",
+        "rationale": "428 executed instructions/sample worst case in SHIFT against 314 for stock SPRING REV, 290 for stock LO-FI and 331 for DJ EQ (the dearest stock effect) under the same dsp_host cases; RING is 274. Two Hilbert allpass pairs and nine glides. The author's MKII ran eight SHIFT instances at once, four per core, on his octabam build of this loop.",
+        "source": "TESTING.md"
+      },
+      "memory": {
+        "level": "high",
+        "basis": "source-estimate",
+        "rationale": "1,352 contiguous program-memory words on each DSP core (836 code, 516 table), more than any single stock reverb's span (SPRING REV 1,063, DARK REV 1,067), so a static build gives up two adjacent reverbs. 132 state words per instance in the existing r7 block; no buffer.",
+        "source": "TESTING.md"
+      }
+    }
+  },
+  "tests": {
+    "report": "TESTING.md",
+    "summary": "Ported unchanged in DSP from octabam e8665fae, the head of the author's optimisation pull request 704 (unmerged on 12 Oct 2026). A private native build on Modwerk's ID 0x09 passed all 48 checks of the author's render gate (levels, AMPH, GAIN, fade-in, MODE duck, SRR and BRR against stock LO-FI rendered from the tester's own OS 1.40C, the LPF shelf, FREQ fraction and every knob turn), plus dirty-state, init-register, menu, replaces, label and mode-name gates. Static cost 414 cycles/sample; dsp_host benchmark 428 instructions/sample in SHIFT against SPRING REV's 314. The relocatable DSP package for USB loading builds; the base's cycle rule admits it as 414 modeled and refuses it as 429 executed. Not tested here: hardware, parameter locks, scenes, persistence, payload B in the render gate, fx:audit, the stress run, browser packages, native/browser parity and any install on a base. The author reports this loop running on his MKII, eight SHIFT instances at once.",
+    "hardwareStatus": "untested",
+    "evidenceRevision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+    "gates": [
+      "verify_lofi2.py: 48 dsp_host checks on payload A, including SRR and BRR against stock LO-FI rendered from the tester's own image",
+      "verify_dirtystate, verify_initregs, verify_menu, verify_replaces, verify_labels, verify_modenames on the lofi2 test remix (static stock)",
+      "cycle_count.py static cost and a dsp_host benchmark against stock LO-FI, SPRING REV, DARK REV and DJ EQ",
+      "Elekloader path: relocatable DSP package (1,352 words, 4 relocations) and a private page-less runtime package build; no install was run",
+      "Not run: performance record (stress), fx:audit, native/browser comparison, hardware"
+    ],
+    "documentation": {
+      "tutorial": {
+        "title": "Quick tutorial: ring, crush and shift a loop",
+        "steps": [
+          "On an audio track that plays a sample, hold FUNC and press FX2, turn LEVEL to LOFI2 and press YES. Nothing changes yet: the defaults are a passthrough.",
+          "Press FX2 for the main page. Turn MIX (encoder B) to 127 and FREQ (encoder A) to 64: the track is ring-modulated. Raise SRR or BRR (encoders D and E) for sample-rate and bit reduction, and lower LPF (encoder F) from 127 to darken the result.",
+          "For the frequency shifter, hold FUNC and press FX2 and turn MODE (encoder C) to UP or DOWN; on the main page the third knob is now FDBK. To bypass, set MIX, SRR and BRR to 0 and LPF to 127, or choose NONE in FX2 SETUP."
+        ]
+      },
+      "screenshots": [
+        "media/ot-setup.png",
+        "media/ot-main.png",
+        "media/ot-ring.png",
+        "media/ot-mode-up.png",
+        "media/ot-shift.png"
+      ],
+      "screenshotStyle": "black-and-white"
+    }
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "LICENSE",
+    "declaration": "LOFI2 is Bryan T's work, contributed to octabam and distributed under octabam's MIT licence (Copyright (c) 2026 Sam Banks), whose full text is in LICENSE and upstream/LICENSE. Modwerk's adaptations, documentation, captures and thumbnail are MIT. Stock LO-FI's rates and curve appear only as the author's measured formulas; no firmware, extracted routines, tables or generated images are included."
+  },
+  "media": [
+    {
+      "path": "media/ot-setup.png",
+      "captureType": "emulator",
+      "caption": "Hold FUNC and press FX2, turn LEVEL to LOFI2 and press YES. The SETUP page then shows RANGE on encoder A, MODE on encoder C (it prints its own value, RING here) and AMPH on encoder E.",
+      "alt": "FX2 SETUP with LOFI2 highlighted under NONE in the effect list; knobs RANGE, RING and AMPH on the right.",
+      "credit": "Modwerk contributors (headless capture)",
+      "license": "LicenseRef-OT-UI-Documentation",
+      "source": "original",
+      "otUi": {
+        "page": "FX2 SETUP",
+        "shows": "location-and-controls",
+        "firmware": "1.40C",
+        "moduleVersion": "0.1.0-experimental",
+        "imageSha256": "43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e",
+        "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; private native build of the upstream lofi2 test remix (LOFI2 beside twelve stock effects, PLATE REV and SPRING REV given up); 128×64 LCD at integer scale 6."
+      }
+    },
+    {
+      "path": "media/ot-main.png",
+      "captureType": "emulator",
+      "caption": "Press FX2 for the main page: FREQ, MIX and GAIN above SRR, BRR and LPF. At these defaults LOFI2 passes the track through unchanged.",
+      "alt": "FX2 main page of LOFI2 with FREQ, MIX and GAIN above SRR, BRR and LPF.",
+      "credit": "Modwerk contributors (headless capture)",
+      "license": "LicenseRef-OT-UI-Documentation",
+      "source": "original",
+      "otUi": {
+        "page": "FX2 main",
+        "shows": "controls",
+        "firmware": "1.40C",
+        "moduleVersion": "0.1.0-experimental",
+        "imageSha256": "43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e",
+        "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; private native build of the upstream lofi2 test remix (LOFI2 beside twelve stock effects, PLATE REV and SPRING REV given up); 128×64 LCD at integer scale 6."
+      }
+    },
+    {
+      "path": "media/ot-ring.png",
+      "captureType": "emulator",
+      "caption": "Turn MIX (encoder B) to 127 and FREQ (encoder A) to 64 for a full ring modulation; GAIN (encoder C) makes up its level. Then raise SRR and BRR for reduction, or lower LPF to darken.",
+      "alt": "FX2 main page of LOFI2 with FREQ at 64 and MIX at 127; GAIN, SRR, BRR and LPF below.",
+      "credit": "Modwerk contributors (headless capture)",
+      "license": "LicenseRef-OT-UI-Documentation",
+      "source": "original",
+      "otUi": {
+        "page": "FX2 main, RING",
+        "shows": "controls",
+        "firmware": "1.40C",
+        "moduleVersion": "0.1.0-experimental",
+        "imageSha256": "43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e",
+        "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; private native build of the upstream lofi2 test remix (LOFI2 beside twelve stock effects, PLATE REV and SPRING REV given up); 128×64 LCD at integer scale 6."
+      }
+    },
+    {
+      "path": "media/ot-mode-up.png",
+      "captureType": "emulator",
+      "caption": "In FX2 SETUP turn MODE (encoder C) to UP or DOWN for the frequency shifter. The knob prints its value; RANGE picks the sub-audio or audio range and AMPH only acts in RING.",
+      "alt": "FX2 SETUP of LOFI2 with the third knob showing UP; RANGE and AMPH beside it.",
+      "credit": "Modwerk contributors (headless capture)",
+      "license": "LicenseRef-OT-UI-Documentation",
+      "source": "original",
+      "otUi": {
+        "page": "FX2 SETUP, MODE = UP",
+        "shows": "controls",
+        "firmware": "1.40C",
+        "moduleVersion": "0.1.0-experimental",
+        "imageSha256": "43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e",
+        "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; private native build of the upstream lofi2 test remix (LOFI2 beside twelve stock effects, PLATE REV and SPRING REV given up); 128×64 LCD at integer scale 6."
+      }
+    },
+    {
+      "path": "media/ot-shift.png",
+      "captureType": "emulator",
+      "caption": "With MODE on UP the third main-page knob is FDBK, the shifter's feedback (60 here). To bypass LOFI2 set MIX, SRR and BRR to 0 and LPF to 127, or choose NONE in FX2 SETUP.",
+      "alt": "FX2 main page of LOFI2 in shift mode: FREQ, MIX and FDBK at 60 above SRR, BRR and LPF.",
+      "credit": "Modwerk contributors (headless capture)",
+      "license": "LicenseRef-OT-UI-Documentation",
+      "source": "original",
+      "otUi": {
+        "page": "FX2 main, MODE = UP",
+        "shows": "controls",
+        "firmware": "1.40C",
+        "moduleVersion": "0.1.0-experimental",
+        "imageSha256": "43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e",
+        "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; private native build of the upstream lofi2 test remix (LOFI2 beside twelve stock effects, PLATE REV and SPRING REV given up); 128×64 LCD at integer scale 6."
+      }
+    }
+  ],
+  "access": {
+    "location": "Audio track FX2 SETUP: LOFI2 in the effect chooser.",
+    "steps": [
+      "Select an audio track with its TRACK key.",
+      "Hold FUNC and press FX2 to open FX2 SETUP.",
+      "Turn LEVEL to LOFI2 and press YES to assign it; RANGE, MODE and AMPH appear on the right of the SETUP page.",
+      "Press FX2 for the main page: FREQ, MIX, GAIN (FDBK in DOWN/UP), SRR, BRR and LPF."
+    ],
+    "screenshots": [
+      "media/ot-setup.png",
+      "media/ot-main.png",
+      "media/ot-ring.png",
+      "media/ot-mode-up.png",
+      "media/ot-shift.png"
+    ]
+  },
+  "source": {
+    "repository": "https://github.com/sambanks/octabam",
+    "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+    "path": "modules/lofi2"
+  }
+}

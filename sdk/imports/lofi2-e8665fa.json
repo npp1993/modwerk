@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/sambanks/octabam",
+  "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+  "moduleVersion": "0.1.0-experimental",
+  "root": "sdk/drafts/lofi2",
+  "modules": [
+    "lofi2"
+  ],
+  "author": {
+    "github": "bryantysinger",
+    "name": "Bryan T",
+    "pullRequest": "https://github.com/sambanks/octabam/pull/704",
+    "pullRequestState": "open, unmerged on 2026-10-12; head e8665fae3975c68a8b52ba8047c45aef5753a3f7 on bryantysinger:lofi2-opt (refs/pull/704/head)",
+    "basedOn": {
+      "pullRequest": "https://github.com/sambanks/octabam/pull/657",
+      "commit": "a6f41a1dff922be622e2e8a7d93bc5a5958c90ab",
+      "mergeCommit": "0024729b0f74a83d058fef7a375dd259decb5022"
+    }
+  },
+  "files": [
+    {
+      "path": "lofi2.asm",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+      "sourcePath": "modules/lofi2/lofi2.asm",
+      "sourceBytes": 52126,
+      "sourceGitBlob": "5ab3c8fda189f12979194f2cd33217d229d800a9",
+      "sourceSha256": "cecdd20bfca0f7561fa8c34c8066780e50406cf2396d8ee2ed42aad5bdf5d5ab",
+      "vendoredSha256": "cecdd20bfca0f7561fa8c34c8066780e50406cf2396d8ee2ed42aad5bdf5d5ab",
+      "note": "Imported unchanged"
+    },
+    {
+      "path": "manifest.py",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+      "sourcePath": "modules/lofi2/manifest.py",
+      "sourceBytes": 11357,
+      "sourceGitBlob": "6416d8f0437a548286ec2e95d4b1bd1399c13575",
+      "sourceSha256": "2a098828d0dd9648463ffdac28033ba492c9f1e3f067c861d303026d733f6e52",
+      "vendoredSha256": "6119f489410204feefcae2252e2eb90de5fd810ad003caf491495c6ab2af5d87",
+      "transforms": [
+        "MenuEntry.fx2_id 0x1f -> 0x09: 0x1f is TAPEHEAD's and 0x1e Airwindows Chorus's in Modwerk; the registry refuses two modules on one id. A comment says so; the author's own comment on 0x1f is kept.",
+        "DspSection.priority 15 -> 19: after every effect already listed in Modwerk (Mini Verb holds 15, E-Verb and Airwindows Chorus 18) and before Output Matrix (21) and Sidechain Compressor (30), so no existing module's placement moves. The comment is rewritten to say so.",
+        "Gate path tools/verify/verify_lofi2.py -> modules/lofi2/verify_lofi2.py.",
+        "Docstring: the first paragraph names both ids. Harness layout_char 'F', every Param, the tables, mode views, proof note and dear settings are unchanged."
+      ]
+    },
+    {
+      "path": "verify_lofi2.py",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+      "sourcePath": "tools/verify/verify_lofi2.py",
+      "sourceBytes": 20218,
+      "sourceGitBlob": "0f5b9515f4262ac080096ea3736de48dd0f41105",
+      "sourceSha256": "7c0103cbe4586e5ce80f92064f246637f67e178ab3ed2c1461d453ee06e0f5fc",
+      "vendoredSha256": "d8feb6850d283a0a605bf206f81cd52b38cda81890298b3baed8b217ee467537",
+      "transforms": [
+        "Moved from tools/verify/ into the module folder (tools/ is shared build input); the toolpath line and the usage line follow the new location.",
+        "octabam's audition._ensure_insert_mem builds its scratch image from the insert plus SEND with fallback SEND. Modwerk's tree has no SEND module, so the script builds the scratch image itself with the same build line and dump: LOFI2 alone, fallback NONE, static_stock=True; the user's out/mainos_bus.bin is saved and restored as before.",
+        "The 'module is really in the image' guard compares LOFI2's dispatch entries with an id absent from the scratch image (TAPEHEAD's) instead of SEND's.",
+        "All 48 checks, their inputs and their limits are unchanged."
+      ]
+    },
+    {
+      "path": "upstream/modules/lofi2/README.md",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+      "sourcePath": "modules/lofi2/README.md",
+      "sourceBytes": 16274,
+      "sourceGitBlob": "943ee2210c43934b6cf9a2c69ddd385bf4814a4e",
+      "sourceSha256": "29cd4277b5e2929ae7033832bf9f0d8fc57d06b4292f6d3862011c346e75d8b8",
+      "vendoredSha256": "29cd4277b5e2929ae7033832bf9f0d8fc57d06b4292f6d3862011c346e75d8b8",
+      "note": "Imported unchanged; the author's README, design notes and hardware reports"
+    },
+    {
+      "path": "upstream/modules/lofi2/manifest.py",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+      "sourcePath": "modules/lofi2/manifest.py",
+      "sourceBytes": 11357,
+      "sourceGitBlob": "6416d8f0437a548286ec2e95d4b1bd1399c13575",
+      "sourceSha256": "2a098828d0dd9648463ffdac28033ba492c9f1e3f067c861d303026d733f6e52",
+      "vendoredSha256": "2a098828d0dd9648463ffdac28033ba492c9f1e3f067c861d303026d733f6e52",
+      "note": "Imported unchanged; the author's original of the adapted manifest.py"
+    },
+    {
+      "path": "upstream/tools/verify/verify_lofi2.py",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+      "sourcePath": "tools/verify/verify_lofi2.py",
+      "sourceBytes": 20218,
+      "sourceGitBlob": "0f5b9515f4262ac080096ea3736de48dd0f41105",
+      "sourceSha256": "7c0103cbe4586e5ce80f92064f246637f67e178ab3ed2c1461d453ee06e0f5fc",
+      "vendoredSha256": "7c0103cbe4586e5ce80f92064f246637f67e178ab3ed2c1461d453ee06e0f5fc",
+      "note": "Imported unchanged; the author's original of the adapted verify_lofi2.py"
+    },
+    {
+      "path": "upstream/remixes/test/lofi2/remix.py",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+      "sourcePath": "remixes/test/lofi2/remix.py",
+      "sourceBytes": 655,
+      "sourceGitBlob": "46dbd69e63c35010201a8edaec609c3ce01e15c3",
+      "sourceSha256": "ff2cc60a1e757db04ad74746e8aea6719b4ed1e100ed03b3dd503d6273e4a7ec",
+      "vendoredSha256": "ff2cc60a1e757db04ad74746e8aea6719b4ed1e100ed03b3dd503d6273e4a7ec",
+      "note": "Imported unchanged; the author's test remix, used for the native build in TESTING.md"
+    },
+    {
+      "path": "upstream/remixes/test/lofi2/README.md",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+      "sourcePath": "remixes/test/lofi2/README.md",
+      "sourceBytes": 595,
+      "sourceGitBlob": "2c852bf6bd488e1c020485cba508ef796b378cd6",
+      "sourceSha256": "bf8525e2d8646f26a5b4c0cdefcd6e72b5e410be7fe2103653bb51c048232c09",
+      "vendoredSha256": "bf8525e2d8646f26a5b4c0cdefcd6e72b5e410be7fe2103653bb51c048232c09",
+      "note": "Imported unchanged"
+    },
+    {
+      "path": "upstream/LICENSE",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
+      "sourcePath": "LICENSE",
+      "sourceBytes": 2112,
+      "sourceGitBlob": "112114d5d319dc4a789dacf1e84b867420a03614",
+      "sourceSha256": "f91a43799d9e31ccc3540f385f68c4d6ff5a096f93ae933be2ce98f6b3f7f113",
+      "vendoredSha256": "f91a43799d9e31ccc3540f385f68c4d6ff5a096f93ae933be2ce98f6b3f7f113",
+      "note": "Imported unchanged; octabam's MIT licence, identical to sdk/octabam/LICENSE"
+    }
+  ],
+  "local": [
+    "LICENSE (header plus upstream/LICENSE in full)",
+    "README.md",
+    "TESTING.md",
+    "octamod.module.json",
+    "media/ (headless captures and capture.json)",
+    "presentation/thumbnail.svg",
+    "STAGING.md"
+  ],
+  "excluded": [
+    "Firmware, stock code or tables, generated images, memory dumps and renders",
+    "octabam's edits to its own shared files in the same commit (README.md, docs/contributing/*, docs/firmware/PARAM_PAGES.md, remixes/test/README.md, tools/remix/selftest.py)",
+    "Pull request 704's regenerated top-level README.md"
+  ],
+  "status": "Draft import; not listed in sdk/catalog.json. Kept outside the release SDK (sdk/drafts/lofi2) pending hardware qualification, the performance record and native/package integration. The pin is the head of an upstream pull request that was unmerged when imported: re-pin to its merge commit before any release. A private native build and the author's render gate pass (TESTING.md). The author's hardware reports are for his octabam builds, not this build, and are not replaced by a release approval."
+}
