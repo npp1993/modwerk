@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "module": "quantize-live-rec-toggle",
+  "version": "0.1.0-experimental",
+  "kind": "coldfire",
+  "cycles": {
+    "unit": "cycles/event",
+    "static": 384,
+    "measured": 368,
+    "budget": 95778,
+    "method": "Authored instructions only, priced at 16 core cycles each (the conservative ColdFire V4 per-instruction envelope Mute Modes' TESTING.md derives from the MCF54455 manual); not chip timing. Static: the longest path through the [PLAY] entry in patch_qlrec.s, 24 instructions. Measured: ot_emu program-counter watch on every instruction of the unit in the built image, MKII panel; the longest press executed 23 (invert, reopen the toast, then stock's [PLAY] path). The stock routines the unit calls (project gate, checksum, notification open and close) are stock cost and are excluded. Budget: one 362.8 us frame at 264 MHz, used as a generous deadline for a key handler that never runs in the frame path."
+  },
+  "load": {
+    "frameUs": 362.8,
+    "stockLongestUs": null,
+    "moduleLongestUs": null,
+    "stockIdlePercent": null,
+    "moduleIdlePercent": null,
+    "method": "Not measured. cfmeter.py decodes a capture from a real unit, and none exists for this build. The unit runs only inside the [PLAY] and [REC] key handlers, so by its source it adds nothing to the frame interrupt; that is an argument, not a measurement."
+  },
+  "stress": {
+    "floodMessagesPerSecond": null,
+    "clockBpm": null,
+    "seconds": null,
+    "stuckNotes": null,
+    "hangs": null,
+    "dropped": null,
+    "droppedExplanation": "Not run. The module handles no MIDI and has no per-frame work; no flood or timed stress run was made, in the port or on a unit."
+  }
+}

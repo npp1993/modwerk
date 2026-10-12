@@ -1,0 +1,81 @@
+{
+  "moduleVersion": "0.1.0-experimental",
+  "sourceSha256": "d9b8743bdc54a2a45b66ef09e938ce0173d79fb87fa015f472ff03bab96e0936",
+  "imageSha256": "dc90fdcebd69a38a675d29750daa64bbc2e497c0259fc2e309c9b3c14828b106",
+  "cycles": [
+    {
+      "processor": "coldfire",
+      "worstCase": 384,
+      "maxConfiguration": 384,
+      "maxInstances": 1,
+      "budget": 95778,
+      "unit": "cycles/event",
+      "method": "static",
+      "conditions": {
+        "parameterExtremes": "Both values of the setting (stored 0 and 1), toast present and absent, [REC] held and not held, live recording stopped and running: every branch of the two entries.",
+        "parameterModulation": "Not applicable: one global boolean reached by a key gesture; no LFO, parameter lock, scene or MIDI CC reaches it.",
+        "modeSwitching": "Repeated show, invert and invert-back presses inside one toast, and [REC] release with and without a toast on screen.",
+        "maxLoad": "One instance per unit (a global key gesture). The code runs once per [PLAY] press or [REC] release in the key handler, never in the frame or audio path.",
+        "inputConditions": "Independent of audio. Counts cover the authored instructions only; the stock routines they call (project gate, checksum, notification open and close) are stock cost and excluded."
+      },
+      "report": "TESTING.md"
+    }
+  ],
+  "memory": {
+    "regions": [
+      {
+        "name": "Authored ColdFire code and the two toast strings (linked unit qlr, ROM cave)",
+        "space": "cpu-flash",
+        "words": 176,
+        "wordBits": 8,
+        "bytes": 176,
+        "scope": "shared"
+      },
+      {
+        "name": "Two six-byte jmp detours written over stock instructions in place",
+        "space": "cpu-flash",
+        "words": 12,
+        "wordBits": 8,
+        "bytes": 12,
+        "scope": "shared"
+      }
+    ],
+    "perInstanceBytes": 0,
+    "sharedBytes": 188,
+    "maxInstances": 1,
+    "totalBytes": 188,
+    "conditions": "From the linked unit (176 bytes at any address; it is position independent) and the two detours. No RAM of its own: it reads and writes the stock setting word and its battery copy, and reads stock key and notification state. No heap; at most 8 bytes of stack beyond the stock key handler (two pushed arguments) before the stock calls.",
+    "report": "TESTING.md"
+  },
+  "hardware": {
+    "kind": "functional",
+    "status": "reported",
+    "model": "MKII",
+    "testedOn": "YYYY-MM-DD",
+    "tester": "GitHub login of the tester",
+    "sourceRevision": "REPLACE_WITH_THE_40_CHARACTER_COMMIT_OF_THE_TESTED_SOURCE",
+    "imageSha256": "REPLACE_WITH_THE_SHA256_OF_THE_TESTED_MAIN_OS_IMAGE",
+    "summary": "What was done on the unit and what happened: the show-then-invert gesture, that the first [REC] + [PLAY] still starts live recording, and that a changed setting survives a power cycle.",
+    "limitations": [
+      "What was not tested."
+    ],
+    "report": "TESTING.md"
+  },
+  "documentation": {
+    "tutorial": {
+      "title": "Quick tutorial: check and switch live-record quantize",
+      "steps": [
+        "Hold [REC] and tap [PLAY]: a toast shows QUANT LIVE REC ON or QUANT LIVE REC OFF, the current setting, and live recording starts as on the stock OS.",
+        "While the toast is still on screen (about one second), keep [REC] held and tap [PLAY] again to invert the setting; the toast reopens with the new value.",
+        "Tap [PLAY] once more while it is up to switch back, or release [REC] to close the toast; the setting stays as last shown.",
+        "Press [STOP] to end live recording. PROJECT > SYSTEM > PERSONALIZE > QUANTIZE LIVE REC shows and edits the same setting."
+      ]
+    },
+    "screenshots": [
+      "media/ot-toast-on.png",
+      "media/ot-toast-off.png",
+      "media/ot-personalize.png"
+    ],
+    "screenshotStyle": "black-and-white"
+  }
+}
