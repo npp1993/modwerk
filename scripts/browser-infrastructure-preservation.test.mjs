@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, renameSync, existsSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, renameSync, existsSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { BROWSER_PRESERVATION_PATH, BROWSER_PARITY_PATH, browserProtectedInputs, browserProtectedInputsSha256, loadBrowserInfrastructurePreservation } from './browser-infrastructure-preservation.mjs'
 import { generateBrowserPreservationBinding, writeBrowserPreservationBinding } from './generate-browser-preservation.mjs'
+import { PACKAGE_FILES } from './module-source.mjs'
 import { matchedParityImages, parityImage, parityReportSha256 } from './verify-tapeecho-browser-parity.mjs'
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const evidence = '32ac46b0c7e8c11e48ebc41674695e033142b46e'
@@ -25,6 +26,11 @@ async function fixture() {
   write('.git/objects/info/alternates', resolve(common, 'objects') + '\n')
   git('symbolic-ref', 'HEAD', 'refs/heads/main'); git('update-ref', 'refs/heads/main', evidence)
   for (const path of ['sdk/octabam/platform/fixture.txt', 'sdk/octabam/dsp/fixture.txt', 'sdk/octabam/tools/build/fixture.txt', 'sdk/octabam/tools/remix/fixture.txt', 'scripts/build-module-packages.py', 'scripts/module-source.mjs', 'src/engine/assets/legacy-packages.json', ...allowed.filter(path => ['client.ts', 'protocol.ts', 'session.ts', 'digi-build.ts'].includes(path.split('/').at(-1)))]) write(path, 'approved:' + path)
+  for (const name of PACKAGE_FILES) write('src/engine/assets/' + name, { schema: 1, sourceCommit: null, code: 'synthetic authored bytes', moduleVersions: { tapeecho: document.version } })
+  // Python preserves insertion order for integer-looking keys; JS would reorder them.
+  write('src/engine/assets/menu-recipes.json', '{\n  "schema": 1,\n  "sourceCommit": null,\n  "labels": {\n    "7": "---",\n    "6": "LADR"\n  }\n}\n')
+  const packageFiles = () => Object.fromEntries(PACKAGE_FILES.map(name => { const bytes = readFileSync(resolve(root, 'src/engine/assets/' + name)); return [name, { bytes: bytes.length, sha256: sha(bytes) }] }))
+  write('src/engine/assets/module-build.json', { sourceCommit: null, approval: null, files: packageFiles(), qualification: { hardware: false } })
   write('sdk/octabam/modules/tapeecho/octamod.module.json', document)
   git('add', '.'); git('commit', '-qm', 'Synthetic approved main')
   const base = git('rev-parse', 'HEAD'), before = await browserProtectedInputs(root, base)
@@ -41,7 +47,15 @@ async function fixture() {
     changes: Object.fromEntries(allowed.map(path => [path, { before: before[path] ?? null, after: after[path] }])), protectedInputHashes: after, protectedInputsSha256: browserProtectedInputsSha256(after), approvedProtectedInputsSha256: browserProtectedInputsSha256(before), proof: { reportSha256: '', runnerSha256: proof.runnerSha256 } }
   const save = () => { write(BROWSER_PARITY_PATH, proof); record.proof.reportSha256 = sha(JSON.stringify(proof, null, 2) + '\n'); write(BROWSER_PRESERVATION_PATH, record) }
   save()
-  return { root, base, candidate, record, proof, write, save, git, cleanup: () => rmSync(root, { recursive: true, force: true }) }
+  const publish = (importPackages = true) => {
+    if (importPackages) for (const name of PACKAGE_FILES) {
+      const path = 'src/engine/assets/' + name, bytes = readFileSync(resolve(root, path), 'utf8')
+      write(path, bytes.replace('  "sourceCommit": null,', '  "sourceCommit": ' + JSON.stringify(candidate) + ','))
+    }
+    const path = 'src/engine/assets/module-build.json', value = JSON.parse(readFileSync(resolve(root, path)))
+    write(path, { ...value, sourceCommit: candidate, approval: { kind: 'github-pr-merge', sourceCommit: candidate }, files: packageFiles() })
+  }
+  return { root, base, candidate, record, proof, write, save, git, publish, packageFiles, cleanup: () => rmSync(root, { recursive: true, force: true }) }
 }
 describe('one exact Tape Echo browser infrastructure binding', () => {
   it('accepts only reviewed source transitions, retaining every unchanged protected input', async () => {
@@ -52,6 +66,28 @@ describe('one exact Tape Echo browser infrastructure binding', () => {
       expect(result.matchesFile(null, Buffer.from('candidate:src/engine/elekloader/module-set.ts'), 'src/engine/elekloader/module-set.ts')).toBe(true)
       expect(result.matchesFile(null, Buffer.from('arbitrary'), 'src/engine/extra.ts')).toBe(false)
       expect(result.matchesFile(Buffer.from('approved:src/engine/client.ts'), Buffer.from('later'), 'src/engine/client.ts')).toBe(false)
+    } finally { f.cleanup() }
+  })
+  it.each([true, false])('accepts exact package provenance import or stamping (%s)', async importPackages => {
+    const f = await fixture()
+    try { f.publish(importPackages); expect(await loadBrowserInfrastructurePreservation(f.root, f.base, document)).not.toBeNull() } finally { f.cleanup() }
+  })
+  it.each(['payload', 'version', 'foreign commit', 'manifest hash', 'qualification', 'approval commit', 'duplicate key'])('rejects changed publication %s', async mutation => {
+    const f = await fixture()
+    try {
+      f.publish()
+      const packagePath = 'src/engine/assets/dsp-packages.json', buildPath = 'src/engine/assets/module-build.json'
+      const pkg = JSON.parse(readFileSync(resolve(f.root, packagePath))), build = JSON.parse(readFileSync(resolve(f.root, buildPath)))
+      if (mutation === 'payload') pkg.code += 'changed'
+      if (mutation === 'version') pkg.moduleVersions.tapeecho = '0.1.4-experimental'
+      if (mutation === 'foreign commit') pkg.sourceCommit = 'f'.repeat(40)
+      f.write(packagePath, pkg); build.files = f.packageFiles()
+      if (mutation === 'manifest hash') build.files['dsp-packages.json'].sha256 = 'f'.repeat(64)
+      if (mutation === 'qualification') build.qualification.hardware = true
+      if (mutation === 'approval commit') build.approval.sourceCommit = 'f'.repeat(40)
+      f.write(buildPath, build)
+      if (mutation === 'duplicate key') f.write(packagePath, JSON.stringify(pkg, null, 2).replace('"schema": 1,', '"schema": 1,\n  "schema": 1,') + '\n')
+      await expect(loadBrowserInfrastructurePreservation(f.root, f.base, document)).rejects.toThrow('Invalid or stale')
     } finally { f.cleanup() }
   })
   it('leaves the original fail-closed path active without a real binding', async () => {
