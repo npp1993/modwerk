@@ -3,7 +3,7 @@
   "repository": "https://github.com/sambanks/octabam",
   "revision": "e8665fae3975c68a8b52ba8047c45aef5753a3f7",
   "moduleVersion": "0.1.0-experimental",
-  "root": "sdk/drafts/lofi2",
+  "root": "sdk/octabam/modules/lofi2",
   "modules": [
     "lofi2"
   ],
@@ -38,11 +38,12 @@
       "sourceBytes": 11357,
       "sourceGitBlob": "6416d8f0437a548286ec2e95d4b1bd1399c13575",
       "sourceSha256": "2a098828d0dd9648463ffdac28033ba492c9f1e3f067c861d303026d733f6e52",
-      "vendoredSha256": "6119f489410204feefcae2252e2eb90de5fd810ad003caf491495c6ab2af5d87",
+      "vendoredSha256": "96b362e87ad633568f8004847bdd31d2f63fb74f788bc07c5f0175e9413aea32",
       "transforms": [
         "MenuEntry.fx2_id 0x1f -> 0x09: 0x1f is TAPEHEAD's and 0x1e Airwindows Chorus's in Modwerk; the registry refuses two modules on one id. A comment says so; the author's own comment on 0x1f is kept.",
         "DspSection.priority 15 -> 19: after every effect already listed in Modwerk (Mini Verb holds 15, E-Verb and Airwindows Chorus 18) and before Output Matrix (21) and Sidechain Compressor (30), so no existing module's placement moves. The comment is rewritten to say so.",
         "Gate path tools/verify/verify_lofi2.py -> modules/lofi2/verify_lofi2.py.",
+        "Module.author \"Bryan T\" -> \"bryantysinger\": Modwerk's package compiler requires the native author to equal the manifest's GitHub handle. \"Bryan T\" remains the display name in octamod.module.json.",
         "Docstring: the first paragraph names both ids. Harness layout_char 'F', every Param, the tables, mode views, proof note and dear settings are unchanged."
       ]
     },
@@ -135,8 +136,7 @@
     "TESTING.md",
     "octamod.module.json",
     "media/ (headless captures and capture.json)",
-    "presentation/thumbnail.svg",
-    "STAGING.md"
+    "presentation/thumbnail.svg"
   ],
   "excluded": [
     "Firmware, stock code or tables, generated images, memory dumps and renders",

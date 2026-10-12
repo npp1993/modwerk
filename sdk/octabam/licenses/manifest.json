@@ -276,6 +276,20 @@
       "usedIn": [
         "modules/sidechain-compressor"
       ]
+    },
+    {
+      "id": "lofi2",
+      "name": "LOFI2 (Bryan T, in octabam)",
+      "spdx": "MIT",
+      "noticeFile": "lofi2.txt",
+      "sources": [
+        {
+          "path": "sdk/octabam/modules/lofi2/upstream/LICENSE"
+        }
+      ],
+      "usedIn": [
+        "modules/lofi2"
+      ]
     }
   ],
   "moduleComponents": {
@@ -309,6 +323,9 @@
     ],
     "airwindows-chorus": [
       "airwindows"
+    ],
+    "lofi2": [
+      "lofi2"
     ]
   }
 }

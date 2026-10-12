@@ -114,7 +114,10 @@ MODULE = Module(
     name="lofi2",
     key="LOFI2",
     kind=Kind.DSP_EFFECT,
-    category=Category.TRACK, author="Bryan T", author_url="https://github.com/bryantysinger",
+    # Modwerk: the GitHub handle, as every module here has it (the package
+    # compiler matches it against octamod.module.json's author.github).
+    # octabam has "Bryan T", which stays the display name there.
+    category=Category.TRACK, author="bryantysinger", author_url="https://github.com/bryantysinger",
     proof=Proof.HARDWARE,
     proof_note="Bryan T's MKII, images 96-99 (Oct 2026, this tree): tracks 1 and 5, five instances at once; `_bt_oct` build 11 (12 Oct 2026, the 414-cycle loop): eight in SHIFT at once, four per core, UP/DOWN switched while playing",
     doc="Ring mod or frequency shifter, then sample-rate and bit reduction.",
