@@ -109,7 +109,7 @@ Counted on QLRTEST02's MAIN OS. In the invert-while-recording run the watch repo
 
 ## Native comparison and listing dry run
 
-**Not repeated for the current 186-byte unit.** A re-run on main `23556edd` (13 October 2026) built and imported the packages in the isolated container, then stopped at catalogue generation: listing changes `src/engine/requested-modules.ts`, `src/engine/compose-os.ts` and `scripts/build-module-packages.py`, which the Tape Echo browser-preservation binding (`scripts/browser-infrastructure-preservation.mjs`) pins, so the binding refuses the tree and no comparison runs. The record below is from the 176-byte unit and may not hold for 186 bytes.
+**Not repeated for the current 186-byte unit.** A re-run on main `8eabba1c` (13 October 2026, after repeat98/modwerk#562 let other modules' package rows pass the Tape Echo browser-preservation binding) built and imported the packages in the isolated container, then stopped at catalogue generation. This module's package rows now pass the binding; what it still refuses is the shared code listing changes: `src/engine/requested-modules.ts` (late ROM placement, the Recorder Loop Fix cave rule), `src/engine/compose-os.ts` and `scripts/build-module-packages.py` (the hard-coded lists of requested modules), which the binding pins, and the `compilerSha256` in `module-build.json` that the last one changes. So no comparison runs. The record below is from the 176-byte unit and may not hold for 186 bytes.
 
 Done on 12 October 2026, with the author's toast wording (176 bytes), on a scratch copy of the Elekloader migration branch (since merged as repeat98/modwerk#464) with the module listed (catalogue entry, packages built in the isolated toolchain container and imported, `npm run module:verify -- quantize-live-rec-toggle --os <OS 1.40C update file>`). None of it is committed; the shared-code patch, the comparison record and the logs are kept outside the repository with the session notes.
 
@@ -124,7 +124,7 @@ What listing still needs:
 1. Move `qualification.example.json`, which now holds the user's MKII report on QLRTEST02, into `tests.qualification`. In the 13 October re-run it passed the listing contract's hardware rule (report image = qualified image, report source = `tests.evidenceRevision`).
 2. The owner's decision on the two performance rows that were not measured (Performance, above).
 3. Room for the declaration checks: listing records 493,056 more selections and takes `src/catalog/native-metadata.json` from 70 MB to 142 MB, over GitHub's 100 MB file limit. That needs a change to how the record is kept.
-4. The owner's rebinding of the Tape Echo browser-preservation record, or another route, for the shared composer changes this module needs (see the start of this section); then the comparison above, re-run for the 186-byte unit.
+4. A route past the Tape Echo browser-preservation binding for the shared code changes this module needs (see the start of this section): the owner rebinding it, or the module lists and ROM order read from data instead of code. Then the comparison above, re-run for the 186-byte unit.
 5. The `module:verify` step also adds this module to `src/engine/assets/chooser-metadata.json`, which the Octatrack base hashes as a build input, so the committed base would have to be rebuilt. The module builds to the same bytes without that entry.
 6. Then: move the folder to `sdk/octabam/modules/`, add the catalogue entry, the licence component and the changelog entry, build and import the packages, and run `module:verify`.
 
