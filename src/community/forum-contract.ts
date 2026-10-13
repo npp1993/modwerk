@@ -88,6 +88,6 @@ export type ForumReplyItem = {id:string;thread_id:string;title:string;excerpt:st
 export type MemberProfile = {username:string;displayName:string;bio:string;avatar:string|null;memberSince:string;role:MemberRole;betaTester?:boolean;threads:number;replies:number;likesReceived:number;reports:number;maintains:{id:string;name:string;machine:string;href:string}[];recentReplies:ForumReplyItem[]} & ProfileLinks
 export type ForumMember = {username:string;avatar:string|null}
 export type ForumHighlights = {since:string;topPosts:(ForumReplyItem&ForumMember&{category:ForumCategory;likes:number})[];topMembers:(ForumMember&{likes:number})[];newMembers:ForumMember[]}
-/** The public online count, and the names of members who show themselves in the online list; `more` are online but unlisted. */
-export type MembersOnline = {online:number;members:ForumMember[];more:number}
+/** All active site visitors, and consenting member names; `more` includes anonymous and unnamed visitors. */
+export type MembersOnline = {online:number;members:ForumMember[];more:number;guests?:number}
 export type ThreadDetail = {thread:ForumThread;posts:ForumPost[];configuration:SharedConfiguration|null;issue:{device:string;version:string;steps:string;expected:string;actual:string}|null;following:boolean;bookmarked:boolean;voted:boolean;canSetRequestStatus:boolean;hasMore:boolean;firstUnread?:{id:string;page:number}|null}

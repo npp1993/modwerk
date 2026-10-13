@@ -37,6 +37,15 @@ describe('community read recovery',()=>{
   expect(headers.map(value=>value.has('Authorization'))).toEqual([false,false,false,true,true])
   expect(headers.map(value=>value.has('X-Octamod-Admin'))).toEqual([false,false,false,true,true])
  })
+ it('sends the member session on a presence check-in while leaving public count reads credential-free',async()=>{
+  vi.stubGlobal('localStorage',{getItem:()=>'a'.repeat(64)})
+  const fetch=vi.fn().mockImplementation(async()=>Response.json({online:1,members:[],more:1}))
+  vi.stubGlobal('fetch',fetch)
+  await api('/community/online');await post('/community/online',{})
+  const headers=fetch.mock.calls.map(([,options])=>(options as RequestInit).headers as Headers)
+  expect(headers[0].has('Authorization')).toBe(false)
+  expect(headers[1].get('Authorization')).toBe('Bearer '+'a'.repeat(64))
+ })
 
  it('retries a transient session failure once',async()=>{
   const fetch=vi.fn().mockResolvedValueOnce(Response.json({error:'temporary'}, {status:503})).mockResolvedValueOnce(Response.json({available:true,user:null}))

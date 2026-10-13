@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os'
 import { resolve, dirname } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { loadBuilderPreservation } from './builder-preservation.mjs'
+import { engineAsset, otherModuleIds } from './engine-asset.mjs'
 import { loadBrowserInfrastructurePreservation } from './browser-infrastructure-preservation.mjs'
 import { parseModuleDocument } from '../src/catalog/module-contract.ts'
 import { compareModuleVersions } from '../src/catalog/versions.ts'
@@ -80,50 +81,6 @@ function editorial(path, document) {
   return path === 'octamod.module.json' || path === 'README.md' || /^docs\/.*\.md$/i.test(path)
     || /^(LICENSE|LICENCE|COPYING)(\..*)?$/i.test(path)
     || /^media\/.*\.(png|jpg|jpeg|webp|svg|wav|mp3|ogg)$/i.test(path)
-}
-// Every catalog module other than the retained one, at the evidence commit or
-// now. Their package rows and version labels are their own releases, qualified
-// on their own; retained evidence freezes its module's package and shared code.
-async function otherModuleIds(root, document, commit) {
-  const ids = new Set()
-  const catalogs = [JSON.parse(await readFile(resolve(root, 'sdk/catalog.json'), 'utf8'))]
-  if (commit) catalogs.push(JSON.parse(text(root, 'show', commit + ':sdk/catalog.json')))
-  for (const catalog of catalogs) for (const module of catalog.modules) ids.add(module.id)
-  ids.delete(document.id)
-  return [...ids]
-}
-function engineAsset(bytes, path, document, previousVersion, addedIds = [], otherIds = []) {
-  const value = JSON.parse(bytes.toString('utf8'))
-  // Rebuilt package provenance and the version label change for editorial
-  // releases. Preserve every byte, address, recipe, limit and test verdict.
-  delete value.sourceCommit
-  const omitted = [...new Set([...addedIds, ...otherIds])]
-  for (const id of omitted) if (value.moduleVersions) delete value.moduleVersions[id]
-  if (value.moduleVersions?.[document.id] === document.version) value.moduleVersions[document.id] = previousVersion
-  if (path === 'src/engine/assets/module-build.json') {
-    delete value.approval
-    delete value.sourceTreeSha256
-    if (addedIds.length) delete value.compilerSha256
-    delete value.files // Derived file hashes; package payloads are checked below.
-    // The release independently verifies and stamps owner approval. This
-    // provenance changes on every release, without changing runtime inputs.
-    delete value.approval
-  }
-  if (path === 'src/engine/assets/analog-bd-composition-proofs.json') {
-    // Derived inventory identity changes with an editorial version label. The
-    // native image hashes, placements and verdicts below remain protected.
-    delete value.moduleSourceTreeSha256
-  }
-  function visit(item) {
-    if (!item || typeof item !== 'object') return
-    if ((item.id === document.id || item.moduleId === document.id) && item.version === document.version) item.version = previousVersion
-    for (const [key, child] of Object.entries(item)) {
-      if (Array.isArray(child)) item[key] = child.filter(row => !row || typeof row !== 'object' || !omitted.includes(row.moduleId ?? row.id) && !(Array.isArray(row.ids) && row.ids.some(id => omitted.includes(id))))
-      visit(item[key])
-    }
-  }
-  visit(value)
-  return value
 }
 function sameFiles(previous, current, skip, label, compare = (a, b) => a.equals(b), preserved = () => false) {
   const paths = new Set([...previous.keys(), ...current.keys()])

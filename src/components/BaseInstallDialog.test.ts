@@ -53,6 +53,16 @@ async function mount(kind: 'stock' | 'base', expectedBase = FAKE_BASE) {
 }
 
 describe('resuming the first base installation', () => {
+  it('explains DSP memory sharing alongside USB setup without hiding the explanation on phones', async () => {
+    const link = new OctatrackLink(undefined)
+    await act(() => root.render(createElement(BaseInstallDialog, { link, launch: true, firmwareReady: false, onChooseFirmware() {}, onClose() {}, onReady() {} })))
+    expect(container.querySelector('h2')?.textContent).toContain('Sync to Octatrack')
+    expect(container.querySelector('#base-install-intro')?.textContent).toContain('modules go straight from this page')
+    const benefit = [...container.querySelectorAll('.link-promises li')].find(element => element.querySelector('strong')?.textContent === 'Better DSP memory use')!
+    expect(benefit.textContent).toContain('Effects load as needed, sharing one copy of their code between tracks on the same DSP core.')
+    expect(benefit.querySelector('.link-feature-rest')).toBeNull()
+    expect(container.textContent).toContain('Stock effects stay')
+  })
   it('waits through an original-OS connection and returns to the set when a base reconnects', async () => {
     waitForBaseInstall('b'.repeat(64), FAKE_BASE, undefined, 'studio')
     const { unit, link, onReady } = await mount('stock')

@@ -15,7 +15,9 @@ The instrument dropdown lists every profile in `sdk/machines/<id>/machine.json`,
 
 Keep firmware, extracted stock bytes/tables, dumps, projects/cards and complete built images private. Submit only original or properly licensed source/media and approved stock-free module packages. Keep the previous approved download available while a new release is pending or failed.
 
-For repeated release checks, the [local firmware download API](FIRMWARE_DOWNLOAD_API.md) saves and hashes builds from the deployed catalogue without a browser. Its receipt identifies this local verification method; browser-flow and hardware checks remain separate requirements where applicable.
+For repeated release checks, the [local firmware download API](FIRMWARE_DOWNLOAD_API.md) saves and hashes builds from the deployed catalogue without a browser. Its receipt identifies this local verification method; interaction, rendered-layout and hardware evidence remain distinct where applicable.
+
+Use the beta [frontend and device MCP](FRONTEND_MCP.md) for developer site checks: `npm run --silent mcp -- --data-dir PRIVATE_DIR` with isolated private state, fixed startup paths/URLs and normal member/developer authentication. Source/domain, HTTP/API and MCP/DOM regressions come first, then authorized physical-device qualification; do not use computer-use or browser-control site testing. Writes need the explicit API/device flags, and USB trials retain exact identity/version review, actual self-test and explicit Keep/Undo. See [testing and evidence limits](APP_DEVELOPMENT.md#testing-through-the-developer-mcp). Never treat MCP availability or a passed software test as proof of whole-catalogue compatibility, audible output or physical reboot persistence.
 
 ## Update or fix an approved module
 

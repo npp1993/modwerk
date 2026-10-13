@@ -20,7 +20,7 @@ import { recordAnonymousCount, recordUsage, recordModuleDownload, usageStatistic
 import { moduleStatistics } from './module-statistics'
 import { worksReportCount } from './hardware-reports'
 import { workingReportRoute } from './working-reports'
-import { membersOnline } from './presence'
+import { membersOnline, sitePresenceRoute } from './presence'
 import { adminInsights } from './admin-insights'
 import { adminAccounts } from './admin-accounts'
 import { adminActivity } from './admin-activity'
@@ -87,6 +87,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     const developerAuth = await developerAuthentication(request,env,db)
     if(developerAuth)return developerAuth
     const user = await currentUser(request,db,env)
+    if(path==='/api/community/online'&&request.method==='POST')return await sitePresenceRoute(request,env,db,user)
     const publicReply = request.method === 'POST' ? await publicIssueReplies(request,env,db,user) : null
     if (publicReply) return publicReply
     if (path === '/api/working-reports') return await workingReportRoute(request,db,user)

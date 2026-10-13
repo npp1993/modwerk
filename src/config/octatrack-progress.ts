@@ -33,3 +33,21 @@ export function lastSuccessfulSync(base?: string): SuccessfulSync | undefined {
       && typeof value.at === 'string' && Number.isFinite(Date.parse(value.at)) ? value : undefined
   } catch { return undefined }
 }
+
+const LOG = 'modwerk.octatrack.sync-log'
+export const SYNC_LOG_LENGTH = 20
+export type SyncOutcome = 'kept' | 'undone' | 'failed'
+export interface SyncRecord { at: string; name: string; modules: number; outcome: SyncOutcome; message?: string }
+const syncRecord = (value: Partial<SyncRecord> | null): value is SyncRecord => !!value && typeof value.at === 'string' && Number.isFinite(Date.parse(value.at))
+  && typeof value.name === 'string' && Number.isInteger(value.modules) && value.modules! >= 0 && ['kept', 'undone', 'failed'].includes(value.outcome!)
+  && (value.message === undefined || typeof value.message === 'string')
+/** This browser's syncs, newest first: the base keeps no log of its own. */
+export function syncHistory(): SyncRecord[] {
+  try {
+    const value = JSON.parse(localStorage.getItem(LOG) ?? '[]')
+    return Array.isArray(value) ? value.filter(syncRecord).slice(0, SYNC_LOG_LENGTH) : []
+  } catch { return [] }
+}
+export function recordSync(entry: Omit<SyncRecord, 'at'>, at = new Date().toISOString()) {
+  try { localStorage.setItem(LOG, JSON.stringify([{ ...entry, at }, ...syncHistory()].slice(0, SYNC_LOG_LENGTH))) } catch { /* storage is optional */ }
+}

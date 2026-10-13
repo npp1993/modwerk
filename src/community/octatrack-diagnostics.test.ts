@@ -7,7 +7,7 @@ import type { User } from '../../server/platform'
 import { DIAGNOSTIC_BUILD_ERRORS, DIAGNOSTIC_BUILD_KINDS, DIAGNOSTIC_BUILD_PHASES, OCTATRACK_DIAGNOSTICS_VERSION as version } from './octatrack-diagnostics-contract'
 import { handleCommunity } from '../../server/transport'
 const databases: DatabaseSync[] = []
-afterEach(()=>{vi.unstubAllGlobals();databases.splice(0).forEach(db=>db.close())})
+afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();databases.splice(0).forEach(db=>db.close())})
 async function fixture() {
   const server=await testServer();databases.push(server.db)
   for(const [id,token,beta] of [['tester','a'.repeat(64),1],['another','b'.repeat(64),1],['member','c'.repeat(64),0]] as const) {
@@ -86,6 +86,9 @@ describe('private consented Octatrack diagnostics',()=>{
     expect(db.prepare('SELECT count(*) AS n FROM octatrack_diagnostic_consent').get()).toEqual({n:0})
   })
   it('requires fresh consent for the disclosed browser and build failure purpose',async()=>{
+    vi.useFakeTimers({toFake:['Date']})
+    const acceptedAt=new Date('2026-10-13T12:00:00.000Z')
+    vi.setSystemTime(acceptedAt)
     const {call,db,env,consent,send}=await fixture(), token='c'.repeat(64)
     await consent(true,token);await send(undefined,token)
     db.prepare("UPDATE octatrack_diagnostic_consent SET version='2026-10-12' WHERE user_id='member'").run()
@@ -93,7 +96,11 @@ describe('private consented Octatrack diagnostics',()=>{
     expect((await send(undefined,token)).status).toBe(403)
     await cleanupOctatrackDiagnostics(env.DB!)
     expect(db.prepare('SELECT count(*) AS n FROM octatrack_diagnostic_events').get()).toEqual({n:0})
-    expect((await consent(true,token)).status).toBe(200)
+    // Equal timestamps cannot supersede the prior consent decision.
+    expect(await(await consent(true,token)).json()).toMatchObject({enabled:false})
+    expect((await send(undefined,token)).status).toBe(403)
+    vi.setSystemTime(acceptedAt.getTime()+1)
+    expect(await(await consent(true,token)).json()).toMatchObject({enabled:true,version})
     expect((await send(undefined,token)).status).toBe(200)
   })
   it('deduplicates retries, isolates accounts, permits admin review and deletes on withdrawal',async()=>{

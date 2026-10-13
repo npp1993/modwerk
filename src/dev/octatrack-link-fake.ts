@@ -32,6 +32,8 @@ export interface FakeUnit {
   project?: { id: string; name: string }[]
   /** A transaction a session left staged when its reply went missing: only a session that adopts it can cancel it. */
   staged?: boolean
+  /** Previews only: a passed self-test with the set saved on the card, and live meters (requests 21 and 30). */
+  status?: boolean
   /** The loader refuses the next load with this reason (loader.h runtime_refusal), as the base's record reports it. */
   refusal?: number
   /** Rollbacks the loader cannot switch yet (an effect's code still being published): the controller stays in recovery. */
@@ -73,6 +75,18 @@ export function fakeUnit(kind: 'base' | 'stock' | 'none' = 'base'): FakeUnit {
           ;[0x4d, 0x57, 0x49, page.length].forEach((byte, i) => list.setUint8(i, byte))
           page.forEach((id, i) => { list.setUint8(4 + 24 * i, 0xff); list.setUint32(8 + 24 * i, Number.parseInt(id, 16)) })
           return { status: 'ok', data: list }
+        }
+        if (setup.request === 30 && unit.status) { // MWLD v1: CPU, tracks 5-8 and its peak, tracks 1-4 and its peak, per mille
+          const load = new DataView(new ArrayBuffer(48)), ticks = Math.floor(Date.now() / 20) >>> 0, wave = (phase: number) => Math.round(80 * Math.sin(Date.now() / 9000 + phase))
+          load.setUint32(0, 0x4d574c44); load.setUint8(4, 1); load.setUint8(5, 7); load.setUint16(6, 48); load.setUint32(8, ticks); load.setUint32(12, ticks * 3)
+          ;[16, 20, 24].forEach(offset => load.setUint32(offset, ticks))
+          ;[380 + wave(0), 520 + wave(2), 640, 260 + wave(4), 410].forEach((value, i) => load.setUint32(28 + 4 * i, value))
+          return { status: 'ok', data: load }
+        }
+        if (setup.request === 21 && unit.status && unit.refusal === undefined) { // passed, peaks, saved on the card and read back
+          const record = new DataView(new ArrayBuffer(SELFTEST_BYTES)), count = unit.installed.moduleIds.length
+          ;[[0, 2], [3, count], [7, 410], [8, 655], [9, 470], [14, 47900], [15, 7], [16, count], [17, count]].forEach(([at, value]) => record.setUint32(4 * at, value))
+          return { status: 'ok', data: record }
         }
         if (setup.request !== 21 || unit.refusal === undefined) return { status: 'stall' }
         const record = new DataView(new ArrayBuffer(SELFTEST_BYTES)) // the base's record, idle, with its last refusal
@@ -154,7 +168,7 @@ export function fakeSession(unit: FakeUnit, delay = 0) {
  * Dev previews (`?preview=usb-link|base-install&unit=base|stock|none|unsupported`): the link against a pretend
  * unit, driven from the console through `modwerkUsbPreview`: plug('base' | 'stock'), unplug(),
  * playing = true, taken = true. Add `inventory=empty` for a freshly installed base and `missing=project` for
- * a project needing E-Verb, Euclid, Air Chorus and TapeHead.
+ * a project needing E-Verb, Euclid, Air Chorus and TapeHead, and `status=old` for a base without a self-test record or live load.
  * There is no pretend base build: a preview must never save a file
  * that looks like firmware.
  */
@@ -164,6 +178,7 @@ export function previewKit() {
   if (kind === 'unsupported') return { link: new OctatrackLink(null) }
   const unit = fakeUnit(kind === 'stock' || kind === 'none' ? kind : 'base')
   unit.installed = { moduleIds: params.get('inventory') === 'empty' ? [] : ['everb', 'airwindows-chorus', 'poly8'], removedStockFx: [] }
+  unit.status = params.get('status') !== 'old'
   if (params.get('missing') === 'project') unit.project = [{ id: 'everb', name: 'E-Verb' }, { id: 'euclid', name: 'Euclid' }, { id: 'airwindows-chorus', name: 'Air Chorus' }, { id: 'tapehead', name: 'TapeHead' }]
   Object.assign(window, { modwerkUsbPreview: unit })
   return {

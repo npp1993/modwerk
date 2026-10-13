@@ -47,12 +47,12 @@ bridge runs in Windows Python and serves TCP; with WSL's mirrored networking (`n
 ```sh
 # Windows, once: a venv with pyusb and libusb-package (cmd expands %LOCALAPPDATA%; a path with non-ASCII
 # characters cannot be passed from WSL). Then, each time:
-#   "%LOCALAPPDATA%\modwerk-usb\venv\Scripts\python.exe" -B usb_bridge.py 47811
+#   "%LOCALAPPDATA%\modwerk-usb\venv\Scripts\python.exe" -B octatrack-usb-bridge.py 47811
 # WSL:
 while :; do node scripts/device.mjs serve --socket 47811; sleep 1; done
 ```
 
-The bridge runs from a copy of `usb_bridge.py` on the Windows side. Stop it with PowerShell's `Stop-Process` (find
+The bridge runs from a copy of `octatrack-usb-bridge.py` on the Windows side. Stop it with PowerShell's `Stop-Process` (find
 it with `Get-CimInstance Win32_Process`; `wmic` is gone). `boot` and `try` on Windows need a client from 12 October
 2026 or later: older ones send 4,148-byte frames, which WinUSB refuses
 ([traps](OCTATRACK_HARDWARE_TRAPS.md#usb-and-ep0)).

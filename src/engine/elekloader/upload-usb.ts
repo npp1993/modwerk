@@ -3,6 +3,9 @@
 // The interface has no endpoints, so EP3 OUT stays free for USB Audio In.
 import { UPLOAD_HEADER, UPLOAD_MAX_FRAME, UPLOAD_RESPONSE, UPLOAD_VERSION } from './upload-wire.ts'
 import type { UploadTransport } from './upload-session.ts'
+import { LOAD_BYTES, parseLoadReading, type LoadReading, SAVED_SET_METADATA_BYTES, SAVED_SET_CHUNK_BYTES,
+  SAVED_SET_CHUNK_DATA, parseSavedSetMetadata, parseSavedSetChunk, ZERO_DIGEST, type SavedSetMetadata, type SavedSetSnapshot } from './upload-wire.ts'
+import { sha, toHex } from '../../../vendor/elekloader/kit/src/bytes.ts'
 
 export const VENDOR_CLASS = 0xff
 export const VENDOR_SUBCLASS = 0x4d // 'M'; must match the base's interface descriptor.
@@ -169,6 +172,114 @@ export class UsbVendorTransport implements UploadTransport {
     if (reply.status === 'stall') return undefined
     if (reply.status !== 'ok' || !reply.data) throw new VendorTransportError('The Octatrack did not answer the loader capabilities request.')
     return parseRuntimeCapabilities(reply.data)
+  }
+  /** Cached, read-only live meters. Older bases explicitly stall this request. */
+  async load(signal?: AbortSignal): Promise<LoadReading | undefined> {
+    signal?.throwIfAborted()
+    const reply = await this.device.controlTransferIn(this.setup(30, 0), LOAD_BYTES)
+    signal?.throwIfAborted()
+    if (reply.status === 'stall') return undefined
+    if (reply.status !== 'ok' || !reply.data) throw new VendorTransportError('The Octatrack did not answer the load request.')
+    return parseLoadReading(reply.data)
+  }
+  /** Two fixed saved files, read while a single caller holds the frontend link lock.
+   * An unreadable file is an error record, never proof that the file is absent. */
+  async savedBackup(signal?: AbortSignal): Promise<SavedSetSnapshot[] | undefined> {
+    const snapshots: SavedSetSnapshot[] = []
+    for (const slot of [0, 1] as const) {
+      const snapshot = await this.savedSet(slot, signal)
+      if (!snapshot) {
+        if (snapshots.length) throw new VendorTransportError('The saved-file export disappeared during the backup.')
+        return undefined
+      }
+      snapshots.push(snapshot)
+    }
+    return snapshots
+  }
+  private async savedMetadata(value: number, unsupported = false): Promise<SavedSetMetadata | undefined> {
+    const reply = await this.device.controlTransferIn(this.setup(31, value), SAVED_SET_METADATA_BYTES)
+    if (unsupported && reply.status === 'stall') return undefined
+    if (reply.status !== 'ok' || !reply.data) throw new VendorTransportError('The Octatrack did not confirm its saved-file snapshot.')
+    return parseSavedSetMetadata(reply.data)
+  }
+  private async releaseSavedSet(token: number) {
+    // One release attempt for our positively acknowledged token. A lost reply is
+    // reconciled by polling, never by replaying Begin or releasing another job.
+    let metadata: SavedSetMetadata | undefined
+    try {
+      const reply = await this.device.controlTransferIn(this.setup(33, token), SAVED_SET_METADATA_BYTES)
+      if (reply.status === 'ok' && reply.data) metadata = parseSavedSetMetadata(reply.data)
+    } catch { /* A read-only poll establishes whether the owned lease ended. */ }
+    if (metadata?.status === 'idle' && metadata.token === token) return
+    const current = await this.savedMetadata(0)
+    if (current && (current.token > token || current.token === token && current.status === 'idle')) return
+    throw new VendorTransportError('The saved-file snapshot release is unconfirmed; wait for its expiry before another operation.')
+  }
+  private async savedSet(slot: 0 | 1, signal?: AbortSignal): Promise<SavedSetSnapshot | undefined> {
+    const deadline = AbortSignal.timeout(60000), stopped = signal ? AbortSignal.any([signal, deadline]) : deadline
+    stopped.throwIfAborted()
+    const baseline = await this.savedMetadata(0, true)
+    stopped.throwIfAborted()
+    if (!baseline) return undefined
+    if (baseline.status !== 'idle' || baseline.token === 65535) throw new VendorTransportError('A saved-file snapshot is already active or its tokens are exhausted.')
+    let owned: number | undefined
+    try {
+      // If Begin's reply is lost, its ownership is unknown. Do not repeat or
+      // release it: the device's export-only timeout safely expires the job.
+      const beginDeadline = Date.now() + 3000
+      let metadata = await this.savedMetadata(slot + 1)
+      let attempts = 1
+      while (metadata?.status === 'busy' && metadata.token === baseline.token && metadata.slot === baseline.slot) {
+        // A valid BUSY echoes the unchanged idle token and never begins a
+        // snapshot. Confirm that same idle baseline before another attempt;
+        // a changed token, ambiguous reply or another client's lease stops us.
+        if (attempts >= 10 || Date.now() >= beginDeadline)
+          throw new VendorTransportError('The Octatrack is busy; finish pending work before backing up saved files.', true)
+        await wait(100, stopped)
+        const idle = await this.savedMetadata(0)
+        stopped.throwIfAborted()
+        if (!idle || idle.status !== 'idle' || idle.token !== baseline.token || idle.slot !== baseline.slot)
+          throw new VendorTransportError('The saved-file snapshot changed while waiting; no backup was taken.')
+        if (Date.now() >= beginDeadline)
+          throw new VendorTransportError('The Octatrack is busy; finish pending work before backing up saved files.', true)
+        ++attempts
+        metadata = await this.savedMetadata(slot + 1)
+      }
+      if (!metadata || metadata.status === 'busy' || metadata.status === 'idle' || metadata.token !== baseline.token + 1 || metadata.slot !== slot)
+        throw new VendorTransportError('The Octatrack did not acknowledge this saved-file snapshot; no backup was taken.')
+      owned = metadata.token
+      stopped.throwIfAborted()
+      while (metadata.status === 'pending') {
+        await wait(25, stopped)
+        const next = await this.savedMetadata(0)
+        stopped.throwIfAborted()
+        if (!next || next.token !== owned || next.slot !== slot || ['idle', 'busy'].includes(next.status)) throw new VendorTransportError('The saved-file snapshot changed or expired.')
+        metadata = next
+      }
+      if (metadata.status !== 'ready') {
+        if (!['unsafe', 'read-failed', 'invalid'].includes(metadata.status)) throw new VendorTransportError('The saved-file snapshot is not readable.')
+        return metadata as SavedSetSnapshot
+      }
+      const data = new Uint8Array(metadata.length)
+      for (let index = 0; index * SAVED_SET_CHUNK_DATA < data.length; index++) {
+        stopped.throwIfAborted()
+        const reply = await this.device.controlTransferIn(this.setup(32, index), SAVED_SET_CHUNK_BYTES)
+        stopped.throwIfAborted()
+        if (reply.status !== 'ok' || !reply.data) throw new VendorTransportError('The Octatrack did not answer the saved-file chunk request.')
+        data.set(parseSavedSetChunk(reply.data, metadata, index), index * SAVED_SET_CHUNK_DATA)
+      }
+      const final = await this.savedMetadata(0)
+      stopped.throwIfAborted()
+      const fileBase = data.length >= 52 && new DataView(data.buffer).getUint32(0) === 0x4d575354 ? toHex(data.subarray(20, 52)) : ZERO_DIGEST
+      if (!final || final.status !== 'ready' || final.token !== owned || final.slot !== slot || final.length !== metadata.length ||
+          final.sha256 !== metadata.sha256 || final.fileBase !== metadata.fileBase || sha(data) !== metadata.sha256 || fileBase !== metadata.fileBase)
+        throw new VendorTransportError('The saved module file failed its snapshot identity or complete-file hash check.')
+      return { ...metadata, status: 'ready', data }
+    } finally {
+      // Cancellation still releases the known lease. No caller abort signal is
+      // passed to cleanup, and an unacknowledged Begin is never adopted.
+      if (owned !== undefined) await this.releaseSavedSet(owned)
+    }
   }
   async result(signal?: AbortSignal): Promise<VendorResult> {
     signal?.throwIfAborted()

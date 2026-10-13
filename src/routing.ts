@@ -1,6 +1,7 @@
 import { assetUrl } from './hosting'
 import { moduleIdFromSlug, modulePath, moduleSlug } from './catalog/module-links'
 import { profilePath, threadIdFromSegment, threadPath } from './community/forum-links'
+import { AUDIO_PREVIEW_GUIDE_ROUTE } from './components/audio-preview-guide'
 
 const moduleRoute = /^module\/([a-z0-9-]+)$/
 const digiModuleRoute = /^(digitakt|digitone)\/module\/([a-z0-9-]+)$/
@@ -29,7 +30,7 @@ export function routeFromUrl(url: URL, appUrl: URL, fallback = 'library'): strin
   const route = url.hash.slice(1) || known || fallback
   const nativeRoute = route.replace(/^module\/([a-z0-9-]+)(?=\?|$)/, (_match, slug: string) => 'module/' + moduleIdFromSlug(slug))
   // The forum's account page replaced the separate activity page; old #activity links open it.
-  return route === 'remixes' ? 'module-sets' : route === 'activity' ? 'account' : route.startsWith('remix/') ? 'module-set/' + route.slice(6) : nativeRoute
+  return route === 'faq/audio-previews' ? AUDIO_PREVIEW_GUIDE_ROUTE : route === 'remixes' ? 'module-sets' : route === 'activity' ? 'account' : route.startsWith('remix/') ? 'module-set/' + route.slice(6) : nativeRoute
 }
 
 export function canonicalRouteUrl(url: URL, appUrl: URL, moduleIds: readonly string[]): URL {

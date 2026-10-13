@@ -7,6 +7,7 @@ export type AudioPreviewContextValue = {
   onRemove?: (id: string) => Promise<void>
   added?: Readonly<Record<string,string>>
   error?: string
+  guideModule?: string
 }
 
 // Public submissions supplement declared media; the prototype supplies disposable local clips.
@@ -15,5 +16,5 @@ export const AudioPreviewContext = createContext<AudioPreviewContextValue | null
 export function useModuleAudioPreviews(id: string) {
   const context = useContext(AudioPreviewContext)
   return { clips: context?.clips[id] ?? moduleAudioPreviews(id), onAdd: context ? () => context.onAdd(id) : undefined,
-    onRemove: context?.onRemove, added: context?.added?.[id]??'', error: context?.error }
+    onRemove: context?.onRemove, added: context?.added?.[id]??'', error: context?.error, guide: context?.guideModule === id }
 }

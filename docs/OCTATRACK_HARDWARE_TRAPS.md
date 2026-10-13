@@ -94,7 +94,62 @@ After the power cycle one RAM boot with `--chunk 4096` came back in 15 s.
 `systemstats`). They are harmless; a power-cycled unit enumerates beside
 them. If a unit does not come back at all, the cause is on the unit.
 
+**The bench must serialize whole control transfers.** Its socket's `setup`,
+data and status commands form one transaction. Serializing individual commands
+does not prevent the site's keepalive IDENTIFY (72 bytes) from overlapping a
+pending SELFTEST (96 bytes). On the owner's MKII, the ABI 8 candidate at source
+`e86283a6` produced a short self-test record through the unqueued host adapter;
+the device remained responsive. A deterministic host fixture reproduces the
+overlap, and six separate trial/self-test/Undo runs passed with the transaction
+queue. Keep strict response lengths; this host evidence does not establish
+combined-set audio or reboot persistence.
+
+**Extracted 1.40C MAIN starts at `0x40000400`.** Map stock addresses to file
+offsets from that section's load address, not the `0x40000000` vector base.
+After a runtime install, compare every declared relocation with an independent
+fresh link, including words beyond any leading-code sample. The private CC Map
+and Recorder Loop Fix envelopes prepared from `e86283a6` passed sequential
+emulator install/remove with these checks; that does not establish hardware,
+coexistence, MIDI, audio or reboot behavior.
+
+**A source-linked base's DDR symbol is not a MAIN file offset.** Elekloader
+places `.run` in appended flash and copies it to its DDR execution address at
+boot. To inspect an authored identity or arena binding in a private build,
+translate through that build's native `.run` load/execution map, after checking
+the saved MAIN length and hash and bounding the translated span. The frozen
+`e86283a6` base's identity binding was checked this way; subtracting MAIN's
+load address from its DDR symbol would read the wrong place.
+
+**A reconnect failure need not mean the RAM image failed to boot.** The host
+bridge must catch transient enumeration/claim failures while the device returns,
+dispose partially opened handles and keep listening for the next explicit
+request. Never replay a write, reset USB or select a configuration as recovery.
+The same `e86283a6` candidate identified successfully after this host fix on the
+owner's MKII; the earlier dead bridge could not establish a device boot failure.
+
+**Snapshot StockCopy sources before activation.** A source span can overlap a
+site the package replaces. Reading it after Keep compares the loader's correctly
+replayed original bytes against the new detour. The CC Map private runtime
+adapter exposed this verifier error in the emulator on 13 October 2026. Capture
+and hash-check the original spans before install, then compare the installed
+copies and removal against those snapshots.
+
 ## RAM boot
+
+**Private resident DSP packing needs an execution oracle.** In preparation
+`2f66d5d6`, each original upload stream was extended with source-pinned authored
+initialization records, preserving its stock prefix, terminator and trailer.
+An independent ColdFire execution check verified both complete streams,
+linked blob/scratch bounds and saved registers. Share initialization storage only
+when complete typed-record bytes are equal, then verify each core independently.
+This proves the packing shim, not a complete base boot, audio, timing or
+persistence.
+
+That preparation reserves the core 1 wait/meter counter at X:$7fff, outside
+Analog BD's initialization and reset ranges. Preserve that ownership boundary
+and exclude the counter from X probes; the older X:$2840 location overlaps
+Analog BD's authored tables. This is a private native proof, not hardware
+qualification of resident modules.
 
 **Only the flashed base's gate decides a RAM boot.** After the soft reset
 the bootloader always unpacks the flashed image, so its gate reads the

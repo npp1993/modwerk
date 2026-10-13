@@ -14,6 +14,7 @@ def main():
     spec = importlib.util.spec_from_file_location(
         'octatrack_module_packages', APP / 'sdk/machines/octatrack/elekloader/module_packages.py')
     builder = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = builder
     spec.loader.exec_module(builder)
     # The qualified builder's JSON:KEY syntax predates Windows drive letters.
     # Use its documented relative-path form, without altering any base input.

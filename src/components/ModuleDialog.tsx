@@ -55,5 +55,5 @@ function StepButton({ which, target, onStep }: { which: 'prev' | 'next'; target?
   const label = which === 'prev' ? 'Previous' : 'Next'
   return <button type="button" className={'catalog-chevron module-dialog-step is-' + (which === 'prev' ? 'previous' : 'next')} disabled={!target}
     aria-label={target ? label + ' module: ' + target.title : 'No ' + label.toLowerCase() + ' module'} aria-keyshortcuts={which === 'prev' ? 'ArrowLeft' : 'ArrowRight'}
-    title={target ? label + ': ' + target.title + (which === 'prev' ? ' (←)' : ' (→)') : undefined} onClick={() => onStep(which)}><Icon name="back" size={24} /></button>
+    title={target ? label + ': ' + target.title + (which === 'prev' ? ' (←)' : ' (→)') : undefined} onClick={() => onStep(which)}><Icon name="back" size={24} /><span aria-hidden="true">{label}</span></button>
 }

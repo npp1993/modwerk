@@ -1,79 +1,110 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The site's module set flow (OctatrackLink with module-set.ts's packages) against a base, through the USB bench:
-// load a set and keep it, load another and undo it, then load it and keep it, then load an empty set. After each
-// step the unit's INVENTORY must list exactly the set (or the one before, after an undo). Leaves no module installed.
-//
-//   node scripts/verify-octatrack-module-sets.mjs SOCKET [--hardware] [--selftest]
-//
-// SOCKET is ot_emu's --usb-host socket, or with --hardware sdk/machines/octatrack/elekloader/usb_bridge.py's for a
-// real unit (stop `npm run device -- serve` first; the transport must be stopped). --selftest runs the base's
-// self-test on the first load, as the site does. Node 24.
+// Read-only by default; uses the frontend MCP service's actual catalogue and USB tools.
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { registerHooks } from 'node:module'
-import { Bench, device, enumerate } from './usb-bench.mjs'
-// The app uses bundler resolution and Vite's import.meta.env; neither exists in Node (as scripts/octatrack-module-page.mjs).
-registerHooks({
-  resolve(specifier, context, next) {
-    const local = specifier.startsWith('./') || specifier.startsWith('../')
-    const resolved = local && !path.extname(specifier) ? specifier + '.ts' : specifier
-    const attributes = local && resolved.endsWith('.json') ? { type: 'json' } : context.importAttributes
-    return { ...next(resolved, { ...context, importAttributes: attributes }), importAttributes: attributes }
-  },
-  load(url, context, next) {
-    const result = next(url, context)
-    return url.endsWith('.ts') ? { ...result, source: String(result.source).replaceAll('import.meta.env.DEV', 'false') } : result
-  },
-})
-const { OctatrackLink } = await import('../src/engine/elekloader/octatrack-link.ts')
-const { inventoryFrom, prepareModuleSet } = await import('../src/engine/elekloader/module-set.ts')
-const { UploadSession } = await import('../src/engine/elekloader/upload-session.ts')
-const { findVendorInterface } = await import('../src/engine/elekloader/upload-usb.ts')
-const { diagnostics } = await import('../src/dev/octatrack-usb-lifecycle.ts')
+import { parseArgs } from 'node:util'
+import { resolve } from 'node:path'
+import { pathToFileURL, fileURLToPath } from 'node:url'
 
-const [socket] = process.argv.slice(2).filter(arg => !arg.startsWith('--')), hardware = process.argv.includes('--hardware')
-if (!socket) throw new Error('Usage: verify-octatrack-module-sets.mjs SOCKET [--hardware] [--selftest]')
-const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
-const bench = new Bench(socket, { timeoutMs: 600000 }); await bench.ready()
-const configuration = await enumerate(bench, hardware), index = findVendorInterface(configuration), control = device(bench)
-// The base holds host frames until its boot restore is over (ep0.c): let the unit's own time pass first.
-while ((await diagnostics(control, index)).ticks < 900) await wait(500)
-
-// The bench as WebUSB: one device, already open and configured; claiming is the bridge's. WebUSB runs a device's control
-// transfers one at a time, the bench does not: the link's keepalive must not cut into another request's stages.
-let queue = Promise.resolve()
-const serial = transfer => (...args) => { const run = queue.then(() => transfer(...args)); queue = run.catch(() => {}); return run }
-const unit = { controlTransferIn: serial(control.controlTransferIn), controlTransferOut: serial(control.controlTransferOut), opened: true, configuration, async open() {}, async close() {}, async selectConfiguration() {}, async claimInterface() {}, async releaseInterface() {} }
-const usb = { async requestDevice() { return unit }, async getDevices() { return [unit] }, addEventListener() {}, removeEventListener() {} }
-const link = new OctatrackLink(usb, (transport, base) => UploadSession.connect(transport, base, { timeoutMs: 60000 }), 60000)
-link.start()
-while (link.getState().status !== 'ready') await wait(200)
-console.log(`${link.getState().identity.model}, base ${link.getState().identity.base.slice(0, 16)}…`)
-
-const file = entry => new Uint8Array(readFileSync(new URL('../public/' + entry.path, import.meta.url)))
-const ids = async () => inventoryFrom(await link.inventory()).moduleIds
-async function load(moduleIds, finish, stressTest) {
-  const before = await ids(), { name, changes } = await prepareModuleSet({ name: moduleIds.join(' + ') || 'nothing', moduleIds }, inventoryFrom(await link.inventory()), file)
-  const started = Date.now()
-  await link.update(name, changes, stressTest)
-  if (stressTest && link.getState().status === 'ready') { // the emulator's load meters are not the chip's: its self-test may fail
-    const notice = link.getState().notice?.text ?? '', after = await ids()
-    console.log(`self-test failed, ${name} undone: ${notice}; on the unit: ${after.join(', ') || 'nothing'}`)
-    assert.match(notice, /Nothing was kept\.$/); assert.deepEqual([...after].sort(), [...before].sort())
-    return load(moduleIds, finish)
-  }
-  assert.equal(link.getState().status, 'trial', link.getState().notice?.text)
-  await (finish === 'keep' ? link.keep() : link.undo())
-  const after = await ids(), want = finish === 'keep' ? moduleIds : before
-  console.log(`${finish} ${name}: ${changes.length} changes in ${((Date.now() - started) / 1000).toFixed(1)} s; ${link.getState().notice?.text}; on the unit: ${after.join(', ') || 'nothing'}`)
-  assert.deepEqual([...after].sort(), [...want].sort())
+export const DSP_MODULES = ['everb', 'miniverb', 'tapehead', 'airwindows-chorus']
+export const STAGED_MODULES = [...DSP_MODULES, 'previewvol', 'repitch']
+const TOOLS = new Set(['site_catalogue', 'site_selection', 'device_status', 'device_review', 'device_trial', 'device_undo'])
+const digest = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
+const sortedIds = values => {
+  assert.ok(Array.isArray(values) && values.every(value => typeof value === 'string') && new Set(values).size === values.length, 'Invalid device module inventory.')
+  return [...values].sort()
 }
-const start = await ids()
-console.log('on the unit at the start:', start.join(', ') || 'nothing')
-await load(['everb', 'miniverb'], 'keep', process.argv.includes('--selftest') ? () => link.selftest() : undefined)
-await load(['miniverb', 'tapehead', 'airwindows-chorus'], 'undo')
-await load(['miniverb', 'tapehead', 'airwindows-chorus'], 'keep')
-await load([], 'keep')
-console.log('Module sets: load, keep, undo and remove passed; INVENTORY matched after every step.')
-process.exit(0)
+const canonical = value => JSON.stringify(value, (_, item) => item && typeof item === 'object' && !Array.isArray(item) ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b))) : item)
+const inventory = value => ({ ...value, moduleIds: sortedIds(value.moduleIds), removedStockFx: sortedIds(value.removedStockFx ?? []) })
+function ready(value) {
+  assert.equal(value.state?.status, 'ready', 'The Octatrack connection must be ready before verification.')
+  assert.equal(value.state.identity?.canSubmit, true, 'The connected unit cannot accept module trials.')
+  assert.ok(digest(value.state.identity.base) && digest(value.state.active), 'The connected base and active identity must be known.')
+  inventory(value.inventory)
+  return value
+}
+function restored(value, baseline) {
+  ready(value)
+  assert.equal(value.state.identity.base, baseline.state.identity.base, 'The base changed; stop and inspect the unit.')
+  assert.equal(value.state.active, baseline.state.active, 'Undo did not restore the starting active identity.')
+  assert.equal(canonical(inventory(value.inventory)), canonical(inventory(baseline.inventory)), 'Undo did not restore the starting inventory.')
+  if (baseline.diagnostics?.savedCount !== undefined) assert.equal(value.diagnostics?.savedCount, baseline.diagnostics.savedCount, 'The saved module count changed during a trial-only test.')
+}
+export const verifierTools = service => (name, args) => {
+  assert.ok(TOOLS.has(name), 'This verifier cannot Keep modules or call unrelated tools.')
+  return service.call(name, args)
+}
+
+/** Legacy inventory cannot identify installed package bytes, so all targets retain the starting set. */
+export async function verifyModuleSets(call, { allStaged = false, trial = false, expectBase } = {}) {
+  if (trial) assert.ok(digest(expectBase), '--trial requires the exact 64-character --expect-base identity.')
+  if (expectBase !== undefined) assert.ok(digest(expectBase), 'Invalid --expect-base identity.')
+  const listed = await call('site_catalogue', { machine: 'octatrack', beta: true }), requested = allStaged ? STAGED_MODULES : DSP_MODULES
+  for (const id of requested) assert.ok(listed.modules?.some(module => module.id === id && module.usb), `${id} is not a staged USB package in the selected frontend root.`)
+  const baseline = ready(await call('device_status', {}))
+  if (expectBase) assert.equal(baseline.state.identity.base, expectBase, 'The connected base does not match --expect-base; nothing was sent.')
+  const baselineIds = sortedIds(baseline.inventory.moduleIds), union = ids => [...new Set([...baselineIds, ...ids])].sort()
+  const targets = requested.filter(id => !baselineIds.includes(id)).map(id => ({ id, moduleIds: union([id]) }))
+  const selection = moduleIds => call('site_selection', { usb: true, beta: true, moduleIds, current: baseline.inventory, capabilities: baseline.capabilities })
+  const fullSet = await selection(union(requested))
+  // Check every package with actual connected capabilities before the first possible write.
+  for (const target of targets) {
+    const prepared = await selection(target.moduleIds)
+    assert.equal(prepared.changes?.length, 1, 'Trial-only verification requires exactly one package change.')
+    assert.ok(digest(prepared.changes[0].sha256) && digest(prepared.changes[0].undoSha256), 'An intact package and exact Undo must be available.')
+    target.packageSha256 = prepared.changes[0].sha256
+  }
+  const receipt = {
+    mode: trial ? 'single-package-trials' : 'read-only-preflight', base: baseline.state.identity.base,
+    startingActive: baseline.state.active, startingModules: baselineIds, capabilities: baseline.capabilities ?? null,
+    fullSet: { moduleIds: union(requested), preparedChanges: fullSet.changes?.length, physicalTrial: false },
+    packages: targets.map(target => ({ id: target.id, sha256: target.packageSha256, trialPassed: false, undoVerified: false })),
+    kept: false, audioVerified: false, rebootVerified: false,
+  }
+  if (!trial) return receipt
+  for (const [index, target] of targets.entries()) {
+    restored(await call('device_status', {}), baseline)
+    const review = await call('device_review', { moduleIds: target.moduleIds })
+    assert.equal(review.base, baseline.state.identity.base, 'The base changed after preflight; nothing was sent.')
+    assert.equal(review.active, baseline.state.active, 'The installed set changed after preflight; nothing was sent.')
+    assert.equal(review.changes?.length, 1, 'Multiple changes would automatically Keep intermediate packages; nothing was sent.')
+    assert.equal(review.changes[0].sha256, target.packageSha256, 'The package changed after preflight; nothing was sent.')
+    assert.equal(review.changes[0].undoAvailable, true, 'Exact Undo is unavailable; nothing was sent.')
+    let started, undone
+    try {
+      started = await call('device_trial', { review: review.review })
+      assert.ok(typeof started.trial === 'string' && started.trial.length > 0, 'No successful trial was returned.')
+      assert.equal(started.state?.status, 'trial', 'The trial did not remain unaccepted.')
+      assert.equal(started.state.identity?.base, baseline.state.identity.base, 'The trial base changed.')
+      assert.equal(started.state.tested, true, 'The physical self-test did not pass.')
+      receipt.packages[index].trialPassed = true
+    } finally { if (started?.trial) undone = await call('device_undo', { trial: started.trial }) }
+    restored(undone, baseline)
+    restored(await call('device_status', {}), baseline)
+    receipt.packages[index].undoVerified = true
+  }
+  return receipt
+}
+
+export async function main(args, openService) {
+  const { values } = parseArgs({ args, options: {
+    socket: { type: 'string' }, 'data-dir': { type: 'string' }, 'mcp-server': { type: 'string' },
+    'frontend-root': { type: 'string' }, 'all-staged': { type: 'boolean' }, trial: { type: 'boolean' },
+    'expect-base': { type: 'string' }, help: { type: 'boolean' },
+  } })
+  if (values.help) {
+    console.log('Usage: node scripts/verify-octatrack-module-sets.mjs --socket SOCKET --data-dir PRIVATE_DIR [--mcp-server FILE] [--frontend-root CHECKOUT] [--all-staged] [--trial --expect-base SHA256]\nDefault: read-only package/capability preflight. Trials add one package at a time, self-test and Undo. Never Keeps, flashes, reboots or edits Parts. All-six coexistence is preflight only.')
+    return
+  }
+  assert.ok(values.socket && values['data-dir'], '--socket and an isolated --data-dir are required.')
+  if (values.trial) assert.ok(digest(values['expect-base']), '--trial requires the exact --expect-base identity before starting the service.')
+  const root = resolve(values['frontend-root'] ?? fileURLToPath(new URL('../', import.meta.url)))
+  const server = resolve(values['mcp-server'] ?? fileURLToPath(new URL('./frontend-mcp.mjs', import.meta.url)))
+  const create = openService ?? (await import(pathToFileURL(server).href)).createFrontendTools
+  const service = await create({ root, dataDir: resolve(values['data-dir']), deviceSocket: values.socket, allowDeviceWrites: !!values.trial })
+  let receipt
+  try { receipt = await verifyModuleSets(verifierTools(service), { allStaged: values['all-staged'], trial: values.trial, expectBase: values['expect-base'] }) }
+  finally { await service.close() }
+  console.log(JSON.stringify(receipt, null, 2))
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href)
+  main(process.argv.slice(2)).catch(() => { console.error('Module-set verification failed; no successful hardware receipt was recorded. Inspect the connected unit before another trial.'); process.exitCode = 1 })

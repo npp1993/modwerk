@@ -150,6 +150,32 @@ screenshots. Read the complete gallery as a first-time user and follow the
 
 A module that makes or changes sound can also carry one short [audio preview](MODULE_AUDIO_PREVIEWS.md): an isolated sample comparison or an explicitly requested musical phrase that makes its controls audible.
 
+## Octatrack base and USB lifecycle
+
+New Octatrack development must deliver the browser-built base and USB module
+lifecycle alongside its card build. Plan common companions before writing
+code: stock FX, Analog BD and common custom machines/effects, on both DSP
+cores. Record shared hook/data ownership, contiguous P/X/Y placement, live
+stock tenants and fixed/instance cycle costs. A native composition or a
+standalone package that links is not completion.
+
+Release evidence must cover the exact source-built browser/runtime packages,
+regeneration and stock-free scan, base compatibility and truthful inventory,
+installation and self-test, Keep/Undo, replacement/removal, missing-module
+fallback and distinct instances through Part/project reload and physical
+reboot where applicable. Give hardware steps and record actual results;
+emulator/host tests do not fill missing hardware qualification. Preserve the
+previous approved download while preparing candidates.
+
+A newly developed module selectable in beta module sets must have a working
+USB path, not a card-only fallback; existing card-only modules need a reviewed
+migration before USB rollout. An unavoidable compatibility limit needs its
+actual resource/ownership reason and explicit owner review. This does not
+assert that pending loader ABI work (ABI 7), shared machine registration,
+table support or hooked DSP work is released: those adapters and new bases
+remain private staging until their checks and qualification are complete. See
+the [loader compatibility guide](../sdk/machines/octatrack/elekloader/README.md#runtime-compatibility-and-the-card-builder).
+
 ## Octatrack
 
 1. **Create the folder.**
@@ -183,7 +209,7 @@ A module that makes or changes sound can also carry one short [audio preview](MO
 6. **Capture the screenshots** in the headless emulator with `scripts/capture-module-ui.py` ([how](MODULE_UI_CAPTURES.md)). Open every image before keeping it.
 7. **Check how it shows on the site.** The catalog entry puts the module in the library and the configurator; `npm run dev` shows it.
    - The library card draws `presentation/thumbnail.svg` (320×192). Hand-drawn art in `src/components/ModulePreview.tsx` is optional.
-   - Analog BD automatically refuses any module with an `effectId`, since it builds only beside stock effects. If your effect builds beside the stock FX2 effects, add it to `FITS_BESIDE_STOCK_FX2` in `src/catalog/selection-conflicts.ts`.
+   - Analog BD admits only the custom DSP effects named in `analogBdCompanions` in `src/catalog/selection-conflicts.ts` and refuses every other module with an `effectId`. Add yours there only after native/browser placement evidence on both cores. If your effect builds beside the stock FX2 effects, add it to `FITS_BESIDE_STOCK_FX2` in the same file. Both lists describe baked card placement, not the USB arena; see the [USB lifecycle](#octatrack-base-and-usb-lifecycle).
    - Add a short entry to `docs/VERIFICATION.md` with what you compared and the result.
 8. **Open the pull request.** Say what you tested, what you did not test and why.
 

@@ -3,6 +3,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DiagnosticsInvitation, DiagnosticsInvitationGate } from './DiagnosticsInvitation'
+import type { LinkState, OctatrackLink } from '../engine/elekloader/octatrack-link'
 const mocked = vi.hoisted(() => ({
   state: { accountId: 'member' as string | null, available: true, enabled: false, ready: true, busy: false, error: '', notice: '', hasChoice: false, lastSent: null },
   listeners: new Set<() => void>(), share: vi.fn(), privacy: false,
@@ -14,9 +15,14 @@ vi.mock('../community/octatrack-diagnostics', () => ({
 }))
 vi.mock('../community/usage', () => ({ browserRequestsPrivacy: () => mocked.privacy }))
 let root: Root, container: HTMLDivElement, previous: HTMLButtonElement
+let linkState: LinkState
+const linkListeners = new Set<() => void>()
+const identity = { canSubmit: true, base: 'a'.repeat(64), model: 'OCTATRACK MKII' }
+const link = { getState: () => linkState, subscribe: (listener: () => void) => { linkListeners.add(listener); return () => { linkListeners.delete(listener) } }, start: () => () => {} } as unknown as OctatrackLink
 const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 beforeEach(() => {
   vi.clearAllMocks(); vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true); mocked.privacy = false
+  linkState = { status: 'ready', identity }; linkListeners.clear()
   mocked.state = { accountId: 'member', available: true, enabled: false, ready: true, busy: false, error: '', notice: '', hasChoice: false, lastSent: null }
   mocked.share.mockResolvedValue(true); localStorage.clear()
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
@@ -25,16 +31,55 @@ beforeEach(() => {
   container = document.createElement('div'); document.body.append(container); root = createRoot(container)
 })
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); previous.remove(); document.querySelectorAll('dialog').forEach(dialog => dialog.remove()); vi.restoreAllMocks(); vi.unstubAllGlobals() })
-async function render(props: Parameters<typeof DiagnosticsInvitationGate>[0]) { await act(async () => { root.render(createElement(DiagnosticsInvitationGate, props)); await flush() }) }
+async function render(props: Omit<Parameters<typeof DiagnosticsInvitationGate>[0], 'link'> & { link?: OctatrackLink | null }) { await act(async () => { root.render(createElement(DiagnosticsInvitationGate, { link, ...props })); await flush() }) }
+async function connect(state: LinkState) { await act(async () => { linkState = state; linkListeners.forEach(listener => listener()); await flush() }) }
 function button(text: string) { const result = [...container.querySelectorAll('button')].find(item => item.textContent === text); if (!result) throw new Error('missing button'); return result }
 
 describe('diagnostics invitation without collection side effects', () => {
   it('makes preview Share and dismissal local, with no consent write or dismissal saved to a real account', async () => {
-    await render({ memberId: 'member', eligible: true, preview: true })
+    await render({ memberId: 'member', eligible: true, preview: true, link: null })
     expect(container.textContent).toContain('Preview · no data is shared')
     await act(async () => { button('Share diagnostics').click(); await flush() })
     expect(mocked.share).not.toHaveBeenCalled(); expect(localStorage.length).toBe(0)
     expect(container.querySelector('dialog')).toBeNull()
+  })
+  it('does not invite from opening the workspace or a failed/unsupported connection, then invites after verified USB readiness', async () => {
+    await render({ memberId: 'member', eligible: true, link: null })
+    expect(container.querySelector('dialog')).toBeNull()
+    linkState = { status: 'idle' }
+    await render({ memberId: 'member', eligible: true })
+    for (const state of [{ status: 'connecting' }, { status: 'busy' }, { status: 'stock' }, { status: 'ready', identity: { ...identity, canSubmit: false } }, { status: 'testing', identity }] satisfies LinkState[]) {
+      await connect(state)
+      expect(container.querySelector('dialog')).toBeNull()
+    }
+    await connect({ status: 'ready', identity })
+    expect(container.querySelector('dialog[open]')).not.toBeNull()
+    expect(mocked.share).not.toHaveBeenCalled()
+  })
+  it('remembers the successful connection while installation finishes and does not repeat after dismissal on reconnect', async () => {
+    linkState = { status: 'idle' }
+    await render({ memberId: 'member', eligible: true, blocked: true })
+    await connect({ status: 'ready', identity })
+    expect(container.querySelector('dialog')).toBeNull()
+    await connect({ status: 'idle' })
+    await render({ memberId: 'member', eligible: true })
+    expect(container.querySelector('dialog[open]')).not.toBeNull()
+    await act(async () => { button('Not now').click(); await flush() })
+    await connect({ status: 'ready', identity })
+    expect(container.querySelector('dialog')).toBeNull()
+    expect(mocked.share).not.toHaveBeenCalled()
+  })
+  it('does not reuse another member’s first connection or reopen a saved consent choice', async () => {
+    await render({ memberId: 'member', eligible: true })
+    await act(async () => { button('Not now').click(); await flush() })
+    await connect({ status: 'idle' })
+    mocked.state = { ...mocked.state, accountId: 'other' }
+    await render({ memberId: 'other', eligible: true })
+    expect(container.querySelector('dialog')).toBeNull()
+    mocked.state = { ...mocked.state, hasChoice: true }
+    await connect({ status: 'ready', identity })
+    expect(container.querySelector('dialog')).toBeNull()
+    expect(mocked.share).not.toHaveBeenCalled()
   })
   it('does not invite outside a firmware workspace, for a different account or under browser privacy', async () => {
     await render({ memberId: 'member', eligible: false }); expect(container.querySelector('dialog')).toBeNull()

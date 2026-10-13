@@ -16,6 +16,12 @@ const scope = (...changes) => classifyChanges(changes)
 const repository = fileURLToPath(new URL('..', import.meta.url))
 
 describe('documentation and firmware scheduling', () => {
+  it.each(['scripts/frontend-mcp.mjs', 'scripts/frontend-mcp-private-host.mjs', 'sdk/tests/test_frontend_mcp_host.py'])('checks actual native Windows MCP refusal for %s without firmware compilation', path => {
+    expect(scope(change(path))).toMatchObject({ documentation: false, windows: true, modules: false, elemod: false })
+  })
+  it.each(['scripts/prepare-runtime-spans.py', 'scripts/runtime_private_paths.py', 'sdk/tests/test_runtime_spans.py'])('runs native Windows privacy checks for %s without firmware compilation', path => {
+    expect(scope(change(path))).toMatchObject({ documentation: false, windows: true, modules: false, elemod: false })
+  })
   it.each(['octabam', 'digitakt', 'digitone'])('skips firmware and app checks for %s prose, screenshots and evidence', machine => {
     const actual = scope(...['README.md', 'media/control.png', 'media/capture.json', 'presentation/thumbnail.svg', 'evidence/report.json'].map(path => change(`sdk/${machine}/modules/demo/${path}`)))
     expect(actual).toEqual({ documentation: true, modules: false, elemod: false, windows: false, worker: false, logger: false })

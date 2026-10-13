@@ -20,6 +20,64 @@ export const UploadResult = ['ok', 'state', 'unsafe', 'identity', 'limit', 'stal
 export type UploadResultName = typeof UploadResult[number]
 export const ZERO_DIGEST = '0'.repeat(64)
 
+/** Public MWLD v1, request 30: cached hardware meters, never self-test peaks. */
+export const LOAD_BYTES = 48
+export interface LoadReading {
+  ticks: number; frames: number
+  cpu: number | null; tracks1to4: number | null; tracks5to8: number | null
+  peak1to4: number | null; peak5to8: number | null
+}
+export function parseLoadReading(view: DataView): LoadReading {
+  if (view.byteLength !== LOAD_BYTES || view.getUint32(0) !== 0x4d574c44 || view.getUint8(4) !== 1 ||
+    view.getUint8(5) & ~7 || view.getUint16(6) !== LOAD_BYTES) throw new Error('The Octatrack load record is unsupported or incomplete.')
+  const ticks = view.getUint32(8), flags = view.getUint8(5)
+  const values = Array.from({ length: 5 }, (_, i) => view.getUint32(28 + 4 * i))
+  if (values.some(value => value > 1000)) throw new Error('The Octatrack load reading is outside its meter range.')
+  // Ticks wrap at uint32. Uninitialized or old meter windows are gaps, never zero load.
+  const fresh = (bit: number, offset: number) => !!(flags & bit) && ((ticks - view.getUint32(offset)) >>> 0) <= 600
+  const cpu = fresh(1, 16), core0 = fresh(2, 20), core1 = fresh(4, 24)
+  return { ticks, frames: view.getUint32(12), cpu: cpu ? values[0] : null,
+    tracks5to8: core0 ? values[1] : null, peak5to8: core0 ? values[2] : null,
+    tracks1to4: core1 ? values[3] : null, peak1to4: core1 ? values[4] : null }
+}
+
+/** Private beta saved-file export. Only the two fixed MODWERK slots, never arbitrary memory or paths. */
+export const SAVED_SET_CAPACITY = 786432 + 4096
+export const SAVED_SET_METADATA_BYTES = 80
+export const SAVED_SET_CHUNK_BYTES = 480
+export const SAVED_SET_CHUNK_DATA = 448
+export const SavedSetStatus = ['idle', 'pending', 'ready', 'busy', 'unsafe', 'read-failed', 'invalid'] as const
+export type SavedSetStatusName = typeof SavedSetStatus[number]
+export interface SavedSetMetadata {
+  status: SavedSetStatusName; slot: 0 | 1; token: number; length: number; sha256: string; fileBase: string
+}
+export type SavedSetSnapshot =
+  | (SavedSetMetadata & { status: 'ready'; data: Uint8Array })
+  | (SavedSetMetadata & { status: 'unsafe' | 'read-failed' | 'invalid' })
+
+export function parseSavedSetMetadata(view: DataView): SavedSetMetadata {
+  const fail = (): never => { throw new UploadWireError('The saved module-file snapshot metadata is malformed.') }
+  if (view.byteLength !== SAVED_SET_METADATA_BYTES || view.getUint32(0) !== 0x4d575345 || view.getUint8(4) !== 1 || view.getUint8(7)) fail()
+  const status = SavedSetStatus[view.getUint8(5)], slot = view.getUint8(6), token = view.getUint32(8), length = view.getUint32(12)
+  const sha256 = digestHex(new Uint8Array(view.buffer, view.byteOffset + 16, 32)), fileBase = digestHex(new Uint8Array(view.buffer, view.byteOffset + 48, 32))
+  if (!status || slot > 1 || token > 65535 || (!['idle', 'busy'].includes(status) && !token) ||
+      (status === 'ready' ? !length || length > SAVED_SET_CAPACITY || sha256 === ZERO_DIGEST : length || sha256 !== ZERO_DIGEST || fileBase !== ZERO_DIGEST)) fail()
+  return { status, slot: slot as 0 | 1, token, length, sha256, fileBase }
+}
+
+/** Every chunk is bound to one immutable snapshot, including zeroed header and tail padding. */
+export function parseSavedSetChunk(view: DataView, snapshot: SavedSetMetadata, index: number): Uint8Array {
+  const fail = (): never => { throw new UploadWireError('The saved module-file chunk does not match its immutable snapshot.') }
+  const offset = index * SAVED_SET_CHUNK_DATA
+  if (snapshot.status !== 'ready' || !Number.isInteger(index) || index < 0 || offset >= snapshot.length ||
+      view.byteLength !== SAVED_SET_CHUNK_BYTES || view.getUint32(0) !== 0x4d575343 || view.getUint8(4) !== 1 ||
+      view.getUint8(5) !== 2 || view.getUint8(6) !== snapshot.slot || view.getUint8(7) || view.getUint32(8) !== snapshot.token ||
+      view.getUint32(12) !== offset || view.getUint32(16) !== snapshot.length || view.getUint32(20) !== Math.min(SAVED_SET_CHUNK_DATA, snapshot.length - offset)) fail()
+  const bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength), length = view.getUint32(20)
+  if (bytes.subarray(24, 32).some(byte => byte) || bytes.subarray(32 + length).some(byte => byte)) fail()
+  return bytes.slice(32, 32 + length)
+}
+
 type BoundRequest = { transaction: number; session: string }
 export type UploadRequest =
   | { command: 'hello' }

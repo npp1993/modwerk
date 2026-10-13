@@ -127,6 +127,51 @@ python3 -B sdk/runtime/loader/build.py --octabam euclid --stock /private/OCTATRA
   --slots both --cycles 143 --cycles-kind executed --state 64 --pinned -o /private/euclid.mwrm
 ```
 
+### Runtime compatibility and the card builder
+
+USB module sets use the on-demand arena above; the loader-free card builder
+uses unlisted stock effects as code donors. Keep their compatibility decisions
+separate. The card builder's Analog BD companion list and harvested P runs do
+not describe the runtime arena. USB eligibility starts with the published
+runtime-package manifest, then the base's actual site, state, buffer, code and
+cycle admission. Installing a set does not promise that every effect can run on
+every slot at once: package words stay in ColdFire memory and take DSP P space
+only while a core needs the effect, but the allocator charges every active
+instance, stock slots included, against its core's allowance, so a set whose
+code fits can still be refused at activation. A baked card placement refusal
+is not a USB on-demand incompatibility. Capacity changes with the receiver and
+saved-id table: quote any figure with its build identity and see
+[the migration record](../../../../docs/OCTATRACK_ELEKLOADER_MIGRATION.md) for
+the measured arena and allowances. Host placement and admission tests do not
+establish chip timing or hardware qualification for a new source or base.
+
+Some native combinations rely on shared implementations that separate runtime
+packages cannot inherit:
+
+- **Analog BD's DSP source engine is a separate integration.** Its manifest
+  declares the ColdFire machine/control units, while native `ab_image.py`
+  supplies both DSP engines, their X tables, the source seam and the preserved
+  stock helper. A `--octabam analog-bassdrum` package compiling the manifest
+  units alone is not a complete port. A card-layout refusal for a large effect
+  beside Analog BD (no contiguous opening on either core) is no evidence about a
+  future USB pair, which first needs a reviewed runtime DSP-source, tenant,
+  relocation and cycle contract.
+- **Shared ColdFire sites need one runtime owner.** Analog BD, VECTOR and POLY8
+  overlap at machine chooser/validator sites, and POLY8 and Repitch share a
+  module-owned site. Native composition's shared-owner handling does not make two
+  independently installed packages compatible: port and verify the ownership
+  before offering the combination, and keep the collision checks. Paused stacks
+  and registers are not the only lifetime roots: live UI layers, derived
+  key/encoder callbacks and page/widget state may retain package pointers.
+  Prove they retire, including cached/uncached aliases, before unpublishing or
+  reclaiming an image; an unresolved root keeps admission off.
+- **Hooked DSP effects need their full resource contract.** Sidechain Compressor
+  needs resident cross-core taps, stock COMPRESSOR hooks and the tail of one
+  FX2 buffer per core (see the measured inventory and planned restricted-buffer
+  admission in the migration record). Output Matrix's stock DSP hooks likewise
+  need loader support. A free effect id or a successful ColdFire link proves
+  neither layout.
+
 ### Status page
 
 `status.c` measures, all the time, the ColdFire's load (main's idle spin, timed on DTIM3, `status.s`), each

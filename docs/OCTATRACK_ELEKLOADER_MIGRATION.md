@@ -31,6 +31,12 @@ change published module versions, catalogue pins or hardware evidence.
 
 ## Actual private build evidence
 
+On POSIX hosts, set `umask 077` before preparing private firmware, including
+`npm run octatrack:base -- --stock PRIVATE_OS --out NEW_PRIVATE_DIRECTORY`.
+The CLI's output directory inherits the shell's permissions. Keep its parent
+private, its output directory at 0700 and firmware files at 0600; save images
+outside every Git checkout.
+
 The upstream source converter was run against Modwerk source `ae8a1d0` and the
 owner's local original OS 1.40C. Its eight successful ColdFire source ports
 were **Preview Vol, Repitch, Scale Quantizer, FM Synth, CC Map, VECTOR,
@@ -141,6 +147,22 @@ changed package pins, a mismatched protocol or stock identity, colliding file
 names and automatically selected files outside the supplied pins.
 `--combined` additionally compares the complete explicitly supplied selection;
 `--pairs` compares each pair. Neither admits unpinned dependencies.
+
+### Runtime recipe identity and lifetime
+
+Guarded StockCopies and authored fills encode zero placeholders, so the encoded
+package hash and independently reconstructed native image hash are different
+identities. Pin both, the reviewed recipe and its exact source map; never relabel
+one hash as the other. A guard over an arena word proves that resource binding,
+not the complete base identity. Runtime card rehydration must independently
+refuse a foreign full base identity before restoring packages.
+
+Table-owner preparation and replacement must fence current and paused
+stock table, menu and callback consumers, including cached/uncached references
+to the entire outgoing image from byte zero. Undo restores all three original
+arrays, their count and every stock site before retirement. Empty compiled
+trust reservations remain closed; package preparation or native fixtures do
+not grant admission or hardware qualification.
 
 ## Existing upstream DSP work to extend
 

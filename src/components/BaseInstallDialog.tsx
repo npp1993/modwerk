@@ -10,9 +10,10 @@ import './octatrack-link.css'
 export interface BaseImage { buffer: ArrayBuffer; sha256: string; base: string }
 /** The release prompt holds this long before it can be put off. */
 const LAUNCH_HOLD_SECONDS = 10
-// What the beta prompt promises: only what the base does today. Cross-compatibility, effects loaded on demand,
+// What the beta prompt promises: only what the base does today. Cross-compatibility,
 // automatic stress tests and bug reports are still to be built (docs/OCTATRACK_ELEKLOADER_MIGRATION.md).
-const ALSO_NEW: [IconName, string, string][] = [
+const ALSO_NEW: [IconName, string, string, boolean?][] = [
+  ['wave', 'Better DSP memory use', '. Effects load as needed, sharing one copy of their code between tracks on the same DSP core.', true],
   ['check', 'Kept after a restart', ', the Octatrack loads your modules again when it starts'],
   ['shield', 'A self-test on the Octatrack', ' after every sync, then you keep it or undo it'],
   ['search', 'Missing modules named', ' when a project uses one the Octatrack doesn’t have'],
@@ -146,7 +147,7 @@ export function BaseInstallDialog({ link, launch = false, firmwareReady, firmwar
       <LinkHero />
       <h2 id="base-install-title" className="link-title" tabIndex={-1}>Sync to Octatrack <span className="module-beta-badge">Beta</span></h2>
       <p id="base-install-intro" className="base-install-intro">Install the Modwerk base once from the card. After that, modules go straight from this page to your Octatrack, without the card and without a reboot. It’s a beta, so please tell me in the forum what goes wrong.</p>
-      <ul className="link-promises">{ALSO_NEW.map(([icon, lead, rest]) => <li key={lead}><span className="link-feature-icon" aria-hidden="true"><Icon name={icon} size={18} /></span><span><strong>{lead}</strong><span className="link-feature-rest">{rest}</span></span></li>)}</ul>
+      <ul className="link-promises">{ALSO_NEW.map(([icon, lead, rest, explainOnPhone]) => <li key={lead}><span className="link-feature-icon" aria-hidden="true"><Icon name={icon} size={18} /></span><span><strong>{lead}</strong><span className={explainOnPhone ? undefined : 'link-feature-rest'}>{rest}</span></span></li>)}</ul>
       <p className={'link-needs' + (state.status === 'unsupported' ? ' is-missing' : '')}>You need an Octatrack MKII, your OS 1.40C file, a USB cable and Chrome or Edge on a computer.</p>
       {state.status === 'unsupported' && <p className="file-error" role="alert">This browser can’t talk to USB devices. Open this page in Chrome or Edge on a computer.</p>}
     </> : <>

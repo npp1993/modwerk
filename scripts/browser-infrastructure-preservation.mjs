@@ -5,6 +5,7 @@ import { readFile, readdir, lstat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { PACKAGE_FILES } from './module-source.mjs'
+import { engineAsset, otherModuleIds } from './engine-asset.mjs'
 
 export const BROWSER_PRESERVATION_PATH = 'sdk/browser-infrastructure-preservation/tapeecho-usb-integration.json'
 export const BROWSER_PARITY_PATH = 'sdk/browser-infrastructure-preservation/tapeecho-usb-integration-proof.json'
@@ -78,36 +79,49 @@ async function fixedJson(root, path) {
   const bytes = await fixedBytes(root, path)
   return { bytes, value: canonicalJson(bytes) }
 }
+// JSON.parse keeps the last of two equal keys, which would hide an ambiguous file.
+function hasDuplicateKeys(source) {
+  const stack = []
+  for (const [token] of source.matchAll(/"(?:[^"\\]|\\.)*"|[{}[\],:]|[^\s"{}[\],:]+/g)) {
+    const top = stack[stack.length - 1]
+    if (token === '{') stack.push({ keys: new Set(), key: true })
+    else if (token === '[') stack.push(null)
+    else if (token === '}' || token === ']') stack.pop()
+    else if (token === ',' && top) top.key = true
+    else if (top?.key && token[0] === '"') { if (top.keys.has(token)) return true; top.keys.add(token); top.key = false }
+  }
+  return false
+}
 // Release import/stamping changes only provenance already excluded by retained
 // evidence. Pin all package contents and qualification fields to the actual
-// validated Git bytes; derived manifest hashes must match the live files.
-async function publicationInputs(root, validatedCommit, validated, current) {
-  const result = { ...current }, head = git(root, 'rev-parse', 'HEAD').toString().trim()
-  for (const name of [...PACKAGE_FILES, 'module-build.json']) {
+// validated Git bytes; derived manifest hashes must match the live files. Another
+// module's own release may also add or change its rows in these shared packages:
+// they are not Tape Echo inputs, so the comparison ignores them exactly as the
+// retained-evidence comparison does, and every other byte must still match.
+async function publicationInputs(root, validatedCommit, validated, current, document) {
+  const result = { ...current }, head = git(root, 'rev-parse', 'HEAD').toString().trim(), others = await otherModuleIds(root, document, validatedCommit)
+  for (const name of [...PACKAGE_FILES, 'module-build.json', 'analog-bd-composition-proofs.json']) {
     const path = 'src/engine/assets/' + name
     if (current[path] === validated[path]) continue
     if (!current[path] || !validated[path]) fail()
     const expectedBytes = git(root, 'show', validatedCommit + ':' + path), liveBytes = await fixedBytes(root, path)
-    const expected = JSON.parse(expectedBytes.toString('utf8'))
-    if (name !== 'module-build.json') {
-      // Preserve Python's original numeric-key ordering as well as payload bytes.
-      const expectedLine = /^ {2}"sourceCommit": (null|"[a-f0-9]{40}"),$/m.exec(expectedBytes.toString('utf8'))?.[0]
-      const sourceLine = '  "sourceCommit": ' + JSON.stringify(head) + ','
-      if (!expectedLine || liveBytes.toString('utf8').replace(sourceLine, expectedLine) !== expectedBytes.toString('utf8')) fail()
-      result[path] = validated[path]; continue
-    }
-    const live = canonicalJson(liveBytes)
-    if (live.sourceCommit !== head) fail()
+    const live = name === 'module-build.json' ? canonicalJson(liveBytes) : JSON.parse(liveBytes.toString('utf8')), same = bytes => JSON.stringify(engineAsset(bytes, path, document, document.version, [], others))
+    if (live.sourceCommit !== head && live.sourceCommit !== JSON.parse(expectedBytes.toString('utf8')).sourceCommit) fail() // stamped now, or unchanged
     if (name === 'module-build.json') {
       if (!keys(live.files, PACKAGE_FILES) || live.approval !== null && (!object(live.approval) || live.approval.sourceCommit !== head)) fail()
       for (const file of PACKAGE_FILES) {
         const bytes = await fixedBytes(root, 'src/engine/assets/' + file), entry = live.files[file]
         if (!keys(entry, ['bytes', 'sha256']) || entry.bytes !== bytes.length || entry.sha256 !== sha(bytes)) fail()
       }
-      live.files = expected.files; live.approval = expected.approval
+    } else {
+      // Preserve Python's original numeric-key ordering as well as payload bytes
+      // for a pure provenance stamp; only another module's rows may reorder them.
+      const expectedLine = /^ {2}"sourceCommit": (null|"[a-f0-9]{40}"),$/m.exec(expectedBytes.toString('utf8'))?.[0]
+      const sourceLine = '  "sourceCommit": ' + JSON.stringify(head) + ','
+      if (expectedLine && liveBytes.toString('utf8').replace(sourceLine, expectedLine) === expectedBytes.toString('utf8')) { result[path] = validated[path]; continue }
+      if (hasDuplicateKeys(liveBytes.toString('utf8'))) fail()
     }
-    live.sourceCommit = expected.sourceCommit
-    if (!isDeepStrictEqual(live, expected)) fail()
+    if (same(liveBytes) !== same(expectedBytes)) fail()
     result[path] = validated[path]
   }
   return sorted(result)
@@ -139,7 +153,7 @@ export async function validateBrowserPreservationBinding(root, approvedRef, docu
     git(root, 'merge-base', '--is-ancestor', record.approvedMain, approvedRef)
     git(root, 'merge-base', '--is-ancestor', record.approvedMain, record.validatedCommit)
     git(root, 'merge-base', '--is-ancestor', record.validatedCommit, 'HEAD')
-    const before = await browserProtectedInputs(root, record.approvedMain), validated = await browserProtectedInputs(root, record.validatedCommit), current = await publicationInputs(root, record.validatedCommit, validated, await browserProtectedInputs(root))
+    const before = await browserProtectedInputs(root, record.approvedMain), validated = await browserProtectedInputs(root, record.validatedCommit), current = await publicationInputs(root, record.validatedCommit, validated, await browserProtectedInputs(root), document)
     if (!object(record.protectedInputHashes) || Object.values(record.protectedInputHashes).some(value => !hash(value)) || !isDeepStrictEqual(sorted(record.protectedInputHashes), current) || !isDeepStrictEqual(validated, current) || record.protectedInputsSha256 !== browserProtectedInputsSha256(current) || record.approvedProtectedInputsSha256 !== browserProtectedInputsSha256(before) || !keys(record.changes, allowed)) fail()
     const changed = [...new Set([...Object.keys(before), ...Object.keys(current)])].filter(path => before[path] !== current[path]).sort()
     if (!isDeepStrictEqual(changed, allowed)) fail()

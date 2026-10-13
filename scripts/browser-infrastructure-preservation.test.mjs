@@ -26,7 +26,9 @@ async function fixture() {
   write('.git/objects/info/alternates', resolve(common, 'objects') + '\n')
   git('symbolic-ref', 'HEAD', 'refs/heads/main'); git('update-ref', 'refs/heads/main', evidence)
   for (const path of ['sdk/octabam/platform/fixture.txt', 'sdk/octabam/dsp/fixture.txt', 'sdk/octabam/tools/build/fixture.txt', 'sdk/octabam/tools/remix/fixture.txt', 'scripts/build-module-packages.py', 'scripts/module-source.mjs', 'src/engine/assets/legacy-packages.json', ...allowed.filter(path => ['client.ts', 'protocol.ts', 'session.ts', 'digi-build.ts'].includes(path.split('/').at(-1)))]) write(path, 'approved:' + path)
-  for (const name of PACKAGE_FILES) write('src/engine/assets/' + name, { schema: 1, sourceCommit: null, code: 'synthetic authored bytes', moduleVersions: { tapeecho: document.version } })
+  for (const name of PACKAGE_FILES) write('src/engine/assets/' + name, { schema: 1, sourceCommit: null, code: 'synthetic authored bytes', moduleVersions: { tapeecho: document.version }, rows: [{ moduleId: 'tapeecho', bytes: 'authored' }] })
+  write('sdk/catalog.json', { modules: [{ id: 'tapeecho' }, { id: 'foreign' }] })
+  write('src/engine/assets/analog-bd-composition-proofs.json', { moduleSourceTreeSha256: 'a'.repeat(64), placements: 'authored' })
   // Python preserves insertion order for integer-looking keys; JS would reorder them.
   write('src/engine/assets/menu-recipes.json', '{\n  "schema": 1,\n  "sourceCommit": null,\n  "labels": {\n    "7": "---",\n    "6": "LADR"\n  }\n}\n')
   const packageFiles = () => Object.fromEntries(PACKAGE_FILES.map(name => { const bytes = readFileSync(resolve(root, 'src/engine/assets/' + name)); return [name, { bytes: bytes.length, sha256: sha(bytes) }] }))
@@ -87,6 +89,52 @@ describe('one exact Tape Echo browser infrastructure binding', () => {
       if (mutation === 'approval commit') build.approval.sourceCommit = 'f'.repeat(40)
       f.write(buildPath, build)
       if (mutation === 'duplicate key') f.write(packagePath, JSON.stringify(pkg, null, 2).replace('"schema": 1,', '"schema": 1,\n  "schema": 1,') + '\n')
+      await expect(loadBrowserInfrastructurePreservation(f.root, f.base, document)).rejects.toThrow('Invalid or stale')
+    } finally { f.cleanup() }
+  })
+  // Another module's release adds its own rows to the shared packages; those are not Tape Echo inputs.
+  const foreignRelease = (f, change = () => {}) => {
+    f.publish()
+    const packagePath = 'src/engine/assets/dsp-packages.json', buildPath = 'src/engine/assets/module-build.json', proofsPath = 'src/engine/assets/analog-bd-composition-proofs.json'
+    const pkg = JSON.parse(readFileSync(resolve(f.root, packagePath))), build = JSON.parse(readFileSync(resolve(f.root, buildPath)))
+    pkg.moduleVersions.foreign = '1.0.0'; pkg.rows.push({ moduleId: 'foreign', bytes: 'new' }); change(pkg)
+    f.write(packagePath, pkg)
+    f.write(proofsPath, { moduleSourceTreeSha256: 'c'.repeat(64), placements: 'authored' })
+    f.write(buildPath, { ...build, sourceTreeSha256: 'd'.repeat(64), files: f.packageFiles() })
+    return pkg
+  }
+  it("accepts another module's own rows, versions and source-tree identity in the shared packages", async () => {
+    const f = await fixture()
+    try { foreignRelease(f); expect(await loadBrowserInfrastructurePreservation(f.root, f.base, document)).not.toBeNull() } finally { f.cleanup() }
+  })
+  it.each([
+    ['a Tape Echo row', pkg => { pkg.rows[0].bytes = 'changed' }],
+    ['the shared payload', pkg => { pkg.code += 'changed' }],
+    ['a foreign provenance commit', pkg => { pkg.sourceCommit = 'f'.repeat(40) }],
+    ['the Tape Echo version label', pkg => { pkg.moduleVersions.tapeecho = '0.1.4-experimental' }],
+  ])("still rejects another module's release that also changes %s", async (_, change) => {
+    const f = await fixture()
+    try {
+      foreignRelease(f, change)
+      f.write('src/engine/assets/module-build.json', { ...JSON.parse(readFileSync(resolve(f.root, 'src/engine/assets/module-build.json'))), files: f.packageFiles() })
+      await expect(loadBrowserInfrastructurePreservation(f.root, f.base, document)).rejects.toThrow('Invalid or stale')
+    } finally { f.cleanup() }
+  })
+  it("rejects another module's release with a duplicate JSON key", async () => {
+    const f = await fixture()
+    try {
+      const pkg = foreignRelease(f), path = 'src/engine/assets/dsp-packages.json'
+      f.write(path, JSON.stringify(pkg, null, 2).replace('"schema": 1,', '"schema": 1,\n  "schema": 1,') + '\n')
+      f.write('src/engine/assets/module-build.json', { ...JSON.parse(readFileSync(resolve(f.root, 'src/engine/assets/module-build.json'))), files: f.packageFiles() })
+      await expect(loadBrowserInfrastructurePreservation(f.root, f.base, document)).rejects.toThrow('Invalid or stale')
+    } finally { f.cleanup() }
+  })
+  it('rejects a changed shared compiler or Tape Echo build field beside another module\'s release', async () => {
+    const f = await fixture()
+    try {
+      foreignRelease(f)
+      const path = 'src/engine/assets/module-build.json'
+      f.write(path, { ...JSON.parse(readFileSync(resolve(f.root, path))), compilerSha256: 'e'.repeat(64) })
       await expect(loadBrowserInfrastructurePreservation(f.root, f.base, document)).rejects.toThrow('Invalid or stale')
     } finally { f.cleanup() }
   })

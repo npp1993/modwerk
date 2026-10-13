@@ -4,7 +4,7 @@
   "evidenceCommit": "32ac46b0c7e8c11e48ebc41674695e033142b46e",
   "evidenceModuleVersion": "0.1.2-experimental",
   "approvedMain": "813fe73637dc12db384e6e92ebed08d6746d1780",
-  "validatedCommit": "466e84737bef50145d29a000c5f7f2e6cbd3828b",
+  "validatedCommit": "ffd75fbffe5c39106207ce4fa0d985e7ba1966ce",
   "originalOsSha256": "34695b606eb00e1b4dded5fd0c4b66f3a460522a632e47d7416dbd220599e1ad",
   "changes": {
     "src/engine/assets/octatrack-base-fills.json": {
@@ -45,7 +45,7 @@
     },
     "src/engine/elekloader/octatrack-link.ts": {
       "before": null,
-      "after": "a8de728bca65f2cf3a3d4941d0f3206e24a7251e4c65562739aa95511bc585be"
+      "after": "5b6e823beca24d005ebf812626dab506015c7b76a152ac96fb0f365bce0b9194"
     },
     "src/engine/elekloader/selftest.ts": {
       "before": null,
@@ -57,11 +57,11 @@
     },
     "src/engine/elekloader/upload-usb.ts": {
       "before": null,
-      "after": "db80c65756870704b89e44812980afa21ed6f51dea58806f4fddac12f2f41883"
+      "after": "d134d8a526aeec13f8d05fb68750f5357de162ba6dae8a459e70b82cac28896a"
     },
     "src/engine/elekloader/upload-wire.ts": {
       "before": null,
-      "after": "dd77821d4431c5a541242dbf2bad5b206a4b0a69deed07668de33c48fca1513a"
+      "after": "585d50e4d95cda4ce84944db9de5d821bcfdfd34171beacb982c19775752fc26"
     },
     "src/engine/protocol.ts": {
       "before": "70a2c6c5fc93827b0600b49b138026c7fbd4ef43ce032f092ddb48a02d702b0f",
@@ -225,12 +225,12 @@
     "src/engine/elekloader/machine-build.ts": "c664f904f9b6a428fd583c81c9d67ad80c456b7c4323819edbd0191acfed29d9",
     "src/engine/elekloader/module-set.ts": "11af0bfdffcf4db12f56b86b31d261befedad3a40d2d5c13c88eb4fedb5c22bc",
     "src/engine/elekloader/octatrack-base.ts": "f40b2191f81cc76c7d3079acfcf91ffaec3a79f0a7c8971c9db0aebbc74f30f2",
-    "src/engine/elekloader/octatrack-link.ts": "a8de728bca65f2cf3a3d4941d0f3206e24a7251e4c65562739aa95511bc585be",
+    "src/engine/elekloader/octatrack-link.ts": "5b6e823beca24d005ebf812626dab506015c7b76a152ac96fb0f365bce0b9194",
     "src/engine/elekloader/protocol.ts": "d430023ccfeb28db98330e40fcb819f1ab7acad9d3ce7d614e58d555d4eecbb2",
     "src/engine/elekloader/selftest.ts": "eed105ba2b001f01b842004705f7d0e4686ee4d6c049d4efbcc811eec4183913",
     "src/engine/elekloader/upload-session.ts": "23be52d0a32599a61e35d2dbaa93f8be5a69b046ea344822adc30513ef20dc7e",
-    "src/engine/elekloader/upload-usb.ts": "db80c65756870704b89e44812980afa21ed6f51dea58806f4fddac12f2f41883",
-    "src/engine/elekloader/upload-wire.ts": "dd77821d4431c5a541242dbf2bad5b206a4b0a69deed07668de33c48fca1513a",
+    "src/engine/elekloader/upload-usb.ts": "d134d8a526aeec13f8d05fb68750f5357de162ba6dae8a459e70b82cac28896a",
+    "src/engine/elekloader/upload-wire.ts": "585d50e4d95cda4ce84944db9de5d821bcfdfd34171beacb982c19775752fc26",
     "src/engine/elektron/coldfire-isa.ts": "da00f8019f8cba5082c7aa7a51fe95016d73edcec519fe657e3846178a65ea5f",
     "src/engine/elektron/ele3.ts": "7063eba5c4c0cace6dae9e7fa81b546c55748d78b05ba77c8ed8c92138faee98",
     "src/engine/elektron/elemod.ts": "44bebeb7f08c6eab0808a9cd741edd9acb5a7b69db361157e45aa146ce9b55ee",
@@ -270,10 +270,10 @@
     "src/engine/usb-audio.ts": "7ece1e258553bfc2ef3d9805d9e9db73b27b140e0eff19d1fd3a283122619526",
     "src/engine/utility-modules.ts": "7d4ae4efa92c264f1fd13899c571f1782e054f08f8ef95c16b2afa96db8fd3c3"
   },
-  "protectedInputsSha256": "86e24914e139daa80d3cd313e0dbad8e7c6c3db336a034bca1030e63c820a777",
+  "protectedInputsSha256": "883298b488e3906807f3af9bb35a3b3f250934ff7ca94222494659e531fb9f98",
   "approvedProtectedInputsSha256": "9c8c246d1ade1e7756558d6de25ed5f1472691418dcbedf025cfefd27b969542",
   "proof": {
-    "reportSha256": "8a28bfaefe071cf448902616cff16690388ac1d47d1ae8c12e02aaecfb32a1ef",
+    "reportSha256": "10cfdae8c8ea3550f64b6ff5e4e1289c8706123bc267f481a10806c8a4b8349d",
     "runnerSha256": "225ed0b6d0ff8bc469604d80bbc7ff29b46bf8c7d82adf8604524ec7e52fca03"
   }
 }

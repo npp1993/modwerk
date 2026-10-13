@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { ModulePreview } from './ModulePreview'
 import { AudioPreviewPlayer } from './AudioPreviewPlayer'
 import { useModuleAudioPreviews } from './audio-preview-context'
@@ -19,7 +19,15 @@ export function ModuleAudioCardCover({ id, name, href, onBrowse, inert, prepare,
 }
 
 export function ModuleAudioDetailPreview({ id, name, children }: { id: string; name: string; children?: ReactNode }) {
-  const { clips, onAdd, onRemove, added, error } = useModuleAudioPreviews(id)
+  const { clips, onAdd, onRemove, added, error, guide } = useModuleAudioPreviews(id)
+  const guideId = useId(), addButton = useRef<HTMLButtonElement>(null)
+  const [guideDismissed, setGuideDismissed] = useState(false)
+  const showGuide = guide && !guideDismissed && !!onAdd
+  useEffect(() => {
+    if (!showGuide) return
+    addButton.current?.focus({ preventScroll: true })
+    addButton.current?.scrollIntoView?.({ block: 'center', behavior: 'instant' })
+  }, [showGuide])
   const [selection, setSelection] = useState({ id:'', added:'' })
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState('')
@@ -39,13 +47,17 @@ export function ModuleAudioDetailPreview({ id, name, children }: { id: string; n
       {children ?? <ModulePreview id={id}/>}
       {clip && <div className="audio-preview-dock"><AudioPreviewPlayer key={clip.id} clip={clip} name={name}/></div>}
     </div>
-    {(clips.length > 1 || onAdd) && <div className="audio-preview-navigation">
+    {showGuide && <div className="audio-preview-upload-guide" id={guideId} role="status">
+      <div><strong>Add your recording</strong><p>Click <strong>Add preview</strong> below to upload a recording of {name}. You’ll find the same button on every module page.</p><small>Verified account · WAV, MP3 or Ogg · up to 90 seconds / 12 MB</small></div>
+      <button type="button" className="icon-button" aria-label="Dismiss upload tip" onClick={() => setGuideDismissed(true)}><Icon name="close" size={16}/></button>
+    </div>}
+    {(clips.length > 1 || onAdd) && <div className={'audio-preview-navigation' + (showGuide ? ' is-guided' : '')}>
       {clips.length > 1 && <div className="audio-preview-carousel" role="group" aria-label="Audio previews">
         <button type="button" onClick={() => step(-1)} aria-label="Previous audio preview"><Icon name="back" size={16}/></button>
         <span aria-live="polite" aria-atomic="true"><strong>{index + 1}</strong> / {clips.length}</span>
         <button type="button" onClick={() => step(1)} aria-label="Next audio preview"><Icon name="back" size={16}/></button>
       </div>}
-      {onAdd && <button type="button" className="text-button audio-preview-add" onClick={onAdd}><Icon name="plus" size={15}/>Add preview</button>}
+      {onAdd && <button ref={addButton} type="button" className="text-button audio-preview-add" aria-describedby={showGuide ? guideId : undefined} onClick={() => { setGuideDismissed(true); onAdd() }}><Icon name="plus" size={15}/>Add preview</button>}
       {clip?.canRemove && onRemove && <button type="button" className="icon-button audio-preview-remove" aria-label="Remove this audio preview" onClick={() => void remove()} disabled={removing}><Icon name="close" size={16}/></button>}
     </div>}
     {(removeError||error) && <p className="file-error" role="alert">{removeError||error}</p>}

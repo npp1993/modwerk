@@ -13,7 +13,7 @@ import { findVendorInterface, UsbVendorTransport } from '../src/engine/elekloade
 import { diagnostics, removal, runLifecycle, runModuleSet, testModule } from '../src/dev/octatrack-usb-lifecycle.ts'
 import { Bench, device, enumerate } from './usb-bench.mjs'
 
-// --hardware: a real unit through sdk/machines/octatrack/elekloader/usb_bridge.py; the host OS has
+// --hardware: a real unit through scripts/octatrack-usb-bridge.py; the host OS has
 // enumerated it, and the emulator-only bus reset case is skipped.
 const hardware = process.argv.includes('--hardware')
 const [socketPath, proofsPath] = process.argv.slice(2).filter(arg => arg !== '--hardware')

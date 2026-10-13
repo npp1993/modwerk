@@ -67,6 +67,13 @@
 .module-audio-detail .audio-preview-add svg { color: var(--faint); }
 .module-audio-detail .audio-preview-navigation .audio-preview-add:hover { border-color: #ffffff25; background: #ffffff08; color: var(--text); }
 .audio-preview-remove { flex: none; width: 44px; height: 44px; color: var(--muted); }
+.audio-preview-upload-guide { display: flex; gap: 8px; padding: 16px; border: 1px solid var(--accent-line); border-radius: 8px; background: var(--accent-soft); color: var(--text); font-size: 13px; line-height: 1.6; }
+.audio-preview-upload-guide > div { min-width: 0; }
+.audio-preview-upload-guide p { margin: 6px 0; }
+.audio-preview-upload-guide small { display: block; color: var(--muted); font-size: 12px; }
+.audio-preview-upload-guide .icon-button { flex: none; width: 44px; height: 44px; }
+.module-audio-detail .audio-preview-navigation.is-guided .audio-preview-add { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.module-audio-detail .audio-preview-navigation.is-guided .audio-preview-add svg { color: inherit; }
 .submitted-audio-previews { margin-top: 28px; }
 .submitted-audio-previews h3 { margin-bottom: 16px; font-size: 16px; }
 .module-preview-docs-title { margin: 28px 0 16px; font-size: 16px; }

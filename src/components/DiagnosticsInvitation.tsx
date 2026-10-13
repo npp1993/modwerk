@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { changeDiagnosticSharing, diagnosticPreference, subscribeDiagnosticPreference } from '../community/octatrack-diagnostics'
 import { OCTATRACK_DIAGNOSTICS_VERSION } from '../community/octatrack-diagnostics-contract'
 import { browserRequestsPrivacy } from '../community/usage'
+import type { OctatrackLink } from '../engine/elekloader/octatrack-link'
+import { useOctatrackLink } from '../hooks/useOctatrackLink'
 import { Icon } from './Icon'
 import './diagnostics.css'
 
@@ -51,20 +53,23 @@ export function DiagnosticsInvitation({onClose,preview=false}: {onClose:()=>void
 
 const invitationKey=(memberId:string)=>`modwerk.diagnostics.invitation:${OCTATRACK_DIAGNOSTICS_VERSION}:${memberId}`
 function dismissed(memberId:string){try{return localStorage.getItem(invitationKey(memberId))==='dismissed'}catch{return false}}
-/** Invite at a firmware workspace, after any current dialog finishes. Dismissal is remembered for this account and scope. */
-export function DiagnosticsInvitationGate({memberId,eligible,blocked=false,preview=false}:{memberId:string;eligible:boolean;blocked?:boolean;preview?:boolean}) {
+/** Invite after the account's first compatible USB connection and any current dialog. Dismissal remains account/version scoped. */
+export function DiagnosticsInvitationGate({memberId,link,eligible,blocked=false,preview=false}:{memberId:string;link:OctatrackLink|null;eligible:boolean;blocked?:boolean;preview?:boolean}) {
   const state=useSyncExternalStore(subscribeDiagnosticPreference,diagnosticPreference,diagnosticPreference)
-  const [open,setOpen]=useState(false), skipped=useRef(false)
+  const connection=useOctatrackLink(link), connected=connection.status==='ready' && !!connection.identity?.canSubmit
+  const [connectedFor,setConnectedFor]=useState<string>(), [openFor,setOpenFor]=useState<string>(), skipped=useRef<string>(undefined)
+  if(connected && connectedFor!==memberId)setConnectedFor(memberId)
+  const afterConnection=preview || connectedFor===memberId
   const possible=preview || state.accountId===memberId && state.available && !state.hasChoice && !state.enabled && !browserRequestsPrivacy()
   useEffect(()=>{
-    if(!eligible || blocked || !possible || skipped.current)return
-    const invite=()=>{if(!skipped.current && (preview || !dismissed(memberId)) && !document.querySelector('dialog[open]'))setOpen(true)}
+    if(!afterConnection || !eligible || blocked || !possible || skipped.current===memberId)return
+    const invite=()=>{if(skipped.current!==memberId && (preview || !dismissed(memberId)) && !document.querySelector('dialog[open]'))setOpenFor(memberId)}
     invite()
     const observer=new MutationObserver(invite)
     observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['open']})
     window.addEventListener('storage',invite)
     return ()=>{observer.disconnect();window.removeEventListener('storage',invite)}
-  },[memberId,eligible,blocked,possible,preview])
-  function close(){skipped.current=true;setOpen(false);if(!preview)try{localStorage.setItem(invitationKey(memberId),'dismissed')}catch{/* still dismissed for this visit */}}
-  return open && eligible && !blocked && possible ? <DiagnosticsInvitation preview={preview} onClose={close}/> : null
+  },[memberId,afterConnection,eligible,blocked,possible,preview])
+  function close(){skipped.current=memberId;setOpenFor(undefined);if(!preview)try{localStorage.setItem(invitationKey(memberId),'dismissed')}catch{/* still dismissed for this visit */}}
+  return openFor===memberId && afterConnection && eligible && !blocked && possible ? <DiagnosticsInvitation preview={preview} onClose={close}/> : null
 }

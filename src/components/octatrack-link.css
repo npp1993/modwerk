@@ -115,8 +115,6 @@ button.octatrack-status { width: 100%; border: 0; border-top: 1px solid var(--li
 .module-grid-save { margin-top: 14px; }
 @media (pointer: coarse), (max-width: 600px) { .module-tile-action.icon-button, .module-tile-action.text-button { min-width: 44px; height: 44px; } }
 .card-install { margin-bottom: 22px; }
-.card-install > summary { color: var(--muted); font-size: 13px; cursor: pointer; }
-.card-install[open] > summary { margin-bottom: 14px; }
 /* Full width while a unit with the base is connected: the grid, then the sticky sync bar. */
 .configuration-layout.is-usb { grid-template-columns: minmax(0, 1fr); }
 .sync-bar { position: sticky; bottom: 12px; z-index: 6; display: flex; align-items: center; gap: 18px; padding: 14px 18px; border: 1px solid var(--accent-line); border-radius: 12px; background: var(--surface-raised); box-shadow: 0 14px 44px #0009; }
@@ -161,6 +159,7 @@ button.octatrack-status { width: 100%; border: 0; border-top: 1px solid var(--li
 .module-dialog-step.is-previous { grid-column: 1; justify-self: end; margin-right: 16px; }
 .module-dialog-step.is-next { grid-column: 3; justify-self: start; margin-left: 16px; }
 .module-dialog-step { cursor: pointer; }
+.module-dialog-step > span { display: none; }
 .module-dialog-step:disabled { opacity: .35; cursor: default; }
 /* Paging slides the next page in from the side you went. */
 .module-dialog[data-step] .detail-page { animation: module-dialog-page .28s cubic-bezier(.2, .8, .2, 1); }
@@ -171,13 +170,18 @@ button.octatrack-status { width: 100%; border: 0; border-top: 1px solid var(--li
 @media (prefers-reduced-motion: reduce) { .module-dialog[open], .module-dialog::backdrop, .module-dialog-panel, .module-dialog .detail-page { animation: none; } .module-dialog-close svg { transition: none; } }
 /* Phones: the panel fills the screen, the chevrons sit under it. */
 @media (max-width: 768px) {
-  .module-dialog { padding: 12px; }
+  .module-dialog { height: 100dvh; padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
   .module-dialog[open] { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
   .module-dialog-panel { grid-column: 1; align-self: stretch; padding: 0 16px 24px; border-radius: 16px; }
   .module-dialog-bar { margin: 0 -6px; }
-  .module-dialog-step.is-previous, .module-dialog-step.is-next { grid-row: 2; grid-column: 1; margin: 12px 0 0; }
+  .module-dialog-step.is-previous, .module-dialog-step.is-next { grid-row: 2; grid-column: 1; width: auto; height: 44px; gap: 8px; padding: 0 12px; margin: 8px 0 0; }
   .module-dialog-step.is-previous { justify-self: start; }
   .module-dialog-step.is-next { justify-self: end; }
+  .module-dialog-step.is-next > svg { order: 1; }
+  .module-dialog-step > span { display: inline; font-size: 13px; }
+  .module-dialog .detail-tabs { gap: 20px; scroll-padding-inline: 4px; }
+  .module-dialog .detail-tabs button { min-height: 44px; padding-bottom: 8px; }
+  .module-dialog-close { min-height: 44px; }
   .module-dialog-trigs { display: none; }
 }
 /* The Octatrack's LED language, the same everywhere: lit green is on the unit, outlined is waiting to load,
@@ -202,45 +206,62 @@ button.octatrack-status { width: 100%; border: 0; border-top: 1px solid var(--li
 .sidebar-build.is-connection { width: 100%; border-inline: 0; border-bottom: 0; background: none; color: var(--text); text-align: left; cursor: pointer; }
 .sidebar-build.is-connection strong { color: var(--accent); }
 .sidebar-build.is-connection:disabled { cursor: wait; }
-/* The hub: your module sets beside the unit, as a split view. */
-.hub-split { display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.hub-sets { display: flex; flex-direction: column; min-width: 0; padding: 12px 8px; border-right: 1px solid var(--line); }
-.hub-pane-label { display: flex; align-items: baseline; justify-content: space-between; padding: 4px 10px 10px; }
-.hub-pane-label h2 { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
-.hub-set-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
-.hub-set { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 3px 10px; padding: 10px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; }
-.hub-set:hover { background: var(--surface-hover); }
-.hub-set.is-selected { border-color: var(--accent-line); background: var(--accent-soft); }
-.hub-set:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* The Octatrack page: the unit's hero on top, then a list of its pages and your module sets beside the one open. */
+.octatrack-hub { container: hub / inline-size; }
+/* The page fits the window (--hub-height, measured by OctatrackHub): the hero and list stay put, a long page scrolls in its pane. */
+.hub-split { display: grid; grid-template-columns: minmax(228px, 268px) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: var(--hub-height, auto); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.hub-hero { grid-column: 1 / -1; display: flex; align-items: center; gap: 28px; padding: 14px 28px; border-bottom: 1px solid var(--line); }
+.hub-hero .device-photo { width: 260px; height: auto; flex: none; }
+.hub-hero > div { flex: 1; min-width: 0; }
+.hub-hero p { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 7px; margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.hub-hero p b { color: var(--text-secondary); font-weight: 600; }
+.hub-hero > .button { flex: none; min-height: 40px; }
+.hub-facts { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 14px 0 0; }
+.hub-facts dt { color: var(--muted); font-size: 11px; }
+.hub-facts dd { margin: 2px 0 0; color: var(--text-secondary); font-size: 13px; }
+.hub-facts code { font-family: var(--mono); font-size: 12px; }
+.hub-nav { display: flex; flex-direction: column; gap: 20px; min-width: 0; min-height: 0; overflow: auto; padding: 14px 8px 16px; border-right: 1px solid var(--line); }
+.hub-nav-label { display: flex; align-items: center; gap: 8px; min-height: 28px; margin: 0 0 4px; padding: 0 4px 0 10px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.hub-nav-label h2 { margin: 0; color: inherit; font: inherit; }
+.hub-nav-label .subtle { margin-right: auto; font-weight: 500; }
+.hub-nav-label .icon-button { padding: 6px; }
+.hub-nav-list, .hub-set-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.hub-nav-item { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 6px 10px; border-radius: 8px; color: var(--text-secondary); font-size: 14px; text-decoration: none; }
+.hub-nav-item > svg { color: var(--muted); }
+.hub-nav-item .samples-wip { margin-left: auto; padding: .1rem .35rem; }
+.hub-nav-item:hover, .hub-set:hover { background: var(--surface-hover); }
+.hub-nav-item[aria-current="page"], .hub-set:has(> [aria-current="page"]) { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-line); color: var(--text); }
+.hub-nav-item[aria-current="page"] > svg { color: var(--accent); }
+.hub-nav-item:focus-visible, .hub-set-open:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.hub-set { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-radius: 8px; }
+.hub-set-open { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 3px 10px; min-width: 0; padding: 9px 2px 9px 10px; border: 0; border-radius: 8px; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .hub-set strong { overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .hub-set b { color: var(--muted); font-size: 12px; font-weight: 500; }
 .hub-set small, .hub-set em { grid-column: 2 / -1; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.hub-set em { color: #c4e6cf; font-style: normal; }
-.hub-set-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-top: 10px; padding: 10px 10px 2px; border-top: 1px solid var(--line); }
-.hub-set-actions > span { display: flex; flex-wrap: wrap; gap: 10px; }
-.hub-set-actions .text-button { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; font-size: 13px; }
-.hub-unit { min-width: 0; padding: 18px 22px 20px; }
-.hub-unit-head { display: flex; align-items: center; gap: 22px; margin-bottom: 14px; }
-.hub-unit-head .device-photo { width: 260px; height: auto; flex: none; }
-.hub-unit-head > div { flex: 1; min-width: 0; }
-.hub-unit-head h2 { margin: 0; font-size: 22px; letter-spacing: -.3px; }
-.hub-unit-head p { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 7px; margin: 4px 0 0; color: var(--muted); font-size: 13px; }
-.hub-unit-head p b { color: var(--text-secondary); font-weight: 600; }
-.hub-unit-head .button { flex: none; min-height: 32px; padding: 5px 12px; }
-/* The selected set's tiles sit straight in the pane, one surface, no card inside the card. */
-.hub-unit > .module-tiles { margin-bottom: 4px; }
-.hub-unit > .module-grid-save { margin: 10px 0 0; }
-.hub-unit .card-install { margin: 14px 0 0; }
-.hub-unit .card-install.is-open { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
-.card-install.is-open > h2 { margin: 0 0 14px; font-size: 16px; }
-.hub-unit .configuration-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-.hub-unit .configuration-section, .hub-unit .checkout-card { padding: 0; border: 0; background: none; }
-.hub-unit .configuration-section { margin-bottom: 20px; }
-.hub-unit .configuration-checkout { position: static; max-height: none; overflow: visible; }
-/* Sync is the page's one primary action, so New stays quiet here; Report a problem keeps the site's report style. */
-.octatrack-hub .configuration-heading-actions .button-primary { border-color: var(--line); background: var(--surface-raised); color: var(--text-secondary); font-weight: 500; box-shadow: none; }
-.octatrack-hub .configuration-heading-actions .button-primary:hover { border-color: var(--line-hover); background: var(--surface-hover); }
-.hub-unit > .link-hint, .hub-unit .usb-missing, .hub-save { margin: 0 0 12px; }
+.hub-set em { color: var(--accent); font-style: normal; }
+.hub-set-menu .icon-button { padding: 7px; }
+.hub-set-menu .configuration-menu-panel { width: 190px; }
+.hub-nav-foot { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: -8px 0 0; padding: 0 10px; }
+.hub-nav-foot .text-button { min-height: 32px; font-size: 13px; }
+.hub-set-picker { display: none; width: 100%; min-width: 0; min-height: 44px; padding: 10px 42px 10px 12px; border: 1px solid var(--control-border); border-radius: 8px; background-color: var(--field); color: var(--text); font: inherit; font-size: 16px; }
+.hub-pane { min-width: 0; min-height: 0; overflow: auto; padding: 24px 28px 28px; container: hub-pane / inline-size; }
+.hub-view[hidden] { display: none; }
+.hub-view-title { margin: 0; font-size: 22px; letter-spacing: -.3px; overflow-wrap: anywhere; }
+.hub-section, .hub-view .octatrack-diagnostics { margin: 22px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); }
+.hub-section h3, .hub-cell h3, .hub-view .card-install > h3 { margin: 0 0 10px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.hub-section p { margin: 6px 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.hub-section .button { min-height: 40px; }
+.hub-view p.hub-empty { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+/* Status: a control room's panel, divided by hairlines. Its rows are fixed; long lists scroll in their cell. */
+.hub-pane:has(> .hub-view-status:not([hidden])) { display: flex; padding: 0; overflow: hidden; }
+.hub-view-status { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; }
+.hub-view-status > .usb-missing { margin: 12px 16px; }
+.hub-console { flex: 1 0 auto; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: auto minmax(150px, 1fr) minmax(130px, 1fr); grid-template-areas: "cpu cpu dsp1 dsp1 dsp2 dsp2" "chart chart chart chart health health" "unit unit history history history history"; gap: 1px; border-radius: 0 0 12px 0; overflow: hidden; background: var(--line); }
+.hub-cell { min-width: 0; min-height: 0; overflow: auto; padding: 14px 18px; background: var(--surface); }
+.hub-cell-cpu { grid-area: cpu; } .hub-cell-dsp1 { grid-area: dsp1; } .hub-cell-dsp2 { grid-area: dsp2; }
+.hub-cell-chart { grid-area: chart; } .hub-cell-health { grid-area: health; } .hub-cell-unit { grid-area: unit; } .hub-cell-history { grid-area: history; }
+.hub-cell-unit, .hub-cell-history { display: flex; flex-direction: column; }
+/* Modules the unit's project uses but the unit lacks: a yellow-edged note, one band wide where there is room. */
 .usb-missing { padding: 14px 16px; border: 1px solid var(--line); border-left: 3px solid #d4b663; border-radius: 8px; background: var(--surface-raised); }
 .usb-missing h3 { margin: 0; color: var(--text); font-size: 14px; font-weight: 600; line-height: 1.5; }
 .usb-missing ul { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 7px 0 0; padding: 0; list-style: none; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
@@ -249,19 +270,109 @@ button.octatrack-status { width: 100%; border: 0; border-top: 1px solid var(--li
 .usb-missing-action { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 10px; }
 .usb-missing-action p { margin: 0; }
 .usb-missing-action .button { min-height: 44px; }
-.hub-sync-bar { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; margin: 0 -1px 16px; padding: 12px 1px; border-bottom: 1px solid var(--line); background: var(--surface); }
-.hub-sync-bar > div { flex: 1 1 180px; min-width: 0; }
-.hub-sync-bar strong { display: block; color: var(--text); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
-.hub-sync-bar p { margin: 3px 0 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.hub-view .usb-missing { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 10px 14px; }
+.hub-view .usb-missing > [role="status"] { display: flex; flex: 1 1 320px; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; min-width: 0; }
+.hub-view .usb-missing ul { margin: 0; }
+.hub-view .usb-missing ul li + li::before { content: '·'; margin-right: 14px; color: var(--muted); }
+.hub-view .usb-missing [role="status"] > p { flex-basis: 100%; margin: 0; }
+.hub-view .usb-missing-action { margin: 0; }
+.hub-view .usb-missing-action .button { min-height: 36px; }
+/* A narrow pane keeps the meters in one row, the graph on its own and the rest in halves. */
+@container hub-pane (max-width: 640px) {
+  .hub-console { grid-template-rows: auto minmax(150px, 1fr) minmax(150px, 1fr) minmax(120px, 1fr); grid-template-areas: "cpu cpu dsp1 dsp1 dsp2 dsp2" "chart chart chart chart chart chart" "health health health unit unit unit" "history history history history history history"; }
+  .hub-console .load-meter { padding: 12px 14px; }
+  .hub-console .load-meter strong { font-size: 1.3rem; }
+  .hub-console .load-meter span, .hub-console .load-meter small { font-size: 11px; }
+}
+.hub-cell-health h3:not(:first-child) { margin-top: 16px; }
+.hub-test { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text); font-size: 14px; line-height: 1.4; }
+.hub-peaks { display: grid; gap: 4px; margin: 10px 0 0; }
+.hub-peaks div { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.hub-peaks dd { display: grid; grid-template-columns: minmax(0, 1fr) 34px; align-items: center; gap: 8px; margin: 0; color: var(--text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+.hub-peaks meter { width: 100%; height: 8px; accent-color: var(--accent); }
+.hub-cell-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; }
+.hub-cell-head .text-button { white-space: nowrap; }
+.hub-cell-head .text-button { min-height: 28px; font-size: 12px; }
+.hub-cell-note { color: var(--muted); font-size: 11px; }
+.hub-unit-modules, .hub-history { flex: 1; min-height: 0; overflow: auto; margin: 0; padding: 0; list-style: none; }
+.hub-unit-modules li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 32px; border-bottom: 1px solid var(--line); }
+.hub-unit-modules strong { overflow: hidden; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.hub-unit-modules small { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.hub-history li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.hub-unit-modules li:last-child, .hub-history li:last-child { border-bottom: 0; }
+.hub-history-name { min-width: 0; }
+.hub-history-name strong { display: block; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.hub-history-name small { display: block; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.hub-history-end { display: grid; justify-items: end; gap: 2px; }
+.hub-history time { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.hub-history .hub-report { min-height: 24px; color: #efd17c; font-size: 12px; }
+/* A module set: its name and menu, the sync row, then its modules. */
+.hub-editor-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.hub-editor-head .guide-eyebrow { display: block; margin-bottom: 4px; }
+.hub-sync { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 14px 0 20px; padding: 12px 0; border-block: 1px solid var(--line); }
+.hub-sync p { flex: 1 1 220px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
 .hub-insync { display: flex; align-items: center; gap: 8px; }
-.hub-sync-bar .button { min-height: 44px; }
-@media (max-width: 520px) { .hub-sync-bar { gap: 10px; } .hub-sync-bar > div, .hub-sync-bar > .button { flex: 1 1 100%; } }
-@media (max-width: 760px) { .hub-sync-bar { top: max(56px, calc(44px + env(safe-area-inset-top))); } }
-@media (max-width: 1100px) { .hub-split { grid-template-columns: 240px minmax(0, 1fr); } .hub-unit-head .device-photo { width: 240px; } }
-@media (max-width: 760px) { .hub-split { grid-template-columns: 1fr; } .hub-sets { border-right: 0; border-bottom: 1px solid var(--line); } }
-@media (max-width: 600px) {
-  .hub-unit-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
-  .hub-unit-head .device-photo { grid-column: 1 / -1; width: 200px; max-width: 100%; }
+.hub-sync .button { min-height: 44px; }
+.hub-view-set .usb-missing, .hub-fill { margin: 0 0 16px; }
+.hub-fill { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 16px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; background: var(--surface-raised); }
+.hub-fill p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+.hub-fill .button { min-height: 40px; }
+.hub-view-set .module-tiles { margin-bottom: 4px; }
+.hub-empty-set p { color: var(--muted); }
+/* Setup: the base, the card route, diagnostics. */
+.hub-view .card-install.is-open { margin: 22px 0 0; padding-top: 18px; border-top: 1px solid var(--line); }
+.card-install-set { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+.card-install-set b { color: var(--text-secondary); }
+.hub-view .configuration-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.hub-view .configuration-section, .hub-view .checkout-card { padding: 0; border: 0; background: none; }
+.hub-view .configuration-section { margin-bottom: 20px; }
+.hub-view .configuration-checkout { position: static; max-height: none; overflow: visible; }
+@container hub (max-width: 980px) { .hub-hero .device-photo { width: 240px; } }
+/* Short windows (a laptop's browser): a smaller hero and meters, and no page subtitle, so Status still fits. */
+@media (max-height: 920px) {
+  .octatrack-hub .configuration-heading p { display: none; }
+  .hub-hero { padding: 10px 24px; }
+  .hub-hero .device-photo { width: 200px; }
+  .hub-hero .hub-facts { margin-top: 8px; }
+  .hub-cell, .hub-console .load-meter { padding: 10px 16px; }
+  .hub-console .load-meter strong { margin: 2px 0 6px; font-size: 1.4rem; }
+  .hub-view-status > .usb-missing { margin: 8px 12px; padding: 6px 12px; }
+}
+/* Narrow: the hero gets smaller, the list becomes one picker, the panel one column with the meters side by side. */
+@container hub (max-width: 760px) {
+  .octatrack-hub .configuration-heading { flex-wrap: wrap; }
+  .octatrack-hub .configuration-heading > div:first-child { flex: 1 1 100%; }
+  .octatrack-hub .configuration-heading-actions .button { min-height: 44px; }
+  .hub-split { grid-template-columns: minmax(0, 1fr); }
+  .hub-hero { display: grid; grid-template-columns: minmax(96px, 120px) minmax(0, 1fr); gap: 12px 16px; padding: 16px; }
+  .hub-hero .device-photo { width: 100%; }
+  .hub-hero h2 { font-size: 20px; }
+  .hub-hero p { display: block; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+  .hub-hero p > .unit-led { margin-right: 7px; vertical-align: middle; }
+  .hub-hero > .button { grid-column: 1 / -1; justify-self: start; min-height: 44px; }
+  .hub-facts { gap: 8px 20px; }
+  .hub-nav { gap: 12px; padding: 14px 16px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .hub-set-picker { display: block; }
+  .hub-nav-group { display: none; }
+  .hub-nav-foot { margin: 0; padding: 0; }
+  .hub-nav-foot .text-button { min-height: 44px; }
+  .hub-split { height: auto; }
+  .hub-pane { padding: 18px 16px 20px; overflow: visible; }
+  .hub-pane:has(> .hub-view-status:not([hidden])) { overflow: visible; }
+  .hub-console { flex: none; grid-template-rows: auto 260px auto 220px 240px; grid-template-areas: "cpu cpu dsp1 dsp1 dsp2 dsp2" "chart chart chart chart chart chart" "health health health health health health" "unit unit unit unit unit unit" "history history history history history history"; border-radius: 0 0 12px 12px; }
+  .hub-console .hub-cell { padding: 12px 14px; }
+  .hub-cell-head .text-button, .hub-console .load-heading .text-button, .hub-history .hub-report { min-height: 44px; }
+  .hub-set-menu .icon-button, .hub-nav-label .icon-button { min-width: 44px; min-height: 44px; }
+  .hub-view-set .module-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .hub-view-set .module-tile .compact-preview { height: 96px; }
+  .hub-view-set .module-tile-open strong { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+  .hub-view-set .module-tile-controls { min-height: 52px; }
+  .hub-view-set .module-tile-action { min-width: 44px; height: 44px; }
+}
+@container hub (max-width: 340px) {
+  .hub-hero { grid-template-columns: minmax(0, 1fr); }
+  .hub-hero .device-photo { max-width: 160px; }
+  .hub-view-set .module-tiles { grid-template-columns: minmax(0, 1fr); }
 }
 /* The library's add control names the set it adds to (beta). */
 .unit-strip .button { min-height: 32px; margin-left: 6px; padding: 5px 12px; }
@@ -279,13 +390,11 @@ button.octatrack-status { width: 100%; border: 0; border-top: 1px solid var(--li
 .load-unchanged summary { cursor: pointer; padding: 8px 0; }
 .load-unchanged ul { margin: 4px 0 0; padding-left: 20px; line-height: 1.7; }
 .load-undo { white-space: normal; overflow-wrap: anywhere; }
-.hub-last-sync { margin: -4px 0 18px; color: var(--muted); font-size: 12px; line-height: 1.6; }
-.hub-last-sync b { color: var(--text-secondary); font-weight: 500; }
 .octatrack-diagnostics { margin: 20px 0; padding: 16px 0; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.6; }
 .octatrack-diagnostics h3 { margin: 0 0 6px; font-size: 15px; }
 .octatrack-diagnostics p { margin: 8px 0; }
 .octatrack-diagnostics .load-check { min-height: 44px; }
-.octatrack-diagnostics summary, .hub-diagnostics > summary { cursor: pointer; min-height: 44px; align-content: center; color: var(--muted); }
+.octatrack-diagnostics summary { cursor: pointer; min-height: 44px; align-content: center; color: var(--muted); }
 .octatrack-diagnostics .text-button { min-height: 44px; }
 .diagnostic-json { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
 .load-change { display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-raised); }

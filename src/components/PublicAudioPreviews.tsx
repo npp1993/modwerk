@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { api } from '../community/api'
 import { useCommunity } from '../community/context'
 import { useLoginPrompt } from '../community/LoginPromptDialog'
@@ -7,10 +7,18 @@ import { apiUrl } from '../hosting'
 import { AudioPreviewContext } from './audio-preview-context'
 import { moduleAudioPreviews, type AudioPreviewClip } from './audio-preview'
 import { AudioPreviewSubmission } from './AudioPreviewSubmission'
+import { getRoute } from '../routing'
+import { AUDIO_PREVIEW_GUIDE_MODULE, AUDIO_PREVIEW_GUIDE_ROUTE } from './audio-preview-guide'
+
+function subscribeRoute(callback: () => void) {
+  window.addEventListener('hashchange', callback)
+  return () => window.removeEventListener('hashchange', callback)
+}
 
 type PublicPreview = { id: string; moduleId: string; credit: string; duration: number; canRemove: boolean; caption: string; username: string }
 const clip = (item: PublicPreview): AudioPreviewClip => ({ id: 'community/' + item.id, url: apiUrl('/audio-previews/' + item.id), credit: item.credit, canRemove: item.canRemove, caption:item.caption, username:item.username })
 export function PublicAudioPreviews({ children }: { children: ReactNode }) {
+  const route = useSyncExternalStore(subscribeRoute, getRoute, () => '')
   const { session } = useCommunity()
   const [items, setItems] = useState<PublicPreview[]>([])
   const [adding, setAdding] = useState('')
@@ -41,8 +49,8 @@ export function PublicAudioPreviews({ children }: { children: ReactNode }) {
     await api('/audio-previews/' + id.replace('community/',''),{method:'DELETE'})
     setItems(current => current.filter(item => 'community/' + item.id !== id))
   }
-  return <AudioPreviewContext.Provider value={{ clips, added, error, onRemove:remove,
-    onAdd:id => gate('Sign in to add an audio preview',() => setAdding(id),modulePageHref(id).slice(1))() }}>
+  return <AudioPreviewContext.Provider value={{ clips, added, error, onRemove:remove, guideModule: route === AUDIO_PREVIEW_GUIDE_ROUTE ? AUDIO_PREVIEW_GUIDE_MODULE : undefined,
+    onAdd:id => gate('Sign in to add an audio preview',() => setAdding(id),route === AUDIO_PREVIEW_GUIDE_ROUTE ? route : modulePageHref(id).slice(1))() }}>
     {children}
     {dialog}
     {adding && <AudioPreviewSubmission name={communityModule(adding)?.name??adding} persistent initialCredit={session.user?.displayName} onAdd={submit} onClose={() => setAdding('')}/>}

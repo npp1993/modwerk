@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The USB bench's line protocol (sdk/octabam/tools/emu/ot_emu/usb.h), spoken by
-// ot_emu and by sdk/machines/octatrack/elekloader/usb_bridge.py for a real unit,
+// ot_emu and by scripts/octatrack-usb-bridge.py for a real unit,
 // plus the WebUSB calls UsbVendorTransport makes, carried over it.
 import { createConnection } from 'node:net'
 
-/** A bench socket: a Unix socket's path, or a TCP port on this computer (usb_bridge.py on Windows, reached from WSL). */
+/** A bench socket: a Unix socket's path, or a TCP port on this computer (octatrack-usb-bridge.py on Windows, reached from WSL). */
 export const benchEndpoint = path => /^\d+$/.test(path) ? Number(path) : path
 
 /** One command, one reply line, in order. */
 export class Bench {
   constructor(path, { timeoutMs = 60000 } = {}) { // an emulated unit under --dsp runs far below real time
     this.lines = []; this.waiters = []; this.buffer = ''; this.timeoutMs = timeoutMs
+    this.transfers = Promise.resolve()
     this.socket = createConnection(benchEndpoint(path))
     this.socket.setEncoding('utf8')
     this.socket.on('data', chunk => {
@@ -37,13 +38,33 @@ export class Bench {
     bytes[0] = type; bytes[1] = request; bytes.writeUInt16LE(value, 2); bytes.writeUInt16LE(index, 4); bytes.writeUInt16LE(length, 6)
     return this.command('setup ' + bytes.toString('hex'))
   }
+  /** EP0 has one pending SETUP. Keep its data and status stages together, even
+   * when several WebUSB adapters or the link's keepalive share this bench. */
+  transaction(operation) {
+    const transfer = (this.transfers ?? Promise.resolve()).then(operation)
+    // A failure releases the queue for the next explicit request, without
+    // retrying any stage of the failed transfer.
+    this.transfers = transfer.catch(() => {})
+    return transfer
+  }
   /** IN data stage then the OUT status stage; null on a stall. */
-  async controlIn(type, request, value, index, length) {
-    await this.setup(type, request, value, index, length)
-    const reply = await this.command(`in 0 ${length}`)
-    if (reply[2] === 'stall') return null
-    await this.command('out 0')
-    return Buffer.from(reply[2] ?? '', 'hex')
+  controlIn(type, request, value, index, length) {
+    return this.transaction(async () => {
+      await this.setup(type, request, value, index, length)
+      const reply = await this.command(`in 0 ${length}`)
+      if (reply[2] === 'stall') return null
+      await this.command('out 0')
+      return Buffer.from(reply[2] ?? '', 'hex')
+    })
+  }
+  /** OUT data stage then the IN status stage; false on a stall. */
+  controlOut(type, request, value, index, data) {
+    const bytes = Buffer.from(data)
+    return this.transaction(async () => {
+      await this.setup(type, request, value, index, bytes.length)
+      if ((await this.command('out 0 ' + bytes.toString('hex')))[2] === 'stall') return false
+      return (await this.command('in 0 64'))[2] !== 'stall'
+    })
   }
 }
 
@@ -56,10 +77,8 @@ export const device = (bench, faults = {}) => ({
   },
   async controlTransferOut(setup, data) {
     if (faults.before) { const fault = faults.before; faults.before = undefined; await fault() }
-    await bench.setup(0x41, setup.request, setup.value, setup.index, data.length)
-    if ((await bench.command('out 0 ' + Buffer.from(data).toString('hex')))[2] === 'stall') return { status: 'stall', bytesWritten: 0 }
-    if ((await bench.command('in 0 64'))[2] === 'stall') return { status: 'stall', bytesWritten: 0 }
-    return { status: 'ok', bytesWritten: data.length }
+    return await bench.controlOut(0x41, setup.request, setup.value, setup.index, data)
+      ? { status: 'ok', bytesWritten: data.length } : { status: 'stall', bytesWritten: 0 }
   },
 })
 
@@ -71,10 +90,10 @@ export async function enumerate(bench, hardware) {
     await new Promise(resolve => setTimeout(resolve, 300))
   }
   if ((await bench.controlIn(0x80, 6, 0x0100, 0, 18))?.length !== 18) throw new Error('No device descriptor.')
-  if (!hardware) { await bench.setup(0x00, 5, 1, 0, 0); await bench.command('in 0 64') }
+  if (!hardware) await bench.transaction(async () => { await bench.setup(0x00, 5, 1, 0, 0); await bench.command('in 0 64') })
   const header = await bench.controlIn(0x80, 6, 0x0200, 0, 9)
   const cfg = await bench.controlIn(0x80, 6, 0x0200, 0, header.readUInt16LE(2))
-  if (!hardware) { await bench.setup(0x00, 9, 1, 0, 0); await bench.command('in 0 64') }
+  if (!hardware) await bench.transaction(async () => { await bench.setup(0x00, 9, 1, 0, 0); await bench.command('in 0 64') })
   const interfaces = []
   for (let i = 0; i + 2 <= cfg.length && cfg[i] >= 2; i += cfg[i]) {
     if (cfg[i + 1] === 4) interfaces.push({ interfaceNumber: cfg[i + 2], alternates: [{

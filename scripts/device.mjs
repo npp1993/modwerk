@@ -3,7 +3,7 @@
 // state, try a runtime module, then keep or roll it back. Speaks the USB bench
 // protocol, so a real unit needs the bridge (Octatrack only so far):
 //
-//   ~/.cache/modwerk-upstream/venv/bin/python -B sdk/machines/octatrack/elekloader/usb_bridge.py /tmp/modwerk-ot.sock &
+//   ~/.cache/modwerk-upstream/venv/bin/python -B scripts/octatrack-usb-bridge.py /tmp/modwerk-ot.sock &
 //   npm run device -- status
 //   while :; do npm run device -- serve; sleep 1; done   # one long-lived link (starts the bridge if needed); send it
 //       scripts/device-send.py part2 pick:T1:FX2:E-Verb stats png:/tmp/s.png   # or 'try FILE', 'remove FILE', 'boot DIR'
@@ -64,7 +64,7 @@ if (!['serve', 'status', 'stats', 'try', 'remove', 'lifecycle', 'boot', 'key', '
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 if (command === 'serve' && !await new Promise(resolve => { const c = createConnection(benchEndpoint(values.socket), () => { c.end(); resolve(true) }); c.on('error', () => resolve(false)) })) {
   const bridge = spawn(process.env.MODWERK_PYTHON ?? join(homedir(), '.cache/modwerk-upstream/venv/bin/python'),
-    ['-B', 'sdk/machines/octatrack/elekloader/usb_bridge.py', values.socket], { stdio: ['ignore', 'pipe', 'inherit'] })
+    ['-B', 'scripts/octatrack-usb-bridge.py', values.socket], { stdio: ['ignore', 'pipe', 'inherit'] })
   await new Promise((resolve, reject) => { bridge.stdout.on('data', d => /ready/.test(d) && resolve()); bridge.once('exit', code => reject(new Error('bridge exited ' + code))) })
   process.once('exit', () => bridge.kill())
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadStep, sameModules, type Inventory, type InventoryTarget } from '../config/inventory'
-import { lastSuccessfulSync, rememberSuccessfulSync } from '../config/octatrack-progress'
+import { lastSuccessfulSync, recordSync, rememberSuccessfulSync } from '../config/octatrack-progress'
 import { LinkBusyError, type OctatrackLink } from '../engine/elekloader/octatrack-link'
 import { BaseUpdateRequired, ModuleSetError, moduleSetReview, USB_MODULE_IDS } from '../engine/elekloader/module-set'
 import { useOctatrackLink } from '../hooks/useOctatrackLink'
@@ -32,10 +32,15 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
   const [error, setError] = useState(''), [leaving, setLeaving] = useState(false)
   const [preparationError, setPreparationError] = useState<{ review: string; error: ModuleSetError }>()
   const [undoName, setUndoName] = useState<string>()
+  // How the trial ended, for this browser's sync history; written once when the dialog reaches its result.
+  const ending = useRef<'kept' | 'undone'>(undefined), logged = useRef(false)
   const step = loadStep(status, started, preparing)
   const connected = !!state.identity?.canSubmit && status === 'ready'
   const review = inventory && moduleSetReview(set, inventory, state.identity?.capabilities)
   const reviewKey = JSON.stringify([set, inventory, state.identity?.base, state.identity?.capabilities])
+  const latestReview = useRef(reviewKey), mounted = useRef(false)
+  useEffect(() => { latestReview.current = reviewKey }, [reviewKey])
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const stopped = stoppedFor === reviewKey
   const changes = review?.changes, updates = review?.updates ?? []
   const problem = preparationError?.review === reviewKey ? preparationError.error : review?.problem
@@ -49,25 +54,44 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
   }, [])
   // The heading takes focus on open and at each step, since the button that moved the step on is gone.
   useEffect(() => { title.current?.focus() }, [step])
+  useEffect(() => {
+    if (step !== 'done' || !started || logged.current) return
+    const failure = error || (notice?.tone === 'error' ? notice.text : '')
+    if (!failure && !ending.current) return
+    logged.current = true
+    recordSync({ name: set.name, modules: set.moduleIds.length, outcome: failure ? 'failed' : ending.current!, ...(failure ? { message: failure.slice(0, 300) } : {}) })
+  }, [step, started, error, notice, set])
 
   async function load() {
     const last = lastSuccessfulSync(state.identity?.base)
     setUndoName(previousName ?? (last && inventory && sameModules(last.moduleIds, inventory.moduleIds) ? last.name : undefined))
     if (!prepareUpdate || !review?.needsSync || problem) return
+    const preparedFor = link.getState()
+    // Fetching packages may outlive this dialog or the exact set and connection the user reviewed.
+    const stale = () => {
+      if (!mounted.current) return true
+      if (latestReview.current === reviewKey && link.getState() === preparedFor) return false
+      setPreparing(false); setStoppedFor(undefined)
+      setError('Review the sync again; nothing was sent because the module set or Octatrack connection changed.')
+      return true
+    }
     setPreparing(true); setError(''); setPreparationError(undefined)
     let prepared
     try { prepared = await prepareUpdate(set) }
     catch (failure) {
+      if (stale()) return
       console.error(failure); setPreparing(false)
       setPreparationError({ review: reviewKey, error: failure instanceof ModuleSetError ? failure : new ModuleSetError(failure instanceof LinkBusyError ? failure.message : 'This module set couldn’t be prepared, so nothing was sent.') })
       return
     }
+    if (stale()) return
     setPreparing(false); setStarted(true)
     try { await link.update(prepared.name, prepared.changes, stressTest) }
     catch (failure) { console.error(failure); setError(failure instanceof ModuleSetError || failure instanceof LinkBusyError ? failure.message : 'This module set couldn’t be synced.') }
   }
   async function keep() {
     if (link.getState().status !== 'trial') return
+    ending.current = 'kept'
     await link.keep()
     const kept = link.getState()
     if (kept.status === 'ready' && kept.notice?.tone === 'success' && kept.identity && kept.active)
@@ -101,6 +125,7 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
           </div>}
         </>}
       {problem && <p className="file-error" role="alert">{problem.message}</p>}
+      {error && <p className="file-error" role="alert">{error}</p>}
     </> : step === 'done' ? <p className={'base-install-intro ' + (error || notice?.tone === 'error' ? 'file-error' : 'success-note')} role={error || notice?.tone === 'error' ? 'alert' : 'status'}>{error || notice?.text || (status === 'busy' ? 'Another tab or app is using your Octatrack, so nothing was sent.' : 'Done.')}</p>
     : <>
       <ol className="load-steps" aria-label="Steps">{STEPS.map((label, i) => <li key={label} className={i < index ? 'is-complete' : i === index ? 'is-active' : undefined} aria-current={i === index ? 'step' : undefined}>{label}</li>)}</ol>
@@ -120,7 +145,7 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
           {needsBase ? <button type="button" className="button button-primary" onClick={onInstallBase}><Icon name="download" size={16} />Install latest base</button>
             : <button type="button" className="button button-primary" disabled={!connected || !review?.needsSync || !!problem || cardOnly.length > 0 || !stopped || !prepareUpdate} onClick={() => void load()}><Icon name="download" size={16} />Sync to Octatrack</button>}</>}
         {step === 'loading' && !preparing && progress < 1 && <button type="button" className="button button-quiet" onClick={() => link.cancel()}>Cancel</button>}
-        {step === 'trial' && <><button type="button" className="button button-quiet load-undo" disabled={status === 'finishing'} onClick={() => void link.undo()}>Undo → {undoName ?? 'Previous modules'}</button>
+        {step === 'trial' && <><button type="button" className="button button-quiet load-undo" disabled={status === 'finishing'} onClick={() => { ending.current = 'undone'; void link.undo() }}>Undo → {undoName ?? 'Previous modules'}</button>
           <button type="button" className="button button-primary" disabled={status === 'finishing'} onClick={() => void keep()}><Icon name="check" size={16} />Keep</button></>}
         {step === 'done' && (error || notice?.tone === 'error') && <button type="button" className="button button-quiet" aria-haspopup="dialog" onClick={onReport}><Icon name="message" size={16} />Report a problem</button>}
         {step === 'done' && <button type="button" className="button button-primary" onClick={onClose}>Done</button>}
