@@ -319,6 +319,10 @@ The port's contributor (npp1993) ran LOFI2 on an Octatrack MKII from a combined 
 
 After the change (here, emulator only): native build with the same DSP placement and (at pin `e8665fae`) 836 + 516 words; the ColdFire formatter for MODE shrinks from 188 to 164 bytes; image `b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5`; `verify_lofi2.py` 48 of 48 at that pin; dirty-state, menu, labels and mode-name gates pass; the five screenshots were recaptured and looked at. The DSP source is untouched, so the benchmark, stress, fx:audit, idle and master-track runs were not repeated. The relabelled build has not run on a unit.
 
+## Hardware report (13 October 2026)
+
+The functional report from an Octatrack MKII on the exact image of this source (`LOFI2T03`, MAIN OS `3d63406d...`), and the emulator check that a parameter lock holding until the next trig is the stock sequencer's behaviour, are in [evidence/hardware.md](evidence/hardware.md).
+
 ## Upstream evidence (Bryan T, octabam; not this build)
 
 Taken from the author's README and manifest at the pinned commit (kept under `upstream/`). Effect ID 0x1f, octabam's tree and placement, his own remix.
@@ -338,9 +342,7 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 
 ## Not tested
 
-- Any hardware run of this build: MKI or MKII, audio, instance counts, chip timing.
-- Parameter locks, LFO modulation on the unit, scenes and the crossfader.
-- Part save/reload, project save/load, reboot persistence, several instances with different settings.
+- On a unit: an MKI, eight instances at once, chip timing, LFO modulation, scenes and the crossfader, and project save and reload as a separate step (evidence/hardware.md lists what was run).
 - FX1 on hardware (emulator checks only, above), and LOFI2 beside any Modwerk module on hardware.
 - `rig_render` on both cores, `verify_set` under the ColdFire port, `make check` as a whole.
 - `stress_project.py` on a real Octatrack project and `pressure.py render`: the stress run above drives the same load straight into `dsp_host`.
@@ -358,6 +360,6 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 - `npm run sdk:imports:check`: passes with `sdk/imports/lofi2-21f6de9.json`.
 - `npm run licenses:generate`: passes with the `lofi2` licence component.
 - `npm run perf:audit -- check`: no check failed (above).
-- `npm run modules:generate`, `npm run modules:check` and `npm run check`: **fail** until `tests.qualification` exists: "lofi2.tests.qualification: publication requires worst-case cycles, exact memory and hardware test evidence". The cycle and memory parts are measured (above); the hardware report is missing, and it is not replaced by a placeholder.
-- `npm run module:verify -- lofi2`: **not run**. It refuses a module the generated catalogue does not offer.
+- `npm run modules:generate` and `npm run modules:check`: LOFI2's own record now passes (qualification with the hardware report, README sections, tutorial, screenshots). The run then **fails on another module**: "Invalid or stale Tape Echo browser preservation binding; full qualification is required". Tape Echo 0.1.3's retained evidence (`scripts/browser-infrastructure-preservation.mjs`) allows only a fixed list of files under `src/engine` to differ from its approved snapshot, and adding any module changes `scripts/build-module-packages.py` and the compiled packages in `src/engine/assets`, which are not on that list. Only the owner can refresh that binding or requalify Tape Echo; nothing here works around it.
+- `npm run module:verify -- lofi2`: **not run**. It needs the generated catalogue, which the failure above prevents.
 - `npm run module:doctor -- lofi2`: red on the lines that follow from the two above.

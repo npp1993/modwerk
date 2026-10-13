@@ -2,7 +2,7 @@
 
 Bryan T's LOFI2 from [octabam](https://github.com/sambanks/octabam) (`modules/lofi2`), brought into Modwerk with its DSP unchanged. The pinned source is commit `21f6de905df71c2d7e4faba6cc7b5c7f7fb53de7` on upstream `main`: the merged LOFI2 (pull request 657) with the author's optimisation (pull request 704, merged 13 October 2026; 416 cycles/sample in SHIFT, down from 654). The author's own README is kept at [upstream/modules/lofi2/README.md](upstream/modules/lofi2/README.md); it holds the design notes and his hardware reports.
 
-**Status: release candidate, not released.** It builds natively, passes the author's render gate, a stress run and the performance audit, and its packages compile. This Modwerk build has not run on hardware yet; the hardware report, the native/browser comparison and the owner's first-release approval are still missing (TESTING.md, "Not tested").
+**Status: release candidate, not released.** It builds natively, passes the author's render gate, a stress run and the performance audit, and its packages compile. It ran on an Octatrack MKII in a short functional test ([evidence/hardware.md](evidence/hardware.md)). The native/browser comparison and the owner's first-release approval are still missing (TESTING.md).
 
 ## Overview
 
@@ -33,7 +33,9 @@ Every continuous knob keeps an LFO's fraction between steps and glides to its ne
 
 ## Usage
 
-Quick tutorial: ring, crush and shift a loop.
+Assign LOFI2 in FX2 SETUP, shape the modulator on the main page (FREQ, MIX, GAIN or FDBK), then add reduction with SRR and BRR and tame the top with LPF. RNGE, MODE and AMPH are on the SETUP page.
+
+### Quick tutorial: ring, crush and shift a loop
 
 1. On an audio track that plays a sample, hold FUNC and press FX2, turn LEVEL to LOFI2 and press YES. Nothing changes yet: the defaults are a passthrough.
 2. Press FX2 for the main page. Turn MIX (encoder B) to 127 and FREQ (encoder A) to 64: the track is ring-modulated. Raise SRR or BRR (encoders D and E) for sample-rate and bit reduction, and lower LPF (encoder F) from 127 to darken the result.
@@ -63,7 +65,8 @@ Quick tutorial: ring, crush and shift a loop.
 - **No single-knob bypass.** A passthrough is MIX 0, SRR 0, BRR 0 and LPF 127.
 - **A missing module.** The native build aliases the ID of a module that is not in the image to NONE, so a project that selects LOFI2 on an image without it should play that track dry. Not tested.
 - **Aliasing is intended** in SRR and BRR; they have no reconstruction filter. Stock LO-FI follows its hold with a FIR near Nyquist that LOFI2 does not copy.
-- **Not tested in this tree:** hardware, parameter locks, scenes and the crossfader, Part/project reload, reboot persistence, FX1, payload B in the render gate.
+- **Parameter locks hold until the track's next trig**, as they do for every stock parameter on this OS (checked against the stock image in the emulator).
+- **Not tested:** eight instances, scenes and project reload on a unit; FX1 on a unit; payload B in the render gate.
 
 ## Tests and measurements
 
@@ -76,6 +79,7 @@ Details, commands and every result are in [TESTING.md](TESTING.md).
 - Stress: eight instances (four per core) behind DJ EQ, LFOs and every slot changing each sixteenth, 32 s under memory guards: no hang, no clobber. `perf:audit` passes with a justification for SHIFT's cost.
 - `fx:audit`: clean at the defaults and with the shelf in; the modulating and reducing settings are recorded as intended; the SHIFT residue above is the one finding.
 - USB loading: not attempted for this version (a trial on an earlier pin is in TESTING.md).
+- Hardware: a functional MKII report on the exact image (every mode, five SHIFT instances, a parameter lock, Part reload and a power cycle).
 - Upstream hardware evidence (Bryan T's MKII, octabam images 96-99 and builds 11 and 12, October 2026) is quoted in TESTING.md. It is not evidence for this build.
 
 ## Authorship and licences
