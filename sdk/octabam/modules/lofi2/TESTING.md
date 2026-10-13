@@ -222,6 +222,17 @@ Found by the audit's idle row and measured separately: a 0.5 s, 440 Hz burst at 
 
 In SHIFT, once signal has passed through, the output does not return to silence: a steady residue of about 1,100 to 2,200 LSB peak (24-bit) stays for as long as measured, with FDBK at 0 too, so it is not the feedback tail. A fresh instance on silence stays silent (`verify_dirtystate`). The merged upstream revision (`a6f41a1d`) rendered the same figures, so this is a property of the author's shifter and not of the port or of the optimisation. The cause was not investigated and the DSP was not changed; it is listed as a limitation and should go to the author. Not checked on hardware.
 
+## A silent master track at BRR 127 (here)
+
+Reported from a combined-image trial: with a fixture project that stores effect id 0x09 on all sixteen FX slots (a free id on stock, LOFI2 here), turning MASTER TRACK on made the main output silent. Reproduced on the LOFI2-only image under `ot_emu`, without Output Matrix; the stock image passes audio in the same run.
+
+- The knob words the T8 FX2 instance receives (`--dsp-peek` at its r6 block; T7's are identical) are FREQ 47, MIX 0, FDBK 127, SRR 0, BRR 127, LPF 0, MODE UP: the fixture's stored bytes, not defaults.
+- Clearing T8's FX2 id brings the audio back; clearing only its FX1 does not. Tracks 1-7 with the same knob words pass audio.
+- Offline (`dsp_host`, payload A, a 220 Hz sine, those knob words): LOFI2's output is exactly zero for inputs up to 0.10 FS and returns at 0.115 FS. Stock LO-FI at BRR 127 does the same at the same inputs, with the same step once it passes (1,874,262 LSB against LOFI2's 1,871,726 with the shelf out).
+- With T8's FX2 cleared, the master bus peaks at about 0.9 million LSB in that fixture, under the rounding threshold of 938,502 LSB (half a step of 2^20.84).
+
+So the mix reaching the master track is quieter than half a quantiser step and rounds to silence, as it would through stock LO-FI. Not a defect; it is listed under limitations. Changing BRR by poking the live record under the emulator did not take effect, so the conclusion rests on the offline threshold, the match with stock and the measured level, not on a direct A/B in the emulator. Not checked on hardware.
+
 ## Elekloader path: the Modwerk base and USB loading (here)
 
 Since the migration merged, a DSP effect reaches the unit as a runtime package loaded over USB into the Modwerk base. Run in a scratch copy of `main` with this folder at `sdk/octabam/modules/lofi2`, `lofi2` added to `dsp_packages.py`'s `FX` list and a scratch catalog pin; none of that is committed.
