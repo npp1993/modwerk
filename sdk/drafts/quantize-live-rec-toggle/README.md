@@ -4,7 +4,7 @@
 
 QUANTIZE LIVE REC decides whether live-recorded trigs snap to the steps. Stock keeps it in PROJECT > SYSTEM > PERSONALIZE. This module shows it on the gesture that starts live recording and lets a second tap switch it, without leaving the page you are on.
 
-Version `0.1.0-experimental`, for OS 1.40C card builds. **This is a staged draft under `sdk/drafts/`: it is not in the catalogue and the site does not offer it.** [TESTING.md](TESTING.md) says what listing still needs. Ported from Zac-Kyoti's octabam module `quantize-live-rec-toggle`; the ColdFire source is his, unchanged.
+Version `0.1.0-experimental`, for OS 1.40C card builds. **This is a staged draft under `sdk/drafts/`: it is not in the catalogue and the site does not offer it.** [TESTING.md](TESTING.md) says what listing still needs. Ported from Zac-Kyoti's octabam module `quantize-live-rec-toggle`; the ColdFire source is his; Modwerk changed only the wording of the two toasts.
 
 **Hardware status: nothing has been tested on an MKII, and this Modwerk build has not run on any unit.** The author tested his own build of the same source on an MKI. See [TESTING.md](TESTING.md).
 
@@ -12,12 +12,12 @@ Version `0.1.0-experimental`, for OS 1.40C card builds. **This is a staged draft
 
 | Gesture | What it does |
 |---|---|
-| Hold [REC], tap [PLAY] | Shows the setting in a toast, `QUANT LIVE REC ON` or `QUANT LIVE REC OFF`. If live recording is not running, it starts, as on the stock OS. |
+| Hold [REC], tap [PLAY] | Shows the setting in a toast, `LIVE REC: QUANTIZED` or `LIVE REC: UNQUANTIZED`. If live recording is not running, it starts, as on the stock OS. |
 | Tap [PLAY] again while the toast is up | Inverts the setting and reopens the toast with the new value. Each further tap inverts it again. |
 | Tap [PLAY] after the toast has gone (about 1 s) | Only shows the setting again. |
 | Release [REC] | Closes the toast at once. |
 
-The toast uses the words the PERSONALIZE row uses: ON is the ticked box. There is no new menu row, page or knob.
+QUANTIZED is the ticked QUANTIZE LIVE REC box in PERSONALIZE, UNQUANTIZED the empty one. There is no new menu row, page or knob.
 
 ## Usage
 
@@ -25,7 +25,7 @@ The setting is QUANTIZE LIVE REC, the global switch that snaps live-recorded tri
 
 ### Quick tutorial: check and switch live-record quantize
 
-1. Hold [REC] and tap [PLAY]: a toast shows QUANT LIVE REC ON or QUANT LIVE REC OFF, the current setting, and live recording starts as on the stock OS.
+1. Hold [REC] and tap [PLAY]: a toast shows LIVE REC: QUANTIZED or LIVE REC: UNQUANTIZED, the current setting, and live recording starts as on the stock OS.
 2. While the toast is still on screen (about one second), keep [REC] held and tap [PLAY] again to invert the setting; the toast reopens with the new value.
 3. Tap [PLAY] once more while it is up to switch back, or release [REC] to close the toast; the setting stays as last shown.
 4. Press [STOP] to end live recording. PROJECT > SYSTEM > PERSONALIZE > QUANTIZE LIVE REC shows and edits the same setting.
@@ -60,12 +60,12 @@ No conflicts with other catalogue modules are known: none claims either site.
 
 ## Authorship and licences
 
-Zac-Kyoti wrote the gesture and its ColdFire source (MIT, [LICENSE](LICENSE)); Sam Banks integrated it into octabam (MIT, [upstream/OCTABAM_LICENSE](upstream/OCTABAM_LICENSE)). The author's own description is kept in [upstream/README.md](upstream/README.md) and octabam's wrapper page in [upstream/OCTABAM_README.md](upstream/OCTABAM_README.md). `../../imports/quantize-live-rec-toggle-6e4aeb7.json` records each copied file with its source pin and what Modwerk changed: `patch_qlrec.s` is unchanged, and `manifest.py` declares the same cave and detours with SHA-256 guards in place of stock bytes. The Modwerk gate (`verify.py`), documentation and thumbnail are GPL-3.0-or-later. No firmware, stock code, built image or card is included.
+Zac-Kyoti wrote the gesture and its ColdFire source (MIT, [LICENSE](LICENSE)); Sam Banks integrated it into octabam (MIT, [upstream/OCTABAM_LICENSE](upstream/OCTABAM_LICENSE)). The author's own description is kept in [upstream/README.md](upstream/README.md) and octabam's wrapper page in [upstream/OCTABAM_README.md](upstream/OCTABAM_README.md). `../../imports/quantize-live-rec-toggle-6e4aeb7.json` records each copied file with its source pin and what Modwerk changed: `patch_qlrec.s` has the author's instructions with two reworded toast strings (his read `QUANT LIVE REC ON` and `QUANT LIVE REC OFF`), and `manifest.py` declares the same cave and detours with SHA-256 guards in place of stock bytes. The Modwerk gate (`verify.py`), documentation and thumbnail are GPL-3.0-or-later. No firmware, stock code, built image or card is included.
 
 ## Screens and audio
 
 Captured from the real LCD in the headless emulator, MKII panel; provenance is in [media/capture.json](media/capture.json). They show the emulator, not a unit. The module makes no sound of its own, so there is no audio preview.
 
-![Octatrack main screen with a notification box reading QUANT LIVE REC ON.](media/ot-toast-on.png)
-![Octatrack main screen with a notification box reading QUANT LIVE REC OFF.](media/ot-toast-off.png)
+![Octatrack main screen with a notification box reading LIVE REC: QUANTIZED.](media/ot-toast-on.png)
+![Octatrack main screen with a notification box reading LIVE REC: UNQUANTIZED.](media/ot-toast-off.png)
 ![PERSONAL SETTINGS list with QUANTIZE LIVE REC selected and its checkbox empty.](media/ot-personalize.png)

@@ -1,7 +1,7 @@
 {
   "moduleVersion": "0.1.0-experimental",
-  "sourceSha256": "d9b8743bdc54a2a45b66ef09e938ce0173d79fb87fa015f472ff03bab96e0936",
-  "imageSha256": "dc90fdcebd69a38a675d29750daa64bbc2e497c0259fc2e309c9b3c14828b106",
+  "sourceSha256": "24b8ee71201e951a4c644676b318581c9edddf000303a0c16025a9f1b6fc9db7",
+  "imageSha256": "06f423fed3661f59932a5435f1b26e01d0d1c759d22721b53fa316fba6176816",
   "cycles": [
     {
       "processor": "coldfire",
@@ -26,9 +26,9 @@
       {
         "name": "Authored ColdFire code and the two toast strings (linked unit qlr, ROM cave)",
         "space": "cpu-flash",
-        "words": 176,
+        "words": 180,
         "wordBits": 8,
-        "bytes": 176,
+        "bytes": 180,
         "scope": "shared"
       },
       {
@@ -41,10 +41,10 @@
       }
     ],
     "perInstanceBytes": 0,
-    "sharedBytes": 188,
+    "sharedBytes": 192,
     "maxInstances": 1,
-    "totalBytes": 188,
-    "conditions": "From the linked unit (176 bytes at any address; it is position independent) and the two detours. No RAM of its own: it reads and writes the stock setting word and its battery copy, and reads stock key and notification state. No heap; at most 8 bytes of stack beyond the stock key handler (two pushed arguments) before the stock calls.",
+    "totalBytes": 192,
+    "conditions": "From the linked unit (180 bytes at any address; it is position independent) and the two detours. No RAM of its own: it reads and writes the stock setting word and its battery copy, and reads stock key and notification state. No heap; at most 8 bytes of stack beyond the stock key handler (two pushed arguments) before the stock calls.",
     "report": "TESTING.md"
   },
   "hardware": {
@@ -65,7 +65,7 @@
     "tutorial": {
       "title": "Quick tutorial: check and switch live-record quantize",
       "steps": [
-        "Hold [REC] and tap [PLAY]: a toast shows QUANT LIVE REC ON or QUANT LIVE REC OFF, the current setting, and live recording starts as on the stock OS.",
+        "Hold [REC] and tap [PLAY]: a toast shows LIVE REC: QUANTIZED or LIVE REC: UNQUANTIZED, the current setting, and live recording starts as on the stock OS.",
         "While the toast is still on screen (about one second), keep [REC] held and tap [PLAY] again to invert the setting; the toast reopens with the new value.",
         "Tap [PLAY] once more while it is up to switch back, or release [REC] to close the toast; the setting stays as last shown.",
         "Press [STOP] to end live recording. PROJECT > SYSTEM > PERSONALIZE > QUANTIZE LIVE REC shows and edits the same setting."

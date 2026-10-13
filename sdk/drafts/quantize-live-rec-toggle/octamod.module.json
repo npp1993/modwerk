@@ -18,7 +18,7 @@
     "github": "Zac-Kyoti",
     "credits": [
       "Zac-Kyoti: the gesture, its ColdFire source and the MKI hardware work behind it. Sam Banks: octabam integration.",
-      "Modwerk contributors: source import with stock guards in place of stock bytes, the image gate, documentation and SVG thumbnail."
+      "Modwerk contributors: source import with stock guards in place of stock bytes, the reworded toast, the image gate, documentation and SVG thumbnail."
     ]
   },
   "nativeManifest": "manifest.py",
@@ -34,7 +34,7 @@
       "The setting is the stock global PERSONALIZE value in battery-backed memory: not saved per project or Part, and reset by an OS upgrade like the rest of PERSONALIZE."
     ],
     "usage": [
-      "Hold [REC] and tap [PLAY]: a toast shows QUANT LIVE REC ON or QUANT LIVE REC OFF, the current setting, and live recording starts as on the stock OS.",
+      "Hold [REC] and tap [PLAY]: a toast shows LIVE REC: QUANTIZED or LIVE REC: UNQUANTIZED, the current setting, and live recording starts as on the stock OS.",
       "While the toast is still on screen (about one second), keep [REC] held and tap [PLAY] again to invert the setting; the toast reopens with the new value.",
       "Tap [PLAY] once more while it is up to switch back, or release [REC] to close the toast; the setting stays as last shown.",
       "Press [STOP] to end live recording. PROJECT > SYSTEM > PERSONALIZE > QUANTIZE LIVE REC shows and edits the same setting."
@@ -43,7 +43,7 @@
   "access": {
     "location": "Front panel: hold [REC], tap [PLAY]. The setting itself stays in PROJECT > SYSTEM > PERSONALIZE > QUANTIZE LIVE REC.",
     "steps": [
-      "Hold [REC] and tap [PLAY]: a toast shows QUANT LIVE REC ON or QUANT LIVE REC OFF, the current setting, and live recording starts as on the stock OS.",
+      "Hold [REC] and tap [PLAY]: a toast shows LIVE REC: QUANTIZED or LIVE REC: UNQUANTIZED, the current setting, and live recording starts as on the stock OS.",
       "While the toast is still on screen (about one second), keep [REC] held and tap [PLAY] again to invert the setting; the toast reopens with the new value.",
       "Tap [PLAY] once more while it is up to switch back, or release [REC] to close the toast; the setting stays as last shown.",
       "Press [STOP] to end live recording. PROJECT > SYSTEM > PERSONALIZE > QUANTIZE LIVE REC shows and edits the same setting."
@@ -60,10 +60,10 @@
       "default": 0,
       "count": 2,
       "labels": [
-        "ON",
-        "OFF"
+        "QUANTIZED",
+        "UNQUANTIZED"
       ],
-      "doc": "The stock PERSONALIZE setting, shown as the menu shows it. The module does not change its stored value or default; it only adds the [REC] + [PLAY] gesture that shows and inverts it."
+      "doc": "The stock PERSONALIZE setting. QUANTIZED is the ticked QUANTIZE LIVE REC box. The module does not change its stored value or default; it only adds the [REC] + [PLAY] gesture that shows and inverts it."
     }
   ],
   "compatibility": {
@@ -85,11 +85,11 @@
     "recorded": "12 October 2026; source assembly and the image gate under the ColdFire port",
     "storage": {
       "label": "ROM code and detours",
-      "display": "176 B code + two 6 B detours",
-      "value": 188,
+      "display": "180 B code + two 6 B detours",
+      "value": 192,
       "unit": "bytes",
       "method": "static",
-      "conditions": "One position-independent linked unit of 176 bytes (code and two strings) in free ROM space, and two six-byte jmp detours over stock instructions. No RAM, no DSP memory.",
+      "conditions": "One position-independent linked unit of 180 bytes (code and two strings) in free ROM space, and two six-byte jmp detours over stock instructions. No RAM, no DSP memory.",
       "source": "TESTING.md"
     },
     "processing": {
@@ -118,14 +118,14 @@
       "memory": {
         "level": "minimal",
         "basis": "source-estimate",
-        "rationale": "188 bytes of ROM; no RAM or audio memory of its own.",
+        "rationale": "192 bytes of ROM; no RAM or audio memory of its own.",
         "source": "TESTING.md"
       }
     }
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "The image gate passes 29 checks: the retired 0x400522ca site left as the original OS has it, both jmp detours and the author’s 176 bytes in place, then under the ColdFire port by the keys (MKII panel) the show, invert, invert-back, expiry and [REC]-release behaviour beside the original OS under the same keys, and a power cycle of the port keeping an inverted setting. The author reported the gesture and a power cycle on an MKI (25 and 30 September 2026) for his own build. This build has not run on a unit; nothing has been tested on an MKII.",
+    "summary": "The image gate passes 29 checks: the retired 0x400522ca site left as the original OS has it, both jmp detours and the unit's 180 bytes in place, then under the ColdFire port by the keys (MKII panel) the show, invert, invert-back, expiry and [REC]-release behaviour beside the original OS under the same keys, and a power cycle of the port keeping an inverted setting. The toast wording is Modwerk’s; the author reported the gesture and a power cycle on an MKI (25 and 30 September 2026) for his own build. This build has not run on a unit; nothing has been tested on an MKII.",
     "hardwareStatus": "historical",
     "evidenceRevision": "6e4aeb76695cbb612e4b424c55fd2207facf73ef",
     "gates": [
@@ -135,7 +135,7 @@
       "tutorial": {
         "title": "Quick tutorial: check and switch live-record quantize",
         "steps": [
-          "Hold [REC] and tap [PLAY]: a toast shows QUANT LIVE REC ON or QUANT LIVE REC OFF, the current setting, and live recording starts as on the stock OS.",
+          "Hold [REC] and tap [PLAY]: a toast shows LIVE REC: QUANTIZED or LIVE REC: UNQUANTIZED, the current setting, and live recording starts as on the stock OS.",
           "While the toast is still on screen (about one second), keep [REC] held and tap [PLAY] again to invert the setting; the toast reopens with the new value.",
           "Tap [PLAY] once more while it is up to switch back, or release [REC] to close the toast; the setting stays as last shown.",
           "Press [STOP] to end live recording. PROJECT > SYSTEM > PERSONALIZE > QUANTIZE LIVE REC shows and edits the same setting."
@@ -158,8 +158,8 @@
     {
       "path": "media/ot-toast-on.png",
       "captureType": "emulator",
-      "caption": "Hold [REC] and tap [PLAY]. A toast shows the current setting, here QUANT LIVE REC ON, and live recording starts as it does on the stock OS.",
-      "alt": "Octatrack main screen with a notification box reading QUANT LIVE REC ON.",
+      "caption": "Hold [REC] and tap [PLAY]. A toast shows the current setting, here LIVE REC: QUANTIZED, and live recording starts as it does on the stock OS.",
+      "alt": "Octatrack main screen with a notification box reading LIVE REC: QUANTIZED.",
       "credit": "Modwerk contributors; Elektron Octatrack UI",
       "license": "LicenseRef-OT-UI-Documentation",
       "source": "original",
@@ -168,15 +168,15 @@
         "shows": "location-and-controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "dc90fdcebd69a38a675d29750daa64bbc2e497c0259fc2e309c9b3c14828b106",
-        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local card-route build of this module alone."
+        "imageSha256": "06f423fed3661f59932a5435f1b26e01d0d1c759d22721b53fa316fba6176816",
+        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local static native build of this module alone."
       }
     },
     {
       "path": "media/ot-toast-off.png",
       "captureType": "emulator",
-      "caption": "Keep [REC] held and tap [PLAY] again while the toast is still up. The setting inverts and the toast reopens with the new value, here QUANT LIVE REC OFF. Another tap switches it back.",
-      "alt": "Octatrack main screen with a notification box reading QUANT LIVE REC OFF.",
+      "caption": "Keep [REC] held and tap [PLAY] again while the toast is still up. The setting inverts and the toast reopens with the new value, here LIVE REC: UNQUANTIZED. Another tap switches it back.",
+      "alt": "Octatrack main screen with a notification box reading LIVE REC: UNQUANTIZED.",
       "credit": "Modwerk contributors; Elektron Octatrack UI",
       "license": "LicenseRef-OT-UI-Documentation",
       "source": "original",
@@ -185,14 +185,14 @@
         "shows": "controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "dc90fdcebd69a38a675d29750daa64bbc2e497c0259fc2e309c9b3c14828b106",
-        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local card-route build of this module alone."
+        "imageSha256": "06f423fed3661f59932a5435f1b26e01d0d1c759d22721b53fa316fba6176816",
+        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local static native build of this module alone."
       }
     },
     {
       "path": "media/ot-personalize.png",
       "captureType": "emulator",
-      "caption": "Release [REC] and press [STOP]. PROJECT > SYSTEM > PERSONALIZE shows the same setting: after the switch to OFF, the QUANTIZE LIVE REC box is empty. You can still change it here as on the stock OS.",
+      "caption": "Release [REC] and press [STOP]. PROJECT > SYSTEM > PERSONALIZE shows the same setting: after the switch to UNQUANTIZED, the QUANTIZE LIVE REC box is empty. You can still change it here as on the stock OS.",
       "alt": "PERSONAL SETTINGS list with QUANTIZE LIVE REC selected and its checkbox empty.",
       "credit": "Modwerk contributors; Elektron Octatrack UI",
       "license": "LicenseRef-OT-UI-Documentation",
@@ -202,8 +202,8 @@
         "shows": "location",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "dc90fdcebd69a38a675d29750daa64bbc2e497c0259fc2e309c9b3c14828b106",
-        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local card-route build of this module alone."
+        "imageSha256": "06f423fed3661f59932a5435f1b26e01d0d1c759d22721b53fa316fba6176816",
+        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local static native build of this module alone."
       }
     }
   ]

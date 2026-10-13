@@ -38,7 +38,9 @@ Here the same cave is one floating Linked unit (`qlr`, linked by the build where
 lands and compared with the author's 176 bytes at his own address every build), the
 two `jmp`s are Detours onto its global symbols, and every stock expectation is an
 address/length/SHA-256 guard read from the builder's own OS file. No stock bytes
-are carried. patch_qlrec.s is unchanged.
+are carried. patch_qlrec.s is the author's but for the two toast strings: his
+"QUANT LIVE REC ON" / "QUANT LIVE REC OFF" read "LIVE REC: QUANTIZED" /
+"LIVE REC: UNQUANTIZED" here. No instruction changed.
 """
 
 import os
@@ -61,10 +63,14 @@ RECREL_HOOK = 0x4004883a
 RETIRED_TICK_HOOK = 0x400522ca
 RETIRED_TICK_GUARD = stock_guard(RETIRED_TICK_HOOK, 6, "1eb782bde4b72ae5bad5fe826898c238315df94d4a4e583f7e7949210e3d02fb")
 
-# patch_qlrec.s, m68k-elf-as -mcpu=5407, linked at 0x400d7400: 176 bytes. The
-# author verified it byte-identical at 0x400d7700 and 0x400d7100 (position
-# independent), so the one reference holds wherever the unit floats.
-REFERENCE = (0x400d7400, "52c26af67443e470147844a52009d09fa308be5045a1f891c01344dbbaa8670d")
+# patch_qlrec.s, m68k-elf-as -mcpu=5407, linked at 0x400d7400: 180 bytes. The unit is position
+# independent (the author verified his 176 bytes at 0x400d7700 and 0x400d7100), so the one reference
+# holds wherever it floats. Modwerk changed the two toast strings (see the docstring), so these are
+# no longer the author's bytes: his unit is 176 bytes, SHA-256
+# 52c26af67443e470147844a52009d09fa308be5045a1f891c01344dbbaa8670d, and with his two strings put back
+# this source still links to exactly that.
+UNIT_BYTES = 180
+REFERENCE = (0x400d7400, "4d98f2234e5a83af651cf41b5e8c425a84a4d457a72364120e54c210c18f9398")
 
 MODULE = Module(
     name="quantize-live-rec-toggle",

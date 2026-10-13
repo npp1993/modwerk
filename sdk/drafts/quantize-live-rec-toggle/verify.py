@@ -12,7 +12,7 @@ Reads, and SKIPs without them:
 1. The image, byte for byte (no emulator):
    - the retired engine-frame site 0x400522ca still holds the original instruction (the manifest's guard);
    - [PLAY] 0x40061778 and [REC] release 0x4004883a hold a `jmp` into one unit, 0x74 apart;
-   - that unit is the author's 176 bytes (the manifest's reference SHA-256).
+   - that unit is the bytes the manifest names (its reference SHA-256).
 2. The gesture, by the keys, MKII panel, empty card, on this image and on the original OS:
    - [REC] + [PLAY] opens the toast, leaves the setting alone and starts live recording (stock starts it too);
    - a second and third [PLAY] while the toast is up invert the setting and its battery copy and reopen the toast;
@@ -214,7 +214,7 @@ def main():
     jumps = [int.from_bytes(image[at(site) + 2:at(site) + 6], "big") for site in (play, rec)]
     check(all(image[at(site):at(site) + 2] == b"\x4e\xf9" for site in (play, rec)), "[PLAY] and [REC] release hold a jmp")
     check(jumps[1] - jumps[0] == 0x74, "both reach one unit, 0x74 apart")
-    check(hashlib.sha256(image[at(jumps[0]):at(jumps[0]) + 176]).hexdigest() == facts["REFERENCE"][1], "the unit is the author's 176 bytes")
+    check(hashlib.sha256(image[at(jumps[0]):at(jumps[0]) + facts["UNIT_BYTES"]]).hexdigest() == facts["REFERENCE"][1], "the unit is the %d bytes the manifest names" % facts["UNIT_BYTES"])
     if not EMU.is_file():
         print("[SKIP] the gesture: no port at %s" % EMU)
         return 1 if FAILS else 0

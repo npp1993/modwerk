@@ -1,10 +1,10 @@
 # Quantize Live Rec Toggle: tests and measurements
 
-Recorded 12 October 2026. Version `0.1.0-experimental`.
+Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 - Upstream: sambanks/octabam `6e4aeb76695cbb612e4b424c55fd2207facf73ef`, which takes the module from Zac-Kyoti/octatrack-kyoti-fw `77f132f9a60c6afa98ea4486540f6107398bdad3`.
-- Native source SHA-256 of this folder (`moduleNativeSourceSha256`): `d9b8743bdc54a2a45b66ef09e938ce0173d79fb87fa015f472ff03bab96e0936`.
-- Tested image (this module alone, card route, from the original OS 1.40C): MAIN OS SHA-256 `dc90fdcebd69a38a675d29750daa64bbc2e497c0259fc2e309c9b3c14828b106`.
+- Native source SHA-256 of this folder (`moduleNativeSourceSha256`): `24b8ee71201e951a4c644676b318581c9edddf000303a0c16025a9f1b6fc9db7`.
+- Tested image (this module alone, static native octabam build from the original OS 1.40C): MAIN OS SHA-256 `06f423fed3661f59932a5435f1b26e01d0d1c759d22721b53fa316fba6176816`.
 
 ## Not tested
 
@@ -15,7 +15,9 @@ Recorded 12 October 2026. Version `0.1.0-experimental`.
 
 ## Source identity
 
-`patch_qlrec.s` is byte-identical to the author's file (SHA-256 `aef5e34cf48b99c059a800bc8ccd5834b9a08e578b4e7ce6965bfb210832b33f`). Native octabam, in the pinned toolchain container without network, links it where the unit floats and again at the author's own address `0x400d7400` and compares: 176 bytes, SHA-256 `52c26af67443e470147844a52009d09fa308be5045a1f891c01344dbbaa8670d`, a match. Its build report shows the unit and the two `jmp` detours at `0x40061778` and `0x4004883a`.
+`patch_qlrec.s` is the author's file with one change: the two toast strings read `LIVE REC: QUANTIZED` and `LIVE REC: UNQUANTIZED` where his read `QUANT LIVE REC ON` and `QUANT LIVE REC OFF` (the user's choice, 13 October 2026), and the comment above them says so. No instruction changed. With his strings the source links to his 176 bytes (SHA-256 `52c26af67443e470147844a52009d09fa308be5045a1f891c01344dbbaa8670d`), which native octabam confirmed on 12 October before the change. With the new strings the unit is 180 bytes, SHA-256 `4d98f2234e5a83af651cf41b5e8c425a84a4d457a72364120e54c210c18f9398` at `0x400d7400`; native octabam, in the pinned toolchain container without network, links it there and where it floats and compares on every build. Its build report shows the unit and the two `jmp` detours at `0x40061778` and `0x4004883a`.
+
+The author chose his shorter strings to fit the 128-pixel screen and notes that a 21-character `QUANTIZE LIVE REC OFF` overran it. `LIVE REC: UNQUANTIZED` is also 21 characters; in the emulator its box fits the screen with a few pixels to spare (see the captures). **The new wording has not been seen on a unit.**
 
 The three stock guards in `manifest.py` (both hook sites and the retired site `0x400522ca`) were computed from the author's declared expectations and matched against a local original OS 1.40C MAIN image (SHA-256 `164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e`). `patch_qlrec.s` holds no firmware bytes: its comments describe stock routines by address and mnemonic.
 
@@ -29,7 +31,7 @@ OT_EMU=<path to ot_emu> python3 modules/quantize-live-rec-toggle/verify.py
 
 Result on the tested image: **29 of 29 checks passed.**
 
-1. The image, byte for byte: `0x400522ca` is as the original OS has it; both hook sites hold a `jmp`, 0x74 apart, into one unit; that unit is the author's 176 bytes.
+1. The image, byte for byte: `0x400522ca` is as the original OS has it; both hook sites hold a `jmp`, 0x74 apart, into one unit; that unit is the 180 bytes the manifest names.
 2. The gesture by the keys (MKII panel, empty card, DSP cores running), on the module image and on the original OS:
    - the first [REC] + [PLAY] starts live recording on both, and leaves the setting alone; the module also opens the toast;
    - a second [PLAY] while the toast is up inverts the setting and its battery copy, and a third puts it back;
@@ -39,7 +41,7 @@ Result on the tested image: **29 of 29 checks passed.**
    - the original OS under the same keys never changes the setting and never opens a toast.
 3. A power cycle of the port: the battery RAM of a run that left the setting inverted, booted again, comes up inverted. This is the emulator's battery RAM, not a unit's.
 
-Separately, PERSONALIZE was opened in the emulator before and after one inversion: the QUANTIZE LIVE REC box was ticked while the toast said ON and empty after it said OFF, so the toast and the menu agree there. The fresh emulator state has the setting ON.
+Separately, PERSONALIZE was opened in the emulator before and after one inversion: the QUANTIZE LIVE REC box was ticked while the toast said QUANTIZED (then worded ON) and empty after it said UNQUANTIZED (then OFF), so the toast and the menu agree there. The fresh emulator state has the setting ON.
 
 The emulator used is the user's local build of octabam's `ot_emu` (SHA-256 `23ba6f6cdc6ec4b89b8cf206915e66d3160aec8499b1abfc9b475ac849152b28`). It does not run a real unit's timing, and the author's note that scratch RAM did not survive on hardware while it did in the emulator is the reason this module keeps no state of its own.
 
@@ -66,11 +68,11 @@ The longest path in the source is 24 instructions. `evidence/performance.json` p
 
 ## Memory
 
-176 bytes of ROM for the unit (code and two strings; position independent, so the same anywhere) and two six-byte detours over stock instructions: 188 bytes. No RAM of its own, no DSP memory, no heap. It reads stock's [REC]-held and live-recording flags and the notification handle, and writes the stock setting word and its battery copy, then calls stock's checksum routine as the PERSONALIZE menu does.
+180 bytes of ROM for the unit (code and two strings; position independent, so the same anywhere) and two six-byte detours over stock instructions: 192 bytes. No RAM of its own, no DSP memory, no heap. It reads stock's [REC]-held and live-recording flags and the notification handle, and writes the stock setting word and its battery copy, then calls stock's checksum routine as the PERSONALIZE menu does.
 
 ## Native comparison and listing dry run
 
-Done on 12 October 2026 on a scratch copy of the Elekloader migration branch (since merged as repeat98/modwerk#464) with the module listed (catalogue entry, packages built in the isolated toolchain container and imported, `npm run module:verify -- quantize-live-rec-toggle --os <OS 1.40C update file>`). None of it is committed; the shared-code patch, the comparison record and the logs are kept outside the repository with the session notes.
+Done on 12 October 2026, with the author's toast wording (176 bytes), on a scratch copy of the Elekloader migration branch (since merged as repeat98/modwerk#464) with the module listed (catalogue entry, packages built in the isolated toolchain container and imported, `npm run module:verify -- quantize-live-rec-toggle --os <OS 1.40C update file>`). None of it is committed; the shared-code patch, the comparison record and the logs are kept outside the repository with the session notes.
 
 - **130 selections: 56 built and identical to native octabam (20 outright, 36 outside the platform writes), 74 matching refusals, 0 mismatches.** The module alone is identical outright.
 - Getting there needed two changes to the shared browser composer (`src/engine/requested-modules.ts`): place this module's ROM unit after the utility and replacing modules, as native does for a module this late in the catalogue (14 mismatches before), and refuse a Recorder Loop Fix cave that does not fit at the cave cursor, as native does, where the browser moved it to the overflow run (one nine-module selection). Every other module's committed comparison record shows the same mismatch count with and without them; those records were already stale on this base.
@@ -88,7 +90,7 @@ What listing still needs:
 
 ## Captures
 
-`media/capture.json` records the plan, the image and emulator hashes and each PNG's hash. Made with `scripts/capture-module-ui.py --key-ms 100` on the tested image. Every picture was opened and checked: the two toasts over the main screen, and PERSONALIZE with QUANTIZE LIVE REC selected and its box empty after the switch to OFF.
+`media/capture.json` records the plan, the image and emulator hashes and each PNG's hash. Made with `scripts/capture-module-ui.py --key-ms 100` on the tested image, after the wording change. Every picture was opened and checked: the two toasts over the main screen, and PERSONALIZE with QUANTIZE LIVE REC selected and its box empty after the switch to UNQUANTIZED.
 
 ## Upstream hardware reports
 

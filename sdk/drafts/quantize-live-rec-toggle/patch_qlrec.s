@@ -289,14 +289,14 @@ qlr_recrel:
 qr_done:
     rts
 
-|   "QUANT LIVE REC ON/OFF" (17/18 ch) -- chosen to fit the 128 px screen;
-|   FUN_4005a2b8 sizes the window to textpx+15, and the full "QUANTIZE LIVE
-|   REC OFF" (21 ch) overruns it.
+|   MODWERK: the two strings below are changed from the author's "QUANT LIVE REC ON" /
+|   "QUANT LIVE REC OFF" (17/18 ch). His note on them: FUN_4005a2b8 sizes the window to
+|   textpx+15, and the full "QUANTIZE LIVE REC OFF" (21 ch) overruns the 128 px screen.
 qlr_msg_on:
-    .asciz "QUANT LIVE REC ON"
+    .asciz "LIVE REC: QUANTIZED"
     .align 2
 qlr_msg_off:
-    .asciz "QUANT LIVE REC OFF"
+    .asciz "LIVE REC: UNQUANTIZED"
     .align 2
 
     .ifdef QLR_DIAG
