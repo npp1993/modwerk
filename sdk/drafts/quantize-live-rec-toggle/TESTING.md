@@ -31,7 +31,16 @@ Then, the same day, on the combined test image OMXATS21 (the same modules; card 
 - A changed setting survived a power cycle.
 - The PERSONALIZE row still did not update on a [REC] + [PLAY] toggle until an arrow key was pressed.
 
-Not covered by these reports: **the PERSONALIZE redraw, added afterwards (the unit in OMXATS21 does not have it)**; how long the tests ran; the module on its own (other modules were in both images); an MKI.
+Then, the same day, on QLRTEST02, an image with this module alone at commit `50f653953c35801ae6696b91fd87bd6a594b52b4` (the current source, with the PERSONALIZE redraw) and every stock effect still in place: card file SHA-256 `f4d8334c8eb66411fb21c48a15827001d7b38dfc5935d856c384ba9e605a33dc`, MAIN OS SHA-256 `57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69`, packaged with the site's download packager from the user's OS 1.40C update file. The gate passed 36 of 36 on this MAIN OS in the emulator before it was flashed. The user ran every step of the walkthrough and reported that all passed:
+
+- The image flashed from the card and booted.
+- With PROJECT > SYSTEM > PERSONALIZE open on QUANTIZE LIVE REC: the show press left the box alone, the flip changed it at once, after [REC] was released the box showed the new value with no arrow key, the flip back worked the same way, and after [STOP] the list still moved with the arrow keys.
+- With PROJECT > CONTROL > AUDIO open, the gesture left that page as it was and its cursor still moved.
+- From a normal page: live recording started, the second tap flipped, a tap after the toast had run out only showed, and [STOP] ended live recording.
+- A changed setting survived a power cycle.
+- No freeze, screen garbage, crackle or dead controls.
+
+Not covered by these reports: how long the tests ran; the redraw beside Output Matrix on a unit (QLRTEST02 has no Output Matrix; that pairing ran in the emulator only); an MKI.
 
 ## Source identity
 
@@ -70,7 +79,7 @@ The emulator used is the user's local build of octabam's `ot_emu` (SHA-256 `23ba
 
 On the MKII the user saw what the author lists as an open item: with PERSONALIZE open, a flip by the gesture left the QUANTIZE LIVE REC box unchanged until an arrow key was pressed. In the emulator the cause is plain: stock redraws a PROJECT menu page only after a key has gone to that page's own handler (its dispatcher ends in the redraw routine `0x40064d7c`), and [REC] and [PLAY] go to the transport handler. A program-counter watch on the PERSONALIZE draw routine showed it running after arrow keys and YES and never after [REC] + [PLAY].
 
-The unit now calls that same routine after a flip, before it opens the toast. The routine tests the menu's window handle first and returns when the menu is closed, and stock calls it from fifteen places, key handlers among them. In the emulator, with PERSONALIZE open, a flip and the flip back each run the draw routine, the toast sits over the redrawn list, and after [REC] is released the box shows the new value with no arrow key (looked at as LCD captures, not committed). Beside Output Matrix, which replaces two entries of the page table that routine reads (the CONTROL > AUDIO page), a static native build of both was tried in the emulator: with CONTROL > AUDIO open, two flips left that page pixel for pixel as it was, its cursor still moved afterwards, and this gate passed 36 of 36 on that image. **This has not run on a unit.** It adds one call into stock drawing code on the flip path, so it needs the same care on hardware as the gesture did.
+The unit now calls that same routine after a flip, before it opens the toast. The routine tests the menu's window handle first and returns when the menu is closed, and stock calls it from fifteen places, key handlers among them. In the emulator, with PERSONALIZE open, a flip and the flip back each run the draw routine, the toast sits over the redrawn list, and after [REC] is released the box shows the new value with no arrow key (looked at as LCD captures, not committed). Beside Output Matrix, which replaces two entries of the page table that routine reads (the CONTROL > AUDIO page), a static native build of both was tried in the emulator: with CONTROL > AUDIO open, two flips left that page pixel for pixel as it was, its cursor still moved afterwards, and this gate passed 36 of 36 on that image. On an MKII with QLRTEST02, this module alone, the user saw the box follow each flip without an arrow key (Hardware report). Beside Output Matrix it has run in the emulator only.
 
 ## Stock flows compared
 
@@ -109,7 +118,7 @@ Done on 12 October 2026, with the author's toast wording (176 bytes), on a scrat
 
 What listing still needs:
 
-1. A hardware report from an MKII for the exact test image (`tests.qualification.hardware`; `qualification.example.json` is the record with that part left open).
+1. The hardware record in `tests.qualification.hardware`: `qualification.example.json` now holds the user's MKII report on QLRTEST02, to be moved in when the module is listed (the listed build's image hash will differ, so the record names the tested image).
 2. The owner's decision on the two performance rows that were not measured (Performance, above).
 3. Room for the declaration checks: listing records 493,056 more selections and takes `src/catalog/native-metadata.json` from 70 MB to 142 MB, over GitHub's 100 MB file limit. That needs a change to how the record is kept.
 4. The `module:verify` step also adds this module to `src/engine/assets/chooser-metadata.json`, which the Octatrack base hashes as a build input, so the committed base would have to be rebuilt. The module builds to the same bytes without that entry.

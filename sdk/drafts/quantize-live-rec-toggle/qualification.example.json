@@ -51,13 +51,15 @@
     "kind": "functional",
     "status": "reported",
     "model": "MKII",
-    "testedOn": "YYYY-MM-DD",
-    "tester": "GitHub login of the tester",
-    "sourceRevision": "REPLACE_WITH_THE_40_CHARACTER_COMMIT_OF_THE_TESTED_SOURCE",
-    "imageSha256": "REPLACE_WITH_THE_SHA256_OF_THE_TESTED_MAIN_OS_IMAGE",
-    "summary": "What was done on the unit and what happened: the show-then-invert gesture, that the first [REC] + [PLAY] still starts live recording, and that a changed setting survives a power cycle.",
+    "testedOn": "2026-10-13",
+    "tester": "npp1993",
+    "sourceRevision": "50f653953c35801ae6696b91fd87bd6a594b52b4",
+    "imageSha256": "57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69",
+    "summary": "QLRTEST02, this module alone at the tested source, flashed from the card on an MKII. Hold [REC] + [PLAY] showed the setting and started live recording; a second tap while the toast was up inverted it, a tap after the toast had run out only showed it, and releasing [REC] closed the toast. Both toasts, LIVE REC: QUANTIZED and LIVE REC: UNQUANTIZED, fit the screen. With PROJECT > SYSTEM > PERSONALIZE open the box followed each flip without an arrow key, and CONTROL > AUDIO was left as it was. A changed setting survived a power cycle. No freeze, screen garbage, crackle or dead controls.",
     "limitations": [
-      "What was not tested."
+      "How long the tests ran was not recorded.",
+      "No MKI; the redraw beside Output Matrix ran in the emulator only.",
+      "Not checked: grid recording, MIDI tracks, the gesture with no project loaded."
     ],
     "report": "TESTING.md"
   },

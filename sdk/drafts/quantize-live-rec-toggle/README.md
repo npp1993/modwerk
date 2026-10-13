@@ -6,7 +6,7 @@ QUANTIZE LIVE REC decides whether live-recorded trigs snap to the steps. Stock k
 
 Version `0.1.0-experimental`, for OS 1.40C card builds. **This is a staged draft under `sdk/drafts/`: it is not in the catalogue and the site does not offer it.** [TESTING.md](TESTING.md) says what listing still needs. Ported from Zac-Kyoti's octabam module `quantize-live-rec-toggle`; the ColdFire source is his; Modwerk changed the wording of the two toasts and added one call that redraws an open PERSONALIZE list after a flip.
 
-**Hardware status: tested by the user on an MKII in combined test builds.** On an MKII, in combined test builds with other modules (13 October 2026), the user reported the gesture working, both toasts fitting the screen and a changed setting surviving a power cycle. The redraw of an open PERSONALIZE list was added after those tests and has not run on a unit. The author tested his own build on an MKI. See [TESTING.md](TESTING.md).
+**Hardware status: tested by the user on an MKII.** On an MKII (13 October 2026), with this module alone at the current source, the user reported the gesture working, both toasts fitting the screen, an open PERSONALIZE list following each flip and a changed setting surviving a power cycle; earlier combined test builds with other modules gave the same results for the gesture, wording and power cycle. The author tested his own build on an MKI. See [TESTING.md](TESTING.md).
 
 ## Controls
 
@@ -42,11 +42,11 @@ One stock gesture is touched, and nothing else:
 
 ## Compatibility and limitations
 
-- OS 1.40C only. The author tested the gesture and a power cycle on an MKI. On an MKII, in combined test builds with other modules (13 October 2026), the user reported the gesture working, both toasts fitting the screen and a changed setting surviving a power cycle. The redraw of an open PERSONALIZE list was added after those tests and has not run on a unit.
+- OS 1.40C only. The author tested the gesture and a power cycle on an MKI. On an MKII (13 October 2026) the user reported the gesture, both toasts fitting the screen, the PERSONALIZE redraw and a power cycle working, with this module alone and, before the redraw was added, in combined builds with other modules.
 - The first [REC] + [PLAY] still starts live recording, as on stock. While live recording runs, further [REC] + [PLAY] presses do nothing on stock; here they show or invert the setting.
 - If a stock notification happens to be on screen while [REC] is held, the first [PLAY] inverts the setting instead of only showing it; the toast then shows the new value.
 - The setting is the stock global PERSONALIZE value in battery-backed memory: not saved per project or Part, and reset by an OS upgrade like the rest of PERSONALIZE.
-- With PROJECT > SYSTEM > PERSONALIZE open, a flip redraws the list so the box follows at once (checked in the emulator; not yet on a unit, where the earlier build left the box stale until an arrow key). The author noted an occasional small empty box where the toast was right after it closes.
+- With PROJECT > SYSTEM > PERSONALIZE open, a flip redraws the list so the box follows at once (emulator and MKII; beside Output Matrix, emulator only). The author noted an occasional small empty box where the toast was right after it closes.
 - This is the all-or-nothing QUANTIZE LIVE REC setting, not the per-track TRIG QUANT. No effect slot, menu row or project data is added.
 - Card builds only: the Modwerk base cannot load it over USB until its loader carries ColdFire modules with stock-code hooks.
 
