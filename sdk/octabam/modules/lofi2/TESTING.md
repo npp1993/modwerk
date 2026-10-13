@@ -6,7 +6,7 @@ Pin history of this import: `a6f41a1d`, then `e8665fae` (pull request 704's head
 
 Recorded 12 and 13 October 2026. The import is based on `main` at `e9186eb3`, which contains the Elekloader migration (pull request 464).
 
-Everything below marked **here** was run for this import, in the emulator and `dsp_host` on a computer. **Nothing was run on hardware for this import.** Everything marked **upstream** is the author's own report, quoted with attribution, and applies to his octabam images, not to this build.
+Everything below marked **here** was run for this import, in the emulator and `dsp_host` on a computer. The one hardware run of this build is the functional MKII report in [Hardware report](#hardware-report-13-october-2026). Everything marked **upstream** is the author's own report, quoted with attribution, and applies to his octabam images, not to this build.
 
 ## Identity
 
@@ -346,7 +346,7 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 - FX1 on hardware (emulator checks only, above), and LOFI2 beside any Modwerk module on hardware.
 - `rig_render` on both cores, `verify_set` under the ColdFire port, `make check` as a whole.
 - `stress_project.py` on a real Octatrack project and `pressure.py render`: the stress run above drives the same load straight into `dsp_host`.
-- `npm run modules:generate`, `npm run module:verify` (native/browser comparison) and the published USB package: all three need the qualification record, which needs the hardware report first.
+- `npm run modules:generate`, `npm run module:verify` (native/browser comparison) and the published USB package: the hardware report is in, but generation stops at Tape Echo's browser preservation binding (Repository checks, below).
 - On the Modwerk base: the effect page recipe, the published package manifest entry, and any install, pick, self-test or soak on a Modwerk base (emulator or unit).
 
 ## Packages (here)

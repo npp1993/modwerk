@@ -149,5 +149,5 @@
     "octabam's edits to its own shared files in the same commit (README.md, docs/contributing/*, docs/firmware/PARAM_PAGES.md, remixes/test/README.md, tools/remix/selftest.py)",
     "Pull request 704's regenerated top-level README.md"
   ],
-  "status": "Release candidate, not released. Pinned to a commit on upstream main (pull request 704 merged 13 October 2026). A private native build, the author's render gate, a stress run and the performance audit pass and the packages compile (TESTING.md). Missing: a hardware report for this build, the native/browser comparison and the owner's first-release approval. The author's hardware reports are for his octabam builds, not this build."
+  "status": "Release candidate, not released. Pinned to a commit on upstream main (pull request 704 merged 13 October 2026). A private native build, the author's render gate, a stress run and the performance audit pass and the packages compile (TESTING.md). A short functional MKII report on the exact image is recorded (evidence/hardware.md). Missing: catalogue generation (stopped by Tape Echo's browser preservation binding, which only the owner can refresh), the native/browser comparison and the owner's first-release approval. The author's hardware reports are for his octabam builds, not this build."
 }
