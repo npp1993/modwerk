@@ -244,6 +244,17 @@ Direct A/B under `ot_emu`, MASTER TRACK on, NORMAL mode, the same fixture projec
 
 LOFI2 on the master track passes audio: at its defaults the main output equals the run without the effect, and every setting but BRR 127 is audible. The mix reaching the master track in that fixture is quieter than half a quantiser step at BRR 127 and rounds to silence, as it would through stock LO-FI. Not a defect; it is listed under limitations. Pokes to the live record and MIDI CC did not change the knob under the emulator, which is why the project was rebuilt. T4 has no master role (the master track is T8, on core 0). Not checked on hardware.
 
+## LOFI2 on the FX1 chooser (here)
+
+The manifest declares FX2, the only chooser the first builds composed. A scratch remix with LOFI2 added to `Remix.fx1` (the author's test remix plus an FX1 list ending in LOFI2; private image `492ca2de...`, static stock) was built and checked in the emulator only:
+
+- `make bus`: "FX1 chooser = 12 rows ... LOFI2", id and cursor tables written; DSP placement unchanged.
+- `verify_menu.py`: ALL CHECKS PASSED, including the composed FX1 chooser section. `verify_dirtystate` (8 renders, 0 failed), `verify_initregs` (init preserves r1, which the FX1 dispatcher needs), `verify_labels` and `verify_modenames` pass.
+- LCD under `ot_emu` (looked at, not kept as media): LOFI2 is the last row of FX1 SETUP, assigns with YES, shows RANGE, MODE and AMPH there; MODE turned to UP renames the third main-page knob to FDBK; the main page reads `FX1▸LOFI2`.
+- DSP on an FX1 slot: in the master-track runs above the fixture puts LOFI2 on FX1 and FX2 of all eight tracks, and audio passes through both on core 0's tracks. `dsp_host` gates and the stress run use FX2 slots only.
+
+Not tested: FX1 on hardware, FX1 on core 1 with audio measured, parameter locks on FX1. `compatibility.location` stays FX2 until one of those exists and the browser builder's chooser is compared.
+
 ## Elekloader path: the Modwerk base and USB loading (here)
 
 Since the migration merged, a DSP effect reaches the unit as a runtime package loaded over USB into the Modwerk base. Run in a scratch copy of `main` with this folder at `sdk/octabam/modules/lofi2`, `lofi2` added to `dsp_packages.py`'s `FX` list and a scratch catalog pin; none of that is committed.
@@ -301,7 +312,7 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 - Any hardware run of this build: MKI or MKII, audio, instance counts, chip timing.
 - Parameter locks, LFO modulation on the unit, scenes and the crossfader.
 - Part save/reload, project save/load, reboot persistence, several instances with different settings.
-- FX1 placement, and LOFI2 beside any Modwerk module on hardware.
+- FX1 on hardware (emulator checks only, above), and LOFI2 beside any Modwerk module on hardware.
 - `rig_render` on both cores, `verify_set` under the ColdFire port, `make check` as a whole.
 - `stress_project.py` on a real Octatrack project and `pressure.py render`: the stress run above drives the same load straight into `dsp_host`.
 - `npm run modules:generate`, `npm run module:verify` (native/browser comparison) and the published USB package: all three need the qualification record, which needs the hardware report first.
