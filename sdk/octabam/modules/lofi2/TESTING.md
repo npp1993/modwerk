@@ -351,7 +351,7 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 
 - `scripts/build-module-packages.py`: `lofi2` added to the effect order after `everb`, with a descriptor guard for FX2 id 0x09 (DARK REV's descriptor as donor, the one E-Verb uses; the id's stock FX2 slot is NONE). Both guard hashes were recomputed from the tester's own OS 1.40C and equal E-Verb's recorded ones; only hashes are kept.
 - `bash scripts/build-modules-isolated.sh . <new folder> <modwerk-source-tools image id>` (Docker, no network, no firmware): passed, "Compiled loadable DSP modules with four-origin relocation proofs".
-- `npm run modules:import -- <folder>/packages --development`: imported. LOFI2's package in `src/engine/assets/dsp-packages.json`: 1,352 words, init 516, proc 534, words SHA-256 `4090dfd37463d5e75baf17b8b8ccce19d3db59abc9a3d02a4d25a01cc80f29ee`, the words the Elekloader-path build produced at pin `e8665fae` were `4090dfd3...`; this is the current pin's package.
+- `npm run modules:import -- <folder>/packages --development`: imported. LOFI2's package in `src/engine/assets/dsp-packages.json`: 1,354 words, init 516, proc 534, words SHA-256 `dcb061b878c2cbf88706165e1bdc4779028428c1734b43056822c3a29922c47c`.
 
 ## Repository checks (here)
 
