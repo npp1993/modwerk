@@ -8,10 +8,29 @@ Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 ## Not tested
 
-- **Nothing has been tested on an MKII, and this Modwerk build has not run on any unit.** No flash, no audio, no real power cycle.
+- **On a unit: a power cycle, the current toast wording, and a tap after the toast has expired.** See Hardware report for what was tested.
 - An MKI panel in the emulator; a project loaded from a real card; grid recording; MIDI tracks; the gesture with no project loaded.
 - Chip timing, frame-interrupt load and any stress run (see Performance).
 - Loading over USB onto the Modwerk base: the base's loader cannot yet carry a ColdFire module with stock-code hooks.
+
+## Hardware report (MKII, 13 October 2026)
+
+Reported by the user (npp1993) on their Octatrack MKII, flashed from the card with the combined test image OMXATS19: Output Matrix, Analog BD, LOFI2, RING_SC and this module, a static native octabam build. Card file SHA-256 `0da18380f39930a92b3608ae8e8e8d7c459f0bbae268ad093711a13deaf65141`, MAIN OS SHA-256 `fdd3bbed4294e1a7f1a075b24b884534aa5916d21027881707ce3db68dca2c73`. This module's source in it is commit `dd409a4f`, the same instructions as now with **the earlier toast wording** (`QUANT LIVE REC ON` / `OFF`).
+
+What the user reported:
+
+- The first [REC] + [PLAY] started live recording.
+- A second tap of [PLAY] flipped the setting.
+- The toast disappeared as soon as [REC] was released.
+- No freeze, no crackle, no dead controls.
+- With PROJECT > SYSTEM > PERSONALIZE open on the QUANTIZE LIVE REC row, toggling with the gesture did not update the row until an arrow key was pressed. The author lists this as known: the value is right, the row is not redrawn.
+
+Not covered by this report:
+
+- A power cycle with a changed setting.
+- The current wording (`LIVE REC: QUANTIZED` / `LIVE REC: UNQUANTIZED`), in particular whether the longer toast fits the screen on a unit.
+- A tap after the toast has run out (it should only show the setting).
+- How long the test ran, and the module on its own: other modules were in the image.
 
 ## Source identity
 

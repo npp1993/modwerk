@@ -28,7 +28,7 @@
     "summary": "Hold [REC] and tap [PLAY] to see QUANTIZE LIVE REC in a toast; tap [PLAY] again while it is up to switch it.",
     "overview": "QUANTIZE LIVE REC decides whether live-recorded trigs snap to the steps. Stock keeps it in PROJECT > SYSTEM > PERSONALIZE. This module shows it on the gesture that starts live recording and lets a second tap switch it, without leaving the page you are on.",
     "highlights": [
-      "OS 1.40C only. The author tested the gesture and a power cycle on an MKI; nothing has been tested on an MKII, and this Modwerk build has not run on any unit.",
+      "OS 1.40C only. The author tested the gesture and a power cycle on an MKI. On an MKII the gesture worked in a combined test build with the earlier toast wording (13 October 2026); a power cycle and the current wording have not been tested on a unit.",
       "The first [REC] + [PLAY] still starts live recording, as on stock. While live recording runs, further [REC] + [PLAY] presses do nothing on stock; here they show or invert the setting.",
       "If a stock notification happens to be on screen while [REC] is held, the first [PLAY] inverts the setting instead of only showing it; the toast then shows the new value.",
       "The setting is the stock global PERSONALIZE value in battery-backed memory: not saved per project or Part, and reset by an OS upgrade like the rest of PERSONALIZE."
@@ -72,7 +72,7 @@
     "location": "Project sequencer",
     "conflicts": [],
     "limitations": [
-      "OS 1.40C only. The author tested the gesture and a power cycle on an MKI; nothing has been tested on an MKII, and this Modwerk build has not run on any unit.",
+      "OS 1.40C only. The author tested the gesture and a power cycle on an MKI. On an MKII the gesture worked in a combined test build with the earlier toast wording (13 October 2026); a power cycle and the current wording have not been tested on a unit.",
       "The first [REC] + [PLAY] still starts live recording, as on stock. While live recording runs, further [REC] + [PLAY] presses do nothing on stock; here they show or invert the setting.",
       "If a stock notification happens to be on screen while [REC] is held, the first [PLAY] inverts the setting instead of only showing it; the toast then shows the new value.",
       "The setting is the stock global PERSONALIZE value in battery-backed memory: not saved per project or Part, and reset by an OS upgrade like the rest of PERSONALIZE.",
@@ -125,7 +125,7 @@
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "The image gate passes 29 checks: the retired 0x400522ca site left as the original OS has it, both jmp detours and the unit's 180 bytes in place, then under the ColdFire port by the keys (MKII panel) the show, invert, invert-back, expiry and [REC]-release behaviour beside the original OS under the same keys, and a power cycle of the port keeping an inverted setting. The toast wording is Modwerk’s; the author reported the gesture and a power cycle on an MKI (25 and 30 September 2026) for his own build. This build has not run on a unit; nothing has been tested on an MKII.",
+    "summary": "The image gate passes 29 checks: the retired 0x400522ca site left as the original OS has it, both jmp detours and the unit's 180 bytes in place, then under the ColdFire port by the keys (MKII panel) the show, invert, invert-back, expiry and [REC]-release behaviour beside the original OS under the same keys, and a power cycle of the port keeping an inverted setting. The toast wording is Modwerk’s; the author reported the gesture and a power cycle on an MKI (25 and 30 September 2026) for his own build. On an MKII the user reported the gesture working in a combined test build with the earlier toast wording (13 October 2026); no power cycle on a unit, and the current wording has not been seen on one.",
     "hardwareStatus": "historical",
     "evidenceRevision": "6e4aeb76695cbb612e4b424c55fd2207facf73ef",
     "gates": [
