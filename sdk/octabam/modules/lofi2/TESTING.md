@@ -1,6 +1,10 @@
 # LOFI2: testing record
 
-Module version `0.1.0-experimental`. Source: octabam `modules/lofi2` at commit `e8665fae3975c68a8b52ba8047c45aef5753a3f7`, the head of Bryan T's pull request 704 ("LOFI2: 654 -> 414 cycles/sample in SHIFT; eight instances fit", branch `bryantysinger:lofi2-opt`), which was open and unmerged when imported on 12 October 2026. It sits two commits on top of the merged LOFI2 (`a6f41a1dff922be622e2e8a7d93bc5a5958c90ab`, pull request 657) and changes `lofi2.asm`, one line of `manifest.py` and the README. The Modwerk adaptations are listed in README.md. An earlier local revision of this import pinned `a6f41a1d`; every result below was rerun on `e8665fae`. Recorded 12 October 2026. The import is based on `main` at `addca5cf`, which contains the Elekloader migration (pull request 464).
+Module version `0.1.0-experimental`. Source: octabam `modules/lofi2` at commit `21f6de905df71c2d7e4faba6cc7b5c7f7fb53de7`, on upstream `main` since pull request 704 ("LOFI2: 654 -> 414 cycles/sample in SHIFT; eight instances fit", Bryan T) was merged on 13 October 2026 as `fb5daa9766f1af1f61207c6baae056347a2edcd5`. It is the merged LOFI2 (`a6f41a1dff922be622e2e8a7d93bc5a5958c90ab`, pull request 657) plus the author's optimisation and its review fixes. The Modwerk adaptations are listed in README.md.
+
+Pin history of this import: `a6f41a1d`, then `e8665fae` (pull request 704's head while it was open), then `21f6de90`. `21f6de90` differs from `e8665fae` in one instruction form in `lofi2.asm` (the Hilbert parity toggle, `eor #$20,a` became `move #>$20,x0` / `eor x0,a`), comments, the README and ten new SHIFT checks in the verifier. 36 `dsp_host` renders of the two builds (2 s each, both payloads, 16- and 13-sample blocks, eight fixed settings and a moving-knob schedule with MODE switches) are bit-identical. The build, gates, cycle count, benchmark, stress run, fit probes and screenshots below were rerun on `21f6de90`; the fx:audit, idle and master-track renders were made on `e8665fae` and rest on that bit-identity.
+
+Recorded 12 and 13 October 2026. The import is based on `main` at `e9186eb3`, which contains the Elekloader migration (pull request 464).
 
 Everything below marked **here** was run for this import, in the emulator and `dsp_host` on a computer. **Nothing was run on hardware for this import.** Everything marked **upstream** is the author's own report, quoted with attribution, and applies to his octabam images, not to this build.
 
@@ -8,12 +12,13 @@ Everything below marked **here** was run for this import, in the emulator and `d
 
 | Item | SHA-256 |
 | --- | --- |
-| `lofi2.asm` (unchanged from upstream) | `cecdd20bfca0f7561fa8c34c8066780e50406cf2396d8ee2ed42aad5bdf5d5ab` |
+| `lofi2.asm` (unchanged from upstream) | `6bb3d9375c790a4a95e7942763223f3b3445b83bd9bf560d9f7d6bd0e7aac2d4` |
 | `manifest.py` (adapted) | `781d41a5d67d92e747704525a6228c650bce71373dc12f5edf73ea1bf4c57d9e` |
-| `verify_lofi2.py` (adapted) | `2f1a622e59c8ba4cf1b535c5d4a45bd026f91cd80e78d5b0baf13c613d525890` |
+| `verify_lofi2.py` (adapted) | `1f340b07133c339510ab261af145817dae87b450c36c65b17fcbdc3d9c56feb6` |
 | Stock MAIN OS 1.40C used (the tester's own, never committed) | `164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e` |
-| Private native image of the `lofi2` test remix (static stock, never committed), current labels | `b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5` |
-| The same remix before the 13 October label change (RANGE, self-naming MODE); the benchmark, stress, fx:audit, idle and master-track runs below were made on it | `43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e` |
+| Private native image of the `lofi2` test remix (static stock, never committed), current source and labels | `3d63406d3254e161b1fc52c9acfbfc14af6130b2c9314a554030e0ac060678e2` |
+| The same remix at pin `e8665fae` with the current labels | `b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5` |
+| The same remix at pin `e8665fae` before the 13 October label change; the fx:audit, idle and master-track runs below were made on it | `43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e` |
 | `dsp_host` | `bde6cf5f348e215d7adca2080044533ee7853407469cee7f887fce8ef3865fd9` |
 | `ot_emu` | `23ba6f6cdc6ec4b89b8cf206915e66d3160aec8499b1abfc9b475ac849152b28` |
 
@@ -38,14 +43,14 @@ Build report, both payloads identical in size:
 
 | Payload | Table | Code | Region | Free |
 | --- | --- | --- | --- | --- |
-| A (core 0, tracks 5-8) | P:0x01000..0x01204, 516 words | P:0x01204..0x01548, 836 words | PLATE REV + SPRING REV, 1,657 words | 305 |
-| B (core 1, tracks 1-4) | P:0x00dc0..0x00fc4, 516 words | P:0x00fc4..0x01308, 836 words | 1,657 words | 305 |
+| A (core 0, tracks 5-8) | P:0x01000..0x01204, 516 words | P:0x01204..0x0154a, 838 words | PLATE REV + SPRING REV, 1,657 words | 303 |
+| B (core 1, tracks 1-4) | P:0x00dc0..0x00fc4, 516 words | P:0x00fc4..0x0130a, 838 words | 1,657 words | 303 |
 
 ColdFire: descriptor clone at 0x400d6b20 (416 bytes), two label formatters (RNGE 54 bytes, MODE 164 bytes), no code of its own. The table stays in P memory in this remix because DJ EQ is kept.
 
 ## Render gate: `verify_lofi2.py` (here)
 
-All 48 checks pass. `dsp_host`, payload A, a scratch image holding LOFI2 alone. Stock LO-FI is rendered from the tester's own stock image for the SRR and BRR comparisons.
+All 58 checks pass (48 before upstream added the SHIFT sideband checks). `dsp_host`, payload A, a scratch image holding LOFI2 alone. Stock LO-FI is rendered from the tester's own stock image for the SRR and BRR comparisons.
 
 | Result | Check | Measured |
 | --- | --- | --- |
@@ -60,6 +65,16 @@ All 48 checks pass. `dsp_host`, payload A, a scratch image holding LOFI2 alone. 
 | PASS | fade-in: the wet is back within 0.5 dB by 9 ms | -0.02 dB |
 | PASS | MODE RING -> UP: no step larger than the steady states' | switch 13529 vs steady 11685 (d2, LSB) |
 | PASS | MODE RING -> UP: passes through the dry | closest 16-sample window 2176 LSB (limit 83886) |
+| PASS | SHIFT UP at 1000 Hz, block 16: the upper sideband, the other under -25 dB | wanted 1082.71 Hz, other -29.6 dB |
+| PASS | SHIFT DOWN at 1000 Hz, block 16: the lower sideband, the other under -25 dB | wanted 917.29 Hz, other -29.6 dB |
+| PASS | SHIFT UP at 10000 Hz, block 16: the upper sideband, the other under -25 dB | wanted 10082.70 Hz, other -30.7 dB |
+| PASS | SHIFT DOWN at 10000 Hz, block 16: the lower sideband, the other under -25 dB | wanted 9917.30 Hz, other -30.7 dB |
+| PASS | SHIFT UP at 1000 Hz, block 13: the upper sideband, the other under -25 dB | wanted 1082.71 Hz, other -29.6 dB |
+| PASS | SHIFT DOWN at 1000 Hz, block 13: the lower sideband, the other under -25 dB | wanted 917.29 Hz, other -29.6 dB |
+| PASS | SHIFT UP at 10000 Hz, block 13: the upper sideband, the other under -25 dB | wanted 10082.70 Hz, other -30.7 dB |
+| PASS | SHIFT DOWN at 10000 Hz, block 13: the lower sideband, the other under -25 dB | wanted 9917.30 Hz, other -30.7 dB |
+| PASS | SHIFT: one carrier across UP, DOWN and both block lengths (within 0.5 Hz) | carrier 82.71 Hz, spread 0.005 Hz |
+| PASS | SHIFT UP -> DOWN while playing: the lower sideband after the duck, the other under -25 dB | wanted 917.30 Hz, other -29.5 dB |
 | PASS | SRR 16: the hold's droop at 2 kHz matches stock's | stock -0.07 dB, LOFI2 -0.08 dB |
 | PASS | SRR 32: the hold's droop at 2 kHz matches stock's | stock -0.23 dB, LOFI2 -0.24 dB |
 | PASS | SRR 64: the hold's droop at 2 kHz matches stock's | stock -0.90 dB, LOFI2 -0.98 dB |
@@ -121,30 +136,30 @@ Native builds with stock DSP code built in; each row is a real `make bus` run of
 | Selection | Stock effects given up | Result |
 | --- | --- | --- |
 | LOFI2 | none | refused |
-| LOFI2 | PLATE REV | refused: 1,352 > 594 words |
-| LOFI2 | SPRING REV | refused: 1,352 > 1,063 words |
-| LOFI2 | DARK REV | refused: 1,352 > 1,067 words |
-| LOFI2 | PLATE REV + SPRING REV | fits: 1,657-word region, 305 free |
-| LOFI2 | SPRING REV + DARK REV | fits: 2,130-word region, 778 free |
-| Output Matrix + TapeHead + Sidechain Compressor + LOFI2 | three reverbs | refused: 2,931 > 2,724 words |
-| the same | three reverbs + CHORUS | fits: 3,053-word region, 122 free |
-| the same | three reverbs + LO-FI | fits: two runs, 3,261 words, 330 free |
+| LOFI2 | PLATE REV | refused: 1,354 > 594 words |
+| LOFI2 | SPRING REV | refused: 1,354 > 1,063 words |
+| LOFI2 | DARK REV | refused: 1,354 > 1,067 words |
+| LOFI2 | PLATE REV + SPRING REV | fits: 1,657-word region, 303 free |
+| LOFI2 | SPRING REV + DARK REV | fits: 2,130-word region, 776 free |
+| Output Matrix + TapeHead + Sidechain Compressor + LOFI2 | three reverbs | refused: 2,933 > 2,724 words |
+| the same | three reverbs + CHORUS | fits: 3,053-word region, 120 free |
+| the same | three reverbs + LO-FI | fits: two runs, 3,261 words, 328 free |
 | Analog BD + LOFI2, with or without the others | three reverbs (+ LO-FI) | refused: "ANALOG BD cannot share DSP memory with LOFI2" (not on `DSP_COMPANIONS` in `tools/build/ab_image.py`) |
 
-Scratch-only probe, **not part of this change and not reviewed**: with `DSP_COMPANIONS` widened locally to admit LOFI2 and Output Matrix, Analog BD + Output Matrix + TapeHead + Sidechain Compressor + LOFI2 is refused with three reverbs + LO-FI given up (LOFI2 needs 1,352 contiguous words, largest opening 1,067), refused with DJ EQ also given up (the build then parks LOFI2's table in the stock curve bank in X memory, and Sidechain Compressor no longer finds an opening: largest 298), and builds with CHORUS given up as well (four runs, 2,903 words, 488 free). That image was only built, never run. A table read from X memory by a dispatched effect is reported hardware-proven in octabam for another module, not for LOFI2.
+Scratch-only probe, **not part of this change and not reviewed**, made at pin `e8665fae` (LOFI2 two words smaller) and not repeated: with `DSP_COMPANIONS` widened locally to admit LOFI2 and Output Matrix, Analog BD + Output Matrix + TapeHead + Sidechain Compressor + LOFI2 is refused with three reverbs + LO-FI given up (LOFI2 needs 1,352 contiguous words, largest opening 1,067), refused with DJ EQ also given up (the build then parks LOFI2's table in the stock curve bank in X memory, and Sidechain Compressor no longer finds an opening: largest 298), and builds with CHORUS given up as well (four runs, 2,903 words, 488 free). That image was only built, never run. A table read from X memory by a dispatched effect is reported hardware-proven in octabam for another module, not for LOFI2.
 
-Module words in those builds: TapeHead 422, Output Matrix 727 + 42 table, Sidechain Compressor 340 + 48 table, LOFI2 836 + 516 table.
+Module words in those builds: TapeHead 422, Output Matrix 727 + 42 table, Sidechain Compressor 340 + 48 table, LOFI2 838 + 516 table.
 
 ## Cost (here)
 
-Static, `tools/build/cycle_count.py`: **414 cycles/sample** on the dearest path (SHIFT); the merged revision counted 654. Four instances on one core: 1,656 of the 3,120 the counter calls usable.
+Static, `tools/build/cycle_count.py`: **416 cycles/sample** on the dearest path (SHIFT); the first merged revision (`a6f41a1d`) counted 654 and pin `e8665fae` 414. Four instances on one core: 1,664 of the 3,120 the counter calls usable.
 
 `python3 modules/lofi2/perf.py bench <out>` (Modwerk's own script, after E-Verb's): `benchmark_stock_dsp.py`'s method (one instance per core at positions 0 and 4, audio at X:0, 4,096 blocks of 16 frames, the null stub's peak subtracted), executed instructions per sample, not chip cycles. LOFI2 on the private image, stock effects on the stock image, through the same fixed, moving and trig-split (positions 1-15) cases:
 
 | Effect | Worst, no split | Worst with splits |
 | --- | --- | --- |
-| LOFI2, SHIFT DOWN at the manifest's dearest settings | 405.44 | 429.06 |
-| LOFI2, SHIFT UP at the dearest settings | 405.06 | 428.31 |
+| LOFI2, SHIFT DOWN at the manifest's dearest settings | 406.44 | 430.06 |
+| LOFI2, SHIFT UP at the dearest settings | 406.06 | 429.31 |
 | LOFI2, RING at the dearest settings | 251.06 | 274.31 |
 | LOFI2, defaults (passthrough) | 249.88 | not run |
 | stock LO-FI | 275.44 | 290.06 |
@@ -152,7 +167,7 @@ Static, `tools/build/cycle_count.py`: **414 cycles/sample** on the dearest path 
 | stock DARK REV | 193.25 | 242.38 |
 | stock DJ EQ | 293.38 | 330.94 |
 
-The stock figures without splits reproduce E-Verb's record (SPRING REV 257.5, DARK REV 193.25, DJ EQ 293.38), a positive control on the method. LOFI2 in SHIFT is 1.37x SPRING REV's worst case and 1.48x stock LO-FI's (the closest stock effect); in RING 0.87x and 0.95x. The merged revision (`a6f41a1d`) measured 596.4 and 347.4 with an earlier scratch script. SHIFT is dearer than every stock effect (DJ EQ 330.94), which the performance audit accepts only with a justification and the owner's acceptance; the justification is in `evidence/performance.json`.
+The stock figures without splits reproduce E-Verb's record (SPRING REV 257.5, DARK REV 193.25, DJ EQ 293.38), a positive control on the method. LOFI2 in SHIFT is 1.37x SPRING REV's worst case and 1.48x stock LO-FI's (430.06 against 314.19 and 290.06) (the closest stock effect); in RING 0.87x and 0.95x. The merged revision (`a6f41a1d`) measured 596.4 and 347.4 with an earlier scratch script. SHIFT is dearer than every stock effect (DJ EQ 330.94), which the performance audit accepts only with a justification and the owner's acceptance; the justification is in `evidence/performance.json`.
 
 `python3 modules/lofi2/perf.py stress <out> --seconds 32`: LOFI2 on FX2 of all eight tracks (four per core) behind DJ EQ on every FX1; three LFOs per track on FREQ, SRR and LPF; a new random value on all 14 named slots of both effects every sixteenth at 120 BPM, MODE and RANGE included, so the modes switch under load; trig splits of 1, 3, 7, 8, 12 and 15 frames on six tracks; eight different stems, 32 s plus a 2 s tail; `dsp_host -guard 0x4000 -guard-shared -dirty 0x5a`. Result: host exit 0, no hang, 16 guarded instances, LOFI2's eight instances 0 stray write regions and 0 clobbers, 0 clobbers overall; per-core peak 3,009.9 and 3,010.1 executed instructions/sample with all sixteen effects (824 s of wall time). It exercises the DSP side only.
 
@@ -160,14 +175,14 @@ The stock figures without splits reproduce E-Verb's record (SPRING REV 257.5, DA
 
 ```
 ✓ record          dsp record for lofi2@0.1.0-experimental
-· cycles          4 x 414 = 1656 of 3120 per sample per core (53%), measured 429.06 per instance; over half a core: say what stays free for stock effects and other modules
-· stock benchmark 429.06 vs LO-FI 290.06 (1.48x); the dearest stock effect is 330.94; justified in the record
+· cycles          4 x 416 = 1664 of 3120 per sample per core (53%), measured 430.06 per instance; over half a core: say what stays free for stock effects and other modules
+· stock benchmark 430.06 vs LO-FI 290.06 (1.48x); the dearest stock effect is 330.94; justified in the record
 ✓ stress          4 per core, eight tracks, 3 LFOs and 14 locked slots, 32 s, no clobber, no hang
 ```
 
-No check failed. What stays free: with four SHIFT instances on a core, 1,464 static cycles remain of the 3,120, about four stock effects at SPRING REV's cost on the same core's FX1 slots. Four RING instances leave more.
+No check failed. What stays free: with four SHIFT instances on a core, 1,456 static cycles remain of the 3,120, about four stock effects at SPRING REV's cost on the same core's FX1 slots. Four RING instances leave more.
 
-The author's own weighting of the SHIFT loop by measured chip move costs (his README, "Cost, and how many fit") gives about 990 against about 1,530 for the September source; he calls those ratios, not cycles. Not reproduced here.
+The author's own weighting of the SHIFT loop by measured chip move costs (his README, "Cost, and how many fit") gives about 995 against about 1,530 for the September source; he calls those ratios, not cycles. Not reproduced here.
 
 ## Sound quality: `npm run fx:audit` (here)
 
@@ -256,7 +271,9 @@ The manifest declares FX2, the only chooser the first builds composed. A scratch
 
 Not tested: FX1 on hardware, FX1 on core 1 with audio measured, parameter locks on FX1. `compatibility.location` stays FX2 until one of those exists and the browser builder's chooser is compared.
 
-## Elekloader path: the Modwerk base and USB loading (here)
+## Elekloader path: the Modwerk base and USB loading (here, at pin `e8665fae`; not repeated)
+
+USB loading is out of scope for now: every module in this group waits on upstream loader changes. This section is kept as a record of what was tried on the earlier pin. At the current 416 static cycles the base's rule below would charge 728 against its limit of 726, so the static figure no longer clears it either.
 
 Since the migration merged, a DSP effect reaches the unit as a runtime package loaded over USB into the Modwerk base. Run in a scratch copy of `main` with this folder at `sdk/octabam/modules/lofi2`, `lofi2` added to `dsp_packages.py`'s `FX` list and a scratch catalog pin; none of that is committed.
 
@@ -300,14 +317,15 @@ The port's contributor (npp1993) ran LOFI2 on an Octatrack MKII from a combined 
 2. On the SETUP page MODE showed its value above and below the knob, unlike stock settings. That is octabam's `mode_slot`, which writes the value into the select's own name field while the turn flash prints it again. Fixed: MODE is declared as a `NameSelect`, as Euclid's selects are, so it keeps the name MODE, shows the value beneath the knob while it turns, and still renames slot 2 to GAIN in RING.
 3. "The low pass filter doesn't seem to do a ton." Not changed: LPF is the author's first-order high shelf, which cuts at most 12 dB above its corner and never more; `verify_lofi2` measures exactly that (-12.04 dB at Nyquist at every setting). Whether to deepen it is a voicing decision for the author or the owner.
 
-After the change (here, emulator only): native build with the same DSP placement and 836 + 516 words; the ColdFire formatter for MODE shrinks from 188 to 164 bytes; new image `b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5`; `verify_lofi2.py` 48 of 48; dirty-state, menu, labels and mode-name gates pass; the five screenshots were recaptured and looked at. The DSP source is untouched, so the benchmark, stress, fx:audit, idle and master-track runs were not repeated. The relabelled build has not run on a unit.
+After the change (here, emulator only): native build with the same DSP placement and (at pin `e8665fae`) 836 + 516 words; the ColdFire formatter for MODE shrinks from 188 to 164 bytes; image `b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5`; `verify_lofi2.py` 48 of 48 at that pin; dirty-state, menu, labels and mode-name gates pass; the five screenshots were recaptured and looked at. The DSP source is untouched, so the benchmark, stress, fx:audit, idle and master-track runs were not repeated. The relabelled build has not run on a unit.
 
 ## Upstream evidence (Bryan T, octabam; not this build)
 
 Taken from the author's README and manifest at the pinned commit (kept under `upstream/`). Effect ID 0x1f, octabam's tree and placement, his own remix.
 
+- `_bt_oct` build 12, 13 Oct 2026, the merged source (416 counted, the register-form EOR): eight LOFI2 in UP, eight in DOWN and eight in RING, each cleanly (the author, pull request 704 and his README).
 - Manifest `proof_note` (`Proof.HARDWARE`): "Bryan T's MKII, images 96-99 (Oct 2026, this tree): tracks 1 and 5, five instances at once; `_bt_oct` build 11 (12 Oct 2026, the 414-cycle loop): eight in SHIFT at once, four per core, UP/DOWN switched while playing".
-- `_bt_oct` build 11, 12 Oct 2026, this revision's loop: all eight tracks ran SHIFT at once, four on each core, switching between UP and DOWN while playing, cleanly. RING on all eight is unrun. What FX1 held was not recorded.
+- `_bt_oct` build 11, 12 Oct 2026, this revision's loop: all eight tracks ran SHIFT at once, four on each core, switching between UP and DOWN while playing, cleanly. What FX1 held was not recorded.
 - At 506 counted cycles (an intermediate build 10) four in SHIFT cut out on either core.
 - Image 96, 10 Oct 2026 (his remix with RECORDER LOOP FIX and USB AUDIO): LPF right on track 1 (payload B), SHIFT on two tracks at once, MODE through RING / DOWN / UP without a fault.
 - Image 97: AMPH bipolar, GAIN and the MODE duck ran on the unit.
@@ -333,11 +351,11 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 
 - `scripts/build-module-packages.py`: `lofi2` added to the effect order after `everb`, with a descriptor guard for FX2 id 0x09 (DARK REV's descriptor as donor, the one E-Verb uses; the id's stock FX2 slot is NONE). Both guard hashes were recomputed from the tester's own OS 1.40C and equal E-Verb's recorded ones; only hashes are kept.
 - `bash scripts/build-modules-isolated.sh . <new folder> <modwerk-source-tools image id>` (Docker, no network, no firmware): passed, "Compiled loadable DSP modules with four-origin relocation proofs".
-- `npm run modules:import -- <folder>/packages --development`: imported. LOFI2's package in `src/engine/assets/dsp-packages.json`: 1,352 words, init 516, proc 534, words SHA-256 `4090dfd37463d5e75baf17b8b8ccce19d3db59abc9a3d02a4d25a01cc80f29ee`, the same words as the Elekloader-path build above.
+- `npm run modules:import -- <folder>/packages --development`: imported. LOFI2's package in `src/engine/assets/dsp-packages.json`: 1,352 words, init 516, proc 534, words SHA-256 `4090dfd37463d5e75baf17b8b8ccce19d3db59abc9a3d02a4d25a01cc80f29ee`, the words the Elekloader-path build produced at pin `e8665fae` were `4090dfd3...`; this is the current pin's package.
 
 ## Repository checks (here)
 
-- `npm run sdk:imports:check`: passes with `sdk/imports/lofi2-e8665fa.json`.
+- `npm run sdk:imports:check`: passes with `sdk/imports/lofi2-21f6de9.json`.
 - `npm run licenses:generate`: passes with the `lofi2` licence component.
 - `npm run perf:audit -- check`: no check failed (above).
 - `npm run modules:generate`, `npm run modules:check` and `npm run check`: **fail** until `tests.qualification` exists: "lofi2.tests.qualification: publication requires worst-case cycles, exact memory and hardware test evidence". The cycle and memory parts are measured (above); the hardware report is missing, and it is not replaced by a placeholder.
