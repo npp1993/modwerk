@@ -8,7 +8,7 @@ Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 ## Not tested
 
-- **On a unit: a power cycle, the current toast wording, and a tap after the toast has expired.** See Hardware report for what was tested.
+- **On a unit: a power cycle and the current toast wording.** See Hardware report for what was tested.
 - An MKI panel in the emulator; a project loaded from a real card; grid recording; MIDI tracks; the gesture with no project loaded.
 - Chip timing, frame-interrupt load and any stress run (see Performance).
 - Loading over USB onto the Modwerk base: the base's loader cannot yet carry a ColdFire module with stock-code hooks.
@@ -22,6 +22,7 @@ What the user reported:
 - The first [REC] + [PLAY] started live recording.
 - A second tap of [PLAY] flipped the setting.
 - The toast disappeared as soon as [REC] was released.
+- With [REC] held, a [PLAY] tap after the toast had run out showed the setting again and did not flip it.
 - No freeze, no crackle, no dead controls.
 - With PROJECT > SYSTEM > PERSONALIZE open on the QUANTIZE LIVE REC row, toggling with the gesture did not update the row until an arrow key was pressed. The author lists this as known: the value is right, the row is not redrawn.
 
@@ -29,7 +30,6 @@ Not covered by this report:
 
 - A power cycle with a changed setting.
 - The current wording (`LIVE REC: QUANTIZED` / `LIVE REC: UNQUANTIZED`), in particular whether the longer toast fits the screen on a unit.
-- A tap after the toast has run out (it should only show the setting).
 - How long the test ran, and the module on its own: other modules were in the image.
 
 ## Source identity
