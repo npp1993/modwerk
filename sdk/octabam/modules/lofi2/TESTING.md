@@ -231,7 +231,18 @@ Reported from a combined-image trial: with a fixture project that stores effect 
 - Offline (`dsp_host`, payload A, a 220 Hz sine, those knob words): LOFI2's output is exactly zero for inputs up to 0.10 FS and returns at 0.115 FS. Stock LO-FI at BRR 127 does the same at the same inputs, with the same step once it passes (1,874,262 LSB against LOFI2's 1,871,726 with the shelf out).
 - With T8's FX2 cleared, the master bus peaks at about 0.9 million LSB in that fixture, under the rounding threshold of 938,502 LSB (half a step of 2^20.84).
 
-So the mix reaching the master track is quieter than half a quantiser step and rounds to silence, as it would through stock LO-FI. Not a defect; it is listed under limitations. Changing BRR by poking the live record under the emulator did not take effect, so the conclusion rests on the offline threshold, the match with stock and the measured level, not on a direct A/B in the emulator. Not checked on hardware.
+Direct A/B under `ot_emu`, MASTER TRACK on, NORMAL mode, the same fixture project rebuilt with only T8's FX2 page-1 bytes changed (`ot_project.set_fx`; every other slot still LOFI2 with the fixture's bytes). RMS of the main pair over the last 2,000 frames, in LSB:
+
+| T8 FX2 (LOFI2) knob values | MAIN L / R |
+| --- | --- |
+| the fixture's: FREQ 47, MIX 0, FDBK 127, SRR 0, BRR 127, LPF 0 | 0 / 0 |
+| defaults: MIX 0, SRR 0, BRR 0, LPF 127 | 263,375 / 318,836 |
+| T8 FX2 set to NONE (no effect), for reference | 263,375 / 318,836 |
+| as the fixture but BRR 64 | 145,045 / 217,364 |
+| as the fixture but BRR 0 (LPF still 0) | 144,838 / 217,645 |
+| RING: FREQ 64, MIX 127, LPF 127 | 189,851 / 237,549 |
+
+LOFI2 on the master track passes audio: at its defaults the main output equals the run without the effect, and every setting but BRR 127 is audible. The mix reaching the master track in that fixture is quieter than half a quantiser step at BRR 127 and rounds to silence, as it would through stock LO-FI. Not a defect; it is listed under limitations. Pokes to the live record and MIDI CC did not change the knob under the emulator, which is why the project was rebuilt. T4 has no master role (the master track is T8, on core 0). Not checked on hardware.
 
 ## Elekloader path: the Modwerk base and USB loading (here)
 
