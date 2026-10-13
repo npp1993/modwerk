@@ -152,6 +152,9 @@
     .equ NOTIF_H,      0x460d1e70        | the toast's window handle; 0 == none on screen
     .equ NOTIF_T,      0x460d1e6c        | its remaining duration; 0 == expired
     .equ PROJ_GATE,    0x4009b5c0        | displaced from 0x40061778
+    .equ MENU_REDRAW,  0x40064d7c        | MODWERK: redraws the open PROJECT menu page; returns at once
+                                          |   when that menu's window (0x400cbf4c) is not open.  It is
+                                          |   what stock's own menu key dispatch ends in (0x40065132).
     .equ PLAY_RESUME,  0x4006177e        | 0x40061778 + 6  (tst.l %d0 ; bne.s ...)
 
     | The toast's life == the window in which a press flips, because they are
@@ -245,6 +248,11 @@ qp_flip:
     move.l  %d0,QLR
     move.l  %d0,QLR_SH                   | battery-SRAM shadow
     jsr     CKSUM                        | re-checksum the 'ANDY' block
+|   MODWERK: stock redraws a PROJECT menu page only after a key reaches that page, and
+|   [PLAY] does not, so an open PERSONALIZE list kept showing the old box until an arrow
+|   key was pressed (the author's open item from Session 51; seen on an MKII, 13 Oct 2026).
+|   Redraw it here, before the toast is opened over it.  Key-handler context, as stock's.
+    jsr     MENU_REDRAW
 |   fall through: show the setting we just wrote
 
 |   --- (re)open the toast on the CURRENT setting, and restart its 0.8 s ---

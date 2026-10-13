@@ -3,8 +3,8 @@
 Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 - Upstream: sambanks/octabam `6e4aeb76695cbb612e4b424c55fd2207facf73ef`, which takes the module from Zac-Kyoti/octatrack-kyoti-fw `77f132f9a60c6afa98ea4486540f6107398bdad3`.
-- Native source SHA-256 of this folder (`moduleNativeSourceSha256`): `24b8ee71201e951a4c644676b318581c9edddf000303a0c16025a9f1b6fc9db7`.
-- Tested image (this module alone, static native octabam build from the original OS 1.40C): MAIN OS SHA-256 `06f423fed3661f59932a5435f1b26e01d0d1c759d22721b53fa316fba6176816`.
+- Native source SHA-256 of this folder (`moduleNativeSourceSha256`): `ba1e3eaaffe3d88d52a2156d4fca6b73169083e61f6836584d8885a51db895ba`.
+- Tested image (this module alone, static native octabam build from the original OS 1.40C): MAIN OS SHA-256 `bc210ae3ee94557c57fbf710d39902fd4454875ee2ce52c1261712065076adb4`.
 
 ## Not tested
 
@@ -31,11 +31,11 @@ Then, the same day, on the combined test image OMXATS21 (the same modules; card 
 - A changed setting survived a power cycle.
 - The PERSONALIZE row still did not update on a [REC] + [PLAY] toggle until an arrow key was pressed.
 
-Not covered by these reports: how long the tests ran; the module on its own (other modules were in both images); an MKI.
+Not covered by these reports: **the PERSONALIZE redraw, added afterwards (the unit in OMXATS21 does not have it)**; how long the tests ran; the module on its own (other modules were in both images); an MKI.
 
 ## Source identity
 
-`patch_qlrec.s` is the author's file with one change: the two toast strings read `LIVE REC: QUANTIZED` and `LIVE REC: UNQUANTIZED` where his read `QUANT LIVE REC ON` and `QUANT LIVE REC OFF` (the user's choice, 13 October 2026), and the comment above them says so. No instruction changed. With his strings the source links to his 176 bytes (SHA-256 `52c26af67443e470147844a52009d09fa308be5045a1f891c01344dbbaa8670d`), which native octabam confirmed on 12 October before the change. With the new strings the unit is 180 bytes, SHA-256 `4d98f2234e5a83af651cf41b5e8c425a84a4d457a72364120e54c210c18f9398` at `0x400d7400`; native octabam, in the pinned toolchain container without network, links it there and where it floats and compares on every build. Its build report shows the unit and the two `jmp` detours at `0x40061778` and `0x4004883a`.
+`patch_qlrec.s` is the author's file with two changes. First, the two toast strings read `LIVE REC: QUANTIZED` and `LIVE REC: UNQUANTIZED` where his read `QUANT LIVE REC ON` and `QUANT LIVE REC OFF` (the user's choice, 13 October 2026), and the comment above them says so. Second, one instruction is added after a flip: `jsr 0x40064d7c`, the stock routine that redraws the open PROJECT menu page and returns at once when that menu is closed (see PERSONALIZE redraw). With his strings the source links to his 176 bytes (SHA-256 `52c26af67443e470147844a52009d09fa308be5045a1f891c01344dbbaa8670d`), which native octabam confirmed on 12 October before the change. With both changes the unit is 186 bytes, SHA-256 `744a73eb0783e72fb5cbe10930ea9aae109c58f6b7d8e3594c3acb5afa91536c` at `0x400d7400` (180 bytes, `4d98f223…9398`, with the strings alone, which is what the MKII ran in OMXATS21); native octabam, in the pinned toolchain container without network, links it there and where it floats and compares on every build. Its build report shows the unit and the two `jmp` detours at `0x40061778` and `0x4004883a`.
 
 The author chose his shorter strings to fit the 128-pixel screen and notes that a 21-character `QUANTIZE LIVE REC OFF` overran it. `LIVE REC: UNQUANTIZED` is also 21 characters; in the emulator its box fits the screen with a few pixels to spare (see the captures), and the user confirmed both toasts fit on an MKII (Hardware report).
 
@@ -49,9 +49,9 @@ The three stock guards in `manifest.py` (both hook sites and the retired site `0
 OT_EMU=<path to ot_emu> python3 modules/quantize-live-rec-toggle/verify.py
 ```
 
-Result on the tested image: **29 of 29 checks passed.**
+Result on the tested image: **36 of 36 checks passed.**
 
-1. The image, byte for byte: `0x400522ca` is as the original OS has it; both hook sites hold a `jmp`, 0x74 apart, into one unit; that unit is the 180 bytes the manifest names.
+1. The image, byte for byte: `0x400522ca` is as the original OS has it; both hook sites hold a `jmp`, 0x7a apart, into one unit; that unit is the 186 bytes the manifest names.
 2. The gesture by the keys (MKII panel, empty card, DSP cores running), on the module image and on the original OS:
    - the first [REC] + [PLAY] starts live recording on both, and leaves the setting alone; the module also opens the toast;
    - a second [PLAY] while the toast is up inverts the setting and its battery copy, and a third puts it back;
@@ -59,11 +59,18 @@ Result on the tested image: **29 of 29 checks passed.**
    - releasing [REC] clears stock's held flag and closes the toast; [STOP] ends live recording;
    - [PLAY] without [REC] opens no toast and changes nothing;
    - the original OS under the same keys never changes the setting and never opens a toast.
-3. A power cycle of the port: the battery RAM of a run that left the setting inverted, booted again, comes up inverted. This is the emulator's battery RAM, not a unit's.
+3. With PROJECT > SYSTEM > PERSONALIZE open: an arrow key runs the page's draw routine on both images; the show press does not; a flip and the flip back do on the module image; the original OS under the same keys changes and redraws nothing.
+4. A power cycle of the port: the battery RAM of a run that left the setting inverted, booted again, comes up inverted. This is the emulator's battery RAM, not a unit's.
 
 Separately, PERSONALIZE was opened in the emulator before and after one inversion: the QUANTIZE LIVE REC box was ticked while the toast said QUANTIZED (then worded ON) and empty after it said UNQUANTIZED (then OFF), so the toast and the menu agree there. The fresh emulator state has the setting ON.
 
 The emulator used is the user's local build of octabam's `ot_emu` (SHA-256 `23ba6f6cdc6ec4b89b8cf206915e66d3160aec8499b1abfc9b475ac849152b28`). It does not run a real unit's timing, and the author's note that scratch RAM did not survive on hardware while it did in the emulator is the reason this module keeps no state of its own.
+
+## PERSONALIZE redraw
+
+On the MKII the user saw what the author lists as an open item: with PERSONALIZE open, a flip by the gesture left the QUANTIZE LIVE REC box unchanged until an arrow key was pressed. In the emulator the cause is plain: stock redraws a PROJECT menu page only after a key has gone to that page's own handler (its dispatcher ends in the redraw routine `0x40064d7c`), and [REC] and [PLAY] go to the transport handler. A program-counter watch on the PERSONALIZE draw routine showed it running after arrow keys and YES and never after [REC] + [PLAY].
+
+The unit now calls that same routine after a flip, before it opens the toast. The routine tests the menu's window handle first and returns when the menu is closed, and stock calls it from fifteen places, key handlers among them. In the emulator, with PERSONALIZE open, a flip and the flip back each run the draw routine, the toast sits over the redrawn list, and after [REC] is released the box shows the new value with no arrow key (looked at as LCD captures, not committed). **This has not run on a unit.** It adds one call into stock drawing code on the flip path, so it needs the same care on hardware as the gesture did.
 
 ## Stock flows compared
 
@@ -77,18 +84,18 @@ Executed instructions of the unit, counted with the port's program-counter watch
 |---|---:|
 | [PLAY] without [REC] | 4 |
 | [REC] + [PLAY]: show, live recording starts | 17 |
-| [PLAY]: invert while live recording runs | 23 |
-| [PLAY]: invert, live recording stopped (then stock's [PLAY] path) | 23 |
+| [PLAY]: invert while live recording runs | 24 |
+| [PLAY]: invert, live recording stopped (then stock's [PLAY] path) | 24 |
 | [REC] release with a toast up | 5 |
 | [REC] release without | 4 |
 
-The longest path in the source is 24 instructions. `evidence/performance.json` prices an instruction at 16 core cycles, the conservative V4 envelope Mute Modes' TESTING.md derives from the MCF54455 manual: 384 static, 368 measured, against one 362.8 µs frame at 264 MHz (95,778) taken as a generous deadline for a key handler. These are not chip timings. The stock routines the unit calls (the project gate, the checksum, opening and closing the notification) are stock cost and are not counted.
+The longest path in the source is 25 instructions. `evidence/performance.json` prices an instruction at 16 core cycles, the conservative V4 envelope Mute Modes' TESTING.md derives from the MCF54455 manual: 400 static, 384 measured, against one 362.8 µs frame at 264 MHz (95,778) taken as a generous deadline for a key handler. These are not chip timings. The stock routines the unit calls (the project gate, the checksum, the menu redraw, opening and closing the notification) are stock cost and are not counted.
 
 `npm run perf:audit -- check evidence/performance.json` passes the cycle row and **fails the stock benchmark and the stress run: neither was measured.** Both are defined for code in the frame or MIDI path (a `cfmeter.py` capture from a unit, a MIDI flood). This unit runs only inside two key handlers and handles no MIDI, so by its source it adds nothing to the frame interrupt; that is an argument, not a measurement. `module:doctor` therefore reports the performance line as failing until the owner accepts or waives it.
 
 ## Memory
 
-180 bytes of ROM for the unit (code and two strings; position independent, so the same anywhere) and two six-byte detours over stock instructions: 192 bytes. No RAM of its own, no DSP memory, no heap. It reads stock's [REC]-held and live-recording flags and the notification handle, and writes the stock setting word and its battery copy, then calls stock's checksum routine as the PERSONALIZE menu does.
+186 bytes of ROM for the unit (code and two strings; position independent, so the same anywhere) and two six-byte detours over stock instructions: 198 bytes. No RAM of its own, no DSP memory, no heap. It reads stock's [REC]-held and live-recording flags and the notification handle, and writes the stock setting word and its battery copy, then calls stock's checksum routine as the PERSONALIZE menu does.
 
 ## Native comparison and listing dry run
 

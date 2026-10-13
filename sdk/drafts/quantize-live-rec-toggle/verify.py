@@ -11,7 +11,7 @@ Reads, and SKIPs without them:
 
 1. The image, byte for byte (no emulator):
    - the retired engine-frame site 0x400522ca still holds the original instruction (the manifest's guard);
-   - [PLAY] 0x40061778 and [REC] release 0x4004883a hold a `jmp` into one unit, 0x74 apart;
+   - [PLAY] 0x40061778 and [REC] release 0x4004883a hold a `jmp` into one unit, as far apart as the manifest says;
    - that unit is the bytes the manifest names (its reference SHA-256).
 2. The gesture, by the keys, MKII panel, empty card, on this image and on the original OS:
    - [REC] + [PLAY] opens the toast, leaves the setting alone and starts live recording (stock starts it too);
@@ -20,7 +20,9 @@ Reads, and SKIPs without them:
    - releasing [REC] closes the toast; [STOP] ends live recording;
    - [PLAY] without [REC] opens no toast and changes nothing;
    - the original OS under the same keys never changes the setting and opens no toast.
-3. A power cycle in the port: the battery RAM of a run that left the setting inverted, booted again
+3. With PROJECT > SYSTEM > PERSONALIZE open: a flip by the gesture runs that page's draw routine (the
+   module), while the show press and the original OS under the same keys do not.
+4. A power cycle in the port: the battery RAM of a run that left the setting inverted, booted again
    (--cs1-in), comes up with the inverted setting.
 What it cannot see: a real unit's timing, its battery, the DSP's use of shared RAM during audio, an MKI panel.
 """
@@ -42,7 +44,8 @@ STOCK = pathlib.Path(os.environ.get("QLR_STOCK", ROOT / "out/raw/section_3_MAIN_
 BASE = 0x40000400
 QLR, SHADOW, TOAST, REC_HELD, LIVE_REC = 0x800000ac, 0x100fff3c, 0x460d1e70, 0x460d1726, 0x460d172a
 CS1, CS1_LEN = 0x10000000, 0x100000
-KEYS = {"NO": 0x32, "REC": 0x29, "PLAY": 0x28, "STOP": 0x27}
+KEYS = {"NO": 0x32, "REC": 0x29, "PLAY": 0x28, "STOP": 0x27, "MENU": 0x1c, "LEFT": 0x34, "DOWN": 0x20, "RIGHT": 0x21, "YES": 0x31}
+PERSONALIZE_DRAW = 0x40068e00            # the PERSONALIZE page's draw routine (stock page table)
 FAILS = []
 
 
@@ -104,7 +107,7 @@ class Port:
     def send(self, line):
         self.port.stdin.write((line + "\n").encode())
         self.port.stdin.flush()
-        answer = self.reply(("ok", "err", "peek "))
+        answer = self.reply(("ok", "err", "peek ", "hits "))
         if answer.startswith("err"):
             raise RuntimeError(answer)
         return answer
@@ -121,6 +124,10 @@ class Port:
 
     def long(self, address):
         return int.from_bytes(bytes.fromhex(self.send("peek %d 4" % address)[5:]), "big")
+
+    def draws(self):
+        """How often the watched routine ran since the last call."""
+        return int(self.send("hits").split()[1][2:])
 
     def battery(self):
         return b"".join(bytes.fromhex(self.send("peek %d 4096" % (CS1 + at))[5:]) for at in range(0, CS1_LEN, 4096))
@@ -186,6 +193,38 @@ def gesture(image, module):
             port.close()
 
 
+def menu_redraw(image, module):
+    """PERSONALIZE open: does a press of the gesture run the page's draw routine?"""
+    with tempfile.TemporaryDirectory(prefix="qlr-gate.") as directory:
+        port, who = Port(image, pathlib.Path(directory)), "module" if module else "original OS"
+        try:
+            for _ in range(3):
+                port.tap("NO")
+            port.send("run 1500")
+            for name in ("MENU", "LEFT", "DOWN", "RIGHT", "DOWN", "DOWN", "DOWN", "YES"):
+                port.tap(name)                               # PROJECT > SYSTEM > PERSONALIZE, on QUANTIZE LIVE REC
+            port.send("run 500")
+            port.send("watch %d" % PERSONALIZE_DRAW)
+            port.draws()
+            port.tap("DOWN")
+            check(port.draws() > 0, who + ": PERSONALIZE is open (an arrow key redraws it)")
+            first = port.long(QLR)
+            port.key("REC", True)
+            port.tap("PLAY")
+            check(port.draws() == 0 and port.long(QLR) == first, who + ": the show press does not redraw the page")
+            port.tap("PLAY")
+            if module:
+                check(port.long(QLR) == first ^ 1 and port.draws() > 0, "module: a flip redraws the open PERSONALIZE page")
+                port.tap("PLAY")
+                check(port.long(QLR) == first and port.draws() > 0, "module: and so does the flip back")
+            else:
+                check(port.long(QLR) == first and port.draws() == 0, "original OS: nothing changes and nothing redraws")
+            port.key("REC", False)
+            port.tap("STOP")
+        finally:
+            port.close()
+
+
 def power_cycle(image, value, battery):
     with tempfile.TemporaryDirectory(prefix="qlr-gate.") as directory:
         work = pathlib.Path(directory)
@@ -213,7 +252,7 @@ def main():
     check(image[at(retired):at(retired) + length] == stock[at(retired):at(retired) + length], "0x%x is left as the original OS has it" % retired)
     jumps = [int.from_bytes(image[at(site) + 2:at(site) + 6], "big") for site in (play, rec)]
     check(all(image[at(site):at(site) + 2] == b"\x4e\xf9" for site in (play, rec)), "[PLAY] and [REC] release hold a jmp")
-    check(jumps[1] - jumps[0] == 0x74, "both reach one unit, 0x74 apart")
+    check(jumps[1] - jumps[0] == facts["RECREL_OFFSET"], "both reach one unit, 0x%x apart" % facts["RECREL_OFFSET"])
     check(hashlib.sha256(image[at(jumps[0]):at(jumps[0]) + facts["UNIT_BYTES"]]).hexdigest() == facts["REFERENCE"][1], "the unit is the %d bytes the manifest names" % facts["UNIT_BYTES"])
     if not EMU.is_file():
         print("[SKIP] the gesture: no port at %s" % EMU)
@@ -221,7 +260,10 @@ def main():
     print("2. the gesture")
     value, battery = gesture(IMAGE, True)
     gesture(STOCK, False)
-    print("3. a power cycle in the port")
+    print("3. PERSONALIZE open")
+    menu_redraw(IMAGE, True)
+    menu_redraw(STOCK, False)
+    print("4. a power cycle in the port")
     power_cycle(IMAGE, value, battery)
     print("%d failed" % len(FAILS) if FAILS else "all passed")
     return 1 if FAILS else 0

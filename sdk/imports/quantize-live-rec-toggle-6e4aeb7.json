@@ -16,9 +16,10 @@
       "sourceBytes": 16258,
       "sourceGitBlob": "a92c5a2ab80816d31854f4dcf0179195cd81c2e2",
       "sourceSha256": "aef5e34cf48b99c059a800bc8ccd5834b9a08e578b4e7ce6965bfb210832b33f",
-      "vendoredSha256": "5ee0200f53b897335e3129eb65265cc9e29c2eea4493183416b2a6e6679b7e80",
+      "vendoredSha256": "8b77467556fc4634fa8d03bdbcb9e23ec648e1c69f9da0d0e18f30b9f4d6254d",
       "transforms": [
-        "Reword the two toast strings: \"QUANT LIVE REC ON\" becomes \"LIVE REC: QUANTIZED\" and \"QUANT LIVE REC OFF\" becomes \"LIVE REC: UNQUANTIZED\" (the user's choice, 13 October 2026), and mark that in the comment above them. No instruction changed; the unit grows from 176 to 180 bytes."
+        "Reword the two toast strings: \"QUANT LIVE REC ON\" becomes \"LIVE REC: QUANTIZED\" and \"QUANT LIVE REC OFF\" becomes \"LIVE REC: UNQUANTIZED\" (the user's choice, 13 October 2026), and mark that in the comment above them. The unit grows from 176 to 180 bytes.",
+        "Add one instruction after a flip, `jsr 0x40064d7c` (with its `.equ` and a comment): the stock routine that redraws the open PROJECT menu page, so an open PERSONALIZE list shows the new value without an arrow key. The unit grows to 186 bytes and qlr_recrel moves from offset 0x74 to 0x7a."
       ]
     },
     {
@@ -69,11 +70,11 @@
       "sourceBytes": 4946,
       "sourceGitBlob": "22ee617f441abfded0b19cbb8827a10edcfd7094",
       "sourceSha256": "45d52f03b9fb532c4156f7d8f7d634032b4eb8cf6798a84d9405c1e36c3bbcd5",
-      "vendoredSha256": "66cdbfab237c7d4fe425d7ae64648a4cf9064b04308024cfba18d5a0e4b943c9",
+      "vendoredSha256": "b5002dc9657ff62795c47e78ba93f8f3e916392ad47689bc3f3791dc9af515dd",
       "transforms": [
         "Replace the three embedded stock instruction byte strings (the [PLAY] hook, the [REC] release hook and the retired engine-frame site) with address/length/SHA-256 guards read from the builder's own OS file.",
         "Declare the author's floating CavePatch, whose emit() planted the two jmp detours, as one floating Linked unit with two jmp Detours onto its global symbols qlr_play and qlr_recrel: the shape Modwerk's package compiler and browser builder already carry. Same source, same 176 bytes, same two sites, same jmp encoding.",
-        "Replace the embedded 176-byte hex oracle of the author's assembled cave with a SHA-256 at the author's link address (Linked.reference); the build links the source there every time and compares. With the reworded toast strings that reference is Modwerk's 180 bytes; the author's 176-byte SHA-256 is kept in a comment.",
+        "Replace the embedded 176-byte hex oracle of the author's assembled cave with a SHA-256 at the author's link address (Linked.reference); the build links the source there every time and compares. With the reworded toast strings and the added redraw call that reference is Modwerk's 186 bytes; the author's 176-byte SHA-256 is kept in a comment.",
         "Keep the retired 0x400522ca site as a named guard that verify.py checks against the built image, and assert that no detour of this module names it.",
         "Add canonical author attribution and a MODWERK paragraph to the docstring; drop the warning emoji from it."
       ]
@@ -105,7 +106,7 @@
     "Unrelated modules and author repository tooling"
   ],
   "notes": [
-    "patch_qlrec.s is the author's file with the two toast strings reworded. Its comments describe stock routines by address and in assembler mnemonics, as the author wrote them; it contains no firmware bytes or hex dumps. The only byte strings the import removed were in manifest.py.",
+    "patch_qlrec.s is the author's file with the two toast strings reworded and one added call into a stock routine, named by address. Its comments describe stock routines by address and in assembler mnemonics, as the author wrote them; it contains no firmware bytes or hex dumps. The only byte strings the import removed were in manifest.py.",
     "The stock guard digests were computed from the author's declared expectations and matched against a local original OS 1.40C MAIN image (SHA-256 164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e)."
   ],
   "status": "Draft; no catalog or firmware download enabled. Hardware test on an MKII pending.",

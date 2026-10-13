@@ -1,12 +1,12 @@
 {
   "moduleVersion": "0.1.0-experimental",
-  "sourceSha256": "24b8ee71201e951a4c644676b318581c9edddf000303a0c16025a9f1b6fc9db7",
-  "imageSha256": "06f423fed3661f59932a5435f1b26e01d0d1c759d22721b53fa316fba6176816",
+  "sourceSha256": "ba1e3eaaffe3d88d52a2156d4fca6b73169083e61f6836584d8885a51db895ba",
+  "imageSha256": "bc210ae3ee94557c57fbf710d39902fd4454875ee2ce52c1261712065076adb4",
   "cycles": [
     {
       "processor": "coldfire",
-      "worstCase": 384,
-      "maxConfiguration": 384,
+      "worstCase": 400,
+      "maxConfiguration": 400,
       "maxInstances": 1,
       "budget": 95778,
       "unit": "cycles/event",
@@ -26,9 +26,9 @@
       {
         "name": "Authored ColdFire code and the two toast strings (linked unit qlr, ROM cave)",
         "space": "cpu-flash",
-        "words": 180,
+        "words": 186,
         "wordBits": 8,
-        "bytes": 180,
+        "bytes": 186,
         "scope": "shared"
       },
       {
@@ -41,10 +41,10 @@
       }
     ],
     "perInstanceBytes": 0,
-    "sharedBytes": 192,
+    "sharedBytes": 198,
     "maxInstances": 1,
-    "totalBytes": 192,
-    "conditions": "From the linked unit (180 bytes at any address; it is position independent) and the two detours. No RAM of its own: it reads and writes the stock setting word and its battery copy, and reads stock key and notification state. No heap; at most 8 bytes of stack beyond the stock key handler (two pushed arguments) before the stock calls.",
+    "totalBytes": 198,
+    "conditions": "From the linked unit (186 bytes at any address; it is position independent) and the two detours. No RAM of its own: it reads and writes the stock setting word and its battery copy, and reads stock key and notification state. No heap; at most 8 bytes of stack beyond the stock key handler (two pushed arguments) before the stock calls.",
     "report": "TESTING.md"
   },
   "hardware": {

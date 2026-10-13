@@ -18,7 +18,7 @@
     "github": "Zac-Kyoti",
     "credits": [
       "Zac-Kyoti: the gesture, its ColdFire source and the MKI hardware work behind it. Sam Banks: octabam integration.",
-      "Modwerk contributors: source import with stock guards in place of stock bytes, the reworded toast, the image gate, documentation and SVG thumbnail."
+      "Modwerk contributors: source import with stock guards in place of stock bytes, the reworded toast, the PERSONALIZE redraw after a flip, the image gate, documentation and SVG thumbnail."
     ]
   },
   "nativeManifest": "manifest.py",
@@ -76,7 +76,7 @@
       "The first [REC] + [PLAY] still starts live recording, as on stock. While live recording runs, further [REC] + [PLAY] presses do nothing on stock; here they show or invert the setting.",
       "If a stock notification happens to be on screen while [REC] is held, the first [PLAY] inverts the setting instead of only showing it; the toast then shows the new value.",
       "The setting is the stock global PERSONALIZE value in battery-backed memory: not saved per project or Part, and reset by an OS upgrade like the rest of PERSONALIZE.",
-      "The PERSONALIZE row does not redraw while it is open, and the author noted an occasional small empty box where the toast was right after it closes.",
+      "With PROJECT > SYSTEM > PERSONALIZE open, a flip redraws the list so the box follows at once (checked in the emulator; not yet on a unit, where the earlier build left the box stale until an arrow key). The author noted an occasional small empty box where the toast was right after it closes.",
       "This is the all-or-nothing QUANTIZE LIVE REC setting, not the per-track TRIG QUANT. No effect slot, menu row or project data is added.",
       "Card builds only: the Modwerk base cannot load it over USB until its loader carries ColdFire modules with stock-code hooks."
     ]
@@ -85,20 +85,20 @@
     "recorded": "12 October 2026; source assembly and the image gate under the ColdFire port",
     "storage": {
       "label": "ROM code and detours",
-      "display": "180 B code + two 6 B detours",
-      "value": 192,
+      "display": "186 B code + two 6 B detours",
+      "value": 198,
       "unit": "bytes",
       "method": "static",
-      "conditions": "One position-independent linked unit of 180 bytes (code and two strings) in free ROM space, and two six-byte jmp detours over stock instructions. No RAM, no DSP memory.",
+      "conditions": "One position-independent linked unit of 186 bytes (code and two strings) in free ROM space, and two six-byte jmp detours over stock instructions. No RAM, no DSP memory.",
       "source": "TESTING.md"
     },
     "processing": {
       "label": "ColdFire, per key press",
-      "display": "at most 24 authored instructions per press",
-      "value": 24,
+      "display": "at most 25 authored instructions per press",
+      "value": 25,
       "unit": "instructions/event",
       "method": "static",
-      "conditions": "Longest path through the [PLAY] entry (invert, then reopen the toast), counted from the source; stock routines it calls are excluded. Runs only on a [PLAY] press or [REC] release, never per frame.",
+      "conditions": "Longest path through the [PLAY] entry (invert, then reopen the toast), counted from the source; stock routines it calls (among them the menu redraw after a flip) are excluded. Runs only on a [PLAY] press or [REC] release, never per frame.",
       "source": "TESTING.md"
     },
     "impact": {
@@ -118,14 +118,14 @@
       "memory": {
         "level": "minimal",
         "basis": "source-estimate",
-        "rationale": "192 bytes of ROM; no RAM or audio memory of its own.",
+        "rationale": "198 bytes of ROM; no RAM or audio memory of its own.",
         "source": "TESTING.md"
       }
     }
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "The image gate passes 29 checks: the retired 0x400522ca site left as the original OS has it, both jmp detours and the unit's 180 bytes in place, then under the ColdFire port by the keys (MKII panel) the show, invert, invert-back, expiry and [REC]-release behaviour beside the original OS under the same keys, and a power cycle of the port keeping an inverted setting. The toast wording is Modwerk’s; the author reported the gesture and a power cycle on an MKI (25 and 30 September 2026) for his own build. On an MKII, in combined test builds with other modules (13 October 2026), the user reported the gesture working, both toasts fitting the screen and a changed setting surviving a power cycle.",
+    "summary": "The image gate passes 36 checks: the retired 0x400522ca site left as the original OS has it, both jmp detours and the unit's 186 bytes in place, then under the ColdFire port by the keys (MKII panel) the show, invert, invert-back, expiry and [REC]-release behaviour beside the original OS under the same keys, an open PERSONALIZE list redrawn by a flip, and a power cycle of the port keeping an inverted setting. The toast wording is Modwerk’s; the author reported the gesture and a power cycle on an MKI (25 and 30 September 2026) for his own build. On an MKII, in combined test builds with other modules (13 October 2026), the user reported the gesture working, both toasts fitting the screen and a changed setting surviving a power cycle. The PERSONALIZE redraw was added after those hardware tests and has not run on a unit.",
     "hardwareStatus": "historical",
     "evidenceRevision": "6e4aeb76695cbb612e4b424c55fd2207facf73ef",
     "gates": [
@@ -168,7 +168,7 @@
         "shows": "location-and-controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "06f423fed3661f59932a5435f1b26e01d0d1c759d22721b53fa316fba6176816",
+        "imageSha256": "bc210ae3ee94557c57fbf710d39902fd4454875ee2ce52c1261712065076adb4",
         "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local static native build of this module alone."
       }
     },
@@ -185,7 +185,7 @@
         "shows": "controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "06f423fed3661f59932a5435f1b26e01d0d1c759d22721b53fa316fba6176816",
+        "imageSha256": "bc210ae3ee94557c57fbf710d39902fd4454875ee2ce52c1261712065076adb4",
         "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local static native build of this module alone."
       }
     },
@@ -202,7 +202,7 @@
         "shows": "location",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "06f423fed3661f59932a5435f1b26e01d0d1c759d22721b53fa316fba6176816",
+        "imageSha256": "bc210ae3ee94557c57fbf710d39902fd4454875ee2ce52c1261712065076adb4",
         "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local static native build of this module alone."
       }
     }
