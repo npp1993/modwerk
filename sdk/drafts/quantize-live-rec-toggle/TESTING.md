@@ -8,7 +8,6 @@ Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 ## Not tested
 
-- **On a unit: a power cycle and the current toast wording.** See Hardware report for what was tested.
 - An MKI panel in the emulator; a project loaded from a real card; grid recording; MIDI tracks; the gesture with no project loaded.
 - Chip timing, frame-interrupt load and any stress run (see Performance).
 - Loading over USB onto the Modwerk base: the base's loader cannot yet carry a ColdFire module with stock-code hooks.
@@ -26,17 +25,19 @@ What the user reported:
 - No freeze, no crackle, no dead controls.
 - With PROJECT > SYSTEM > PERSONALIZE open on the QUANTIZE LIVE REC row, toggling with the gesture did not update the row until an arrow key was pressed. The author lists this as known: the value is right, the row is not redrawn.
 
-Not covered by this report:
+Then, the same day, on the combined test image OMXATS21 (the same modules; card file SHA-256 `525d7e64602e223615d92f39666f25c2f046de50d838ebc00a666b0a6fb7144b`, MAIN OS SHA-256 `5ccbd5b4a4a9114af53f046a9a3a771acde22bf2f27a3e6a7becf3f224e39748`), which carries this module at commit `924e3d7b` with **the current wording**:
 
-- A power cycle with a changed setting.
-- The current wording (`LIVE REC: QUANTIZED` / `LIVE REC: UNQUANTIZED`), in particular whether the longer toast fits the screen on a unit.
-- How long the test ran, and the module on its own: other modules were in the image.
+- Both toasts, `LIVE REC: QUANTIZED` and `LIVE REC: UNQUANTIZED`, fit on the screen.
+- A changed setting survived a power cycle.
+- The PERSONALIZE row still did not update on a [REC] + [PLAY] toggle until an arrow key was pressed.
+
+Not covered by these reports: how long the tests ran; the module on its own (other modules were in both images); an MKI.
 
 ## Source identity
 
 `patch_qlrec.s` is the author's file with one change: the two toast strings read `LIVE REC: QUANTIZED` and `LIVE REC: UNQUANTIZED` where his read `QUANT LIVE REC ON` and `QUANT LIVE REC OFF` (the user's choice, 13 October 2026), and the comment above them says so. No instruction changed. With his strings the source links to his 176 bytes (SHA-256 `52c26af67443e470147844a52009d09fa308be5045a1f891c01344dbbaa8670d`), which native octabam confirmed on 12 October before the change. With the new strings the unit is 180 bytes, SHA-256 `4d98f2234e5a83af651cf41b5e8c425a84a4d457a72364120e54c210c18f9398` at `0x400d7400`; native octabam, in the pinned toolchain container without network, links it there and where it floats and compares on every build. Its build report shows the unit and the two `jmp` detours at `0x40061778` and `0x4004883a`.
 
-The author chose his shorter strings to fit the 128-pixel screen and notes that a 21-character `QUANTIZE LIVE REC OFF` overran it. `LIVE REC: UNQUANTIZED` is also 21 characters; in the emulator its box fits the screen with a few pixels to spare (see the captures). **The new wording has not been seen on a unit.**
+The author chose his shorter strings to fit the 128-pixel screen and notes that a 21-character `QUANTIZE LIVE REC OFF` overran it. `LIVE REC: UNQUANTIZED` is also 21 characters; in the emulator its box fits the screen with a few pixels to spare (see the captures), and the user confirmed both toasts fit on an MKII (Hardware report).
 
 The three stock guards in `manifest.py` (both hook sites and the retired site `0x400522ca`) were computed from the author's declared expectations and matched against a local original OS 1.40C MAIN image (SHA-256 `164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e`). `patch_qlrec.s` holds no firmware bytes: its comments describe stock routines by address and mnemonic.
 

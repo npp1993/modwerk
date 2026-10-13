@@ -6,7 +6,7 @@ QUANTIZE LIVE REC decides whether live-recorded trigs snap to the steps. Stock k
 
 Version `0.1.0-experimental`, for OS 1.40C card builds. **This is a staged draft under `sdk/drafts/`: it is not in the catalogue and the site does not offer it.** [TESTING.md](TESTING.md) says what listing still needs. Ported from Zac-Kyoti's octabam module `quantize-live-rec-toggle`; the ColdFire source is his; Modwerk changed only the wording of the two toasts.
 
-**Hardware status: partly tested on an MKII.** On an MKII the gesture worked in a combined test build with the earlier toast wording (13 October 2026); a power cycle and the current wording have not been tested on a unit. The author tested his own build on an MKI. See [TESTING.md](TESTING.md).
+**Hardware status: tested by the user on an MKII in combined test builds.** On an MKII, in combined test builds with other modules (13 October 2026), the user reported the gesture working, both toasts fitting the screen and a changed setting surviving a power cycle. The author tested his own build on an MKI. See [TESTING.md](TESTING.md).
 
 ## Controls
 
@@ -42,7 +42,7 @@ One stock gesture is touched, and nothing else:
 
 ## Compatibility and limitations
 
-- OS 1.40C only. The author tested the gesture and a power cycle on an MKI. On an MKII the gesture worked in a combined test build with the earlier toast wording (13 October 2026); a power cycle and the current wording have not been tested on a unit.
+- OS 1.40C only. The author tested the gesture and a power cycle on an MKI. On an MKII, in combined test builds with other modules (13 October 2026), the user reported the gesture working, both toasts fitting the screen and a changed setting surviving a power cycle.
 - The first [REC] + [PLAY] still starts live recording, as on stock. While live recording runs, further [REC] + [PLAY] presses do nothing on stock; here they show or invert the setting.
 - If a stock notification happens to be on screen while [REC] is held, the first [PLAY] inverts the setting instead of only showing it; the toast then shows the new value.
 - The setting is the stock global PERSONALIZE value in battery-backed memory: not saved per project or Part, and reset by an OS upgrade like the rest of PERSONALIZE.
