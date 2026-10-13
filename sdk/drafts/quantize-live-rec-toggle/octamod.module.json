@@ -12,7 +12,7 @@
   },
   "build": {
     "status": "pending",
-    "reason": "Staged draft. The module builds and matches native octabam in a full listing dry run, but listing waits for a hardware report from an MKII, an owner decision on the two unmeasured performance rows, and room in the declaration-check record, which this module would grow past GitHub's file-size limit."
+    "reason": "Staged draft. The module builds and matches native octabam in a full listing dry run, but listing waits for an owner decision on the two unmeasured performance rows, and room in the declaration-check record, which this module would grow past GitHub's file-size limit."
   },
   "author": {
     "github": "Zac-Kyoti",
@@ -28,7 +28,7 @@
     "summary": "Hold [REC] and tap [PLAY] to see QUANTIZE LIVE REC in a toast; tap [PLAY] again while it is up to switch it.",
     "overview": "QUANTIZE LIVE REC decides whether live-recorded trigs snap to the steps. Stock keeps it in PROJECT > SYSTEM > PERSONALIZE. This module shows it on the gesture that starts live recording and lets a second tap switch it, without leaving the page you are on.",
     "highlights": [
-      "OS 1.40C only. The author tested the gesture and a power cycle on an MKI. On an MKII, in combined test builds with other modules (13 October 2026), the user reported the gesture working, both toasts fitting the screen and a changed setting surviving a power cycle.",
+      "OS 1.40C only. The author tested the gesture and a power cycle on an MKI. On an MKII (13 October 2026) the user reported the gesture, both toasts fitting the screen, the PERSONALIZE redraw and a power cycle working, with this module alone and, before the redraw was added, in combined builds with other modules.",
       "The first [REC] + [PLAY] still starts live recording, as on stock. While live recording runs, further [REC] + [PLAY] presses do nothing on stock; here they show or invert the setting.",
       "If a stock notification happens to be on screen while [REC] is held, the first [PLAY] inverts the setting instead of only showing it; the toast then shows the new value.",
       "The setting is the stock global PERSONALIZE value in battery-backed memory: not saved per project or Part, and reset by an OS upgrade like the rest of PERSONALIZE."
@@ -72,11 +72,11 @@
     "location": "Project sequencer",
     "conflicts": [],
     "limitations": [
-      "OS 1.40C only. The author tested the gesture and a power cycle on an MKI. On an MKII, in combined test builds with other modules (13 October 2026), the user reported the gesture working, both toasts fitting the screen and a changed setting surviving a power cycle.",
+      "OS 1.40C only. The author tested the gesture and a power cycle on an MKI. On an MKII (13 October 2026) the user reported the gesture, both toasts fitting the screen, the PERSONALIZE redraw and a power cycle working, with this module alone and, before the redraw was added, in combined builds with other modules.",
       "The first [REC] + [PLAY] still starts live recording, as on stock. While live recording runs, further [REC] + [PLAY] presses do nothing on stock; here they show or invert the setting.",
       "If a stock notification happens to be on screen while [REC] is held, the first [PLAY] inverts the setting instead of only showing it; the toast then shows the new value.",
       "The setting is the stock global PERSONALIZE value in battery-backed memory: not saved per project or Part, and reset by an OS upgrade like the rest of PERSONALIZE.",
-      "With PROJECT > SYSTEM > PERSONALIZE open, a flip redraws the list so the box follows at once (checked in the emulator; not yet on a unit, where the earlier build left the box stale until an arrow key). The author noted an occasional small empty box where the toast was right after it closes.",
+      "With PROJECT > SYSTEM > PERSONALIZE open, a flip redraws the list so the box follows at once (emulator and MKII; beside Output Matrix, emulator only). The author noted an occasional small empty box where the toast was right after it closes.",
       "This is the all-or-nothing QUANTIZE LIVE REC setting, not the per-track TRIG QUANT. No effect slot, menu row or project data is added.",
       "Card builds only: the Modwerk base cannot load it over USB until its loader carries ColdFire modules with stock-code hooks."
     ]
@@ -168,8 +168,8 @@
         "shows": "location-and-controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "bc210ae3ee94557c57fbf710d39902fd4454875ee2ce52c1261712065076adb4",
-        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local static native build of this module alone."
+        "imageSha256": "57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69",
+        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Static native build of this module alone with every stock effect kept: the MAIN OS of QLRTEST02, the image tested on an MKII."
       }
     },
     {
@@ -185,8 +185,8 @@
         "shows": "controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "bc210ae3ee94557c57fbf710d39902fd4454875ee2ce52c1261712065076adb4",
-        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local static native build of this module alone."
+        "imageSha256": "57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69",
+        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Static native build of this module alone with every stock effect kept: the MAIN OS of QLRTEST02, the image tested on an MKII."
       }
     },
     {
@@ -202,8 +202,8 @@
         "shows": "location",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "bc210ae3ee94557c57fbf710d39902fd4454875ee2ce52c1261712065076adb4",
-        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Local static native build of this module alone."
+        "imageSha256": "57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69",
+        "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; DSP cores running; empty scratch card, its missing-project prompts dismissed with three NO presses; native initialized state, no saved project. Static native build of this module alone with every stock effect kept: the MAIN OS of QLRTEST02, the image tested on an MKII."
       }
     }
   ]

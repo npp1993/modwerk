@@ -3,8 +3,8 @@
 Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 - Upstream: sambanks/octabam `6e4aeb76695cbb612e4b424c55fd2207facf73ef`, which takes the module from Zac-Kyoti/octatrack-kyoti-fw `77f132f9a60c6afa98ea4486540f6107398bdad3`.
-- Native source SHA-256 of this folder (`moduleNativeSourceSha256`): `ba1e3eaaffe3d88d52a2156d4fca6b73169083e61f6836584d8885a51db895ba`.
-- Tested image (this module alone, static native octabam build from the original OS 1.40C): MAIN OS SHA-256 `bc210ae3ee94557c57fbf710d39902fd4454875ee2ce52c1261712065076adb4`.
+- Native source SHA-256 of this folder (`moduleNativeSourceSha256`): `e114dc0d8205f24a7773cf5216afb61d5519cd9e11c6e66fd223277fae955159`.
+- Tested image: QLRTEST02, a static native octabam build of this module alone with every stock effect kept, from the original OS 1.40C (remix `qlr-stock`): MAIN OS SHA-256 `57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69`. The gate, the captures and the instruction counts below were run on it, and the user flashed it on an MKII (Hardware report). After the hardware test only comments in `patch_qlrec.s` and `manifest.py` and the gate's root check changed; the source rebuilds to this same MAIN OS.
 
 ## Not tested
 
@@ -38,6 +38,7 @@ Then, the same day, on QLRTEST02, an image with this module alone at commit `50f
 - With PROJECT > CONTROL > AUDIO open, the gesture left that page as it was and its cursor still moved.
 - From a normal page: live recording started, the second tap flipped, a tap after the toast had run out only showed, and [STOP] ended live recording.
 - A changed setting survived a power cycle.
+- Afterwards, asked about it in review, the user also flipped the setting while a pop-up was open inside the PROJECT menu, and reported it fine.
 - No freeze, screen garbage, crackle or dead controls.
 
 Not covered by these reports: how long the tests ran; the redraw beside Output Matrix on a unit (QLRTEST02 has no Output Matrix; that pairing ran in the emulator only); an MKI.
@@ -98,7 +99,7 @@ Executed instructions of the unit, counted with the port's program-counter watch
 | [REC] release with a toast up | 5 |
 | [REC] release without | 4 |
 
-The longest path in the source is 25 instructions. `evidence/performance.json` prices an instruction at 16 core cycles, the conservative V4 envelope Mute Modes' TESTING.md derives from the MCF54455 manual: 400 static, 384 measured, against one 362.8 µs frame at 264 MHz (95,778) taken as a generous deadline for a key handler. These are not chip timings. The stock routines the unit calls (the project gate, the checksum, the menu redraw, opening and closing the notification) are stock cost and are not counted.
+Counted on QLRTEST02's MAIN OS. In the invert-while-recording run the watch reported the instruction at offset 0x26 twice in a row, as it does when an interrupt is taken at that instruction, so that run executed 24 distinct instructions, as before. The longest path in the source is 25 instructions. `evidence/performance.json` prices an instruction at 16 core cycles, the conservative V4 envelope Mute Modes' TESTING.md derives from the MCF54455 manual: 400 static, 384 measured, against one 362.8 µs frame at 264 MHz (95,778) taken as a generous deadline for a key handler. These are not chip timings. The stock routines the unit calls (the project gate, the checksum, the menu redraw, opening and closing the notification) are stock cost and are not counted.
 
 `npm run perf:audit -- check evidence/performance.json` passes the cycle row and **fails the stock benchmark and the stress run: neither was measured.** Both are defined for code in the frame or MIDI path (a `cfmeter.py` capture from a unit, a MIDI flood). This unit runs only inside two key handlers and handles no MIDI, so by its source it adds nothing to the frame interrupt; that is an argument, not a measurement. `module:doctor` therefore reports the performance line as failing until the owner accepts or waives it.
 

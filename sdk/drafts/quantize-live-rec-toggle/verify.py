@@ -37,7 +37,9 @@ import tempfile
 import time
 
 HERE = pathlib.Path(__file__).absolute().parent
-ROOT = pathlib.Path.cwd() if (pathlib.Path.cwd() / "tools/emu").is_dir() else HERE.parents[1]
+ROOT = next((root for root in (pathlib.Path.cwd(), HERE.parents[1]) if (root / "tools/emu").is_dir()), None)
+if ROOT is None:
+    sys.exit("quantize-live-rec-toggle: run from an octabam root (one with tools/emu); nothing was checked")
 EMU = pathlib.Path(os.environ.get("OT_EMU", ROOT / "out/emu/ot_emu"))
 IMAGE = pathlib.Path(os.environ.get("QLR_IMAGE", ROOT / "out/mainos_bus.bin"))
 STOCK = pathlib.Path(os.environ.get("QLR_STOCK", ROOT / "out/raw/section_3_MAIN_OS.bin"))

@@ -16,10 +16,11 @@
       "sourceBytes": 16258,
       "sourceGitBlob": "a92c5a2ab80816d31854f4dcf0179195cd81c2e2",
       "sourceSha256": "aef5e34cf48b99c059a800bc8ccd5834b9a08e578b4e7ce6965bfb210832b33f",
-      "vendoredSha256": "8b77467556fc4634fa8d03bdbcb9e23ec648e1c69f9da0d0e18f30b9f4d6254d",
+      "vendoredSha256": "29df10da53d50f702f3e5ac76efe012dba5e6064ba00bfe5caf228eed8444863",
       "transforms": [
         "Reword the two toast strings: \"QUANT LIVE REC ON\" becomes \"LIVE REC: QUANTIZED\" and \"QUANT LIVE REC OFF\" becomes \"LIVE REC: UNQUANTIZED\" (the user's choice, 13 October 2026), and mark that in the comment above them. The unit grows from 176 to 180 bytes.",
-        "Add one instruction after a flip, `jsr 0x40064d7c` (with its `.equ` and a comment): the stock routine that redraws the open PROJECT menu page, so an open PERSONALIZE list shows the new value without an arrow key. The unit grows to 186 bytes and qlr_recrel moves from offset 0x74 to 0x7a."
+        "Add one instruction after a flip, `jsr 0x40064d7c` (with its `.equ` and a comment): the stock routine that redraws the open PROJECT menu page, so an open PERSONALIZE list shows the new value without an arrow key. The unit grows to 186 bytes and qlr_recrel moves from offset 0x74 to 0x7a.",
+        "Correct three comments, each marked MODWERK: the header's open item about the PERSONALIZE row not redrawing now points at the added call, the [PLAY] entry's register note names the stock calls that may clobber d1/a1, and the toast restart reads LIVE_DUR (1 s) where it read 0.8 s. No instruction changes."
       ]
     },
     {
@@ -70,13 +71,13 @@
       "sourceBytes": 4946,
       "sourceGitBlob": "22ee617f441abfded0b19cbb8827a10edcfd7094",
       "sourceSha256": "45d52f03b9fb532c4156f7d8f7d634032b4eb8cf6798a84d9405c1e36c3bbcd5",
-      "vendoredSha256": "b5002dc9657ff62795c47e78ba93f8f3e916392ad47689bc3f3791dc9af515dd",
+      "vendoredSha256": "cdbc7e0ba43e6f05be0dfbe458ddadc909eb50b3359e57832f9cf6afb9d7b9a7",
       "transforms": [
         "Replace the three embedded stock instruction byte strings (the [PLAY] hook, the [REC] release hook and the retired engine-frame site) with address/length/SHA-256 guards read from the builder's own OS file.",
         "Declare the author's floating CavePatch, whose emit() planted the two jmp detours, as one floating Linked unit with two jmp Detours onto its global symbols qlr_play and qlr_recrel: the shape Modwerk's package compiler and browser builder already carry. Same source, same 176 bytes, same two sites, same jmp encoding.",
         "Replace the embedded 176-byte hex oracle of the author's assembled cave with a SHA-256 at the author's link address (Linked.reference); the build links the source there every time and compares. With the reworded toast strings and the added redraw call that reference is Modwerk's 186 bytes; the author's 176-byte SHA-256 is kept in a comment.",
         "Keep the retired 0x400522ca site as a named guard that verify.py checks against the built image, and assert that no detour of this module names it.",
-        "Add canonical author attribution and a MODWERK paragraph to the docstring; drop the warning emoji from it."
+        "Add canonical author attribution and a MODWERK paragraph to the docstring; drop the warning emoji from it; replace the docstring's 'Nothing here has run on an MKII' with a MODWERK note pointing at the MKII report in TESTING.md."
       ]
     }
   ],

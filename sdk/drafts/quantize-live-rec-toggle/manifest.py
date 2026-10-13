@@ -30,7 +30,8 @@ The cave is position-independent, so it may land anywhere the allocator puts it.
 MEASURED: hardware-confirmed on the author's MKI: the show-then-invert gesture works
 on this version, with the tick hook removed (2026-09-25), and a setting changed with it
 survives a power cycle (2026-09-30). The standalone image is tools/build_quantize_live_rec_toggle.py
-in the author's repository. Nothing here has run on an MKII.
+in the author's repository. MODWERK: on an MKII, the user tested this source with the
+redraw below (13 October 2026); see TESTING.md.
 
 MODWERK. The author's declaration is one floating CavePatch whose emit() plants the
 two `jmp` detours and carries the stock instruction bytes it expects at each site.

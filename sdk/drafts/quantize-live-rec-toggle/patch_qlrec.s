@@ -131,8 +131,8 @@
 | ---- still open from Session 51 (not addressed here) ----
 |   * An occasional small, textless box flashes where the toast was, right
 |     after it closes.
-|   * The PERSONALIZE menu does not live-redraw the row while you are looking
-|     at it (the VALUE is correct; the on-screen widget is stale).
+|   MODWERK: Session 51's second open item, the PERSONALIZE row not redrawing
+|   while open, is addressed in qp_flip below (jsr MENU_REDRAW).
 |
 | Detours (applied by build_quantize_live_rec_toggle.py) -- TWO, both key handlers:
 |   0x40061778  6 B  `jsr 0x4009b5c0`           -> jmp qlr_play
@@ -183,7 +183,9 @@
 
 | ================= [PLAY] press -- detour @ 0x40061778 =================
 | Entry stack (exactly what stock 0x40061778 sees): 0(sp)=ret, 4(sp)=keycode,
-| 8(sp)=event (always 1 here).  Only d0/a0 touched.
+| 8(sp)=event (always 1 here).  MODWERK: d0/a0 directly; the stock routines
+| called (PROJ_GATE, CKSUM, MENU_REDRAW, NOTIFY) may also clobber d1/a1, as
+| at the stock entry this replaces.
     .global qlr_play
 qlr_play:
     tst.l   REC_HELD
@@ -255,7 +257,7 @@ qp_flip:
     jsr     MENU_REDRAW
 |   fall through: show the setting we just wrote
 
-|   --- (re)open the toast on the CURRENT setting, and restart its 0.8 s ---
+|   --- (re)open the toast on the CURRENT setting, and restart its LIVE_DUR (1 s) ---
 qp_open:
     | Session 51: HW-confirmed the menu's checked/unchecked glyph is the
     | OPPOSITE of the raw bit's face value -- raw 0 draws as checked/ON in
