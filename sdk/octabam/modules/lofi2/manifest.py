@@ -56,7 +56,7 @@ SHIFT follows the Bode 1630 (2 Hz / 31.25 Hz, six octaves to 2 kHz).
 import math
 
 from remix.schema import (BusRole, Category, DspSection, Formatter, Gate, Harness,
-                          Kind, MenuEntry, ModeView, Module, Param, Proof, YBase)
+                          Kind, MenuEntry, ModeView, Module, NameSelect, Param, Proof, YBase)
 
 
 def _srr_inc(k):
@@ -169,7 +169,9 @@ MODULE = Module(
         Param(b"LPF", 127, active=True, formatter=_PLAIN,
               doc="high-shelf cut; 127 = no impact, turn down to darken"),
         # ---- page 2 --------------------------------------------------------
-        Param(b"RANGE", 1, 2, active=True, formatter=_STEP,
+        # Modwerk: "RNGE". octabam's five-letter RANGE overran the name field
+        # on the unit (owner of the port, MKII, 13 Oct 2026).
+        Param(b"RNGE", 1, 2, active=True, formatter=_STEP,
               labels=("LOW", "HIGH"),
               doc="FREQ range: LOW = sub-audio, HIGH = audio range"),
         Param(),
@@ -190,8 +192,11 @@ MODULE = Module(
     # MODE is slot 8; in RING slot 2 is GAIN, in SHIFT it keeps FDBK. No
     # defaults: a per-mode default for slot 2 would also reset FDBK on every
     # DOWN <-> UP turn.
-    mode_slot=8,
-    mode_views=(ModeView(mode=0, names={2: b"GAIN"}),),
+    # Modwerk: a NameSelect, not mode_slot. octabam declares mode_slot=8,
+    # which makes MODE print its value in its own name field AND flash it
+    # below (RING over RING on the unit). As a name select MODE keeps its
+    # name, as RNGE and every stock select do, and still renames slot 2.
+    name_selects=(NameSelect(8, (ModeView(mode=0, names={2: b"GAIN"}),)),),
 
     dsp=DspSection(
         asm="modules/lofi2/lofi2.asm",
@@ -222,5 +227,5 @@ MODULE = Module(
     # Dearest: a SHIFT mode (the two Hilbert pairs, the dear loop), every
     # continuous knob at the end that does the most work, the shelf in band.
     dear={"FREQ": 127, "MIX": 127, "FDBK": 127, "SRR": 127, "BRR": 127,
-          "LPF": 0, "RANGE": 1, "MODE": 2, "AMPH": 127},
+          "LPF": 0, "RNGE": 1, "MODE": 2, "AMPH": 127},
 )

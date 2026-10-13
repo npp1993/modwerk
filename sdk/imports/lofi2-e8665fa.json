@@ -38,12 +38,14 @@
       "sourceBytes": 11357,
       "sourceGitBlob": "6416d8f0437a548286ec2e95d4b1bd1399c13575",
       "sourceSha256": "2a098828d0dd9648463ffdac28033ba492c9f1e3f067c861d303026d733f6e52",
-      "vendoredSha256": "96b362e87ad633568f8004847bdd31d2f63fb74f788bc07c5f0175e9413aea32",
+      "vendoredSha256": "781d41a5d67d92e747704525a6228c650bce71373dc12f5edf73ea1bf4c57d9e",
       "transforms": [
         "MenuEntry.fx2_id 0x1f -> 0x09: 0x1f is TAPEHEAD's and 0x1e Airwindows Chorus's in Modwerk; the registry refuses two modules on one id. A comment says so; the author's own comment on 0x1f is kept.",
         "DspSection.priority 15 -> 19: after every effect already listed in Modwerk (Mini Verb holds 15, E-Verb and Airwindows Chorus 18) and before Output Matrix (21) and Sidechain Compressor (30), so no existing module's placement moves. The comment is rewritten to say so.",
         "Gate path tools/verify/verify_lofi2.py -> modules/lofi2/verify_lofi2.py.",
         "Module.author \"Bryan T\" -> \"bryantysinger\": Modwerk's package compiler requires the native author to equal the manifest's GitHub handle. \"Bryan T\" remains the display name in octamod.module.json.",
+        "Param name \"RANGE\" -> \"RNGE\" (and the dear key): the five letters overran the name field on the unit (MKII, 13 Oct 2026).",
+        "mode_slot=8 with mode_views -> name_selects=(NameSelect(8, ...),): MODE keeps its own name and shows its value beneath the knob, as stock selects do; octabam printed the value in the name field and again below. Slot 2 is still renamed GAIN in RING.",
         "Docstring: the first paragraph names both ids. Harness layout_char 'F', every Param, the tables, mode views, proof note and dear settings are unchanged."
       ]
     },
@@ -55,11 +57,12 @@
       "sourceBytes": 20218,
       "sourceGitBlob": "0f5b9515f4262ac080096ea3736de48dd0f41105",
       "sourceSha256": "7c0103cbe4586e5ce80f92064f246637f67e178ab3ed2c1461d453ee06e0f5fc",
-      "vendoredSha256": "d8feb6850d283a0a605bf206f81cd52b38cda81890298b3baed8b217ee467537",
+      "vendoredSha256": "2f1a622e59c8ba4cf1b535c5d4a45bd026f91cd80e78d5b0baf13c613d525890",
       "transforms": [
         "Moved from tools/verify/ into the module folder (tools/ is shared build input); the toolpath line and the usage line follow the new location.",
         "octabam's audition._ensure_insert_mem builds its scratch image from the insert plus SEND with fallback SEND. Modwerk's tree has no SEND module, so the script builds the scratch image itself with the same build line and dump: LOFI2 alone, fallback NONE, static_stock=True; the user's out/mainos_bus.bin is saved and restored as before.",
         "The 'module is really in the image' guard compares LOFI2's dispatch entries with an id absent from the scratch image (TAPEHEAD's) instead of SEND's.",
+        "One alias line, K[\"RANGE\"] = K[\"RNGE\"], so the checks keep octabam's word for the renamed slot.",
         "All 48 checks, their inputs and their limits are unchanged."
       ]
     },

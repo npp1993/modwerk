@@ -21,14 +21,14 @@ Every continuous knob keeps an LFO's fraction between steps and glides to its ne
 
 | Page | Encoder | Name | Range | Default | What it does |
 | --- | --- | --- | --- | --- | --- |
-| Main | A | FREQ | 0-127 | 0 | Modulator frequency, exponential over six octaves from RANGE's base. RING: 2-130 Hz (LOW), 60-4,000 Hz (HIGH). SHIFT: 2-128 Hz (LOW), 31.25-2,000 Hz (HIGH). 0 is the base frequency, not silence. |
+| Main | A | FREQ | 0-127 | 0 | Modulator frequency, exponential over six octaves from RNGE's base. RING: 2-130 Hz (LOW), 60-4,000 Hz (HIGH). SHIFT: 2-128 Hz (LOW), 31.25-2,000 Hz (HIGH). 0 is the base frequency, not silence. |
 | Main | B | MIX | 0-127 | 0 | Modulator depth: crossfades the ring or shift output against the dry signal. SRR, BRR and LPF still act at MIX 0. |
 | Main | C | FDBK / GAIN | 0-127 | 0 | Renamed by MODE. DOWN/UP: FDBK, the shifter's feedback, capped at 0.45. RING: GAIN on the ring product, 0 dB at 0, +6 dB at 64, +11.9 dB at 127. |
 | Main | D | SRR | 0-127 | 0 | Sample-rate reduction at stock LO-FI's rates: none through 7, 8,018 Hz at 64, 3,564 Hz at 127. |
 | Main | E | BRR | 0-127 | 0 | Bit-depth reduction on stock LO-FI's curve, round-to-nearest: about 13.5 bits removed at 64, 20.8 at 127. |
 | Main | F | LPF | 0-127 | 127 | High-shelf cut, -12 dB above a corner from 100 Hz (0) to 16 kHz (126). 127 is out of circuit, bit for bit. |
-| SETUP | A | RANGE | LOW / HIGH | HIGH | FREQ's range: sub-audio or audio. |
-| SETUP | C | MODE | RING / DOWN / UP | RING | Ring modulator, or the shifter moving partials down or up. The knob prints its value as its name. A change ducks the modulator for 5 ms each way. |
+| SETUP | A | RNGE | LOW / HIGH | HIGH | FREQ's range: sub-audio or audio. |
+| SETUP | C | MODE | RING / DOWN / UP | RING | Ring modulator, or the shifter moving partials down or up. The value shows under the knob while it turns. A change ducks the modulator for 5 ms each way. |
 | SETUP | E | AMPH | -64..+63 | 0 | Ring carrier's L/R phase offset, -90 to +88.6 degrees. + puts R ahead. RING only. |
 
 ## Usage
@@ -85,8 +85,9 @@ LOFI2 was designed and written by **Bryan T** ([bryantysinger](https://github.co
 What Modwerk changed, all recorded in `sdk/imports/lofi2-e8665fa.json`:
 
 - `lofi2.asm`: unchanged.
-- `manifest.py`: effect ID `0x1f` to `0x09` (TapeHead holds `0x1f` here), the native author field from "Bryan T" to his GitHub handle (the package compiler matches it against this manifest), placement priority 15 to 19 (after every effect already listed, so no existing module moves), the gate's path, and the comments that say so. Layout letter `F` is kept; it is free here.
+- `manifest.py`: effect ID `0x1f` to `0x09` (TapeHead holds `0x1f` here), the native author field from "Bryan T" to his GitHub handle (the package compiler matches it against this manifest), two panel changes after the first run on a unit (RANGE is named RNGE, because the five letters overran the name field, and MODE is a name select, so it keeps its name where octabam prints the value in the name field and again beneath it), placement priority 15 to 19 (after every effect already listed, so no existing module moves), the gate's path, and the comments that say so. Layout letter `F` is kept; it is free here.
 - `perf.py` and `evidence/performance.json` are Modwerk's own (benchmark and stress harness, after E-Verb's); they are not part of the author's module.
+- `verify_lofi2.py` also gets one alias line so its checks can keep octabam's word RANGE.
 - `verify_lofi2.py`: moved from `tools/verify/` into the module folder (one path line), and its scratch image is built by the script itself, LOFI2 alone with fallback NONE, because this tree has no SEND module for octabam's `audition` helper to pair it with. The 48 checks and their limits are unchanged.
 - The author's originals of both files, his README, his test remix and the licence are kept unchanged under `upstream/`.
 
@@ -94,15 +95,15 @@ No Elektron firmware, extracted stock code or tables are included. Stock LO-FI's
 
 ## Screens and audio
 
-Real LCD captures from the headless emulator on a private native build (image SHA-256 `43e110ff…21b24e`), 12 October 2026. They show the interface, not hardware behaviour or sound.
+Real LCD captures from the headless emulator on a private native build (image SHA-256 `b9aac01f…a4b7a5`), 12 October 2026. They show the interface, not hardware behaviour or sound.
 
-1. ![FX2 SETUP with LOFI2 highlighted under NONE; knobs RANGE, RING and AMPH on the right.](media/ot-setup.png)
-   Hold FUNC and press FX2, turn LEVEL to LOFI2 and press YES. SETUP shows RANGE, MODE (printing RING) and AMPH.
+1. ![FX2 SETUP with LOFI2 highlighted under NONE; knobs RNGE, MODE and AMPH on the right.](media/ot-setup.png)
+   Hold FUNC and press FX2, turn LEVEL to LOFI2 and press YES. SETUP shows RNGE, MODE and AMPH.
 2. ![FX2 main page of LOFI2 with FREQ, MIX and GAIN above SRR, BRR and LPF.](media/ot-main.png)
    The main page at its defaults, a passthrough.
 3. ![FX2 main page with FREQ at 64 and MIX at 127.](media/ot-ring.png)
    MIX 127 and FREQ 64: full ring modulation.
-4. ![FX2 SETUP with the third knob showing UP.](media/ot-mode-up.png)
+4. ![FX2 SETUP with MODE showing UP beneath its knob.](media/ot-mode-up.png)
    MODE turned to UP for the frequency shifter.
 5. ![FX2 main page in shift mode: FDBK at 60.](media/ot-shift.png)
    In DOWN or UP the third knob is FDBK.

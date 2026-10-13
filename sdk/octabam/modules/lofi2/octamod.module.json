@@ -37,7 +37,7 @@
       "name": "FREQ",
       "default": 0,
       "count": 128,
-      "doc": "Modulator frequency, exponential over six octaves from RANGE's base. RING: 2-130 Hz (LOW) or 60-4,000 Hz (HIGH). SHIFT: 2-128 Hz (LOW) or 31.25-2,000 Hz (HIGH). FREQ 0 is the base frequency, not silence.",
+      "doc": "Modulator frequency, exponential over six octaves from RNGE's base. RING: 2-130 Hz (LOW) or 60-4,000 Hz (HIGH). SHIFT: 2-128 Hz (LOW) or 31.25-2,000 Hz (HIGH). FREQ 0 is the base frequency, not silence.",
       "labels": null
     },
     {
@@ -76,10 +76,10 @@
       "labels": null
     },
     {
-      "name": "RANGE",
+      "name": "RNGE",
       "default": 1,
       "count": 2,
-      "doc": "FREQ's range: LOW is sub-audio (tremolo in RING, slow swirl in SHIFT), HIGH is the audio range.",
+      "doc": "FREQ's range (RNGE on the panel): LOW is sub-audio (tremolo in RING, slow swirl in SHIFT), HIGH is the audio range.",
       "labels": [
         "LOW",
         "HIGH"
@@ -133,7 +133,7 @@
       "value": 1352,
       "unit": "words",
       "method": "static",
-      "conditions": "Native build report, both payloads: 836 program words and one 516-word P table, placed contiguously (1,352 words). 132 words of state in each instance's own r7 block ($00-$83). No allocator buffer, no Y memory. A 416-byte descriptor clone and 242 bytes of label formatters in ColdFire flash.",
+      "conditions": "Native build report, both payloads: 836 program words and one 516-word P table, placed contiguously (1,352 words). 132 words of state in each instance's own r7 block ($00-$83). No allocator buffer, no Y memory. A 416-byte descriptor clone and 218 bytes of label formatters in ColdFire flash.",
       "source": "TESTING.md"
     },
     "processing": {
@@ -208,8 +208,8 @@
     {
       "path": "media/ot-setup.png",
       "captureType": "emulator",
-      "caption": "Hold FUNC and press FX2, turn LEVEL to LOFI2 and press YES. The SETUP page then shows RANGE on encoder A, MODE on encoder C (it prints its own value, RING here) and AMPH on encoder E.",
-      "alt": "FX2 SETUP with LOFI2 highlighted under NONE in the effect list; knobs RANGE, RING and AMPH on the right.",
+      "caption": "Hold FUNC and press FX2, turn LEVEL to LOFI2 and press YES. The SETUP page then shows RNGE (range) on encoder A, MODE on encoder C and AMPH on encoder E.",
+      "alt": "FX2 SETUP with LOFI2 highlighted under NONE in the effect list; knobs RNGE, MODE and AMPH on the right.",
       "credit": "Modwerk contributors (headless capture)",
       "license": "LicenseRef-OT-UI-Documentation",
       "source": "original",
@@ -218,7 +218,7 @@
         "shows": "location-and-controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e",
+        "imageSha256": "b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5",
         "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; private native build of the upstream lofi2 test remix (LOFI2 beside twelve stock effects, PLATE REV and SPRING REV given up); 128×64 LCD at integer scale 6."
       }
     },
@@ -235,7 +235,7 @@
         "shows": "controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e",
+        "imageSha256": "b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5",
         "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; private native build of the upstream lofi2 test remix (LOFI2 beside twelve stock effects, PLATE REV and SPRING REV given up); 128×64 LCD at integer scale 6."
       }
     },
@@ -252,15 +252,15 @@
         "shows": "controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e",
+        "imageSha256": "b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5",
         "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; private native build of the upstream lofi2 test remix (LOFI2 beside twelve stock effects, PLATE REV and SPRING REV given up); 128×64 LCD at integer scale 6."
       }
     },
     {
       "path": "media/ot-mode-up.png",
       "captureType": "emulator",
-      "caption": "In FX2 SETUP turn MODE (encoder C) to UP or DOWN for the frequency shifter. The knob prints its value; RANGE picks the sub-audio or audio range and AMPH only acts in RING.",
-      "alt": "FX2 SETUP of LOFI2 with the third knob showing UP; RANGE and AMPH beside it.",
+      "caption": "In FX2 SETUP turn MODE (encoder C) to UP or DOWN for the frequency shifter; the value shows under the knob while it turns. RNGE picks the sub-audio or audio range and AMPH only acts in RING.",
+      "alt": "FX2 SETUP of LOFI2 with MODE showing UP beneath its knob; RNGE and AMPH beside it.",
       "credit": "Modwerk contributors (headless capture)",
       "license": "LicenseRef-OT-UI-Documentation",
       "source": "original",
@@ -269,7 +269,7 @@
         "shows": "controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e",
+        "imageSha256": "b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5",
         "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; private native build of the upstream lofi2 test remix (LOFI2 beside twelve stock effects, PLATE REV and SPRING REV given up); 128×64 LCD at integer scale 6."
       }
     },
@@ -286,7 +286,7 @@
         "shows": "controls",
         "firmware": "1.40C",
         "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e",
+        "imageSha256": "b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5",
         "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; private native build of the upstream lofi2 test remix (LOFI2 beside twelve stock effects, PLATE REV and SPRING REV given up); 128×64 LCD at integer scale 6."
       }
     }
@@ -296,7 +296,7 @@
     "steps": [
       "Select an audio track with its TRACK key.",
       "Hold FUNC and press FX2 to open FX2 SETUP.",
-      "Turn LEVEL to LOFI2 and press YES to assign it; RANGE, MODE and AMPH appear on the right of the SETUP page.",
+      "Turn LEVEL to LOFI2 and press YES to assign it; RNGE, MODE and AMPH appear on the right of the SETUP page.",
       "Press FX2 for the main page: FREQ, MIX, GAIN (FDBK in DOWN/UP), SRR, BRR and LPF."
     ],
     "screenshots": [

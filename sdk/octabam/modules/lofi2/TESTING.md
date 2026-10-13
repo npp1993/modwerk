@@ -9,10 +9,11 @@ Everything below marked **here** was run for this import, in the emulator and `d
 | Item | SHA-256 |
 | --- | --- |
 | `lofi2.asm` (unchanged from upstream) | `cecdd20bfca0f7561fa8c34c8066780e50406cf2396d8ee2ed42aad5bdf5d5ab` |
-| `manifest.py` (adapted) | `96b362e87ad633568f8004847bdd31d2f63fb74f788bc07c5f0175e9413aea32` |
-| `verify_lofi2.py` (adapted) | `d8feb6850d283a0a605bf206f81cd52b38cda81890298b3baed8b217ee467537` |
+| `manifest.py` (adapted) | `781d41a5d67d92e747704525a6228c650bce71373dc12f5edf73ea1bf4c57d9e` |
+| `verify_lofi2.py` (adapted) | `2f1a622e59c8ba4cf1b535c5d4a45bd026f91cd80e78d5b0baf13c613d525890` |
 | Stock MAIN OS 1.40C used (the tester's own, never committed) | `164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e` |
-| Private native image of the `lofi2` test remix (static stock, never committed) | `43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e` |
+| Private native image of the `lofi2` test remix (static stock, never committed), current labels | `b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5` |
+| The same remix before the 13 October label change (RANGE, self-naming MODE); the benchmark, stress, fx:audit, idle and master-track runs below were made on it | `43e110ff87d66c0b3aa47fc1eaf8d2effedb331a121f32fcbbc51ff15f21b24e` |
 | `dsp_host` | `bde6cf5f348e215d7adca2080044533ee7853407469cee7f887fce8ef3865fd9` |
 | `ot_emu` | `23ba6f6cdc6ec4b89b8cf206915e66d3160aec8499b1abfc9b475ac849152b28` |
 
@@ -40,7 +41,7 @@ Build report, both payloads identical in size:
 | A (core 0, tracks 5-8) | P:0x01000..0x01204, 516 words | P:0x01204..0x01548, 836 words | PLATE REV + SPRING REV, 1,657 words | 305 |
 | B (core 1, tracks 1-4) | P:0x00dc0..0x00fc4, 516 words | P:0x00fc4..0x01308, 836 words | 1,657 words | 305 |
 
-ColdFire: descriptor clone at 0x400d6b20 (416 bytes), two label formatters (RANGE 54 bytes, MODE 188 bytes), no code of its own. The table stays in P memory in this remix because DJ EQ is kept.
+ColdFire: descriptor clone at 0x400d6b20 (416 bytes), two label formatters (RNGE 54 bytes, MODE 164 bytes), no code of its own. The table stays in P memory in this remix because DJ EQ is kept.
 
 ## Render gate: `verify_lofi2.py` (here)
 
@@ -106,8 +107,8 @@ Not covered by this gate, as its author notes: payload B (tracks 1-4). `verify_d
 | `verify_initregs.py lofi2` | PASS: init preserves r1 |
 | `verify_menu.py` | PASS: the panel prints `LOFI2`, abbreviation `LOF2`, nine drawn slot names match the manifest; FX1 chooser byte-identical to stock in this remix |
 | `verify_replaces.py --image lofi2` | PASS: every stock id is stock's, or declared |
-| `verify_labels.py lofi2` | PASS: RANGE prints LOW / HIGH, MODE prints RING / DOWN / UP |
-| `verify_modenames.py lofi2` | PASS, 7 checks: RING names slot 2 GAIN, DOWN and UP name it FDBK, out-of-range values clamp |
+| `verify_labels.py lofi2` | PASS: RNGE prints LOW / HIGH, MODE prints RING / DOWN / UP |
+| `verify_modenames.py lofi2` | PASS, 7 checks: RING names slot 2 GAIN, DOWN and UP name it FDBK, MODE and RNGE keep their own names, out-of-range values clamp |
 | `verify_dram_boot.py`, `verify_hidden.py` | not applicable (no DRAM payload, nothing hidden) |
 | `verify_set.py`, `verify_usb.py`, the `verify_knob_clicks.py` census, `make check` as a whole | not run |
 
@@ -289,7 +290,17 @@ What the base's admission rule (`modwerk_machine_dsp_admit` in `sdk/machines/oct
 
 ## Screenshots (here)
 
-`scripts/capture-module-ui.py` with the image above, `ot_emu`, MKII panel, empty scratch card, transport stopped. Five PNGs and `media/capture.json` (plan, image, emulator and PNG hashes). Each image was opened and checked: LOFI2 selected in FX2 SETUP with RANGE, MODE and AMPH; the main page at defaults; FREQ 64 / MIX 127; MODE turned to UP (the knob names itself UP); the main page in UP with slot 2 renamed FDBK and set to 60. They show the pages and labels, not audio or hardware.
+`scripts/capture-module-ui.py` with the image above, `ot_emu`, MKII panel, empty scratch card, transport stopped. Five PNGs and `media/capture.json` (plan, image, emulator and PNG hashes). Each image was opened and checked: LOFI2 selected in FX2 SETUP with RNGE, MODE and AMPH; the main page at defaults; FREQ 64 / MIX 127; MODE turned to UP (the name stays MODE, UP shows beneath the knob); the main page in UP with slot 2 renamed FDBK and set to 60. They show the pages and labels, not audio or hardware.
+
+## First notes from a unit, and the label change (13 October 2026)
+
+The port's contributor (npp1993) ran LOFI2 on an Octatrack MKII from a combined private image built from the 12 October source and sent three observations. They are notes, not the hardware report the qualification record needs: no duration, instance counts or persistence results came with them.
+
+1. "RANGE text is too wide" on the SETUP page. Fixed: the slot is named `RNGE`, four letters like the other names on that page.
+2. On the SETUP page MODE showed its value above and below the knob, unlike stock settings. That is octabam's `mode_slot`, which writes the value into the select's own name field while the turn flash prints it again. Fixed: MODE is declared as a `NameSelect`, as Euclid's selects are, so it keeps the name MODE, shows the value beneath the knob while it turns, and still renames slot 2 to GAIN in RING.
+3. "The low pass filter doesn't seem to do a ton." Not changed: LPF is the author's first-order high shelf, which cuts at most 12 dB above its corner and never more; `verify_lofi2` measures exactly that (-12.04 dB at Nyquist at every setting). Whether to deepen it is a voicing decision for the author or the owner.
+
+After the change (here, emulator only): native build with the same DSP placement and 836 + 516 words; the ColdFire formatter for MODE shrinks from 188 to 164 bytes; new image `b9aac01f078ab2481212156e8224be198abf8a8c4d7f90af86b744307aa4b7a5`; `verify_lofi2.py` 48 of 48; dirty-state, menu, labels and mode-name gates pass; the five screenshots were recaptured and looked at. The DSP source is untouched, so the benchmark, stress, fx:audit, idle and master-track runs were not repeated. The relabelled build has not run on a unit.
 
 ## Upstream evidence (Bryan T, octabam; not this build)
 

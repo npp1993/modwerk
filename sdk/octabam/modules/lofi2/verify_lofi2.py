@@ -90,6 +90,7 @@ import send_probe  # noqa: E402
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 MOD = registry.by_name("lofi2")
 K = MOD.knob_map()
+K["RANGE"] = K["RNGE"]          # Modwerk names the slot RNGE; the checks below keep octabam's word
 HOST = ROOT / "vendor/dsp56300/build/source/dsp_host/dsp_host"
 FRAMES = 16
 SR = 44100
