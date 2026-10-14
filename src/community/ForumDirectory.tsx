@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { api } from './api'
+import { useReconnectRetry } from './useReconnectRetry'
 import { FORUM_CATEGORIES, FORUM_CATEGORY_DESCRIPTIONS, type ForumCategorySummary, type ForumCategory } from './forum-contract'
 import { Icon, type IconName } from '../components/Icon'
 
 const icons:Record<ForumCategory,IconName>={general:'message',introductions:'heart',showcase:'wave',requests:'plus',tutorials:'file',modules:'help',configs:'sliders',issues:'shield'}
 export function ForumDirectory({href,machine}:{href:(category:string)=>string;machine?:string}){
-  const [data,setData]=useState<ForumCategorySummary[]|null>(null),[error,setError]=useState('')
-  useEffect(()=>{let cancelled=false;void api<ForumCategorySummary[]>('/forum/categories'+(machine?'?machine='+machine:'')).then(value=>{if(!cancelled)setData(value)}).catch(()=>{if(!cancelled)setError('Category counts are unavailable. You can still browse topics.')});return()=>{cancelled=true}},[machine])
+  const [data,setData]=useState<ForumCategorySummary[]|null>(null),[error,setError]=useState(''),[revision,setRevision]=useState(0)
+  useEffect(()=>{let cancelled=false;void api<ForumCategorySummary[]>('/forum/categories'+(machine?'?machine='+machine:'')).then(value=>{if(!cancelled){setData(value);setError('')}}).catch(()=>{if(!cancelled)setError('Category counts are unavailable. You can still browse topics.')});return()=>{cancelled=true}},[machine,revision])
+  useReconnectRetry(!!error,setRevision)
   return <section className="forum-directory" aria-labelledby="forum-directory-title"><div className="forum-list-heading"><h2 id="forum-directory-title">Explore topics</h2><span>Find your conversation</span></div>
     <div className="forum-topic-grid">{Object.entries(FORUM_CATEGORIES).map(([key,label])=>{
       const count=data?.find(item=>item.category===key)

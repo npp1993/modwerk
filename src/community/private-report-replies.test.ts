@@ -50,7 +50,7 @@ describe('replies on a private report', () => {
     expect((await f.as('/issues/report/replies', 'POST', { body: 'Attached, thanks.' }, { member: f.session })).status).toBe(201)
     const inbox = await (await f.as('/developer/notifications', 'GET', undefined, { developer: f.developer })).json() as NotificationItem[]
     expect(inbox).toHaveLength(1)
-    expect(notificationLines(inbox)[0]).toMatchObject({ text: '@reporter replied to the private report “Crackle on FX2”', excerpt: 'Attached, thanks.', href: '#developer/report/report' })
+    expect(notificationLines(inbox)[0]).toMatchObject({ text: '@reporter replied to the private report “Crackle on FX2”', excerpt: 'Attached, thanks.', href: '#module/miniverb' })
     // Each side hears only about the other side's reply.
     expect(f.db.prepare("SELECT user_id FROM notifications WHERE kind='issue_comment' ORDER BY rowid").all()).toEqual([{ user_id: f.reporterId }, { user_id: 'maker' }])
   })

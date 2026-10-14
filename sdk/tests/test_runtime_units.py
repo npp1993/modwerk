@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / 'sdk/machines/octatrack/module-adapters'))
+sys.path.append(str(ROOT / 'sdk/machines/octatrack/module-adapters'))
 import runtime_tables
 import runtime_units
 spec = importlib.util.spec_from_file_location('table_fixture_builder', ROOT / 'sdk/runtime/loader/build.py')
@@ -34,7 +34,7 @@ class RuntimeUnits(unittest.TestCase):
                                         bytes.fromhex('4e714e75' if 'SC' in selected else '4e75')).hexdigest()))
         table = SimpleNamespace(old=0x40001000, count=16, insert_at=2,
                                 symbols=(('row', 'entry'),), refs=((0x40002002, 0x40001000),))
-        self.module = SimpleNamespace(key='TEST', linked=(self.unit,), tables=(table,), detours=(), pokes=(),
+        self.module = SimpleNamespace(key='TEST', name='test', linked=(self.unit,), tables=(table,), detours=(), pokes=(),
                                       symbol_refs=(), requires=(), keeps=(), dram_regions=(), overrides=(),
                                       cf_patches=(), dsp=None)
         self.data = struct.pack('>16I', *range(0x40004000, 0x40004040, 4))
@@ -59,6 +59,43 @@ class RuntimeUnits(unittest.TestCase):
         self.assertEqual(len(normal['copies']), 3)
         self.assertNotEqual(normal['referenceProofs'][0]['sha256'], variant['referenceProofs'][0]['sha256'])
         self.assertEqual(len(normal['sites']), 1)
+        self.assertEqual(normal['hooks'], [])
+
+    def test_runtime_json_subscribes_and_assembles_the_event_form(self):
+        normal = self.prepare()
+        (self.sdk / 'row.s').write_text('.include "remix.inc"\n.text\n.global entry\nentry:\n.ifdef SC_KEY\nnop\n.endif\n'
+                                        '.ifdef MODWERK_EVENTS\nnop\nnop\n.endif\nrts\n')
+        (self.sdk / 'modules/test').mkdir(parents=True)
+        (self.sdk / 'modules/test/runtime.json').write_text(
+            '{"schema": 1, "subscribe": [{"event": "ev_play_increment", "fn": "entry", "order": 40}]}')
+        evented = self.prepare('evented')  # the native reference still holds: only the package form changes
+        self.assertEqual(len(evented['image']), len(normal['image']) + 4)
+        index = next(e['index'] for e in builder.site_events()['events'] if e['event'] == 'ev_play_increment')
+        self.assertEqual(len(evented['hooks']), index + 1)
+        self.assertEqual(evented['hooks'][index], 40 << 24 | evented['symbols']['entry'])
+
+    def test_a_raising_package_asks_for_the_entry_by_index_and_may_take_the_tick(self):
+        normal = self.prepare()
+        (self.sdk / 'row.s').write_text('.include "remix.inc"\n.text\n.global entry\nentry:\n.ifdef SC_KEY\nnop\n.endif\n'
+                                        '.ifdef MODWERK_EVENTS\nmovea.l raise_ev_mute_keep,%a0\njsr (%a0)\n.endif\nrts\n'
+                                        '.ifdef MODWERK_EVENTS\n.balign 4\n.global raise_ev_mute_keep\nraise_ev_mute_keep: .long 0\n.endif\n')
+        (self.sdk / 'modules/test').mkdir(parents=True)
+        (self.sdk / 'modules/test/runtime.json').write_text(
+            '{"schema": 1, "subscribe": [{"event": "module_tick", "fn": "entry"}], "raise": ["ev_mute_keep"]}')
+        raised = self.prepare('raised')  # the native reference still holds; no base is named anywhere
+        index = next(e['index'] for e in builder.site_events()['events'] if e['event'] == 'ev_mute_keep')
+        slot = raised['symbols']['raise_ev_mute_keep']
+        self.assertEqual(raised['image'][slot:slot + 4], bytes(4))         # the loader fills it at install
+        self.assertEqual(raised['hooks'][0], raised['symbols']['entry'])     # the core tick: its offset, no order
+        self.assertEqual(raised['hooks'][index], builder.RAISE << 24 | slot)
+        self.assertNotIn(slot, raised['offsets'])
+        (self.sdk / 'row.s').write_text((self.sdk / 'row.s').read_text().replace('raise_ev_mute_keep: .long 0', 'other: .long 0')
+                                        .replace('.global raise_ev_mute_keep', '').replace('movea.l raise_ev_mute_keep', 'movea.l other'))
+        with self.assertRaisesRegex(ValueError, 'raise_ev_mute_keep'):  # no slot for the entry
+            self.prepare('no-slot')
+        raw = runtime_units.compile_linked(self.module, self.sdk, builder, self.root / 'raw', 'm68k-elf-', {'TEST'},
+                                           [self.guard], self.read, events=False)
+        self.assertEqual((raw['image'], raw['hooks']), (normal['image'], []))
 
     def test_source_drift_and_mismatched_callable_variant_are_refused(self):
         (self.sdk / 'row.s').write_text('.text\n.global entry\nentry:\nnop\nrts\n')

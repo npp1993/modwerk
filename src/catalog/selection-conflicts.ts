@@ -1,8 +1,8 @@
-import { DSP_EFFECT_IDS, MODULES, resolveSelection } from './modules.ts'
+import { DSP_EFFECT_IDS, resolveSelection } from './modules.ts'
 import { MODULE_DOCUMENTS_BY_ID } from './documents.ts'
 import pairs from './compatibility-pairs.json' with { type: 'json' }
-import { selectionKey } from './compatibility-checks.ts'
-const PASSING_PAIRS = new Set(pairs.passing)
+import { pairClash, selectionKey, type PairChecks } from './compatibility-checks.ts'
+const CHECKS = pairs as PairChecks
 
 export type ConflictFix = { label: string; removeIds?: string[]; keepStockFx2?: boolean }
 export type SelectionConflict = { id: string; title: string; description: string; moduleIds: string[]; fixes: ConflictFix[] }
@@ -12,10 +12,13 @@ const analogBdCompanions = ['miniverb', 'tapeecho', 'euclid', 'tapehead', 'sidec
 // Compressor hooks stock COMPRESSOR instead of taking a slot. Every other DSP effect needs their space.
 const FITS_BESIDE_STOCK_FX2 = ['tapehead', 'sidechain-compressor']
 const crowdedMenuIds = ['miniverb', 'tapeecho', 'euclid', 'repitch', 'quantizer']
-const DECLARED_CONFLICT_PAIRS = MODULES.flatMap((left, index) => MODULES.slice(index + 1).filter(right =>
-  (MODULE_DOCUMENTS_BY_ID[left.id]?.compatibility.conflicts.includes(right.id) || MODULE_DOCUMENTS_BY_ID[right.id]?.compatibility.conflicts.includes(left.id)) &&
-  !PASSING_PAIRS.has(selectionKey([left.id, right.id]))
-).map(right => [left, right] as const))
+// shortcut: flags these versions still carry although each module is a reviewed Analog BD companion; their package
+// recipes pin the manifest, so each leaves at its module's next version (selection-conflicts.test.ts fails until it does).
+export const STALE_CONFLICT_FLAGS = ['analog-bassdrum+sidechain-compressor', 'analog-bassdrum+tapehead']
+const flagged = (a: string, b: string) => !STALE_CONFLICT_FLAGS.includes(selectionKey([a, b])) &&
+  (MODULE_DOCUMENTS_BY_ID[a]?.compatibility.conflicts.includes(b) || MODULE_DOCUMENTS_BY_ID[b]?.compatibility.conflicts.includes(a))
+// A flag that names a collision the ledger finds stands down where the selection's context resolves it (POLY8's shared machine list).
+const collides = (a: string, b: string) => Object.values(CHECKS.clashes).some(found => found[selectionKey([a, b])])
 
 export function selectionConflicts(ids: readonly string[], keepStockFx2 = false): SelectionConflict[] {
   const modules = resolveSelection(ids), selected = new Set(modules.map(module => module.id))
@@ -28,19 +31,6 @@ export function selectionConflicts(ids: readonly string[], keepStockFx2 = false)
       description: 'MIDI Scenes currently supports standalone firmware. Remove the other modules to build this configuration.',
       moduleIds: modules.map(module => module.id),
       fixes: [{ label: 'Keep MIDI Scenes', removeIds: companions.map(module => module.id) }, { label: 'Remove MIDI Scenes', removeIds: ['midi-scenes'] }] })
-  }
-  if (!selected.has('poly8') && selected.has('vector') && selected.has('analog-bassdrum')) conflicts.push({
-    id: 'vector-analog-bd', title: 'Choose VECTOR or Analog BD',
-    description: 'VECTOR and Analog BD use the same native machine chooser hooks. Build them separately.',
-    moduleIds: ['vector', 'analog-bassdrum'],
-    fixes: [{ label: 'Keep VECTOR', removeIds: ['analog-bassdrum'] }, { label: 'Keep Analog BD', removeIds: ['vector'] }],
-  })
-  if (!selected.has('poly8') && selected.has('synth')) {
-    const companions = modules.filter(module => ['analog-bassdrum', 'quantizer', 'vector'].includes(module.id))
-    if (companions.length) conflicts.push({ id: 'synth-machine-conflict', title: 'Choose FM Synth or overlapping machine modules',
-      description: 'FM Synth bundles Scale Quantizer and uses the machine chooser hooks. It cannot run alongside ' + companions.map(module => module.name).join(', ') + '.',
-      moduleIds: ['synth', ...companions.map(module => module.id)],
-      fixes: [{ label: 'Keep FM Synth', removeIds: companions.map(module => module.id) }, { label: 'Remove FM Synth', removeIds: ['synth'] }] })
   }
   if (selected.has('analog-bassdrum') && analogBdBlockers.length) conflicts.push({
     id: 'analog-bd-custom-dsp', title: 'Choose effects that fit with Analog BD',
@@ -63,13 +53,14 @@ export function selectionConflicts(ids: readonly string[], keepStockFx2 = false)
     moduleIds: crowdedMenuIds,
     fixes: [{ label: 'Remove Euclid', removeIds: ['euclid'] }],
   })
-  // Declared incompatibilities become actionable before building. Preserve
-  // explicitly native-verified companion pairs when historical prose is stale.
-  for (const [left, right] of DECLARED_CONFLICT_PAIRS) {
-    if (selected.has('poly8') && [['analog-bassdrum', 'vector'], ['analog-bassdrum', 'synth'], ['synth', 'vector'], ['synth', 'quantizer']].some(pair => pair.includes(left.id) && pair.includes(right.id))) continue
-    if (!selected.has(left.id) || !selected.has(right.id) || conflicts.some(conflict => conflict.moduleIds.includes(left.id) && conflict.moduleIds.includes(right.id))) continue
-    conflicts.push({ id: 'declared-' + [left.id, right.id].sort().join('-'), title: 'Choose ' + left.name + ' or ' + right.name,
-      description: left.name + ' and ' + right.name + ' declare incompatible native resources. Build them separately.', moduleIds: [left.id, right.id],
+  // Every pair the native ledger refuses in this selection's context, and every pair an author flagged as incompatible.
+  for (const [index, left] of modules.entries()) for (const right of modules.slice(index + 1)) {
+    if (conflicts.some(conflict => conflict.moduleIds.includes(left.id) && conflict.moduleIds.includes(right.id))) continue
+    const clash = pairClash(CHECKS, [...selected], left.id, right.id)
+    if (!clash.length && !(flagged(left.id, right.id) && !collides(left.id, right.id))) continue
+    conflicts.push({ id: 'pair-' + selectionKey([left.id, right.id]), title: 'Choose ' + left.name + ' or ' + right.name,
+      description: left.name + ' and ' + right.name + (clash.length ? ' change the same part of the firmware.' : ' are marked as incompatible by their authors.') + ' Build them separately.',
+      moduleIds: [left.id, right.id],
       fixes: [{ label: 'Keep ' + left.name, removeIds: [right.id] }, { label: 'Keep ' + right.name, removeIds: [left.id] }],
     })
   }

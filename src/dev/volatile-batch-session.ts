@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Private preparation only. No production USB adapter, public/MCP import or persistent command.
 import { encodeVolatileBundle, encodeVolatileRequest, parseVolatileStatus, splitVolatileChunks, VOLATILE_CAPABILITY,
-  type VolatileRecord, type VolatileRequest, type VolatileStatus } from './volatile-batch-wire.ts'
+  VolatileIdleRefusals, type VolatileRecord, type VolatileRequest, type VolatileStatus } from './volatile-batch-wire.ts'
+
+// A refused Begin leaves the board Idle with that refusal cached until the next command.
+const quiescentIdle = (status: Readonly<VolatileStatus>) =>
+  status.phase === 'idle' && (status.result === 'ok' || VolatileIdleRefusals.includes(status.result))
 
 /** Fixed MWVB submit / MWVS result / MWVS state operations only. No automatic retries.
  * The adapter must serialize whole transfers and stop late replies after cancellation. */
@@ -53,7 +57,7 @@ export class VolatileBatchSession {
     const client = new VolatileBatchSession(transport, Object.freeze({ ...observed }), { ...options })
     await client.bounded('state', async signal => {
       const status = parseVolatileStatus(await transport.state(signal), client.observed)
-      client.expect(!signal.aborted && status.phase === 'idle' && status.result === 'ok', 'Device is not confirmed idle.')
+      client.expect(!signal.aborted && quiescentIdle(status), 'Device is not confirmed idle.')
       client.current = status; client.sequence = status.sequence
     })
     return client
@@ -107,7 +111,8 @@ export class VolatileBatchSession {
       (!offer.verified || status.records === offer.records),
     'Transaction, baseline or complete offer changed.')
   }
-  private async command(request: VolatileRequest, validate: (status: Readonly<VolatileStatus>, pending: boolean) => void) {
+  private async command(request: VolatileRequest, validate: (status: Readonly<VolatileStatus>, pending: boolean) => void,
+    refusals: readonly string[] = []) {
     const frame = encodeVolatileRequest(request)
     return this.bounded(request.command, async signal => {
       // An uncertain OUT is never followed by result adoption, even for Begin.
@@ -122,7 +127,8 @@ export class VolatileBatchSession {
         if (status.sequence === request.sequence) {
           const pending = status.result === 'queued' || status.result === 'pending'
           validate(status, pending)
-          this.expect(pending || status.result === 'ok', 'Device refused the owned command: ' + status.result)
+          // Only a caller-named definite refusal (validated above) is a result; any other refusal is unknown.
+          this.expect(pending || status.result === 'ok' || refusals.includes(status.result), 'Device refused the owned command: ' + status.result)
           if (!pending) { this.current = status; return status }
         }
         await new Promise<void>((resolve, reject) => {
@@ -134,7 +140,7 @@ export class VolatileBatchSession {
       }
     })
   }
-  private ownerRequest(command: 'verify' | 'activate' | 'startTrial' | 'rollback' | 'abort' | 'touch'): VolatileRequest {
+  private ownerRequest(command: 'verify' | 'activate' | 'startTrial' | 'rollback' | 'abort' | 'touch' | 'keep'): VolatileRequest {
     const offer = this.owned()
     return { command, ...this.observed, transaction: offer.transaction, generation: offer.generation, sequence: this.next() }
   }
@@ -150,15 +156,19 @@ export class VolatileBatchSession {
       // Recheck the exact whole baseline immediately before Begin; no state read grants ownership.
       const before = await this.bounded('baseline', async signal => parseVolatileStatus(await this.transport.state(signal), this.observed))
       this.sameLimits(before)
-      this.expect(before.phase === 'idle' && before.result === 'ok' && before.current === baseline &&
+      // The board refuses Begin while its saved set is unsaved; wait (a fresh connect reads it) instead of losing the channel.
+      if (before.saving) throw new Error('The device is still saving its module set to the card.')
+      this.expect(quiescentIdle(before) && before.result === this.status.result && before.current === baseline &&
         before.transaction === this.status.transaction && before.generation === this.status.generation &&
         before.sequence === this.status.sequence, 'Baseline changed before Begin.')
       cancelled(); this.used = true
       const sequence = this.next()
       const begun = await this.command({ command: 'begin', ...this.observed, sequence, baseline,
         digest: bundle.sha256, length: bundle.data.length }, (status, pending) => {
-        if (pending && status.phase === 'idle') {
-          this.expect(status.result === 'queued' && status.transaction === 0 && status.generation === 0 &&
+        if (status.phase === 'idle' && (pending || status.result !== 'ok')) {
+          // Queued or definitely refused: nothing owned, so no token or baseline may have moved.
+          this.expect((pending ? status.result === 'queued' : VolatileIdleRefusals.includes(status.result)) &&
+            status.transaction === before.transaction && status.generation === before.generation &&
             status.current === baseline, 'Queued Begin changed unowned state.')
           return
         }
@@ -243,6 +253,33 @@ export class VolatileBatchSession {
     this.offer = undefined; return result
   }
   async rollback() { return this.exclusive(() => this.rollbackInternal()) }
+  /** Keep a complete stopped trial as the new baseline and the board's saved set. The board accepts only fresh
+   * installs whose set its saved set can take exactly: a replace or removal (no roots proof yet), or a saved set
+   * that is not the live baseline, is refused with the trial unchanged (roll back instead). The kept result is
+   * `saving` until the board reads the card write back; `saveFailed` means a write failed and is retried. Read a
+   * fresh connect() for that state; a reboot before it restores the previous set. Physical reboot persistence
+   * remains a hardware gate. */
+  async keep() {
+    return this.exclusive(async () => {
+      const offer = this.owned(), before = this.status
+      if (before.phase !== 'stoppedTrial' || !before.current) throw new Error('A complete stopped trial is required.')
+      if (!this.options.visible() || performance.now() >= this.expires) return this.rollbackInternal()
+      const result = await this.command(this.ownerRequest('keep'), (status, pending) => {
+        if (pending || status.result === 'refused') {
+          // Queued, refused unchanged, or the board's expiry won and its rollback is under way.
+          this.sameOffer(status, offer)
+          this.expect(status.phase === 'stoppedTrial' ? status.current === before.current && status.records === offer.records :
+            pending && status.phase === 'rollingBack', 'Keep changed the trial.')
+        } else this.expect(status.phase === 'idle' && status.transaction === offer.transaction &&
+          status.generation === offer.generation && status.baseline === status.current &&
+          (status.current === before.current || status.current === offer.baseline), 'The kept set is not the new baseline.')
+      }, ['refused'])
+      if (result.phase !== 'idle') return result
+      this.offer = undefined
+      if (result.current !== before.current) throw new Error('The trial expired before Keep; the baseline was restored.')
+      return result
+    })
+  }
   async abort() {
     return this.exclusive(() => {
       if (!['receiving', 'verified'].includes(this.status.phase) || this.status.touched)

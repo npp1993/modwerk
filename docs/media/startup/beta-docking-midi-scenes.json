@@ -1,12 +1,13 @@
 {
  "kind": "modwerk-beta-startup-emulator",
  "version": "3.0.0",
- "imageSha256": "08dcf3d1d48029ac0ea81e10e402450b662d63970dcf67915becdb2bcdd66662",
+ "packageSha256": "62dbceb8a9264b9b477dcf96b507773c74854d9ca22c1e9f9ec3b233c7ac9fb1",
+ "imageSha256": "7e09dd029c276ebddb37c2da884a948b5e4959a1d4ce598a55e253fac853694e",
  "emulatorSha256": "9889a52d419d125b947bdd2e856d56c1281ae392d1d9f4178b58d6251cd7967b",
  "captureMethod": "--boot-logo --ms 50 --main-level off --interactive --rtc off (+ --mkii); run 10 ms, read the panel UART with tx",
  "results": {
   "MKI": {
-   "finalFramePixels": 912,
+   "finalFramePixels": 792,
    "missing": 0,
    "extra": 0,
    "lampsLit": 44,
@@ -18,7 +19,7 @@
    "coloursAfterwardsAsStock": true
   },
   "MKII": {
-   "finalFramePixels": 912,
+   "finalFramePixels": 792,
    "missing": 0,
    "extra": 0,
    "lampsLit": 67,
@@ -32,12 +33,13 @@
  },
  "hardware": "untested",
  "sourceSha256": {
-  "sdk/runtime/startup/boot_anim.c": "7e0072570f7bdf5a3152cc453022df77087b4a262e4c3aff42922966947080b4",
+  "sdk/runtime/startup/boot_anim.c": "33cd1e9e3fb1d34d353c8ddcff35104b9339662d153b6460229a46c8a0ca9de2",
   "sdk/runtime/startup/hooks.s": "66cea0188c80fbf39574934424cfef14fe62c42be43ca495d4437e14e8597565",
   "sdk/runtime/startup/rom_gate.s": "800acdf8f0cc37bc0579d776d1dfaf0b1b05c8a223e03b639c25d634d501ad8e",
+  "sdk/runtime/startup/public_art.py": "bf74f3c83a8d494bd63fa490d418d15128d29206ee139c5ab7688c8f2fd0a4f7",
   "sdk/runtime/startup/base_art.py": "294f5b6f3377d2f4bda2ee69e26f536fce65dba37d4947a09b97537841b7a252",
   "sdk/runtime/startup/base.json": "81315cdddcde6c048bee49c53723f52edb11fa56738ab788de74e47d461c7ed4",
-  "sdk/runtime/startup/package.py": "8fd85521bca93eb958f31cfd773766e4e3c648b43654f858870aa591022278fb",
-  "scripts/verify-startup-beta.py": "eae676b2eaec07a755546be6a3c5971bc9511e46e3c8ba70cc6e7f323822615a"
+  "sdk/runtime/startup/package.py": "675532e1f2bc5c0246fcc4964b5c30852efdb0cfa37242e5034cc50430a3c9a1",
+  "scripts/verify-startup-beta.py": "9e9ab924fd37a7f07829f82e562a945d91e390c090fa5301e679f708fce31ece"
  }
 }

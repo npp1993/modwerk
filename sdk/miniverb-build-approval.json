@@ -1,15 +1,17 @@
 {
   "kind": "owner-approved-update",
   "id": "miniverb",
-  "version": "0.2.1-experimental",
+  "version": "0.2.2-experimental",
   "approvedBy": "repeat98",
-  "approvedOn": "2026-10-11",
+  "approvedOn": "2026-10-14",
   "waived": [
     "current-build-hardware",
     "chip-worst-case-cycles",
-    "complete-memory-bounds"
+    "complete-memory-bounds",
+    "release-documentation"
   ],
-  "sourceSha256": "c68e43ca208d50214273845bb0a980a44d715a9f5e5a4c0e537fedabf444723d",
-  "ownerStatement": "Approve this exact experimental release with limits disclosed; keep #428 open until the reporter confirms (Recommended)",
-  "reason": "Owner approved only this native source and the two I428 private updates recorded in TESTING.md, after reviewing the disclosed absence of current hardware, chip timing, complete runtime memory bounds, played automation, Part/project persistence, physical reboot and maximum-load evidence. The original THRU noise in #428 remains unconfirmed; the report must stay open until reporter confirmation. Native/browser parity, source-only reproduction, software resource accounting, actual UI and documentation remain required. No unobserved behavior is verified and no earlier waiver is extended."
+  "retainedUiVersion": "0.2.1-experimental",
+  "sourceSha256": "4ab993497b315878f264de18439a126fa45f56553f6e530ad031fb5eea5a6caa",
+  "ownerStatement": "Approved by repeat98 in chat 14 Oct 2026: release Mini Verb 0.2.2.",
+  "reason": "The owner approved this exact native source: 0.2.1 minus two redundant input-diffuser coefficient reloads, 411 instead of 415 modeled cycles/sample, output bit-identical to published 0.2.1 in verify.py's 75 checks. The OT pages and controls are unchanged, so the 0.2.1 emulator captures are retained instead of new ones. Current-build hardware, chip worst-case timing and complete runtime memory bounds are not measured for this source and stay waived for this exact version only; the original THRU noise in #428 remains unconfirmed. Isolated source-only packages, native/browser parity and repository checks remain required."
 }

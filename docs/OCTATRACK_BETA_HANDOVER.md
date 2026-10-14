@@ -145,11 +145,9 @@ Later, not blocking the first beta:
 
 ## Open decisions (the owner's)
 
-- **Retained evidence vs main.** Main's #469 gave Tape Echo 0.1.3 retained evidence that requires the shared
-  builder files under `src/engine` to match commit 32ac46b0. The branch changes `src/engine` on purpose (the browser
-  base builder, the USB link), so merging main makes `modules:check` fail. Options: exempt the browser-only Elekloader
-  files in `scripts/retained-evidence.mjs` (a qualification-rule change), or re-qualify Tape Echo. Until then, check
-  with `npm run check -- --base 0659ebc1` (the main the branch contains).
+- **Retained evidence vs main: decided 14 October 2026.** Retained evidence no longer compares shared `src/engine`,
+  platform or build code, only the module's own folder and its own rows in `src/engine/assets`
+  ([qualification](MODULE_QUALIFICATION.md)), so the branch's engine changes no longer fail `modules:check`.
 - **The tester note** `~/Downloads/modwerk-usb-test/BETA_TESTER_NOTE.md`: its "For Jannik: facts to confirm" list
   (the self-test plays the pattern, removing a bad module after a FUNC skip, the card route replacing the base, step 5's
   effect picking).
@@ -160,6 +158,9 @@ Later, not blocking the first beta:
   native app; the preferred transport is USB MIDI SysEx in the base.
 
 ## Records
+
+[OCTATRACK_BETA_TEST_PLAN.md](OCTATRACK_BETA_TEST_PLAN.md) (14 October 2026) is the test plan for the rollout: the tester's
+onboarding end to end, the loader after the loading and packaging changes, the sessions, and the findings log.
 
 `docs/OCTATRACK_ELEKLOADER_MIGRATION.md` (the plan and hardware runs), `docs/OCTATRACK_MODULE_EDGE_CASES.md` (what
 is proven), `docs/OCTATRACK_HARDWARE_TRAPS.md`, `docs/OCTATRACK_DRIVING.md`, `docs/OCTATRACK_MORE_EFFECT_IDS.md`,

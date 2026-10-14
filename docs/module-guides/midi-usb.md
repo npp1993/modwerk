@@ -44,4 +44,4 @@ Flood and stop it: notes, CC and clock at the wire rate, stopped mid-note, a Par
 
 ## Digitakt and Digitone
 
-SysEx ids are resources: claim them (`sysex:0x7d` in `platform.claims`), because two mods may never claim the same one ([Digitakt guide](../../sdk/machines/digitakt/README.md)). The core delivers key and encoder events to your handler (`ev_key`, `ev_enc`); return nonzero only when you take the event.
+SysEx ids are resources: claim them (`sysex:0x7d` in `platform.claims`), because two mods may never claim the same one ([Digitakt guide](../../sdk/machines/digitakt/README.md)). The core delivers key and encoder events to your handler (`ev_key`, `ev_enc`); return nonzero only when you take the event. A MIDI generator or MIDI effect follows the same rules as on the Octatrack (note-offs, pass-through, the most events one input can produce) and records in TESTING.md the shared memory, fast SRAM and time per event it measured under a flood of notes, CC and clock.

@@ -34,7 +34,8 @@ def manager(text):
     """
     changes = (
         ('#include "buffers.h"\n', '#include "buffers.h"\n#include "stock_hook_resources.h"\n'
-         'int modwerk_stock_hook_export_idle(void);\nint modwerk_saved_set_busy(void);\n'),
+         'int modwerk_stock_hook_export_idle(void);\nint modwerk_saved_set_busy(void);\n'
+         'int modwerk_stock_hook_buffer_policy(unsigned,unsigned,struct mw_hook_buffer_claim *);\n'),
         ('int dl_selection_prepare(const struct dl_selection *s,uint32_t token) {\n',
          'int dl_selection_prepare(const struct dl_selection *s,uint32_t token) {\n'
          '    if(!modwerk_stock_hook_export_idle() || modwerk_saved_set_busy()) return DL_SELECT_UNAVAILABLE;\n'),
@@ -56,14 +57,30 @@ def manager(text):
          '         * both maps. Code and whole contiguous rings fit together. */'),
         ('        if(dl_pmap16) {\n', '        { /* Private policy applies to both stock and 16K maps. */\n'),
         ('int dl_publication_idle(void) { return phase==0; }',
+         '/* The Y words the effect running in a slot can write in its block: a reviewed exact policy entry, else\n'
+         ' * stock\'s extent for stock\'s own effect, else the whole block (mw_hook_default_claim). */\n'
+         'static unsigned hook_words(unsigned c,unsigned k,unsigned id) {\n'
+         '    struct mw_hook_buffer_claim claim;\n'
+         '    unsigned whole=k ? 16384u : 3072u;\n'
+         '    if(modwerk_stock_hook_buffer_policy(c,id,&claim)) return claim.complete==1 && claim.words && claim.words<=whole ? claim.words : whole;\n'
+         '    return mw_hook_default_claim(k,id<32u && !fx_in(modwerk_fx_modules,id)).words;\n'
+         '}\n'
          'int dl_hook_buffer_ranges_idle(unsigned feature) {\n'
-         '    if(!initialized || phase || waiting || queued_token || buffers.open) return 0;\n'
-         '    struct mw_hook_span live[16],target[16]; unsigned nl=0,nt=0;\n'
+         '    if(phase || waiting || queued_token || buffers.open) return 0;\n'
+         '    /* Before the first transaction initializes the plan, nothing has written a buffer table entry:\n'
+         '     * every slot holds its stock block, exactly the plan dl_buffers_init starts from. */\n'
+         '    static struct dl_buffers stock_plan;\n'
+         '    const struct dl_buffers *plan=&buffers;\n'
+         '    if(!initialized) { dl_buffers_init(&stock_plan,dl_pmap16); plan=&stock_plan; }\n'
+         '    struct mw_hook_span live[16],target[16]; unsigned nl=0,nt=0; uint8_t now[16];\n'
+         '    running(now);\n'
          '    for(unsigned i=0;i<16;++i) {\n'
-         '        unsigned c=dl_buffers_core(i),k=i>=8;\n'
-         '        if((buffers.live[i]!=DL_BUF_NONE && buffers.live[i]>=DL_BUF_BLOCKS) || (buffers.target[i]!=DL_BUF_NONE && buffers.target[i]>=DL_BUF_BLOCKS)) return 0;\n'
-         '        if(buffers.live[i]!=DL_BUF_NONE) live[nl++]=(struct mw_hook_span){dl_buffers_base(c,k,buffers.live[i]),k ? 16384u : 3072u,(uint8_t)c,MW_HOOK_Y};\n'
-         '        if(buffers.target[i]!=DL_BUF_NONE) target[nt++]=(struct mw_hook_span){dl_buffers_base(c,k,buffers.target[i]),k ? 16384u : 3072u,(uint8_t)c,MW_HOOK_Y};\n'
+         '        unsigned c=dl_buffers_core(i),k=i>=8,a=plan->live[i],b=plan->target[i];\n'
+         '        if((a!=DL_BUF_NONE && a>=DL_BUF_BLOCKS) || (b!=DL_BUF_NONE && b>=DL_BUF_BLOCKS)) return 0;\n'
+         '        /* Outside a transition target equals live, and the slot\'s occupant is what runs there now. */\n'
+         '        uint32_t words=hook_words(c,k,now[i]);\n'
+         '        if(a!=DL_BUF_NONE) live[nl++]=(struct mw_hook_span){dl_buffers_base(c,k,a),words,(uint8_t)c,MW_HOOK_Y};\n'
+         '        if(b!=DL_BUF_NONE) target[nt++]=(struct mw_hook_span){dl_buffers_base(c,k,b),words,(uint8_t)c,MW_HOOK_Y};\n'
          '    }\n'
          '    return mw_hook_ranges_idle(feature,live,nl,target,nt,3u);\n'
          '}\n'

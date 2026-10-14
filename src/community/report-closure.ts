@@ -35,6 +35,15 @@ export function reportStatusLabel(report: ReportMetadata & { status: string }) {
 export function isConfirmedBug(report: ReportMetadata) {
   return (report.report_kind ?? 'bug') === 'bug' && !!report.confirmed_at
 }
+/** How a report reads at a glance. The library cards and every list that shows a report's state share these tones, so
+ *  a state keeps one color across the app: review (sky), waiting for the reporter (violet), confirmed (amber), fixed
+ *  (green) and any other closure (grey). The colors are the `--issue-*` tokens in styles.css. */
+export type ReportTone = 'review' | 'waiting' | 'confirmed' | 'fixed' | 'closed'
+export function reportTone(report: ReportMetadata & { status: string }): ReportTone {
+  if (report.status === 'closed') return report.closure_reason === 'fixed' ? 'fixed' : 'closed'
+  if (isConfirmedBug(report) || report.triage_state === 'confirmed' || report.triage_state === 'awaiting_verification') return 'confirmed'
+  return report.triage_state === 'needs_info' ? 'waiting' : 'review'
+}
 
 /** The common actions appear in copied prompts, private report pages and new GitHub report descriptions. */
 export const REPORT_COMMANDS = [

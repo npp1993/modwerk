@@ -21,7 +21,6 @@ import { fileURLToPath } from 'node:url'
 import { decodeFirmware } from '../src/engine/elek.ts'
 import { availableModules } from '../src/catalog/availability.ts'
 const AVAILABLE_MODULES = availableModules(true)
-import { selectionConflicts } from '../src/catalog/selection-conflicts.ts'
 import { parseModuleDocument } from '../src/catalog/module-contract.ts'
 import { CATALOG_SOURCE } from '../src/catalog/modules.ts'
 import { comparisonPool, coverageSelections, selectionKey } from './module-coverage.mjs'
@@ -158,18 +157,9 @@ if (check) {
     for (let i = 0; i < shards.length; i++) for (const proof of json(join(run, String(i), 'static-composition-proofs.json')).proofs) writeFileSync(cacheFile(selectionKey(proof.moduleIds, proof.keepStockFx2)), JSON.stringify(proof))
   }
 
-  // 3. Declaration checks: every selection of the offered modules needs one (src/catalog/compatibility.test.ts).
-  const checks = json(join(root, 'src/catalog/native-metadata.json')).checks, others = pool.filter(module => module !== id)
-  // Only selections the configurator allows need a clean declaration record.
-  // Known refused selections have no clean record and must not trigger the same exhaustive scan on every rerun.
-  const unrecorded = Array.from({ length: 2 ** others.length }, (_, mask) => [...others.filter((_, bit) => mask >> bit & 1), id].sort()).filter(ids => !selectionConflicts(ids).length).map(ids => ids.join('+')).filter(key => !(key in checks))
-  if (unrecorded.length) {
-    console.log(`Recording native declaration checks for ${unrecorded.length} selections …`)
-    writeFileSync(join(run, 'declaration-selections.json'), JSON.stringify(unrecorded))
-    await container('checks', ['python3', '-B', '/app/scripts/export-native-checks.py', '/native/octabam', '--app', '/app', '--include', id, '--scope', others.join(','), '--selections', '/native/runs/' + process.pid + '/declaration-selections.json', '--write', '--output', '/native/runs/' + process.pid + '/native-metadata.json'])
-    const written = join(run, 'native-metadata.json')
-    if (existsSync(written)) writeFileSync(join(root, 'src/catalog/native-metadata.json'), readFileSync(written))
-  }
+  // 3. Declaration checks: the native ledger beside every other module, one pair at a time, with its proof (npm run modules:pairs).
+  console.log('Recording native pair checks …')
+  execFileSync('python3', ['-B', join(root, 'scripts/module-pairs.py'), '--write'], { cwd: root, stdio: 'inherit' })
 
   // 4. The browser side, then the record.
   const rows = selections.map(({ ids, keepStockFx2 }) => {

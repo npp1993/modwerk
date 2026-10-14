@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { mkdtemp, readFile, rm, lstat, readdir, mkdir, rename } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile, copyFile, mkdir, chmod, lstat, readdir, rename } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -95,6 +95,84 @@ describe('frontend MCP reviewed device transactions', () => {
     })
   })
   afterEach(async () => { await service?.close(); await rm(folder, { recursive: true, force: true }) })
+
+  async function bindTapeHead(requiredBase) {
+    await service.close()
+    // Startup-trusted test catalogue, still using the real preparation and real
+    // package bytes. Tool callers cannot alter this source declaration.
+    const bridge = { ...frontend, createRuntimeCatalogue: document => frontend.createRuntimeCatalogue({
+      ...document, packages: document.packages.map(entry => entry.id === 'tapehead' ? { ...entry, requiredBase } : entry),
+    }) }
+    service = await createFrontendTools({ dataDir: folder, deviceSocket: 'test-only', allowDeviceWrites: true }, bridge, {
+      openLink: async () => link, now: () => clock,
+    })
+  }
+
+  it('uses only startup-selected prepared files, preserves baseline and requires observed base plus writes opt-in', async () => {
+    await service.close()
+    const preparedModules = join(folder, 'prepared')
+    await mkdir(preparedModules, { mode: 0o700 })
+    const bytes = Buffer.alloc(80)
+    bytes.write('MWRM'); bytes.writeUInt16BE(8, 4); bytes.writeUInt32BE(4, 8)
+    bytes.writeUInt32BE(createHash('sha256').update('cc-map').digest().readUInt32BE(0), 28)
+    bytes.write('CC Map', 50); bytes.writeUInt16BE(1, 66)
+    const version = frontend.modules.find(module => module.id === 'cc-map').version
+    const extra = { id: 'cc-map', version, module: bytes.subarray(28, 32).toString('hex'), name: 'CC Map',
+      abi: 8, features: 0, sites: 0, copies: 0, fills: 0, bytes: bytes.length, requiredBase: base,
+      sha256: createHash('sha256').update(bytes).digest('hex'), path: `octatrack-modules/cc-map/${version}.mwrm` }
+    // Every reviewed port is published now: prepare CC Map against a published list (the tools' root) without it.
+    const published = { ...manifest, packages: manifest.packages.filter(entry => entry.id !== 'cc-map') }, unpublished = join(folder, 'root')
+    await mkdir(join(unpublished, 'src/engine/assets'), { mode: 0o700, recursive: true })
+    await writeFile(join(unpublished, 'src/engine/assets/octatrack-module-packages.json'), JSON.stringify(published), { mode: 0o600 })
+    for (const entry of [...published.packages, extra]) {
+      const path = join(preparedModules, entry.path)
+      await mkdir(join(path, '..'), { mode: 0o700, recursive: true })
+      if (entry === extra) await writeFile(path, bytes, { mode: 0o600 })
+      else { await copyFile(join(root, 'public', entry.path), path); await chmod(path, 0o600) }
+    }
+    await writeFile(join(preparedModules, 'candidate-packages.json'), JSON.stringify({ schema: 1, preparation: true,
+      base: { identity: base }, packages: [...published.packages, extra], held: [{ id: 'mute-modes', admission: false }] }), { mode: 0o600 })
+    link.state.identity.capabilities = { abi: 8, features: 7, maxSites: 128, maxCopies: 128 }
+    const open = allowDeviceWrites => createFrontendTools({ root: unpublished, dataDir: folder, deviceSocket: 'test-only', preparedModules,
+      allowDeviceWrites }, frontend, { openLink: async () => link, now: () => clock })
+    service = await open(false)
+    const selected = ['everb', 'cc-map']
+    const plan = await service.call('device_review', { moduleIds: selected })
+    await expect(service.call('device_trial', { review: plan.review })).rejects.toThrow('--allow-device-writes')
+    expect(link.updates).toHaveLength(0)
+    await service.close(); service = await open(true)
+    link.state.identity.base = 'b'.repeat(64)
+    await expect(service.call('device_review', { moduleIds: selected })).rejects.toThrow('exact observed')
+    await expect(service.call('device_review', { moduleIds: selected, preparedModules })).rejects.toThrow('Unexpected')
+    expect(link.updates).toHaveLength(0)
+    link.state.identity.base = base
+    const trial = await service.call('device_trial', { review: (await service.call('device_review', { moduleIds: selected })).review })
+    expect(link.updates[0].changes).toHaveLength(1)
+    const result = await service.call('device_undo', { trial: trial.trial })
+    expect(result.inventory.moduleIds).toEqual(['everb'])
+    expect(link.keeps).toBe(0)
+  })
+
+  it('uses observed base identity for a bound physical review and exact Undo', async () => {
+    await bindTapeHead(base)
+    const result = await trial()
+    expect(link.updates).toHaveLength(1)
+    await service.call('device_undo', { trial: result.trial })
+    expect(link.modules.map(item => item.module)).toEqual(['873d83cc'])
+    expect(link.keeps).toBe(0)
+  })
+
+  it('keeps a caller-supplied planning base separate from actual device admission', async () => {
+    const hypothetical = 'd'.repeat(64)
+    await bindTapeHead(hypothetical)
+    const plan = await service.call('site_selection', { moduleIds: requested, usb: true, base: hypothetical,
+      current: { moduleIds: ['everb'], removedStockFx: [] } })
+    expect(plan.changes).toHaveLength(1)
+    await expect(review()).rejects.toThrow('exact Modwerk base')
+    await expect(service.call('device_review', { moduleIds: requested, base: hypothetical })).rejects.toThrow()
+    expect(link.updates).toHaveLength(0)
+    expect(link.keeps).toBe(0)
+  })
 
   it('reads cached live load without self-test, review, trial or device-write permission', async () => {
     await service.close()

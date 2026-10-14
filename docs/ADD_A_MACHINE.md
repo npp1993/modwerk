@@ -36,3 +36,16 @@ When steps 1–4 are done:
 5. **Set the status.** Set `status` to `preview` and every step to `done` when the first module validates. The status becomes `available` once Modwerk's engine builds and verifies firmware for the machine.
 
 Run `npm run check` before opening the pull request. A new machine, platform or core always gets owner review.
+
+## Aim for the Octatrack's interface
+
+Every machine should end up working the way the Octatrack does now, so a module installs, runs beside the others and is tested the same way everywhere:
+
+- **A Modwerk base on the unit** that owns every stock site several modules need, as events and tables, and admits modules by their declared resources and budgets ([cross-compatibility](module-guides/README.md#cross-compatibility)).
+- **A USB link** to the base: identify the base, list the installed modules, report status, load and self-test results.
+- **Loading without a reflash** through the [runtime loader](../sdk/runtime/loader/README.md#porting-to-another-machine): review, trial, self-test, Keep and Undo, in RAM, so a power cycle restores the stock state. The loader does not depend on a machine; a ColdFire machine needs only the glue its porting section lists.
+- **The developer MCP's device tools and the site's device hub** on top of that link, so developers and their agents drive the unit as they drive an Octatrack ([MCP guide](FRONTEND_MCP.md)).
+- **The Octatrack page on the site**: what the Octatrack page does, for this machine: the hero, Status, module sets and guided sync, and only the unit pages that fit it (the Octatrack's Samples page, for example, does not fit every machine), generalized from `OctatrackHub.tsx` rather than built again ([the beta page](APP_DEVELOPMENT.md#octatrack-base-install-prompt)). The whole status and configuration page is beta-only, behind `hasBetaUi`, on every device until the owner releases it; visitors and members keep main's configuration page.
+
+Build these as extensions of the Octatrack's base, link, loader, MCP and page, not as a second design. The Digitakt and Digitone are the next candidates: elemod cores exist and their CPU is the same ColdFire family. Each step is shared SDK work and needs owner review.
+

@@ -10,13 +10,13 @@ import hashlib
 import struct
 from machine_layout import validate
 
-CAPACITY, HEADER, RECORD = 16, 16, 44
+REVISION, CAPACITY, HEADER, RECORD = 2, 24, 16, 44
 BYTES = HEADER + CAPACITY * RECORD
 ENTRY_KEYS = frozenset(('package', 'declaration', 'recipe', 'reviewed_sha256', 'source_root'))
 
 
 def empty():
-    return b'MWMD' + bytes((1, 0, CAPACITY)) + bytes(BYTES - 7)
+    return b'MWMD' + bytes((REVISION, 0, CAPACITY)) + bytes(BYTES - 7)
 
 
 def generate(entries):
@@ -37,7 +37,7 @@ def generate(entries):
     table[5] = len(checked)
     for i, item in enumerate(checked):
         record = struct.pack('>32sIBBHHH', bytes.fromhex(item.package_sha256), item.module_id,
-                             item.member_mask, 0, item.state_revision, item.parameter_revision, 0)
+                             item.member_mask, int(item.optional_quantizer) | (int(item.analog_bd) << 1), item.state_revision, item.parameter_revision, 0)
         table[HEADER + i * RECORD:HEADER + (i + 1) * RECORD] = record
     return bytes(table)
 

@@ -13,6 +13,66 @@ function savedDeveloper() { try { return localStorage.getItem(developerKey()) ??
 function validSession(value:string){return /^[a-f0-9]{64}$/.test(value)||/^[A-Za-z0-9_%+./=-]{40,600}$/.test(value)&&value.includes('.')}
 function savedSession() { try { return localStorage.getItem(sessionKey()) ?? '' } catch { return '' } }
 function savedAdmin() { try { return sessionStorage.getItem(adminKey()) ?? '' } catch { return '' } }
+/** Calls `listener` whenever community reads work again after an outage; returns the unsubscribe. */
+export function onCommunityReconnect(listener: () => void) { return readRecovery().onReconnect(listener) }
+// A read still unanswered after this long gets one fresh request beside it, as a reload would; the first answer wins.
+const HEDGE_MS=5000
+type Exchange={response?:Response;reachable?:boolean}
+function anySignal(signals:AbortSignal[]){
+  if(typeof AbortSignal.any==='function')return AbortSignal.any(signals)
+  const combined=new AbortController()
+  for(const signal of signals){if(signal.aborted){combined.abort(signal.reason);break}signal.addEventListener('abort',()=>combined.abort(signal.reason),{once:true})}
+  return combined.signal
+}
+/** Sends a request and at most attempts-1 more: 200 ms after a dropped connection or server error, or for a read
+ * beside one that has not answered within HEDGE_MS. Each has a 30-second deadline, so a slow reply can still win.
+ * `reachable` is undefined when the caller cancelled, true for any HTTP response and false when none arrived. */
+function exchange(url:string,init:RequestInit,attempts:number,hedge:boolean,caller?:AbortSignal):Promise<Exchange>{
+  return new Promise(resolve=>{
+    const running=new Set<AbortController>()
+    let started=0,settled=false,timer:ReturnType<typeof setTimeout>|undefined,failed:Response|undefined
+    const settle=(outcome:Exchange)=>{
+      if(settled)return
+      settled=true;clearTimeout(timer);caller?.removeEventListener('abort',cancel)
+      for(const controller of running)controller.abort()
+      if(failed&&failed!==outcome.response)void failed.body?.cancel()
+      resolve(outcome)
+    }
+    const cancel=()=>settle({})
+    const lost=()=>{
+      if(running.size)return
+      if(started<attempts){clearTimeout(timer);timer=setTimeout(launch,200)}
+      // Any HTTP response proves connectivity; one route's server error must not pause every route.
+      else settle(failed?{response:failed,reachable:true}:{reachable:false})
+    }
+    function launch(){
+      if(settled)return
+      if(caller?.aborted){cancel();return}
+      started++
+      const controller=new AbortController()
+      running.add(controller)
+      if(hedge&&started<attempts)timer=setTimeout(launch,HEDGE_MS)
+      let request:Promise<Response>
+      // Leave room for occasional slow network/edge responses; a ten-second cutoff drops live reads. A later attempt
+      // starts from a timer, where a synchronous throw would leave the request unsettled.
+      try { const deadline=AbortSignal.timeout(30000); request=fetch(url,{...init,signal:anySignal(caller?[caller,deadline,controller.signal]:[deadline,controller.signal])}) }
+      catch (error) { request=Promise.reject(error) }
+      request.then(response=>{
+        running.delete(controller)
+        if(settled){void response.body?.cancel();return}
+        if(response.status<500){settle({response,reachable:true});return}
+        if(failed)void failed.body?.cancel()
+        failed=response;lost()
+      },()=>{
+        running.delete(controller)
+        if(!settled&&caller?.aborted)cancel()
+        else if(!settled)lost()
+      })
+    }
+    caller?.addEventListener('abort',cancel,{once:true})
+    launch()
+  })
+}
 /** Administrator sessions are separate from member and legacy guest sessions and last only for this tab. */
 export function setAdminSession(value: string) { try { if (value) sessionStorage.setItem(adminKey(), value); else sessionStorage.removeItem(adminKey()) } catch { throw new Error('Your browser could not keep the administrator session for this tab.') } }
 export async function apiFetch(path: string, options: RequestInit = {}, expectedSession?: string): Promise<Response> {
@@ -32,26 +92,12 @@ export async function apiFetch(path: string, options: RequestInit = {}, expected
   const unreachable=()=>new Error('Couldn’t reach the Modwerk community service. Check your connection or content blocker, then try again. Your local workspace still works.')
   const recovery=method==='GET'&&replayable?await readRecovery().begin(options.signal??undefined):undefined
   if(recovery===null)throw unreachable()
-  let result: Response|null=null
-  let reachable: boolean|undefined
-  try {
-    for(let attempt=0;attempt<attempts;attempt++){
-      if(options.signal?.aborted)throw unreachable()
-      try {
-        // Leave room for occasional slow network/edge responses; a ten-second cutoff drops live reads.
-        const timeout=AbortSignal.timeout(30000)
-        const signal=options.signal?AbortSignal.any([options.signal,timeout]):timeout
-        result=await fetch(apiUrl(path),{...options,headers,signal,credentials:'same-origin',redirect:'error'})
-        // Any HTTP response proves connectivity; one route's server error must not pause every route.
-        if(result.status<500||attempt===attempts-1){reachable=true;break}
-        await result.body?.cancel()
-      } catch {
-        if(options.signal?.aborted)throw unreachable()
-        if(attempt===attempts-1){reachable=false;throw unreachable()}
-      }
-      await new Promise(resolve=>setTimeout(resolve,200))
-    }
-  } finally { recovery?.finish(reachable) }
+  let outcome: Exchange={}
+  // Administrator statistics can be slow by design; a second copy would only double their database work.
+  const hedge=method==='GET'&&replayable&&!path.startsWith('/admin/')
+  try { outcome=await exchange(apiUrl(path),{...options,headers,credentials:'same-origin',redirect:'error'},attempts,hedge,options.signal??undefined) }
+  finally { recovery?.finish(outcome.reachable) }
+  const result=outcome.response
   if(!result)throw unreachable()
   if (expectedSession !== undefined && savedSession() !== expectedSession) throw new DOMException('The signed-in account changed.', 'AbortError')
   const next = result.headers.get('X-Octamod-Session')

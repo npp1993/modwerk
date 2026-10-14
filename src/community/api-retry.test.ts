@@ -77,8 +77,68 @@ describe('community read recovery',()=>{
   const result=api('/auth/session')
   await vi.advanceTimersByTimeAsync(12000)
   await expect(result).resolves.toEqual({available:true,user:null})
-  expect(fetch).toHaveBeenCalledTimes(1)
+  // The fresh request sent beside it after five seconds is cancelled once the slow one answers.
+  expect(fetch).toHaveBeenCalledTimes(2)
+  expect((fetch.mock.calls[1][1] as RequestInit).signal!.aborted).toBe(true)
   expect(timeout).toHaveBeenCalledWith(30000)
+ })
+ it('sends one fresh read beside a stalled one and keeps the first answer',async()=>{
+  const stalled=(_url:string,options:RequestInit)=>new Promise<Response>((_resolve,reject)=>options.signal!.addEventListener('abort',()=>reject(options.signal!.reason),{once:true}))
+  const fetch=vi.fn(stalled).mockImplementationOnce(stalled).mockImplementationOnce(async()=>Response.json({available:true,user:null}))
+  vi.stubGlobal('fetch',fetch)
+  const result=api('/auth/session')
+  await vi.advanceTimersByTimeAsync(4999)
+  expect(fetch).toHaveBeenCalledTimes(1)
+  await vi.advanceTimersByTimeAsync(1)
+  await expect(result).resolves.toEqual({available:true,user:null})
+  expect(fetch).toHaveBeenCalledTimes(2)
+  expect((fetch.mock.calls[0][1] as RequestInit).signal!.aborted).toBe(true)
+  // The answer proves the service reachable, so other reads carry on without a cooldown.
+  fetch.mockImplementation(async()=>Response.json([]))
+  await expect(api('/catalog')).resolves.toEqual([])
+ })
+ it('does not send a second copy of a stalled write, administrator read or read already retried',async()=>{
+  vi.spyOn(AbortSignal,'timeout').mockImplementation(delay=>{
+   const controller=new AbortController()
+   setTimeout(()=>controller.abort(new DOMException('Timed out','TimeoutError')),delay)
+   return controller.signal
+  })
+  const fetch=vi.fn((_url:string,options:RequestInit)=>new Promise<Response>((_resolve,reject)=>options.signal!.addEventListener('abort',()=>reject(options.signal!.reason),{once:true})))
+  vi.stubGlobal('fetch',fetch)
+  const write=expect(post('/forum/threads',{})).rejects.toThrow('Couldn’t reach')
+  await vi.advanceTimersByTimeAsync(30000);await write
+  expect(fetch).toHaveBeenCalledTimes(1)
+  fetch.mockRejectedValueOnce(new TypeError('offline'))
+  const read=expect(api('/catalog')).rejects.toThrow('Couldn’t reach')
+  await vi.advanceTimersByTimeAsync(200)
+  expect(fetch).toHaveBeenCalledTimes(3)
+  await vi.advanceTimersByTimeAsync(30000);await read
+  expect(fetch).toHaveBeenCalledTimes(3)
+  await vi.advanceTimersByTimeAsync(2000)
+  const admin=expect(api('/admin/insights')).rejects.toThrow('Couldn’t reach')
+  await vi.advanceTimersByTimeAsync(10000)
+  expect(fetch).toHaveBeenCalledTimes(4)
+  await vi.advanceTimersByTimeAsync(50200);await admin
+  expect(fetch).toHaveBeenCalledTimes(5)
+ })
+ it('reloads waiting features once reads work again, not on every success',async()=>{
+  const {onCommunityReconnect}=await import('./api'),reconnected=vi.fn()
+  const stop=onCommunityReconnect(reconnected)
+  const fetch=vi.fn().mockImplementation(async()=>Response.json([]))
+  vi.stubGlobal('fetch',fetch)
+  await api('/catalog');await vi.advanceTimersByTimeAsync(0)
+  expect(reconnected).not.toHaveBeenCalled()
+  fetch.mockRejectedValue(new TypeError('offline'))
+  const failed=expect(api('/catalog')).rejects.toThrow('Couldn’t reach')
+  await vi.advanceTimersByTimeAsync(200);await failed
+  expect(reconnected).not.toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(2000)
+  fetch.mockImplementation(async()=>Response.json([]))
+  await api('/auth/session');await vi.advanceTimersByTimeAsync(0)
+  expect(reconnected).toHaveBeenCalledTimes(1)
+  await api('/catalog');await vi.advanceTimersByTimeAsync(0)
+  expect(reconnected).toHaveBeenCalledTimes(1)
+  stop()
  })
  it('still times out stalled reads and opens recovery after the bounded retry',async()=>{
   vi.spyOn(AbortSignal,'timeout').mockImplementation(delay=>{
@@ -89,7 +149,8 @@ describe('community read recovery',()=>{
   const fetch=vi.fn((_url:string,options:RequestInit)=>new Promise<Response>((_resolve,reject)=>options.signal!.addEventListener('abort',()=>reject(options.signal!.reason),{once:true})))
   vi.stubGlobal('fetch',fetch)
   const failed=expect(api('/catalog')).rejects.toThrow('Couldn’t reach')
-  await vi.advanceTimersByTimeAsync(60200);await failed
+  // The second request starts beside the first after five seconds, so both deadlines have passed at 35 seconds.
+  await vi.advanceTimersByTimeAsync(35000);await failed
   expect(fetch).toHaveBeenCalledTimes(2)
   await expect(api('/auth/session')).rejects.toThrow('Couldn’t reach')
   expect(fetch).toHaveBeenCalledTimes(2)

@@ -1,9 +1,12 @@
-# Private controller association preparation
+# Controller association, transport, write lease and board
 
-These files prepare a board-only lifetime contract for the resident Sidechain,
-Output Matrix and Analog BD engines. They do not change the loader, generated
-catalogue, public base or package admission. The strong policy bridge has zero
-entries and refuses every buffer and fixed-resource claim.
+These files hold the board-only lifetime contract for the resident Sidechain,
+Output Matrix and Analog BD engines. `controller_board.c` binds their packages
+to it from the compiled trust rows (empty by default; the beta base's are
+`module-adapters/controller-policies.json`). Analog BD's reset restores its
+engine's authored boot record (its tables) rather than zeros. The strong
+buffer-policy bridge has zero entries and refuses every buffer and
+fixed-resource claim.
 
 `controller_association` accepts a trusted compiled declaration and keeps the
 encoded package SHA256, source-policy SHA256, module and policy/state/parameter
@@ -36,8 +39,11 @@ Jobs bind generation, a board ticket, the actual 16-bit wire sequence, core,
 operation, reset offset/count and CAS expected/desired masks. RESET ranges are
 bounded to 24 words. The backend must refuse actual transport sequence wrap or
 reuse, including unrelated operations: the helper cannot observe unreported wire
-wraps. Exhausted generations and tickets also refuse. RESTORE is reserved but
-remains closed until its actual source/backend contract has been proved.
+wraps. Exhausted generations and tickets also refuse. The RESTORE job
+operation is reserved and closed. `mw_controller_restore` instead re-arms a
+disabled (RETIRING) generation whose image is published again (an abandoned
+removal, a rolled-back replacement) for a complete zero reset and enable, only
+while every other held slot of the feature is disabled or untouched.
 
 Each core must acknowledge initialization, release its reset job storage and
 acknowledge activation before the pure pending-journal query permits control
@@ -45,6 +51,17 @@ writes. The initial acknowledged ColdFire commit is possible before ACTIVE;
 only the actual publication callback establishes ACTIVE. This query is not a
 public readiness interface. Production must resolve a reviewed controller entry
 to its exact owned image/package/policy/generation binding.
+
+The write lease runs on every frame a leased hook fires, installed or active.
+Begin therefore keeps its resolution of each call site (the owner, its bound
+slot, the trusted row and the backend's `owns_image` result) while the loader's
+owner epoch (`modwerk_runtime_owner_epoch`: every install, discard, reclaim,
+publish, restore and journal switch, odd while one is under way) and the
+registry's last bound generation stay unchanged. Every Begin and End still
+checks the caller's stack, the slot's state and jobs, `writes_blocked`,
+`resources_idle` and the owner's ledger entry and header
+(`modwerk_runtime_owner_held`); a slot that is not writing costs no owner check.
+`test_controller_board.py` (mode 11) counts those checks.
 
 Cancellation, timeout, partial acknowledgment or unknown submission retains both
 incoming and predecessor images/resources. Late ACKs can drain owned jobs but

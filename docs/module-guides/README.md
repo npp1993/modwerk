@@ -21,7 +21,7 @@ A module's category is the `category` field of its manifest (`octamod.module.jso
 2. Follow [Add or port a module](../ADD_A_MODULE.md) for the folder, the manifest, the packages and the comparison with native octabam.
 3. Walk the guide's checklists: **Behave like the instrument** and **Integrate**, and for an effect **Sound quality** (aliasing, clipping, DC, idle behaviour). Tick an item only when you did it.
 4. Measure the [performance](#performance) and write `evidence/performance.json`: worst-case cycles, a benchmark against stock and a stress run. `npm run perf:audit -- check <that file>` must pass.
-5. Run `npm run module:doctor -- <id>` until every line is green. It reads the repository only: no firmware and no module code runs. For a module listed from 7 October 2026 it also refuses a missing or failing performance record.
+5. Run `npm run module:doctor -- <id>` until every line is green. It reads the repository only: no firmware runs, and module code runs only as manifest declarations (for the cross-compatibility line). For a module listed from 7 October 2026 it also refuses a missing or failing performance record.
 6. Run `npm run check`, and `npm run module:verify -- <id> --os <your 1.40C update>` for an Octatrack module.
 7. If you learned something the next developer needs and no guide says, write it into the guide that fits, as its own docs-only pull request ([Share what you learn](../DEVELOPER_WORKFLOW.md#share-what-you-learn)).
 
@@ -30,7 +30,7 @@ A module's category is the `category` field of its manifest (`octamod.module.jso
 **Integrate with what exists.** A module is built by the shared builder beside other modules, listed from `sdk/catalog.json`, compared with native octabam and released by the same pipeline as every other. Do not write module-specific builder, library or CI code. If your module has a shape no earlier module had, change the shared code once (`src/engine/`, `sdk/octabam/tools/build/build_bus.py`) and let `module:verify` prove it.
 
 - *Build beside others.* `npm run module:verify` builds your module alone, beside every other offered module, in the fullest selections and in a fixed sample, with and without the stock FX2 effects. A refusal is fine when it is the right one; it must match native octabam's.
-- *Declare conflicts; never hope.* Put what you cannot share in `compatibility.conflicts` and in the resource claims (FX2 ids, caves, hook sites, DSP data ranges). The ledger refuses collisions by name. Analog BD admits only its reviewed DSP companions (`analogBdCompanions`), subject to actual placement; an effect that builds beside the stock FX2 effects is named in `FITS_BESIDE_STOCK_FX2` (`src/catalog/selection-conflicts.ts`). The library reads the same conflicts to flag a module on its card, and offer a swap, before anyone adds it (`src/catalog/add-blocks.ts`), so a declared conflict needs no extra interface work.
+- *Declare conflicts; never hope.* Put what you cannot share in `compatibility.conflicts` and in the resource claims (FX2 ids, caves, hook sites, DSP data ranges). The ledger refuses collisions by name. A declared conflict never makes an overlap with another module acceptable: the [cross-compatibility gate](#cross-compatibility) refuses it anyway. Analog BD admits only its reviewed DSP companions (`analogBdCompanions`), subject to actual placement; an effect that builds beside the stock FX2 effects is named in `FITS_BESIDE_STOCK_FX2` (`src/catalog/selection-conflicts.ts`). The library reads the same conflicts to flag a module on its card, and offer a swap, before anyone adds it (`src/catalog/add-blocks.ts`), so a declared conflict needs no extra interface work.
 - *Appear everywhere from the manifest.* The `sdk/catalog.json` entry (`id`, `version`, `addedAt`) puts the module in the library, the configurator and its module page. Add `presentation/thumbnail.svg` (320×192) or hand-drawn art in `ModulePreview.tsx`, and `resources.impact`.
 - *Survive saved work.* Saved configurations pin module versions, and saved Octatrack projects store knob bytes. A new version must load what an old one saved, or the README says exactly what breaks and how to migrate.
 - *Use the same documentation contract.* README sections, a tutorial of at least three steps, TESTING.md, real black-and-white screenshots. See [MODULE_QUALIFICATION.md](../MODULE_QUALIFICATION.md).
@@ -65,6 +65,115 @@ A **minor change to a stock flow** is allowed when the module cannot do its job 
 | Screenshots of the real LCD | `scripts/capture-module-ui.py` ([guide](../MODULE_UI_CAPTURES.md)) |
 
 Most of these need a native toolchain and your own original OS 1.40C kept outside the repository ([SDK README](../../sdk/README.md#octatrack-native-development)). Say in TESTING.md which you ran.
+
+## Cross-compatibility
+
+**No module depends on another, on any machine.** Every module builds, installs and works when it is the only module chosen, on the stock OS, the base and the shared SDK. It never calls, extends or hooks another module's code, engine, rows, tables or files, and it declares no `requires`. No "needs X" selection rule, and no module pull request stacked on another's. When two modules need the same code, put it in the base or the shared SDK first, as an event or a table, in its own owner-reviewed pull request, or ship both features as one module. Review refuses a module that depends on another, and no exception entry covers it.
+
+Every Octatrack module must install beside every other active module and the Modwerk base. `npm run modules:compat` checks this on every pull request, as part of `npm run check` and `npm run module:doctor`, so registered authors' automatic updates pass it too. It reads declarations only: your manifest's detours, hooks, pokes, references, caves, grown tables, kept bytes and stock copies, the port recipes, the committed base package and octabam's DSP resource rules. It needs no firmware and runs in under a second. It checks every pair and the whole set.
+
+- **One owner per byte.** No two modules, and no module and the base, may patch overlapping stock bytes or relocate the same stock table (Elekloader's rule 5).
+- **Share behaviour through events and tables.** When two modules need to act at the same stock site, the base owns that site and each module subscribes to its [event](#events) or contributes to its table. Never patch a site the base owns (Elekloader's rule 4).
+- **Copy stock bytes only from bytes nobody patches.** A copy taken from bytes that another module or the base patches depends on install order. Take the identical bytes from an unpatched location instead. For example, a Tape Echo runtime port copied 13 bytes from 0x4000230e, under the machine group's Part-validator hook at 0x40002318; its fix takes the same instruction bytes from 0x4003886a.
+- **Pinned effect IDs and chooser rows are exclusive.** Pick a free one.
+
+The only exceptions are the reviewed entries in `sdk/machines/octatrack/compatibility.json`. Each names both modules, the exact addresses and a reason:
+
+- `group-owned`: one module's reviewed composition owns every listed site. None today: POLY8, VECTOR, FM Synth, Scale Quantizer and Analog BD are independent packages that share the machine chooser, the SEQUENCER page and the chromatic keyboard through the base's tables and take events.
+- `pending-migration`: two modules still patch the site of a planned event and may do so only `until` both subscribe. None today: Repitch, POLY8 and Mute Modes subscribe, and a detour a module's `runtime.json` names in `replaces` is not in its runtime package, so the gate no longer counts it.
+
+An entry fails once a named module is no longer active or nothing meets at a listed site, so the file stays exact. A new entry needs owner review, and is the last resort: propose an event instead. The base's own exceptions are `BASE_OWNS` in `sdk/machines/octatrack/elekloader/build_core.py`.
+
+The gate does not prove runtime behaviour, DSP placement, cycles or hardware compatibility. `module:verify` and the qualification steps still cover those.
+
+### UI claims
+
+Build your module to work with everything else: that is the default. Two modules must not take the same key gesture or the same stock screen, because the musician would get whichever one runs first. Declare what yours takes in `compatibility.uiClaims` in `octamod.module.json`, and the gate compares it with every active module:
+
+- `key:HELD+PRESSED`: the keys held, in any order, then the key pressed or the encoder turned, for example `key:UP+TEMPO` or `key:CUE+LEVEL`. Add `@PAGE` when it only works on one page (`key:FUNC+LEFT@CHROMATIC`); without it, the gesture counts on every page. `TRACK` and `TRIG` stand for any track or trig key, `A`-`F` and `LEVEL` for turning an encoder. The contract lists every name.
+- `screen:NAME`: a stock window or page your module draws over or replaces, for example `screen:TEMPO`.
+- `[]` when it takes neither. What it adds through the base's FX list, machine list or menu rows is not a claim: the base shares those.
+
+New modules must declare it (`module:doctor` checks). If the clash with another module is deliberate, add that module to your `compatibility.conflicts`. The gate then accepts it, and the configurator never lets anyone choose both together.
+
+### Events
+
+Shared behaviour on the Octatrack follows Elekloader's hook bus ([ADAPTING.md](https://github.com/irpina/elekloader/blob/main/docs/ADAPTING.md), "Do not patch the shared sites: subscribe"). The Modwerk base owns every stock site that more than one module needs and shares it in one of four ways. The registry is `sdk/machines/octatrack/events.json`. `sdk/machines/octatrack/EVENTS.md` lists every entry with its prototype or record, what a result means, its order rule and where it runs. C modules include `sdk/machines/octatrack/include/modwerk_events.h`.
+
+| Kind | What the base does | What your `runtime.json` declares | Example |
+| --- | --- | --- | --- |
+| Call event | Runs every handler at its stock site, lowest `order` first, then stock. A handler's result passes, takes or drops the call, as the event's contract says. | `subscribe`: `event`, `fn` (a C function) and `order` | `ev_play_increment`: Repitch changes a track's playback increment |
+| Raised event | Has no stock site. A module asks it, and the base runs every handler and returns their answers OR'd. | To ask it: `raise`, and a zero word `raise_<event>` in initialized data, which the loader points at the base's entry at install. To answer it: `subscribe`, as for a call event | `ev_mute_keep`: Mute Modes asks which tracks another module still reads while they are muted |
+| Take event | Gives its site to one subscriber: the first record, in `order`, whose `claims` is 0 or accepts the call. Its `entry` runs with every register as at the site, replays the stock instructions and returns to stock itself. | `subscribe`, with `fn` naming a `struct modwerk_take` {claims, entry} | `ev_octave_key`: POLY8, FM Synth and Scale Quantizer each claim their own tracks |
+| Table | Has no site. Modules contribute fixed-size records, and base code reads them in `order`. | `contribute`: `to`, `data` (the record's symbol) and `order` | `ot_machines`: each track machine's chooser row, page and renderer |
+
+A `runtime.json` needs `schema` and at least one subscription or contribution. The other keys are optional:
+
+```json
+{
+  "schema": 1,
+  "subscribe": [{ "event": "ev_play_increment", "fn": "mymod_rate", "order": 50 }],
+  "contribute": [{ "to": "ot_machines", "data": "mymod_machine", "order": 40 }],
+  "raise": ["ev_mute_keep"]
+}
+```
+
+- **Order.** 0-254; equal orders run in module-id order. 255 marks a raise and is never an order. Each entry gives its bands, for example 10-29 for a machine that claims its own tracks.
+- **Replaces.** `replaces` names what your native octabam build patches at that site instead: a detour's symbol, or for a take event or a table a list of detour symbols and `0x` addresses of pokes and references. The runtime package leaves it out, and the gate stops counting it.
+- **Room.** Each take event and table holds a fixed number of subscribers: 8, and 4 for `ot_machines`. The loader refuses a package past it. Before anything is sent, the site also refuses a raise on anything but a raised event and a take or table record that runs past the package's image.
+- **Context.** Handlers run where the entry says: short, with no firmware call that can block. Call-event handlers use the C convention and keep every register but d0-d1/a0-a1.
+- **Base.** A subscriber needs a base built with site events (loader capability 128). Before it sends anything, the site asks for a base update when the connected base can't take the package.
+- **Hook indices are an ABI.** Released packages carry them. Add new events and tables at the end of the registry, and never renumber a released one.
+
+Machine modules whose native source predates events declare the same subscriptions and contributions in `sdk/machines/octatrack/module-adapters/machine-ports.json` instead of a `runtime.json`.
+
+### Propose an event
+
+Propose an event or a table when the gate says two behaviour hooks meet, or when you need a site that another module or the base already patches:
+
+1. Open a pull request that adds one entry at the end of `sdk/machines/octatrack/events.json`, then run `python3 -B sdk/machines/octatrack/events.py --write` to regenerate the base's dispatch, the headers, EVENTS.md and the site's hook list. An event needs its name (`ev_` and what happens), its kind, its stock site (address, length in whole instructions and a SHA-256 guard), or none for a raised event, when it runs, its C prototype and its order rule. A table needs an `ot_` name, its record size and C declaration, its room and the sites its reader owns. Addresses, lengths and hashes only: no stock bytes.
+2. Say which modules patch that site today. Until they subscribe, list each such pair in `compatibility.json` as `pending-migration`, with the event and `until`.
+3. The owner reviews the entry. Every later module subscribes or contributes instead of patching.
+
+### Flag every incompatibility
+
+Build your module to work beside everything else. Machine lists, effect lists and menu rows belong to the base, so modules that add to them never collide. Where your module truly cannot run beside another, that is allowed, but say exactly which: add the other module's id to `compatibility.conflicts` in `octamod.module.json`. The configurator then never offers both together.
+
+Collisions are caught automatically, so nothing ships incompatible without its author deciding:
+
+- **Card builds.** `npm run modules:pairs` runs octabam's ledger on every catalogue module alone and beside every other, in each context POLY8's shared machine list creates, and writes `src/catalog/compatibility-pairs.json`. A pair the ledger refuses that neither module flags fails the check. The configurator refuses every refused or flagged pair by itself, so no rule is written by hand. The table grows with the square of the number of modules, and the same check proves with the full ledger that pairs decide every larger selection.
+- **USB sets.** `npm run modules:compat` still refuses every byte collision, flagged or not: beta sets install whatever is chosen, so subscribe to an event or [propose one](#propose-an-event).
+- **What no gate sees.** A flag can also name a limit the ledger cannot see, such as DSP placement or behaviour. Say why in the README's Compatibility section. `npm run module:doctor -- <id>` lists the collisions the ledger finds, so a flag that no longer applies can go at the next version.
+
+### Shared sites still to build
+
+The more of these the base owns, the more modules combine. Each is an event or a table to [propose](#propose-an-event), in its own owner-reviewed pull request, before a module uses it:
+
+| Site | Today |
+| --- | --- |
+| Track machine list (SRC SETUP) | Base table `ot_machines`; on the card, POLY8's shared machine list |
+| Effect lists (FX1, FX2) | USB: the base gives each module effect a per-project handle; card: pinned effect ids, 32 in all ([wider ids](../OCTATRACK_MORE_EFFECT_IDS.md)) |
+| SEQUENCER rows | Base table `ot_sequencer_rows` |
+| MIDI generators on a MIDI track's SRC SETUP | Not built: a base table of MIDI sources, as `ot_machines` is for audio tracks |
+| Stock DSP effects a module hooks (Sidechain Compressor, Output Matrix) | Not built: DSP-side taps, one owner per stock site |
+| Module settings | Not built: upstream octabam's [OTX settings store proposal](https://github.com/sambanks/octabam/blob/main/docs/proposals/OTX_PROJECT_PROPOSAL.md) |
+
+### Read the gate's message
+
+Each problem is one line naming the modules, the byte ranges and what each one patches, followed by a `fix:` line with the route and a link to this section. `npm run modules:compat -- <id>` lists only what involves your module.
+
+| The message says | Do this |
+| --- | --- |
+| `X patches A..B (…), which is the event ev_N` | Subscribe to `ev_N` instead of patching |
+| `X (detour …) and Y (detour …) both claim A` | Two behaviour hooks meet: [propose an event](#propose-an-event) |
+| `X (poke …) and Y (…) both claim A` | One owner per byte: patch other bytes, or propose an event |
+| `X copies stock bytes A..B (…), but Y patches C..D` | Copy the identical bytes from an unpatched location |
+| `X (table …)` meets another claim | The table already has an owner: propose an event or a shared table |
+| `X (cave …)` or `linked unit` meets another claim | Pick free space, or let the build place the unit |
+| `fx2 id: X and Y both claim 0x…` | Pick another chooser row (a free effect ID) |
+| `core-private Y`, `DSP data range`, `FX2 instance buffers` | Claim free words, or request a base-owned region |
+| `relation …` | Correct `compatibility.json`; every entry needs owner review |
+| `X (key:…) and Y (key:…) take the same key gesture` (or screen) | Change one so both work, or list the other module in `compatibility.conflicts` ([UI claims](#ui-claims)) |
 
 ## Performance
 

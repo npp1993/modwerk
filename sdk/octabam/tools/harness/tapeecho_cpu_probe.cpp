@@ -53,8 +53,11 @@ static std::vector<uint8_t> read(const char *p) {
 }
 static constexpr uint32_t stack = 0x47100000, endpc = 0x47200000;
 // Direct-kernel instruction ceilings (regression limits, not hardware cycles).
+// TAPE_CEILING rose from 1000 to 1020 with the MIX dry law (0.1.4, #607): the
+// knob-ramp path derives the dry gain per sample, at most 4 instructions each;
+// settled blocks pay it once.
 static constexpr unsigned READER_FIXED_CEILING=165, READER_MOVING_CEILING=250,
-    FADE_EXTRA=90, FILTER_CEILING=420, TAPE_CEILING=1000;
+    FADE_EXTRA=90, FILTER_CEILING=420, TAPE_CEILING=1020;
 static std::map<uint32_t,uint64_t>* activeProfile=nullptr;
 static std::vector<uint32_t>* activeTrace=nullptr;
 static unsigned run(ot::Machine& m, uint32_t pc, uint32_t until, unsigned max = 100000) {

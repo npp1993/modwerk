@@ -1,7 +1,9 @@
 // The Octatrack base's self-test (PROJ > MODWERK > SELF TEST; sdk/machines/octatrack/elekloader/dsp.c), run by the site
 // on a trial before it is kept, with the pattern playing and the effects' knobs moving: every module intact and
 // running, never all at once but as many at a time as the ledger allows (no such combination may take a core or
-// the CPU past 90 %), and a stress round. About 3 s for every eight DSP modules.
+// the CPU past 90 %), and a stress round. A module the Part's own effects crowd off a core runs on the other core, or
+// on a core with those effects briefly taken off; it fails (bit 7) only when neither core holds it even then. About 3 s
+// for every eight DSP modules.
 import type { SelftestRecord } from './upload-usb.ts'
 
 /** What each failed bit means, as the end of "The stress test failed: …". The order of selftest.h's bits. */
@@ -13,7 +15,7 @@ export const SELFTEST_FAILURES = [
   'the module loader reported errors',
   'the test couldn’t put your tracks back as they were',
   'the test was stopped on the Octatrack',
-  'a module doesn’t fit on the DSP, even on its own',
+  'a module doesn’t fit on either DSP core, even with the other effects there removed',
   'a combination the Octatrack allows overloads the CPU',
   'a frame came late (something held the Octatrack’s interrupts too long)',
   'a module’s code on the DSP doesn’t match its package',
@@ -76,7 +78,7 @@ export function explain(bit: number, module: string): string {
     0: `${module} didn’t install cleanly`,
     2: `the Octatrack’s DSP stopped with ${module} running`,
     3: `a combination the Octatrack allows overloads the DSP (with ${module})`,
-    7: `${module} doesn’t fit on the DSP, even on its own`,
+    7: `${module} doesn’t fit on either DSP core, even with the other effects there removed`,
     8: `a combination the Octatrack allows overloads the CPU (with ${module})`,
     9: `a frame came late with ${module} running (something held the Octatrack’s interrupts too long)`,
     10: `${module}’s code on the DSP doesn’t match its package`,

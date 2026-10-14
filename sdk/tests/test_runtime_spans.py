@@ -190,6 +190,17 @@ class StrictScannerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'strict'):
             self.scan(shared, shared)
 
+    def test_unused_hook_words_are_filler_but_stock_bytes_beside_them_count(self):
+        """Owner decision, 14 Oct 2026: runs made only of 0xFF (unused hook words, RUNTIME_NONE) are ignored as zeros
+        are. Synthetic bytes only."""
+        counted = lambda shared: max(packages.runs(shared, b'stock' + shared).values(), default=0)
+        none = b'\xff' * 16                                       # four unused hook words
+        self.assertLess(counted(none + bytes(range(1, 5))), packages.LIMIT)
+        self.assertLess(counted(bytes(range(1, 5)) + none + bytes(40) + none), packages.LIMIT)
+        self.assertGreaterEqual(counted(none + bytes(range(1, 13))), packages.LIMIT)       # real bytes after filler
+        self.assertGreaterEqual(counted(bytes(range(1, 10)) + b'\xff' * 3), packages.LIMIT)  # a shorter 0xFF stretch counts
+        self.assertGreaterEqual(counted(bytes(range(1, 7)) + b'\x70\xff' + bytes(range(7, 11))), packages.LIMIT)
+
     def test_dsp_views_and_new_boundary_matches_cannot_escape_scan(self):
         shared = bytes(range(1, 25))
         with self.assertRaisesRegex(ValueError, 'strict'):

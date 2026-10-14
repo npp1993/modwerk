@@ -4,7 +4,8 @@ import { ForumTime } from './ForumTime'
 import { Icon } from '../components/Icon'
 import { GithubIssueReplies } from './GithubIssueReplies'
 import { modulePageHref } from './modules'
-import { REPORT_KINDS, reportStatusLabel, isConfirmedBug } from './report-closure'
+import { REPORT_KINDS, isConfirmedBug } from './report-closure'
+import { ReportState } from './ReportState'
 
 export function IssueCount({ count }: { count: number }) {
   return <span className="tab-count module-issue-count" data-open={count > 0} aria-label={count + (count === 1 ? ' open issue' : ' open issues')}>{count}</span>
@@ -15,7 +16,7 @@ export function ModuleIssueCard({ issue, moduleId }: { issue: PublicModuleIssue;
   return <article className="module-issue-card" aria-labelledby={'issue-title-' + issue.id}>
     <header className="module-issue-header">
       <div className="module-issue-heading">
-        <span className="module-issue-state" data-open={issue.status === 'open'} data-confirmed={issue.status === 'open' && isConfirmedBug(issue)}><Icon name={issue.closure_reason === 'fixed' ? 'check' : 'message'} size={14}/>{reportStatusLabel(issue)}</span>
+        <ReportState report={issue} data-open={issue.status === 'open'} data-confirmed={issue.status === 'open' && isConfirmedBug(issue)}/>
         {issue.report_kind && issue.report_kind !== 'bug' && <span className="pill">{REPORT_KINDS[issue.report_kind]}</span>}
         {isConfirmedBug(issue) && !['confirmed','awaiting_verification'].includes(issue.triage_state ?? '') && issue.status === 'open' && <span className="pill">Confirmed bug</span>}
         {issue.number !== null && <span className="module-issue-number">#{issue.number}</span>}

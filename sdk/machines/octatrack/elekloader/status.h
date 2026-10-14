@@ -11,4 +11,5 @@ struct modwerk_module_load {
     uint8_t slots[2]; /* slots running it on core 0 (T5-T8) and core 1 (T1-T4) */
 };
 unsigned modwerk_dsp_module_loads(struct modwerk_module_load *out); /* dsp.c: how many, at most MODWERK_FX_IDS */
+unsigned modwerk_status_load(uint8_t *out); /* cached MWLD v1, no work scheduled by the read */
 #endif

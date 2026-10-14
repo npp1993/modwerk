@@ -17,6 +17,24 @@ import re
 import struct
 
 SCHEMA = 'modwerk-machine-layout-v2'
+PARTICIPANT_SCHEMA = 'modwerk-machine-layout-v3'
+ANALOG_BD_SCHEMA = 'modwerk-machine-layout-v4'
+PARTICIPANT_ORDER = ('poly8', 'vector', 'synth', 'quantizer', 'analog-bassdrum')
+
+
+def canonical_participants(mask, optional_quantizer=False, analog_bd=False):
+    if not _integer(mask, 1, 7) or type(optional_quantizer) is not bool or type(analog_bd) is not bool:
+        _fail('Invalid explicit canonical participant selection.')
+    return tuple(name for name, bit in zip(PARTICIPANT_ORDER[:3], (1, 2, 4)) if mask & bit) + \
+        (('quantizer',) if mask & 4 or optional_quantizer else ()) + \
+        (('analog-bassdrum',) if analog_bd else ())
+
+
+def participants(mask, value, *, analog_bd=False):
+    if (not isinstance(value, list) or any(type(v) is not str for v in value) or
+            value != list(canonical_participants(mask, 'quantizer' in value, analog_bd))):
+        _fail('Canonical participants must exactly match the reviewed mask and optional Quantizer.')
+    return bool('quantizer' in value and not mask & 4)
 KEYS = frozenset(('schema', 'packageSha256', 'imageSha256', 'compiledImageSha256', 'recipeSha256', 'memberMask',
                   'stateLayoutRevision', 'parameterLayoutRevision', 'sources'))
 SHA = re.compile(r'[0-9a-f]{64}\Z')
@@ -163,6 +181,8 @@ class ReviewedMachineLayout:
     module_id: int
     package_sha256: str
     declaration_sha256: str
+    optional_quantizer: bool = False
+    analog_bd: bool = False
 
 
 def validate(package, declaration, recipe, *, reviewed_sha256, source_root):
@@ -177,7 +197,10 @@ def validate(package, declaration, recipe, *, reviewed_sha256, source_root):
     if not isinstance(declaration, bytes) or _sha(declaration) != reviewed_sha256:
         _fail('Missing or changed reviewed layout declaration.')
     doc = _json(declaration, 65536)
-    if not isinstance(doc, dict) or set(doc) != KEYS or doc['schema'] != SCHEMA:
+    if not isinstance(doc, dict):
+        _fail('Unsupported machine layout declaration.')
+    explicit = doc.get('schema') in (PARTICIPANT_SCHEMA, ANALOG_BD_SCHEMA)
+    if set(doc) != KEYS | ({'participants'} if explicit else set()) or doc.get('schema') not in (SCHEMA, PARTICIPANT_SCHEMA, ANALOG_BD_SCHEMA):
         _fail('Unsupported machine layout declaration.')
     for key in ('packageSha256', 'imageSha256', 'compiledImageSha256', 'recipeSha256'):
         if not isinstance(doc[key], str) or not SHA.fullmatch(doc[key]):
@@ -185,7 +208,11 @@ def validate(package, declaration, recipe, *, reviewed_sha256, source_root):
     if (not _integer(doc['memberMask'], 1, 7) or not _integer(doc['stateLayoutRevision'], 1, 65535) or
             not _integer(doc['parameterLayoutRevision'], 1, 65535)):
         _fail('Explicit positive member/state/parameter revisions are required.')
+    analog_bd = doc.get('schema') == ANALOG_BD_SCHEMA and isinstance(doc.get('participants'), list) and 'analog-bassdrum' in doc['participants']
+    optional_quantizer = participants(doc['memberMask'], doc['participants'], analog_bd=analog_bd) if explicit else False
     image, members, parameters, module = _envelope(package)
+    if explicit and module != 0xdb769930:
+        _fail('Explicit canonical participants require the canonical machine-group identity.')
     if (_sha(package) != doc['packageSha256'] or _sha(image) != doc['imageSha256'] or
             members != doc['memberMask'] or parameters != doc['parameterLayoutRevision']):
         _fail('Package identity or layout does not match its reviewed declaration.')
@@ -205,7 +232,7 @@ def validate(package, declaration, recipe, *, reviewed_sha256, source_root):
         if not target.is_relative_to(root) or not target.is_file() or _sha(target.read_bytes()) != digest:
             _fail('Reviewed source changed or escaped its source snapshot: ' + name)
     return ReviewedMachineLayout(members, doc['stateLayoutRevision'], parameters, module,
-                                 doc['packageSha256'], reviewed_sha256)
+                                 doc['packageSha256'], reviewed_sha256, optional_quantizer, analog_bd)
 
 
 def same_mask_replacement(previous, candidate):

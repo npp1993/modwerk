@@ -1,16 +1,16 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright (C) 2026 Modwerk contributors
  *
- * Beta startup port from the Elekloader migration. hooks.s jumps here from the loop's first
+ * The docking startup, ported from the Elekloader migration. hooks.s jumps here from the loop's first
  * instruction (0x400559c6) and goes on with the stock code after the loop (0x40055b7e), which resets
  * every LED.
  *
  * Docking: the mark's ninth dot is a module arriving. First the mark flies in: every pixel of the frame
  * and the tiles comes from far beyond the screen and lands, the frame clockwise, the tiles from the middle
  * one round the ring. The empty corner, the socket, blinks while a light far off on the trig row answers.
- * The module runs along the trig row, turns up into the screen and docks; its wave reveals MODWERK, NEW and
- * BETA and rolls on across the whole panel. The lamps stay dark while the mark builds, so the
- * module's light and then its wave are all the panel shows.
+ * The module runs along the trig row, turns up into the screen and docks; its wave bends the screen as it
+ * passes, reveals MODWERK and rolls on across the whole panel. The lamps stay dark while the mark builds, so
+ * the module's light and then its wave are all the panel shows.
  *
  * Screen and lamps are one plane: the LCD sits in the panel (54.2 hundredths of a millimetre per pixel,
  * lamp positions from the stock lamp table), so the module and the wave cross the screen's edge without
@@ -20,7 +20,7 @@
  * A's red. Drawing goes through the guarded compositor frame hook (hooks.s); time is the
  * free-running DTIM3 count, as in the stock loop. */
 #include <stdint.h>
-#include "boot_art.h"
+#include "boot_art.h"   /* from public_art.py: the base's art without its NEW / BETA labels */
 
 #ifdef MODWERK_HOST
 void host_clear(void *window, int a, int b);
@@ -64,12 +64,15 @@ extern const uint32_t host_white[3];
 #define WHITE ((const uint32_t *)0x400abc26)                /* the scheme's colour level per intensity */
 #endif
 
-/* The score, in ms. Each pixel of the mark sets off at its own time (boot_art.h) and lands FLIGHT later. */
-#define FLIGHT 800
-#define T_WAIT 1300     /* the socket blinks and the module answers, twice */
-#define T_FLY0 1540     /* the module's run */
-#define T_DOCK 2260
-#define T_WAVE 2260     /* the dock's wave: radius (dt / 40 ms)^2 px */
+/* The score, in ms. Each pixel of the mark sets off at its own time (boot_art.h) and lands FLIGHT later.
+ * That schedule is the base's; here it plays QUICK, 10/7 as fast, so the mark has landed by 0.89 s and the
+ * wave and MODWERK get the time. */
+#define FLIGHT 800      /* on the schedule's own clock */
+#define QUICK(t) ((t) * 10 / 7)
+#define T_WAIT 900      /* the socket blinks and the module answers, twice */
+#define T_FLY0 1140     /* the module's run */
+#define T_DOCK 1860
+#define T_WAVE 1860     /* the dock's wave: radius (dt / 55 ms)^2 px, off the screen after 0.58 s */
 #define T_END 3500
 
 #define R_HEAD 34       /* px: how far from the module a lamp glows */
@@ -187,26 +190,13 @@ static void module(int32_t t, int32_t *x, int32_t *y)
 static int32_t wave(int32_t t) /* px */
 {
     int32_t dt = t - T_WAVE;
-    return dt <= 0 ? 0 : dt * dt / 1600;
+    return dt <= 0 ? 0 : dt * dt / 3025;
 }
 
 static int near(int32_t x, int32_t y, int32_t r) /* is pixel (x, y) within r px of the dock */
 {
     int32_t dx = x * 16 + 8 - DOCK_X, dy = y * 16 + 8 - DOCK_Y;
     return dx * dx + dy * dy <= r * r * 256;
-}
-
-static void ring(unsigned char *frame, int32_t r, int every) /* a circle round the dock, every n-th pixel */
-{
-    int32_t cx = DOCK_X >> 4, cy = DOCK_Y >> 4, x = r, y = 0, err = 0;
-    for (int n = 0; x >= y; n++) {
-        if (n % every == 0) {
-            dot(frame, cx + x, cy + y), dot(frame, cx + y, cy + x), dot(frame, cx - y, cy + x), dot(frame, cx - x, cy + y);
-            dot(frame, cx - x, cy - y), dot(frame, cx - y, cy - x), dot(frame, cx + y, cy - x), dot(frame, cx + x, cy - y);
-        }
-        y++, err += 2 * y + 1;
-        if (2 * err > 2 * x - 1) x--, err -= 2 * x + 1;
-    }
 }
 
 static int lit(const unsigned char *frame, int32_t x, int32_t y)
@@ -277,20 +267,9 @@ void modwerk_boot_draw(unsigned char *frame)
             for (int32_t y = 0; y < BOOT_WORD_H; y++)
                 if (boot_word[x] >> y & 1 && near(BOOT_WORD_X + x, BOOT_WORD_Y + y, r))
                     dot(frame, BOOT_WORD_X + x, BOOT_WORD_Y + y);
-        for (int g = 0; g < BOOT_GLYPHS; g++)
-            for (int i = 0; i < boot_glyph[g].count; i++) {
-                const uint8_t *p = boot_ink[boot_glyph[g].first + i];
-                if (near(p[0], p[1], r))
-                    dot(frame, p[0], p[1]);
-            }
     }
     if ((r > 0 && r < 110) || (t >= T_DOCK && t < T_DOCK + SHAKE_MS))   /* until it has left the screen */
         bend(frame, t, r);
-    if (r > 0 && r < 110) {   /* the ring itself on top, with a dotted echo behind it */
-        ring(frame, r, 1);
-        if (r > 8)
-            ring(frame, r - 6, 3);
-    }
 }
 
 static void light(int32_t t, int32_t dt)
@@ -354,7 +333,7 @@ void modwerk_boot_run(void *window)
         if (t >= T_END)
             break;
         now = t;
-        fly(t);
+        fly(QUICK(t));
         lcd_clear(window, 0, -1);
         lcd_compose();
         light(t, t - then);

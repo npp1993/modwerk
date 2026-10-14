@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "module": "mute-modes",
-  "version": "0.1.0-experimental",
+  "version": "0.2.1-experimental",
   "kind": "coldfire",
   "cycles": {
     "unit": "cycles/event",
-    "static": 3344,
-    "measured": 382,
-    "budget": 95778,
-    "method": "Original ColdFire instructions executed in the MCF5206E zero-wait model; conditional V4 event bound, synthetic stock callbacks excluded. Hardware wall-clock, full frame load and audio are unmeasured."
+    "static": null,
+    "measured": null,
+    "budget": null,
+    "method": "No chip-cycle bound or measured event cost for 0.2.1. The 0.1.0 record modelled 3344 static and 382 measured cycles/event (original instructions, MCF5206E zero-wait model); that describes the earlier code and is not substituted. The owner waived chip worst-case cycles for this exact source (sdk/mute-modes-build-approval.json)."
   },
   "load": {
     "frameUs": 362.8,
@@ -16,7 +16,7 @@
     "moduleLongestUs": null,
     "stockIdlePercent": null,
     "moduleIdlePercent": null,
-    "method": "Missing hardware load capture; no model values substituted."
+    "method": "No physical cfmeter.py stock/module interrupt and idle capture for 0.2.1; no model values substituted."
   },
   "stress": {
     "floodMessagesPerSecond": null,
@@ -25,7 +25,7 @@
     "stuckNotes": null,
     "hangs": null,
     "dropped": null,
-    "droppedExplanation": "No physical flood/audio stress evidence. Existing native fixtures and historical author reports are retained."
+    "droppedExplanation": "No physical flood/audio stress run of 0.2.1. Host and native fixtures for its runtime package (ev_voice_bind, ev_mute_keep, the MUTE MODE restore) are recorded in TESTING.md; they are not a stress run."
   },
   "hardwareEvidence": {
     "status": "owner-waived-where-missing",

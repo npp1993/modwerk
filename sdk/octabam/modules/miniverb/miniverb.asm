@@ -182,11 +182,10 @@ mv_glide:
         move    a,x0
         move    b,a
         mac     x0,y1,a
-; Input diffuser 173, g=0.75.
+; Input diffuser 173, g=0.75: y1 still holds it from 113.
         move    #>$fffee1,n5
         move    y:(r5+n5),b
         move    b,x0
-        move    #>$600000,y1
         mac     -x0,y1,a
         move    #>$ffff8e,n5
         move    a,y:(r5+n5)
@@ -204,11 +203,10 @@ mv_glide:
         move    a,x0
         move    b,a
         mac     x0,y1,a
-; Input diffuser 449, g=0.625.
+; Input diffuser 449, g=0.625: y1 still holds it from 337.
         move    #>$fffbcd,n5
         move    y:(r5+n5),b
         move    b,x0
-        move    #>$500000,y1
         mac     -x0,y1,a
         move    #>$fffd8e,n5
         move    a,y:(r5+n5)

@@ -1,6 +1,7 @@
 import { needMember, throttle } from './auth'
 import { githubCommentOnce, githubConfig, githubIssueReplies, inert } from './github'
 import { claimGithubAction } from './github-actions'
+import { publicIssueReplyStatement } from './issue-notifications'
 import { profilePath } from '../src/community/forum-links'
 import type { Database, Env, User } from './platform'
 import { digest, HttpError, jsonBody, required, response } from './security'
@@ -33,9 +34,7 @@ export async function publicIssueReplies(request: Request, env: Env, db: Databas
       const text = 'Reply from **[' + author + ' on Modwerk](' + profile + ')**:\n\n' + inert(content).split(/\r?\n/).map(line => '> ' + line).join('\n')
       await db.prepare('UPDATE github_actions SET published_hash=? WHERE id=?').bind(await digest(text + '\n\n' + marker), key).run()
       await githubCommentOnce(config, issue.github_number, marker, text)
-      await db.prepare(`INSERT INTO notifications(id,user_id,kind,actor_id,issue_id,module_id,excerpt,delivery_id)
-        SELECT lower(hex(randomblob(16))),i.reporter_id,'issue_comment',?,i.id,i.module_id,?,? FROM issues i JOIN users u ON u.id=i.reporter_id
-        WHERE i.id=? AND i.reporter_id<>? AND u.email_verified=1 AND u.suspended=0 ON CONFLICT DO NOTHING`).bind(member.id, content.slice(0, 400), key, match[2], member.id).run()
+      await publicIssueReplyStatement(db, match[2], key, content, member.id).run()
       await receipt.complete()
       return response({ ok: true }, 201)
     } catch {

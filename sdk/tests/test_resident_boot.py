@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('resident_boot_fixture', ROOT / 'sdk/machines/octatrack/module-adapters/resident_boot.py')
 boot = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(boot)
-sys.path.insert(0, str(ROOT / 'sdk/machines/octatrack/module-adapters'))
+sys.path.append(str(ROOT / 'sdk/machines/octatrack/module-adapters'))
 import resident_dsp
 
 

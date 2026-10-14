@@ -4,6 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DatabaseSync } from 'node:sqlite'
 import { handleApi } from '../../server/api'
 import { signGithubPayload } from '../../server/github'
+import { sendActivityDigests } from '../../server/activity-mail'
+import { notificationLines } from './notification-text'
+import type { NotificationItem } from './notification-contract'
 import { digest } from '../../server/security'
 import { testServer } from './test-server'
 import { communityModule } from './modules'
@@ -49,6 +52,14 @@ async function fixture(moduleId = 'sidechain-compressor') {
   return { ...f, module, session, reply, send, payload, hook, comments, writes, offline: () => { live = false }, failPatch: (value: boolean) => { failPatch = value }, dropPost: () => { dropPost = true } }
 }
 
+async function participant(f: Awaited<ReturnType<typeof fixture>>, id = 'participant') {
+  const token = await digest('session:' + id)
+  f.db.prepare('INSERT INTO users(id,display_name,username,email_verified) VALUES(?,?,?,1)').run(id, id, id)
+  f.db.prepare('INSERT INTO auth_users(id,name,email,emailVerified,createdAt,updatedAt) VALUES(?,?,?,1,0,0)').run(id, id, id + '@example.test')
+  f.db.prepare('INSERT INTO sessions(token_hash,user_id,expires) VALUES(?,?,?)').run(await digest(token), id, Math.floor(Date.now() / 1000) + 3600)
+  return token
+}
+
 describe('frontend public replies into GitHub', () => {
   it('posts an attributed public reply for a verified Modwerk member without a GitHub account, and retries only once', async () => {
     const f = await fixture()
@@ -79,6 +90,65 @@ describe('frontend public replies into GitHub', () => {
     await f.hook({ ...p, comment: { ...p.comment, user: { ...p.comment.user, type: 'Bot' } } })
     expect(f.db.prepare('SELECT user_id,actor_id,kind,excerpt FROM notifications').all()).toEqual([{ user_id: 'reporter', actor_id: 'listener', kind: 'issue_comment', excerpt: f.reply.body }])
   })
+  it('notifies authenticated report participants of GitHub replies once and opens the public conversation', async () => {
+    const f = await fixture(), token = await participant(f)
+    const reply = { body: 'I have the same freeze.', requestId: crypto.randomUUID() }
+    expect((await f.call('/modules/' + f.module.id + '/issues/report/replies', 'POST', reply, token)).status).toBe(201)
+    expect((await f.call('/modules/' + f.module.id + '/issues/report/replies', 'POST', { ...reply, requestId: crypto.randomUUID() }, token)).status).toBe(201)
+    f.db.exec('DELETE FROM notifications')
+    const message = f.payload('Please try a fresh build and report the track and page.', 123), delivery = crypto.randomUUID()
+    await f.hook(message, delivery); await f.hook(message, delivery)
+    expect(f.db.prepare('SELECT user_id,github_actor FROM notifications ORDER BY user_id').all()).toEqual([{ user_id: 'listener', github_actor: 'Zac-Kyoti' }, { user_id: 'participant', github_actor: 'Zac-Kyoti' }])
+    const items = (await (await f.call('/notifications', 'GET', undefined, token)).json()).items as NotificationItem[]
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({ issueReporter: false, issuePublic: true, excerpt: message.comment.body })
+    expect(notificationLines(items)[0]).toMatchObject({ text: '@Zac-Kyoti on GitHub replied to the bug report “Public title”', href: f.module.href + '?tab=issues' })
+    expect(JSON.stringify(items)).not.toContain('PRIVATE CONFIGURATION')
+  })
+
+  it('notifies prior participants when the reporter replies in Modwerk, without notifying the sender or replaying the relay', async () => {
+    const f = await fixture(), token = await participant(f)
+    expect((await f.call('/modules/' + f.module.id + '/issues/report/replies', 'POST', { body: 'Same here.', requestId: crypto.randomUUID() }, token)).status).toBe(201)
+    f.db.exec('DELETE FROM notifications')
+    await f.send(); await f.send()
+    await f.hook(f.payload(f.comments.at(-1)!.body, 99))
+    expect(f.db.prepare('SELECT user_id,actor_id,kind FROM notifications').all()).toEqual([{ user_id: 'participant', actor_id: 'listener', kind: 'issue_comment' }])
+  })
+
+  it('uses only completed replies on this report, excludes suspended and unverified members, and proves GitHub self identity', async () => {
+    const f = await fixture()
+    for (const id of ['joined','failed','command','elsewhere','suspended','unverified','named','self']) await participant(f, id)
+    f.db.exec("INSERT INTO issues(id,module_id,author_login,reporter_id,title,body) VALUES('other','sidechain-compressor','Zac-Kyoti','listener','Other','PRIVATE')")
+    const receipt = f.db.prepare('INSERT INTO github_actions(id,issue_id,actor,body_hash,completed) VALUES(?,?,?,?,?)')
+    for (const id of ['joined','failed','command','elsewhere','suspended','unverified','self']) receipt.run((id === 'command' ? 'command:' : 'reply:') + id, id === 'elsewhere' ? 'other' : 'report', id, 'hash', id === 'failed' ? 0 : 1)
+    f.db.exec("UPDATE users SET suspended=1 WHERE id='suspended'; UPDATE users SET email_verified=0 WHERE id='unverified'")
+    f.db.prepare("INSERT INTO auth_accounts(id,accountId,providerId,userId,createdAt,updatedAt) VALUES('self-github','273702472','github','self',0,0)").run()
+    await f.hook(f.payload('Thanks @named and @self. Please test the new build.', 321))
+    expect(f.db.prepare('SELECT user_id FROM notifications ORDER BY user_id').all()).toEqual([{ user_id: 'joined' }, { user_id: 'listener' }])
+    f.db.exec('DELETE FROM notifications; UPDATE issues SET public_json=NULL')
+    await f.hook(f.payload('This should never notify public participants of a private report.', 322))
+    expect(f.db.prepare('SELECT COUNT(*) AS count FROM notifications').get()!.count).toBe(0)
+  })
+
+  it('includes participant replies in ordinary bug digests and preserves email opt-outs', async () => {
+    const f = await fixture(); await participant(f); await participant(f, 'muted')
+    for (const id of ['participant','muted']) f.db.prepare("INSERT INTO github_actions(id,issue_id,actor,body_hash,completed) VALUES(?,'report',?,'hash',1)").run('reply:' + id, id)
+    f.db.exec("INSERT INTO notification_preferences(user_id,email_enabled) VALUES('muted',0)")
+    await f.hook(f.payload('Please test a fresh download.', 123))
+    f.db.exec("UPDATE notifications SET created_at='2026-10-13 10:00:00'")
+    const mails: { to: string[]; text: string }[] = [], provider = globalThis.fetch
+    vi.stubGlobal('fetch', vi.fn(async (url: string | URL, init?: RequestInit) => {
+      if (String(url) !== 'https://api.resend.com/emails') return provider(url, init)
+      mails.push(JSON.parse(String(init?.body))); return Response.json({ id: 'accepted' })
+    }))
+    expect(await sendActivityDigests(f.env, f.env.DB!, new Date('2026-10-13T11:00:00Z'))).toEqual({ sent: 2 })
+    expect(mails.map(mail => mail.to[0]).sort()).toEqual(['listener@example.test','participant@example.test'])
+    expect(mails.find(mail => mail.to[0] === 'participant@example.test')!.text).toContain('replied to the bug report')
+    expect(mails.find(mail => mail.to[0] === 'participant@example.test')!.text).toContain('?tab=issues')
+    expect(f.db.prepare("SELECT seen,emailed FROM notifications WHERE user_id='muted'").get()).toEqual({ seen: 0, emailed: 0 })
+    expect(JSON.stringify(mails)).not.toContain('PRIVATE CONFIGURATION')
+  })
+
   it('blocks anonymous, unverified and suspended users and private or other-module reports before writing', async () => {
     const f = await fixture()
     expect((await f.send(f.reply, undefined, '')).status).toBe(401)

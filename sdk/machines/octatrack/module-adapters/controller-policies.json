@@ -1,0 +1,97 @@
+[
+ {
+  "module": "sidechain-compressor",
+  "moduleId": 2513434262,
+  "packageSha256": "1a33910e784cd2d629910fc52ae147e6c1b96338f51272282cd837a1c5fe7b8d",
+  "sourcePolicySha256": "4294f9cea4bf6fd179093dbf7834979d8373bc8e8de87088473ada56ab1b7142",
+  "revisions": [
+   1,
+   1,
+   1
+  ],
+  "feature": 1,
+  "requiredCores": 3,
+  "version": 1,
+  "imageBytes": 1020,
+  "entryName": "sc_norm",
+  "entry": 632,
+  "beginReturn": 834,
+  "endReturn": 884
+ },
+ {
+  "module": "output-matrix",
+  "moduleId": 3404814517,
+  "packageSha256": "7b42cf014ae1aec8fae5c3b047411f29c8988f50a935b912dd1eb048cb5ffdc5",
+  "sourcePolicySha256": "df589505c87f72735bc230661711af764e57ec5e73f1470d7af2eafb81dc3751",
+  "revisions": [
+   1,
+   1,
+   1
+  ],
+  "feature": 2,
+  "requiredCores": 1,
+  "version": 1,
+  "imageBytes": 2248,
+  "entryName": "page_levels",
+  "entry": 1564,
+  "beginReturn": 1656,
+  "endReturn": 1706
+ },
+ {
+  "module": "output-matrix",
+  "moduleId": 3404814517,
+  "packageSha256": "7b42cf014ae1aec8fae5c3b047411f29c8988f50a935b912dd1eb048cb5ffdc5",
+  "sourcePolicySha256": "df589505c87f72735bc230661711af764e57ec5e73f1470d7af2eafb81dc3751",
+  "revisions": [
+   1,
+   1,
+   1
+  ],
+  "feature": 2,
+  "requiredCores": 1,
+  "version": 1,
+  "imageBytes": 2248,
+  "entryName": "matrix_leave",
+  "entry": 1780,
+  "beginReturn": 1814,
+  "endReturn": 1864
+ },
+ {
+  "module": "output-matrix",
+  "moduleId": 3404814517,
+  "packageSha256": "7b42cf014ae1aec8fae5c3b047411f29c8988f50a935b912dd1eb048cb5ffdc5",
+  "sourcePolicySha256": "df589505c87f72735bc230661711af764e57ec5e73f1470d7af2eafb81dc3751",
+  "revisions": [
+   1,
+   1,
+   1
+  ],
+  "feature": 2,
+  "requiredCores": 1,
+  "version": 1,
+  "imageBytes": 2248,
+  "entryName": "matrix_enter",
+  "entry": 1936,
+  "beginReturn": 1970,
+  "endReturn": 2020
+ },
+ {
+  "module": "analog-bassdrum",
+  "moduleId": 2883261509,
+  "packageSha256": "49a5e4f0589d5efc4766b2e45f6904af2b8a1b313d1578c3816184a7243e29ae",
+  "sourcePolicySha256": "82e2dc2630775fdca07b8b3901a1b36f286e0a3100189312c0827861e078e6bc",
+  "revisions": [
+   1,
+   1,
+   1
+  ],
+  "feature": 4,
+  "requiredCores": 3,
+  "version": 1,
+  "imageBytes": 5940,
+  "entryName": "ab_render",
+  "entry": 1162,
+  "beginReturn": 1278,
+  "endReturn": 1150
+ }
+]

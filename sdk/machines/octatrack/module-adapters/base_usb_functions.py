@@ -117,11 +117,14 @@ def audio_include(key):
     return '| base-owned USB output, without an input function\n.set USB_LAYOUT, %d\n.set USB_IN, 0\n' % AUDIO_LAYOUTS[key]
 
 
-def audio_storage_source(text):
-    """Move only authored zero rings to base-cleared BSS for bounded RAM boot.
+DMA_BLOCK_SHA256 = '0cef06f0a138ebb8026a3bad9a847a0befac64d0da961561f3fe8fe3c5ebf35c'
 
-    The exact zero-only source block is guarded. Initial state and DMA queue
-    records remain in data; no buffer size, layout or initialization changes.
+
+def audio_storage_source(text):
+    """Move only authored zero rings and EP3 DMA buffers to base-cleared BSS for bounded RAM boot.
+
+    The exact zero-only source blocks are guarded. Initial state and the UAC2
+    replies EP0 sends remain in data; no buffer size, layout or initialization changes.
     A fresh native link resolves every ring reference at its new address.
     """
     before, after = '.if SLOT8_LAYOUT\naud_ring:', 'usbaudio_alt:'
@@ -130,7 +133,13 @@ def audio_storage_source(text):
     start, end = text.index(before), text.index(after)
     if end <= start or hashlib.sha256(text[start:end].encode()).hexdigest() != 'c49848cdec9742ad5f730deb34bf70e609e3578b33bc6dc32f5f7318a4882c73':
         raise ValueError('The authored zero-only audio ring block changed.')
-    return text[:start] + '    .bss\n    .balign 4\n' + text[start:end] + '    .data\n' + text[end:]
+    text = text[:start] + '    .bss\n    .balign 4\n' + text[start:end] + '    .data\n' + text[end:]
+    # The EP3 dTDs and packets the controller DMAs: reached only through the uncached alias, which the boot clear
+    # also writes, and audio_dtds_clear zeroes the dTDs at every EP3 start and stop. Same size, alignment and order.
+    dma = '    .balign 32\naud_dtds:'
+    if text.count(dma) != 1 or hashlib.sha256(text[text.index(dma):].encode()).hexdigest() != DMA_BLOCK_SHA256:
+        raise ValueError('The authored zero-only audio DMA block changed.')
+    return text.replace(dma, '    .bss\n' + dma)
 
 
 def assembly(base, descriptors, audio=None):

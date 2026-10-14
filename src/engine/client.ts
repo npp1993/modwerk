@@ -1,6 +1,6 @@
 import type { UsbAudioConfiguration } from '../config/usb-audio'
 import { BASE_FIRMWARE, type FirmwareInspection } from './base'
-import type { BuildProgress, EngineRequest, EngineResponse } from './protocol'
+import type { BuildProgress, EngineRequest, EngineResponse, StartupAnimation } from './protocol'
 import type { SelectionConflict } from '../catalog/selection-conflicts'
 export class FirmwareBuildError extends Error {
   readonly conflict?: SelectionConflict
@@ -51,15 +51,15 @@ export function createFirmwareClient() {
   }
   return {
     inspect,
-    async validate(moduleIds: string[], keepStockFx2: boolean, usbAudio?: UsbAudioConfiguration, betaAccess = false) {
+    async validate(moduleIds: string[], keepStockFx2: boolean, usbAudio?: UsbAudioConfiguration, betaAccess = false, startup: StartupAnimation = 'docking') {
       await recovering
-      const response = await send({ id: ++nextId, type: 'validate', moduleIds, keepStockFx2, usbAudio, ...(betaAccess ? { betaAccess: true } : {}) })
+      const response = await send({ id: ++nextId, type: 'validate', moduleIds, keepStockFx2, usbAudio, ...(betaAccess ? { betaAccess: true } : {}), startup })
       if (response.type !== 'validated') throw new Error('The local firmware worker returned an unexpected result.')
       return response.report
     },
-    async build(moduleIds: string[], keepStockFx2: boolean, progress: (phase: BuildProgress) => void, usbAudio?: UsbAudioConfiguration, betaAccess = false) {
+    async build(moduleIds: string[], keepStockFx2: boolean, progress: (phase: BuildProgress) => void, usbAudio?: UsbAudioConfiguration, betaAccess = false, startup: StartupAnimation = 'docking') {
       await recovering
-      const response = await send({ id: ++nextId, type: 'build', moduleIds, keepStockFx2, usbAudio, ...(betaAccess ? { betaAccess: true } : {}) }, [], progress)
+      const response = await send({ id: ++nextId, type: 'build', moduleIds, keepStockFx2, usbAudio, ...(betaAccess ? { betaAccess: true } : {}), startup }, [], progress)
       if (response.type !== 'built') throw new Error('The local firmware worker returned an unexpected result.')
       return response
     },

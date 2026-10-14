@@ -3,7 +3,7 @@
   "id": "miniverb",
   "key": "MINIVERB",
   "name": "Mini Verb",
-  "version": "0.2.1-experimental",
+  "version": "0.2.2-experimental",
   "category": "effects",
   "author": {
     "github": "repeat98",
@@ -95,19 +95,19 @@
     "effectId": 23
   },
   "resources": {
-    "recorded": "2026-10-11",
+    "recorded": "2026-10-13",
     "storage": {
       "label": "DSP program / buffer",
-      "display": "536 words / 16K ring",
+      "display": "532 words / 16K ring",
       "value": null,
       "unit": "see display",
       "method": "static",
-      "conditions": "536 assembled DSP program words; unchanged 16K Y ring and 32-word X scalar allocation. Mixer adds four program words and no state.",
+      "conditions": "532 assembled DSP program words (0.2.1: 536; two redundant coefficient reloads removed); unchanged 16K Y ring and 32-word X scalar allocation.",
       "source": "TESTING.md"
     },
     "processing": {
       "label": "DSP instruction peak",
-      "display": "23,616 instructions/core/block",
+      "display": "23,488 instructions/core/block",
       "value": null,
       "unit": "see display",
       "method": "emulator",
@@ -125,23 +125,24 @@
       "dsp": {
         "level": "moderate",
         "basis": "source-estimate",
-        "rationale": "415 modeled loop cycles/sample; conservative 8,192 modeled cycles/instance/block. Eight moving instances add 256 executed instructions/core/block over 0.2.0; chip timing and full-instrument contention are unmeasured.",
+        "rationale": "411 modeled loop cycles/sample (0.2.1: 415); conservative 8,192 modeled cycles/instance/block. Worst matched single instance 362.75 executed instructions/sample against worst SPRING REV 314.0 (1.16x) on both cores. Chip timing of this source and full-instrument contention are unmeasured; 0.2.0 measured 665 chip cycles/sample on one MKII core.",
         "source": "TESTING.md"
       },
       "memory": {
         "level": "moderate",
         "basis": "source-estimate",
-        "rationale": "Existing 16K ring and X reservation unchanged; 402,960 logical bytes for eight instances including both programs and full hardware stack capacity. Complete runtime bounds and hardware canaries remain unverified.",
+        "rationale": "Existing 16K ring and X reservation unchanged; 402,936 logical bytes for eight instances including both programs and full hardware stack capacity. Complete runtime bounds and hardware canaries remain unverified.",
         "source": "TESTING.md"
       }
     }
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "53 current-source native DSP checks and 126 native/browser selections passed: 52 matching builds, 74 matching refusals, zero mismatches. The mixer clipping defect is reproduced on both cores and fixed; hardware and the original THRU noise remain unverified. Current source, private images and reviewed LCD captures are recorded in TESTING.md.",
+    "summary": "0.2.2 output is bit-identical to published 0.2.1 under moving controls, every trigger split and hot input on both DSP cores; it removes two redundant coefficient reloads (411 instead of 415 modeled cycles/sample). 75 current-source native DSP checks passed. Native/browser parity, isolated packages, hardware and the original THRU noise are not yet verified for this source; see TESTING.md.",
     "hardwareStatus": "untested",
     "gates": [
-      "verify.py: exact dry, bounded neutral quantization, raw-wet mixer regression, endpoint spectra, eight-instance isolation, dirty-state guards and 30-second moving render",
+      "verify.py: bit-identity with published 0.2.1, exact dry, bounded neutral quantization, raw-wet mixer regression, endpoint spectra, eight-instance isolation, dirty-state guards and 30-second moving render",
+      "benchmark.py: matched worst-case SPRING REV comparison on both cores, all trigger splits",
       "Native/browser composition parity and changed-original refusal",
       "Reproducible source-only packages"
     ],

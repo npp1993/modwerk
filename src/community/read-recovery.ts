@@ -5,6 +5,7 @@ export type ReadAttempt = { finish(reachable?: boolean): void }
 export function createReadRecovery() {
   let failures = 0, resumeAt = 0, version = 0
   let probe: { done: Promise<void>; resolve(): void } | null = null
+  const reconnected = new Set<() => void>()
 
   async function begin(signal?: AbortSignal): Promise<ReadAttempt | null> {
     while (probe) {
@@ -29,14 +30,21 @@ export function createReadRecovery() {
     return { finish(reachable) {
       if (finished) return
       finished = true
+      let recovered = false
       // Other reads already in flight must not lengthen a cooldown or clear a newer outage.
       if (startedVersion === version && reachable !== undefined) {
         if (reachable) {
-          if (failures) { failures = 0; resumeAt = 0; version++ }
+          if (failures) { failures = 0; resumeAt = 0; version++; recovered = true }
         } else { resumeAt = Date.now() + DELAYS_MS[Math.min(failures++, DELAYS_MS.length - 1)]; version++ }
       }
       if (ownProbe) { probe = null; ownProbe.resolve() }
+      // Reads that gave up during the outage reload once it ends, without the visitor reloading the page.
+      if (recovered) for (const listener of reconnected) queueMicrotask(listener)
     } }
   }
-  return { begin }
+  function onReconnect(listener: () => void) {
+    reconnected.add(listener)
+    return () => { reconnected.delete(listener) }
+  }
+  return { begin, onReconnect }
 }

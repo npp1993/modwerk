@@ -225,9 +225,10 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       if(!author)throw new HttpError(400,'No author is registered for this module.')
       await throttle(db,'issue-member:'+owner.id,10)
       const id=crypto.randomUUID(),details=[['Steps to reproduce',steps],['Expected',expected],['Actual',actual]].filter(([,text])=>text).map(([label,text])=>label+':\n'+text).join('\n\n')
-      const publicDetails=publicReport?publicBugDetails(match[1],context,log,steps,expected,actual):null
       // With GitHub configured, a public report becomes a GitHub issue and gets no forum thread of its own.
       const github=!!publicReport&&!!githubConfig(env)
+      // The form tells GitHub reporters their configuration, build fingerprint and log are published too.
+      const publicDetails=publicReport?{...publicBugDetails(match[1],context,log,steps,expected,actual),...(github&&{full:true})}:null
       const threadId=publicReport&&!github?crypto.randomUUID():null,postId=crypto.randomUUID()
       const statements=threadId?[
         db.prepare('INSERT INTO forum_threads(id,user_id,title,category,machine,module_id,issue_json) VALUES(?,?,?,\'issues\',?,?,?)').bind(threadId,owner.id,title,module?.machine??'octatrack',match[1],JSON.stringify(publicDetails)),

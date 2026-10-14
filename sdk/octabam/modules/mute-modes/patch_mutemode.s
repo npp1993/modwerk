@@ -212,3 +212,25 @@ sm_store:
     move.l  %d0,GATE                   | volatile runtime word
     move.l  %d0,SH_GATE                | battery-SRAM shadow -- the key handler re-checksums
     rts
+
+    .ifdef MODWERK_EVENTS
+| PERSISTENCE on a Modwerk base: the runtime loader installs this module once the unit is up
+| (the kept set is reinstalled from the card after boot), so boot's widened 'ANDY' restore has
+| already run with stock's length and never covered GATE.  The first UI tick after an install
+| takes GATE from its battery shadow, as that boot would have (runtime.json: module_tick).  The
+| block is valid by then: boot checks its checksum and writes the defaults (GATE 0) when it
+| fails.  set_mutemode writes both words, so after it the copy changes nothing.
+    .global mm_restore
+mm_restore:
+    tst.b   mm_restored
+    bne.b   mr_done
+    move.l  SH_GATE,%d0
+    move.l  %d0,GATE
+    moveq   #1,%d0
+    move.b  %d0,mm_restored
+mr_done:
+    rts
+mm_restored:
+    .byte 0                            | 0 in each freshly installed image: once per install
+    .balign 2
+    .endif

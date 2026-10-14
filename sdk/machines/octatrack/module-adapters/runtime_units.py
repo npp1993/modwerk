@@ -17,14 +17,21 @@ def run(*args, cwd=None):
     return subprocess.run(args, cwd=cwd, check=True, capture_output=True)
 
 
-def compile_linked(module, sdk_root, builder, work, cross, selected, guards, stock_at):
+def compile_linked(module, sdk_root, builder, work, cross, selected, guards, stock_at, events=True):
     """Compile the exact authored units and insertion tables at two origins.
 
     `builder` is the explicitly trusted loader builder; manifests and callbacks
     are trusted repository source, never MCP arguments. `guards` contains one
     reviewed runtime_tables.capture recipe per declared table. The caller keeps
-    this newly created, private output outside Git. No module dependencies, DSP
+    this newly created, private output outside Git. `events=False` keeps the
+    native build's raw detours (comparison evidence only: a base with site
+    events refuses that package). No module dependencies, DSP
     claims or runtime state contracts are inferred from a successful compile.
+    Without `stock_at` (the published build, build.py --octabam-tables) the
+    package is the same: only the proofs against the original OS (each guard,
+    and both table reconstructions against the native insertion oracle) are
+    left to a build that has it; the base checks every guard and copy against
+    its running stock at install.
     """
     sdk_root, work = Path(sdk_root).resolve(), Path(work).resolve()
     if (not module.linked or module.key not in selected or module.requires or module.keeps
@@ -38,6 +45,7 @@ def compile_linked(module, sdk_root, builder, work, cross, selected, guards, sto
                       capture_output=True).returncode == 0:
         raise ValueError('Private compilation outputs must stay outside Git.')
     work.mkdir(mode=0o700)
+    declared = builder.runtime_declaration(sdk_root / 'modules' / module.name) if events else None
     objects, references = [], []
     labels = {unit.label for unit in module.linked}
     for unit in module.linked:
@@ -62,6 +70,8 @@ def compile_linked(module, sdk_root, builder, work, cross, selected, guards, sto
         actual = hashlib.sha256(raw.read_bytes()).hexdigest()
         if actual != digest:
             raise ValueError('Authored native reference changed: ' + unit.label)
+        if declared:  # the native bytes are proven above; the package carries its site-event subscriber form
+            run(cross + 'as', '-mcpu=54455', '--defsym', 'MODWERK_EVENTS=1', '-I', str(include), str(source), '-o', str(obj), cwd=sdk_root)
         references.append(dict(unit=unit.label, address=address, sha256=actual, bytes=raw.stat().st_size,
                                sourceSha256=hashlib.sha256(source.read_bytes()).hexdigest(),
                                includeSha256=hashlib.sha256(generated.encode()).hexdigest()))
@@ -79,7 +89,7 @@ def compile_linked(module, sdk_root, builder, work, cross, selected, guards, sto
     image, symbols, bss, offsets = builder.link_units(objects, cross, 0, work)
     copies = [copy for plan in plans for copy in runtime_tables.bind(plan, symbols, image, offsets)]
     rebuilt, fresh_high = bytearray(image), bytearray((work / 'image').read_bytes())
-    for at, address, length, digest in copies:
+    for at, address, length, digest in copies if stock_at is not None else ():
         data = stock_at(address, length)
         if hashlib.sha256(data).digest() != digest:
             raise ValueError('A stock table reconstruction guard changed.')
@@ -87,9 +97,9 @@ def compile_linked(module, sdk_root, builder, work, cross, selected, guards, sto
     placed_high = bytearray(rebuilt)
     for at in offsets:
         struct.pack_into('>I', placed_high, at, (struct.unpack_from('>I', placed_high, at)[0] + builder.SHIFT) & 0xffffffff)
-    if placed_high != fresh_high:
+    if stock_at is not None and placed_high != fresh_high:
         raise ValueError('Table reconstruction differs from fresh high-origin native assembly.')
-    for table, plan in zip(module.tables, plans):
+    for table, plan in zip(module.tables, plans) if stock_at is not None else ():
         start = symbols[plan['symbol']]
         for data, placement in ((rebuilt, 0), (placed_high, builder.SHIFT)):
             moved = {name: value + placement for name, value in symbols.items()}
@@ -98,7 +108,7 @@ def compile_linked(module, sdk_root, builder, work, cross, selected, guards, sto
             if data[start:start + len(expected)] != expected:
                 raise ValueError('A table differs from the independent native insertion oracle.')
     sites = []
-    for detour in module.detours:
+    for detour in builder.replaced(module.detours, declared['subscribe']) if declared else module.detours:
         n = detour.pad_to or 6
         if (detour.unit not in labels or detour.symbol not in symbols or detour.target is not None
                 or detour.kind not in builder.OPCODES or n < 6 or n & 1):
@@ -118,8 +128,13 @@ def compile_linked(module, sdk_root, builder, work, cross, selected, guards, sto
     for poke in module.pokes:
         digest, checked = builder.stock_digest(poke.expect)
         sites.append((poke.addr, digest, bytes(poke.write), [], 0, checked))
-    for address, digest, _, _, _, checked in sites:
+    for address, digest, _, _, _, checked in sites if stock_at is not None else ():
         if hashlib.sha256(stock_at(address, checked)).digest() != digest:
             raise ValueError('A guarded stock site changed.')
-    return dict(image=image, bss=bss, offsets=offsets, sites=sites, copies=copies, symbols=symbols,
+    hooks = []
+    if declared:
+        builder.unevented(sites, copies)
+        hooks = builder.subscribe([builder.NONE] * len(builder.HANDLERS), declared['subscribe'], symbols,
+                                  raises=declared.get('raise', ()))
+    return dict(image=image, bss=bss, offsets=offsets, sites=sites, copies=copies, symbols=symbols, hooks=hooks,
                 referenceProofs=references, tableOracle=True, origins=[0, builder.SHIFT])

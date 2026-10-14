@@ -13,6 +13,7 @@
 #include "selftest.h"
 #include "status.h"
 #include "fxids.h"
+#include "load_wire.h"
 void modwerk_status_close_menu(void); /* below, with the menu rows */
 
 #define CUE 0x2a
@@ -37,6 +38,26 @@ uint32_t dl_buffers_in_use(void); /* manager.c (build_core.py's edit): FX1 and F
  * window has measured the timer's rate: nothing counts). */
 volatile uint32_t modwerk_idle_counts, modwerk_idle_gap;
 volatile uint32_t modwerk_status[STATUS_WORDS]; /* per mille, masks, bytes, counts: the report's tail */
+/* The USB IRQ can preempt this task. Publish one complete bank with a single
+ * aligned store; the IRQ only reads the other bank and never waits for us. */
+static volatile struct modwerk_load_cache load_cache[2];
+static volatile uint32_t load_bank;
+static uint32_t load_at[3], load_flags;
+static void publish_load(void)
+{
+    unsigned next = load_bank ^ 1u;
+    volatile struct modwerk_load_cache *cache = &load_cache[next];
+    cache->flags = load_flags; cache->frames = dl_frames;
+    for (unsigned i = 0; i < 3u; ++i) cache->at[i] = load_at[i];
+    for (unsigned i = 0; i < 5u; ++i) cache->values[i] = modwerk_status[i];
+    __asm__ __volatile__("" ::: "memory");
+    load_bank = next;
+}
+unsigned modwerk_status_load(uint8_t *out)
+{
+    modwerk_load_encode(out, modwerk_runtime_ticks, &load_cache[load_bank]);
+    return MODWERK_LOAD_BYTES;
+}
 uint32_t modwerk_status_report(uint32_t *out)
 {
     for (unsigned i = 0; i < STATUS_WORDS; ++i) out[i] = modwerk_status[i];
@@ -71,12 +92,14 @@ void modwerk_status_tick(void)
     if (df) modwerk_status[WRAP] = counts / df, modwerk_idle_gap = counts / df / 362u + 2u; /* about 1 µs */
     uint32_t per = counts / 1000u;
     modwerk_status[CPU] = per && ticks > 30u && di / per < 1000u ? 1000u - di / per : 0;
+    if (per && ticks > 30u && df) { load_flags |= 1u; load_at[0] = modwerk_runtime_ticks; }
     cpu_recent[(ticks / 30u) % 8u] = modwerk_status[CPU]; /* the page's CPU peak: the last four seconds */
     if (reading >= 0) { /* least, most and sum of 1,024 frames, read 24 bits a tick */
         if (modwerk_dsp_meter_core == reading && modwerk_dsp_meter_bits >= (read_words == 1u ? 24u : 72u)) {
             if (read_words == 3u) {
                 modwerk_status[reading ? DSP1_MEAN : DSP0_MEAN] = busy((unsigned)reading, modwerk_dsp_meter[3] >> 10);
                 modwerk_status[reading ? SUM1 : SUM0] = modwerk_dsp_meter[3];
+                load_flags |= 2u << (unsigned)reading; load_at[1u + (unsigned)reading] = modwerk_runtime_ticks;
             }
             modwerk_status[reading ? DSP1_PEAK : DSP0_PEAK] = busy((unsigned)reading, modwerk_dsp_meter[1]);
             modwerk_status_reads = modwerk_status_reads + 1;
@@ -90,6 +113,7 @@ void modwerk_status_tick(void)
     modwerk_status[POOL_USED] = RUNTIME_POOL_BYTES - modwerk_runtime_free(&largest);
     modwerk_status[MODULES] = modwerk_runtime_active();
     modwerk_status[ARENA] = modwerk_dsp_arena[0] | (uint32_t)modwerk_dsp_arena[1] << 16;
+    publish_load();
 }
 
 /* The dialogs: while one shows it takes every key and encoder, so nothing changes under it; NO closes it and the

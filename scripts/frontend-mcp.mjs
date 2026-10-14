@@ -8,6 +8,7 @@ import { parseArgs } from 'node:util'
 import { build } from 'vite'
 import { Bench, device, enumerate } from './usb-bench.mjs'
 import { buildAndSave } from './firmware-download.mjs'
+import { loadPreparedModules } from './frontend-mcp-prepared.mjs'
 import { assertMcpPrivateHost } from './frontend-mcp-private-host.mjs'
 import { saveSavedBackup } from './frontend-mcp-saved-backup.mjs'
 
@@ -38,7 +39,7 @@ const TOOLS = [
   tool('site_features', 'Describe supported frontend operations and the limits of API, DOM and hardware evidence.'),
   tool('site_catalogue', 'List instruments and modules from the actual site catalogue, including current USB package availability.', { machine: string, query: string, category: string, beta: { type: 'boolean' } }),
   tool('site_module', 'Read module controls, usage, licence, evidence and compatibility.', { machine: string, id: string }, ['id']),
-  tool('site_selection', 'Validate a card selection using the site rules, or prepare a USB selection and exact Undo packages without device writes.', { machine: string, moduleIds: strings, keepStockFx2: { type: 'boolean' }, usb: { type: 'boolean' }, beta: { type: 'boolean' }, current: { type: 'object' }, capabilities: { type: 'object' } }, ['moduleIds']),
+  tool('site_selection', 'Validate a card selection using the site rules, or prepare a USB selection and exact Undo packages without device writes. Optional base/capabilities describe hypothetical planning only; device review reads the connected unit.', { machine: string, moduleIds: strings, keepStockFx2: { type: 'boolean' }, usb: { type: 'boolean' }, beta: { type: 'boolean' }, current: { type: 'object' }, capabilities: { type: 'object' }, base: string }, ['moduleIds']),
   tool('set_list', 'Read this MCP workspace’s private module sets; browser and other developers’ workspaces are separate.'),
   tool('set_save', 'Create or update a local module set using the frontend validation/current version rules.', { id: string, name: string, machine: string, moduleIds: strings, keepStockFx2: { type: 'boolean' }, usbAudio: { type: 'object' }, removedStockFx: strings }, ['name', 'moduleIds'], true),
   tool('set_delete', 'Delete one set from this isolated MCP workspace.', { id: string }, ['id'], true),
@@ -112,13 +113,14 @@ export async function createFrontendTools(options, injected, dependencies = {}) 
     finally { await rm(temporary, { force: true }) }
   }
   const manifest = JSON.parse(await readFile(join(root, 'src/engine/assets/octatrack-module-packages.json'), 'utf8'))
-  const catalogue = frontend.createRuntimeCatalogue(manifest)
-  const load = async entry => {
+  const preparedModules = options.preparedModules && await loadPreparedModules(options.preparedModules, manifest, frontend)
+  const catalogue = preparedModules?.catalogue ?? frontend.createRuntimeCatalogue(manifest)
+  const load = preparedModules?.load ?? (async entry => {
     if (!/^octatrack-modules\/[a-z0-9-]+\/[a-zA-Z0-9.-]+\.mwrm$/.test(entry.path)) throw new Error('Unexpected module asset path.')
     const bytes = new Uint8Array(await readFile(join(root, 'public', entry.path)))
     if (bytes.length !== entry.bytes || hash(bytes) !== entry.sha256) throw new Error('The local site package differs from its manifest.')
     return bytes
-  }
+  })
   const storage = () => { const map = new Map(); return { getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, value), removeItem: key => map.delete(key) } }
   globalThis.localStorage = storage(); globalThis.sessionStorage = storage()
   if (credentials) {
@@ -161,7 +163,13 @@ export async function createFrontendTools(options, injected, dependencies = {}) 
     if (unit.getState().status === 'trial') return { state: unit.getState(), before: trial?.before, trial: trial?.id }
     const state = unit.getState()
     if (!/^[0-9a-f]{64}$/.test(state.identity?.base ?? '') || !/^[0-9a-f]{64}$/.test(state.active ?? '')) throw new Error('The device did not provide a verified base and active identity.')
-    const inventory = await kit.readInventory(), missing = await unit.missing(), diagnostics = await unit.health(), after = unit.getState()
+    let inventory
+    if (preparedModules) {
+      const modules = await unit.inventory()
+      if (!modules) throw new Error('The connected base does not list its modules.')
+      inventory = catalogue.inventory(modules)
+    } else inventory = await kit.readInventory()
+    const missing = await unit.missing(), diagnostics = await unit.health(), after = unit.getState()
     if (after.status !== 'ready' || after.identity?.base !== state.identity.base || after.active !== state.active) throw new Error('The device changed while reading; reconnect and review again.')
     return { state: after, inventory, capabilities: after.identity.capabilities, missing, diagnostics }
   }
@@ -172,14 +180,15 @@ export async function createFrontendTools(options, injected, dependencies = {}) 
     if (!args.usb) return { availability: frontend.moduleAvailabilityError(selected, !!args.beta), conflicts: frontend.selectionConflicts(selected, args.keepStockFx2 ?? false) }
     const target = { name: 'MCP test set', moduleIds: selected, removedStockFx: [] }, current = args.current ?? { moduleIds: [], removedStockFx: [] }
     ids(current.moduleIds); ids(current.removedStockFx)
-    const prepared = await catalogue.prepare(target, current, load, args.capabilities)
-    return { review: catalogue.review(target, current, args.capabilities), changes: prepared.changes.map(change => ({ module: change.module, bytes: change.data.length, sha256: hash(change.data), undoSha256: change.undo && hash(change.undo) })) }
+    preparedModules?.requireBase([...selected, ...current.moduleIds], args.base)
+    const prepared = await catalogue.prepare(target, current, load, args.capabilities, args.base)
+    return { review: catalogue.review(target, current, args.capabilities, args.base), changes: prepared.changes.map(change => ({ module: change.module, bytes: change.data.length, sha256: hash(change.data), undoSha256: change.undo && hash(change.undo) })) }
   }
   const handlers = {
     site_features: async () => ({ beta: true, tools: TOOLS.map(item => item.name), coverage: ['instrument/module catalogue, search and module guides', 'card compatibility and USB package preflight/Undo', 'isolated set CRUD/import/export/current versions', 'community API with normal permissions', 'saved public firmware download receipts', 'real site USB review/trial/self-test/Keep/Undo', 'cached live load and fixed saved-module-file backup receipts'], limits: ['Domain/API tests do not measure CSS pixels or audible output.', 'OAuth/browser sign-in and upload file selection use their separate existing workflows.', 'No raw memory, key injection, whole-OS flash or automatic Keep.', 'Local sources and private workspace are distinct from a live signed-in browser.', 'A saved-module-file backup does not qualify recovery or permit Keep over foreign saved files.'] }),
     site_catalogue: async args => {
       const machine = args.machine ?? 'all', octa = frontend.availableModules(!!args.beta).map(module => ({ ...module, machine: 'octatrack', usb: catalogue.ids.includes(module.id) })), digi = frontend.digiModules.map(module => ({ ...module, name: module.title, description: module.summary, machine: module.device }))
-      return { machines: frontend.machines, modules: [...octa, ...digi].filter(module => (machine === 'all' || module.machine === machine) && (!args.category || (module.libraryCategory ?? module.category) === args.category) && (!args.query || (module.name + ' ' + module.description).toLowerCase().includes(args.query.toLowerCase()))) }
+      return { machines: frontend.machines, ...preparedModules ? { privatePreparation: preparedModules.info } : {}, modules: [...octa, ...digi].filter(module => (machine === 'all' || module.machine === machine) && (!args.category || (module.libraryCategory ?? module.category) === args.category) && (!args.query || (module.name + ' ' + module.description).toLowerCase().includes(args.query.toLowerCase()))) }
     },
     site_module: async args => { if ((args.machine ?? 'octatrack') === 'octatrack') { frontend.resolveSelection(ids([args.id])); return frontend.documents[args.id] } const [module] = frontend.resolveDigiSelection(args.machine, ids([args.id])); return module },
     site_selection: selection,
@@ -234,7 +243,8 @@ export async function createFrontendTools(options, injected, dependencies = {}) 
       // Legacy INVENTORY gives a layout, not the exact installed package hash. Preserve existing
       // modules rather than pretending the latest site package is their exact rollback image.
       if (before.inventory.moduleIds.some(id => !target.moduleIds.includes(id))) throw new Error('This base cannot identify exact installed rollback packages. Preserve its existing modules in this test set.')
-      const prepared = await catalogue.prepare(target, before.inventory, load, before.capabilities), review = randomUUID()
+      preparedModules?.requireBase([...target.moduleIds, ...before.inventory.moduleIds], before.state.identity?.base)
+      const prepared = await catalogue.prepare(target, before.inventory, load, before.capabilities, before.state.identity?.base), review = randomUUID()
       for (const [id, item] of reviews) if (item.expires < clock()) reviews.delete(id)
       if (reviews.size >= 10) throw new Error('Finish or expire existing reviews first.')
       reviews.set(review, { before, target, prepared, expires: clock() + 60000 })
@@ -323,8 +333,8 @@ export function createProtocol(service) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   for (const method of ['log', 'info', 'debug', 'warn', 'error']) console[method] = (...args) => process.stderr.write(formatMcpLog(...args) + '\n')
   try {
-  const { values } = parseArgs({ options: { 'data-dir': { type: 'string' }, 'frontend-root': { type: 'string' }, 'api': { type: 'string' }, site: { type: 'string' }, 'session-file': { type: 'string' }, stock: { type: 'string' }, 'device-socket': { type: 'string' }, 'allow-api-writes': { type: 'boolean' }, 'allow-device-writes': { type: 'boolean' } } })
-  const service = await createFrontendTools({ root: values['frontend-root'] && resolve(values['frontend-root']), dataDir: values['data-dir'] && resolve(values['data-dir']), apiBase: values.api, site: values.site, sessionFile: values['session-file'], stock: values.stock, deviceSocket: values['device-socket'], allowApiWrites: values['allow-api-writes'], allowDeviceWrites: values['allow-device-writes'] })
+  const { values } = parseArgs({ options: { 'data-dir': { type: 'string' }, 'frontend-root': { type: 'string' }, 'prepared-modules': { type: 'string' }, 'api': { type: 'string' }, site: { type: 'string' }, 'session-file': { type: 'string' }, stock: { type: 'string' }, 'device-socket': { type: 'string' }, 'allow-api-writes': { type: 'boolean' }, 'allow-device-writes': { type: 'boolean' } } })
+  const service = await createFrontendTools({ root: values['frontend-root'] && resolve(values['frontend-root']), preparedModules: values['prepared-modules'] && resolve(values['prepared-modules']), dataDir: values['data-dir'] && resolve(values['data-dir']), apiBase: values.api, site: values.site, sessionFile: values['session-file'], stock: values.stock, deviceSocket: values['device-socket'], allowApiWrites: values['allow-api-writes'], allowDeviceWrites: values['allow-device-writes'] })
   const protocol = createProtocol(service), input = createInterface({ input: process.stdin, crlfDelay: Infinity })
   let queue = Promise.resolve()
   input.on('line', line => { queue = queue.then(async () => { let reply; try { if (Buffer.byteLength(line) > 64 * 1024) throw new Error('Message too large.'); reply = await protocol(JSON.parse(line)) } catch { reply = { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Invalid JSON-RPC message.' } } } if (reply) process.stdout.write(JSON.stringify(reply) + '\n') }) })

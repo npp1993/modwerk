@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 """Private table SHA/source/layout association and exact complete splices."""
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import struct
@@ -10,26 +11,14 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 ADAPTER = ROOT / 'sdk/machines/octatrack/module-adapters'
-sys.path.insert(0, str(ADAPTER))
+sys.path.append(str(ADAPTER))
 import table_declarations as declarations
+spec = importlib.util.spec_from_file_location('table_package_builder', ROOT / 'sdk/runtime/loader/build.py')
+builder = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(builder)
 
 
 def sha(data): return hashlib.sha256(data).hexdigest()
-
-
-def fixture_package(image, relocations, sites, copies, owner):
-    """Authored table-only fixture; canonical loader/builder remains unchanged."""
-    header = bytearray(76);header[:8] = b'MWRM\x00\x08\x00\x00'
-    identity = declarations.SHAPES[owner][4]
-    struct.pack_into('>6I', header, 8, len(image), 0, len(relocations), 0, len(sites), identity)
-    header[50:55] = b'TABLE';struct.pack_into('>HII', header, 66, 1, len(copies), 0)
-    records = bytearray()
-    for address, digest, code, local, keep, checked in sites:
-        records += struct.pack('>IBBBB', address, len(code), keep, checked, len(local))
-        records += digest + code + struct.pack('>%dH' % len(local), *local)
-    for offset, address, n, digest in copies:
-        records += struct.pack('>IIHH', offset, address, n, 0) + digest
-    return bytes(header) + image + struct.pack('>%dI' % len(relocations), *relocations) + records
 
 
 class TableDeclarationTests(unittest.TestCase):
@@ -40,7 +29,7 @@ class TableDeclarationTests(unittest.TestCase):
         (self.root / 'table.s').write_text('authored source snapshot\n')
         self.sources = {'table.s': sha((self.root / 'table.s').read_bytes())}
 
-    def entry(self, owner='quantizer', **changes):
+    def entry(self, owner='quantizer', hooks=(), **changes):
         _, count, insert, added, _, roots, refs, count_at, count_code = declarations.SHAPES[owner]
         image, relocations, sites, copies = bytearray(512), [], [], []
         offsets = [80, 160, 240]
@@ -56,7 +45,8 @@ class TableDeclarationTests(unittest.TestCase):
                     n = min(8, end - row) * 4
                     copies.append((base + 4 * (row + extra), roots[table] + 4 * row, n, bytes((table + 1,)) * 32))
         sites.append((count_at, bytes((4,)) * 32, count_code, [], 0, len(count_code)))
-        package = fixture_package(bytes(image), relocations, sites, copies, owner)
+        package = builder.package(bytes(image), 0, list(hooks), relocations, sites, name=owner,
+                                  hashed=True, title='TABLE', layout=1, copies=copies, abi=8)
         names = ['labels', 'getters', 'setters']
         captured = dict(schema=1, imageSha256=sha(bytes(image)), sources=self.sources,
                         symbols=dict(zip(names, offsets)))
@@ -71,11 +61,11 @@ class TableDeclarationTests(unittest.TestCase):
                     reviewed_sha256=sha(declaration), source_root=self.root)
 
     def test_both_exact_complete_splices_generate_fixed_closed_storage(self):
-        self.assertEqual((len(declarations.empty()), declarations.empty()[:7]), (976, b'MWTD\1\0\20'))
+        self.assertEqual((len(declarations.empty()), declarations.empty()[:7]), (1456, b'MWTD\1\0\30'))
         table = declarations.generate([self.entry(), self.entry('mute-modes')])
-        self.assertEqual((len(table), table[5]), (976, 2))
+        self.assertEqual((len(table), table[5]), (1456, 2))
         self.assertEqual({table[16 + 60 * i + 40] for i in range(2)}, {1, 2})
-        for bad in ([self.entry()] * 17, [self.entry(), self.entry()], [dict(self.entry(), extra=True)]):
+        for bad in ([self.entry()] * 25, [self.entry(), self.entry()], [dict(self.entry(), extra=True)]):
             with self.assertRaises(ValueError): declarations.generate(bad)
 
     def test_absent_sha_source_and_layout_associations_refuse(self):
@@ -89,6 +79,20 @@ class TableDeclarationTests(unittest.TestCase):
         with self.assertRaises(ValueError): declarations.validate(**dict(entry, recipe=entry['recipe'] + b' '))
         (self.root / 'table.s').write_text('changed source\n')
         with self.assertRaises(ValueError): declarations.validate(**entry)
+
+    def test_a_subscribing_owner_carries_only_checked_hook_words(self):
+        """Mute Modes subscribes and raises since the events migration: its hook words are checked, and the rest of the
+        package is validated exactly as a hookless one. Synthetic bytes only."""
+        none = builder.NONE
+        entry = self.entry('mute-modes', hooks=[none] * 4 + [50 << 24 | 8, none, none, 255 << 24 | 16])
+        self.assertEqual(declarations.validate(**entry).family, 2)
+        for at, value in ((76 + 16, 50 << 24 | 9), (76 + 16, 50 << 24 | 600), (76, 3)):
+            package = bytearray(entry['package']); struct.pack_into('>I', package, at, value)
+            doc = json.loads(entry['declaration']); doc['packageSha256'] = sha(package)
+            declaration = json.dumps(doc).encode()
+            with self.subTest(at=at, value=value), self.assertRaises(ValueError):
+                declarations.validate(**dict(entry, package=bytes(package), declaration=declaration,
+                                             reviewed_sha256=sha(declaration)))
 
     def test_pointer_sites_relocations_and_original_word_mapping_cannot_drift(self):
         entry = self.entry()
@@ -110,7 +114,7 @@ class TableDeclarationTests(unittest.TestCase):
         from machine_declarations import empty as machine_empty
         before = b'head' + machine_empty() + declarations.empty() + b'identity' + b'guard'
         table = declarations.generate([self.entry()])
-        machine_offset, table_offset = 4, 724
+        machine_offset, table_offset = 4, 1076
         after = declarations.fill_reserved(before, table_offset, table)
         symbols = dict(machine=machine_offset, tables=table_offset, arena=0x47080000, guard=len(before) - 5)
         self.assertTrue(declarations.assert_stable_reserved(before, after, symbols, dict(symbols), machine_offset, table_offset)['stable'])

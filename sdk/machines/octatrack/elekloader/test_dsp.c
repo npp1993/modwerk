@@ -3,6 +3,7 @@
  * -DMODWERK_DSP_RESERVE=342):
  * admission against the arena, the instance block, cycles, free ids and
  * effects in use, and the catalog the DSP manager reads. */
+#include "sha256.c"
 #include "dsp.c"
 #include "fxmap.c"
 #include <stdio.h>
@@ -10,6 +11,15 @@
 const struct fx_legacy modwerk_fx_legacy[] = {{0x873d83ccu, 27, "E-Verb"}};
 int modwerk_fxpage_build(unsigned id, uint8_t *recipe, uint32_t bytes, unsigned slots) { (void)id; (void)recipe; (void)bytes; (void)slots; return 1; }
 void modwerk_fxpage_drop(unsigned id) { (void)id; }
+/* Legacy tests have no production owner/journal authority. */
+int modwerk_runtime_owner_snapshot(const uint8_t *p,struct runtime_owner *o) { (void)p;(void)o;return 0; }
+int modwerk_runtime_owner_valid(const struct runtime_owner *o) { (void)o;return 0; }
+int modwerk_runtime_owner_canonical(const struct runtime_owner *o,uintptr_t *a) { (void)o;(void)a;return 0; }
+const struct runtime_module *modwerk_runtime_module(unsigned p) { (void)p;return 0; }
+void modwerk_runtime_journal_snapshot(struct runtime_journal_progress *p) { *p=(struct runtime_journal_progress){0}; }
+int modwerk_fxpage_validate(unsigned i,const uint8_t *p,uint32_t n,unsigned s) { (void)i;(void)p;(void)n;(void)s;return 0; }
+int modwerk_fxpage_current(unsigned i,const uint8_t *p,uint32_t n,unsigned s) { (void)i;(void)p;(void)n;(void)s;return 0; }
+int modwerk_fxpage_commit_checked(unsigned i,uint8_t *p,uint32_t n,unsigned s) { (void)i;(void)p;(void)n;(void)s;return 0; }
 const uint32_t modwerk_fx_legacy_count = 1;
 static char written[256];
 static int capture(uint32_t file, const void *data, unsigned length)
@@ -111,6 +121,44 @@ struct code dl_codes[2][MODWERK_FX_IDS];
 const uint16_t modwerk_dsp_arena[2] = {2320, 2300};
 static int idle = 1;
 int dl_publication_idle(void) { return idle; }
+static uint32_t slot_cycles[16]; /* manager.c: no slot holds anything dearer than the stock reserve */
+uint32_t dl_slot_cycles(unsigned i) { return slot_cycles[i]; }
+/* The source stage: per-voice and per-engine prices before the FX slots, any module, fail closed. */
+static void sources(void)
+{
+    const uint32_t a = 0xab, b = 0xbb; /* two machine modules' runtime ids */
+    /* Core 0 (tracks 5-8) keeps 3120 - 8 x 342 = 384 cycles; core 1 (tracks 1-4) 3565 - 2736 = 829. */
+    CHECK(modwerk_dsp_source_claim(4, a, 411, 3, RUNTIME_EXECUTED) == RUNTIME_CYCLES); /* 720 + 6 > 384 */
+    CHECK(modwerk_dsp_source_charge(0) == 0 && modwerk_dsp_source_charge(1) == 0);
+    CHECK(modwerk_dsp_source_claim(0, a, 411, 3, RUNTIME_EXECUTED) == RUNTIME_OK);     /* 726 <= 829 */
+    CHECK(modwerk_dsp_source_charge(1) == 726 && modwerk_dsp_source_charge(0) == 0);
+    CHECK(modwerk_dsp_source_claim(1, a, 411, 3, RUNTIME_EXECUTED) == RUNTIME_CYCLES); /* a second voice: 1446 */
+    CHECK(modwerk_dsp_source_claim(0, a, 411, 3, RUNTIME_EXECUTED) == RUNTIME_OK && modwerk_dsp_source_charge(1) == 726); /* same voice again */
+    CHECK(modwerk_dsp_source_claim(1, b, 50, 10, RUNTIME_HARDWARE) == RUNTIME_OK);   /* another module's own engine */
+    CHECK(modwerk_dsp_source_charge(1) == 726 + 60);
+    CHECK(modwerk_dsp_source_claim(1, a, 50, 0, RUNTIME_HARDWARE) == RUNTIME_OK);    /* a takes track 2 from b; b's engine stays */
+    CHECK(modwerk_dsp_source_charge(1) == 726 + 50 + 10);
+    slot_cycles[0] = MODWERK_DSP_RESERVE + 20u; /* a module FX on track 1 (core 1) committed meanwhile */
+    CHECK(modwerk_dsp_source_claim(2, b, 0, 10, RUNTIME_HARDWARE) == RUNTIME_OK);     /* 2756 + 786 */
+    CHECK(modwerk_dsp_source_claim(3, b, 30, 10, RUNTIME_HARDWARE) == RUNTIME_CYCLES); /* 2756 + 786 + 30 > 3565 */
+    CHECK(modwerk_dsp_source_charge(1) == 786);                                      /* nothing changed on refusal */
+    slot_cycles[0] = 0;
+    modwerk_dsp_source_release(0);
+    CHECK(modwerk_dsp_source_charge(1) == 786 - 720);                                 /* its engine stays while on */
+    modwerk_dsp_source_engine_off(a);
+    CHECK(modwerk_dsp_source_charge(1) == 10);                                         /* a's track 2 voice and engine gone */
+    modwerk_dsp_source_engine_off(b);
+    CHECK(modwerk_dsp_source_charge(1) == 0);
+    for (uint32_t m = 1; m <= SOURCE_ENGINES; ++m) CHECK(modwerk_dsp_source_claim(m & 1u ? 5 : 6, m, 0, 0, RUNTIME_HARDWARE) == RUNTIME_OK);
+    CHECK(modwerk_dsp_source_claim(7, 99, 0, 0, RUNTIME_HARDWARE) == RUNTIME_FULL);    /* every engine entry on core 0 held */
+    for (uint32_t m = 1; m <= SOURCE_ENGINES; ++m) modwerk_dsp_source_engine_off(m);
+    CHECK(modwerk_dsp_source_claim(8, a, 1, 1, RUNTIME_HARDWARE) == RUNTIME_MALFORMED);
+    CHECK(modwerk_dsp_source_claim(0, 0, 1, 1, RUNTIME_HARDWARE) == RUNTIME_MALFORMED);
+    CHECK(modwerk_dsp_source_claim(0, a, 0x10000u, 1, RUNTIME_HARDWARE) == RUNTIME_MALFORMED);
+    CHECK(modwerk_dsp_source_claim(0, a, 1, 1, 0) == RUNTIME_MALFORMED);
+    CHECK(modwerk_dsp_source_claim(0, a, 1, 1, RUNTIME_HARDWARE + 1) == RUNTIME_MALFORMED);
+    CHECK(modwerk_dsp_source_charge(0) == 0 && modwerk_dsp_source_charge(1) == 0 && modwerk_dsp_source_charge(2) == 0);
+}
 
 /* All handles held: FULL; past 32 ids the fixture's third handle, 40, is still free and goes to the newcomer. */
 static int full_or_40(const struct runtime_dsp *none, struct runtime_dsp t) /* a copy: admission writes the id it gives */
@@ -124,8 +172,8 @@ int main(void)
     for (unsigned k = 32; k < MODWERK_FX_IDS; ++k) dl_catalog[k] = (struct dl_package)STOCK; /* identity.c's stubs */
     static const uint32_t words[3] = {1, 2, 3};
     static const uint16_t relocations[1] = {0};
-    struct runtime_dsp none = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", 0, 0, 0};
-    struct runtime_dsp fx = {words, relocations, 3, 1, 1, 2, 244, 0, 26, 1, RUNTIME_MODELED, 70, 70, 1, "Test FX", 0, 0, 0};
+    struct runtime_dsp none = {0};
+    struct runtime_dsp fx = {.words=words,.relocations=relocations,.count=3,.relocation_count=1,.init=1,.proc=2,.cycles=244,.id=26,.slots=1,.kind=RUNTIME_MODELED,.state=70,.module=70,.layout=1,.name="Test FX"};
     CHECK(modwerk_machine_dsp_admit(&none, &none) == RUNTIME_OK && modwerk_machine_dsp_admit(&none, &fx) == RUNTIME_OK);
     /* The effect id is a handle: the preferred one when it is a free module id, else the lowest free module id. */
     fx.id = 27; CHECK(modwerk_machine_dsp_admit(&none, &fx) == RUNTIME_OK && fx.id == 27);
@@ -280,6 +328,7 @@ int main(void)
     third.module = 0x873d83ccu; third.id = 26; CHECK(modwerk_machine_dsp_admit(&none, &third) == RUNTIME_FULL); /* the map has it at 27 */
     third.pinned = 0;
     planner();
+    sources();
     if (failures) { fprintf(stderr, "%u DSP glue checks failed\n", failures); return 1; }
     puts("Octatrack DSP glue: admission (ids, arena, instance block, cycles, effects in use), the catalog, the effects a bank names, the stall watchdog, the project handle map and rebinding passed.");
     return 0;

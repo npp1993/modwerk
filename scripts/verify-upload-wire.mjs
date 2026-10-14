@@ -161,6 +161,14 @@ await scenario('positive unchanged publication can discard and resume', async s 
   await s.cancel(); assert.equal(s.status.phase, 'normal')
 }, 'unchanged')
 
+await scenario('unchanged commit cleanup permits a fresh staged transaction', async s => {
+  await s.stage(payload()); await assert.rejects(s.activate(), e => e instanceof UploadDeviceError && e.status.result === 'backend')
+  assert.equal(s.status.phase, 'ready'); assert.equal(s.status.received, 0)
+  await s.cancel() // clear the client's retained offer after the controller discarded the candidate
+  await s.stage(payload(17)); assert.equal(s.status.phase, 'verified'); assert.equal(s.status.currentTransaction, 2)
+  await s.cancel(); assert.equal(s.status.active, previous); assert.equal(s.status.generation, 0)
+}, 'unchanged')
+
 await scenario('retirement refusal retains rollback', async s => {
   await s.stage(payload()); await s.activate(); await assert.rejects(s.accept(), UploadDeviceError)
   assert.equal(s.status.phase, 'pending')

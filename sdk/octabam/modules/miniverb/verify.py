@@ -43,7 +43,7 @@ from remix.schema import Remix  # noqa: E402
 registry.remix = lambda _: Remix(name='miniverb-tone-test', doc='Private DSP regression.', modules=('MINIVERB',), fallback='NONE')
 import build_bus  # noqa: E402
 assert [p.name.decode() for p in candidate.params[:6]] == ['DECAY', 'DAMP', 'TONE', 'MOD', 'RATE', 'MIX']
-report = {'moduleVersion': '0.2.1-experimental', 'sampleRate': 44100,
+report = {'moduleVersion': '0.2.2-experimental', 'sampleRate': 44100,
           'framesPerBlock': 16, 'hardware': 'not tested', 'checks': [], 'loads': [],
           'sources': {name: hashlib.sha256((folder / name).read_bytes()).hexdigest()
                       for name in ('miniverb.asm', 'manifest.py', 'verify.py')},
@@ -78,8 +78,10 @@ def assembled(name, path):
 
 old = assembled('baseline', baseline_asm)
 new = assembled('candidate', folder / 'miniverb.asm')
+published_asm = folder / 'upstream/miniverb-0.2.1.asm'
+pub = assembled('published', published_asm)
 import cycle_count  # noqa: E402
-for name, path in (('baseline', baseline_asm), ('candidate', folder / 'miniverb.asm')):
+for name, path in (('baseline', baseline_asm), ('published', published_asm), ('candidate', folder / 'miniverb.asm')):
     cycle_count._ASM['miniverb'] = path
     static = cycle_count.measure('miniverb')
     gate(name + ': static cycle marker preserves code', cycle_count.verify('miniverb', static))
@@ -95,6 +97,25 @@ def render(mod, mems, tag, blocks, values=None, **kw):
 
 def knobs(tone=64, mix=127):
     p = bench.knobs(candidate); p[2] = tone; p[5] = mix; return p
+
+# 0.2.2 only drops two coefficient reloads whose register already holds the value; the published 0.2.1
+# program is the oracle, so every output must be bit-identical: eight moving instances on both cores,
+# every trig split on both cores, and the hot mixer input at each Tone endpoint.
+splits = [1, 3, 7, 15, 15, 7, 3, 1]
+cases = [('eight', dict(split=splits))] + [(f'split{s}', dict(instances=2, positions=[0, 4], split=[s, s])) for s in range(16)]
+for tag, kw in cases:
+    ins = [bench.source(2048, k) for k in range(kw.get('instances', 8))]
+    _, x = bench.run(candidate, new, 'ident_new_' + tag, 2048, automate=True, inputs=ins, **kw)
+    _, y = bench.run(candidate, pub, 'ident_pub_' + tag, 2048, automate=True, inputs=ins, **kw)
+    gate(f'moving controls, {tag}: bit-identical to published 0.2.1', x == y, instances=len(x))
+hot = bench.raw(output / 'ident_hot.raw', [round(.9 * 8388607 * math.sin(2 * math.pi * 733 * n / 44100)) for n in range(4096 * 16)])
+for tone in (0, 64, 127):
+    p = knobs(tone, 32)
+    kw = dict(instances=2, inputs=[hot, hot], positions=[0, 4], split=[7, 7], extra=['-audio', '0'])
+    _, x = render(candidate, new, f'ident_hot_new_{tone}', 4096, [(0, p)], **kw)
+    _, y = render(candidate, pub, f'ident_hot_pub_{tone}', 4096, [(0, p)], **kw)
+    gate(f'0.9 FS, MIX 32, TONE {tone}, both cores: bit-identical to published 0.2.1', x == y)
+
 
 # Low-level neutral audio retains the tank and differs only by the bounded
 # three-bit multiplier quantization. The published 0.2.0 source is the oracle.

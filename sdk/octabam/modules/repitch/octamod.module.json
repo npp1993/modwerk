@@ -3,7 +3,7 @@
   "id": "repitch",
   "key": "REPITCH",
   "name": "Repitch",
-  "version": "0.1.2-experimental",
+  "version": "0.2.0-experimental",
   "category": "playback",
   "author": {
     "github": "repeat98",
@@ -59,6 +59,27 @@
       "method": "unmeasured",
       "conditions": "Uses tempo-driven playback speed with timestretch off in the voice renderer. No quantitative load comparison has been published.",
       "source": "README.md"
+    },
+    "impact": {
+      "conditions": "Audio modules are rated for an active instance, including expensive modes and changing controls; MIDI/USB features are rated while enabled. More tracks or instances increase demand. Shared runtime reservations and reused stock buffers are not added again per module. These rough source-backed tiers do not establish hardware headroom or qualification.",
+      "cpu": {
+        "level": "low",
+        "basis": "source-estimate",
+        "rationale": "ColdFire updates tempo-driven playback increments and control/UI paths. The renderer runs with timestretch off, avoiding a new grain-processing algorithm. Low describes estimated incremental module work, not the total cost of sample playback.",
+        "source": "README.md"
+      },
+      "dsp": {
+        "level": "minimal",
+        "basis": "source-estimate",
+        "rationale": "The documented change selects dry/off voice rendering and carries tempo through the playback increment. It adds no separate DSP effect algorithm; existing sample playback still consumes device resources.",
+        "source": "README.md"
+      },
+      "memory": {
+        "level": "minimal",
+        "basis": "source-estimate",
+        "rationale": "The described contribution is a playback-speed and menu patch, reusing the existing sample renderer and storage. Minimal estimates added module storage; recorder and slice cases are explicitly unmeasured in the source record.",
+        "source": "README.md"
+      }
     }
   },
   "tests": {

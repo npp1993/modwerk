@@ -11,14 +11,17 @@
       "scope": "FM consumers and known UI-root native observation",
       "stockSha256": "34695b606eb00e1b4dded5fd0c4b66f3a460522a632e47d7416dbd220599e1ad",
       "stockMainSha256": "164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e",
-      "packageSha256": "9a7622263ef5a77ef73e78265826560cebbb38af028edaa0fd1c079d6fe850d5",
-      "captureSha256": "ee07e035066065070990bb591727db662770bd790d112cda5bcef41f77615d01",
+      "packageSha256": "629ac6b2988c4e4d07817bcccea4cd4c551e824a208772df790038921926f078",
+      "captureSha256": "0e5bf02f20ca8610a5626a31e771247a50caf3583a06bd87bacb9dd7c59274a3",
       "sources": {
+        "sdk/runtime/loader/build.py": "174100dd53cc04f0ec5c46efb10b0270f75db85ee34cb35c0dfb5d3d4bfe07c3",
         "sdk/machines/octatrack/module-adapters/machine_composition.py": "4cfa5ae146e1b93c16b478af5882072e3ddefb1bd32960dde577a3f1cb5b3d3e",
         "sdk/machines/octatrack/module-adapters/fm_runtime.py": "ecf39c395bd8231d1dda340e1c6bc26e8473ba548cfa422f9a4ae4ff2bd6807e",
         "sdk/machines/octatrack/module-adapters/vector_runtime.py": "9f0a0ffe8c0e3bacef6e6aad057f8f454b43b5daef32e9adb8fa2def0937ea39",
+        "sdk/machines/octatrack/module-adapters/quantizer_runtime.py": "d40b72c887142cec0bed46b26de6269e7939f7453350b25ae24f48395777e6a4",
         "sdk/machines/octatrack/module-adapters/stock_recipe.py": "662b79d9dc612845cf85e5051fa2d711cad4f98244194357fdaaabca092d5ca5",
         "sdk/octabam/modules/synth/manifest.py": "7854330aca001d2841de2fb384f0ca8adb7497db49dacc56da2815c1f444c0e6",
+        "sdk/octabam/modules/synth/upstream/synth/manifest.py": "58c7acd5684fe0b59c42501f7fdbfd1b288b3bfb71938dcadf43bc1774b3e5e8",
         "sdk/octabam/modules/synth/upstream/synth/poly.s": "ce21f5f7cddcd7268d27e25c500f1403cc59a9dff28044b1832cf2b45592d34c",
         "sdk/octabam/modules/synth/upstream/quantizer/keys.s": "e2ffdbfae34b0828794a4eb4cc229e3efcaed25dc953bf7c05c13f6e37f65587",
         "sdk/octabam/modules/synth/upstream/quantizer/core.s": "2992b6c85cff440de03ae84eb22dee8b8a83a84f23e94b699404d28940b6f958",
@@ -33,23 +36,23 @@
         "sdk/octabam/modules/quantizer/composition.json": "d5662ed9972ef629dbaa6120d25fdc1ff7a2d5351b25f32f73fe3a06394531cc"
       },
       "compiledImageSha256": "fda04d7f6173b7d0b2b30c1ec6459d814c8b103d24e7b94e1d424c301300fc6b",
-      "encodedImageSha256": "9d7db16eaad5ed897e279b26ffdb09194479d662d6b0cda27a035ae125e945f2",
-      "reviewedRecipeSha256": "8ded4c5d344d14f19a729f84b5080e50f85e13811fca3faaecb4ec62d11cab69",
+      "encodedImageSha256": "fda04d7f6173b7d0b2b30c1ec6459d814c8b103d24e7b94e1d424c301300fc6b",
+      "reviewedRecipeSha256": null,
       "probeSources": {
         "fm_consumer_fixture.cpp": "c0be55efcb12afe929ea3ceeeb0d4d2f9aca00659a1711e961677f2134191ae2",
         "fm_consumer_scanner.c": "7cb82a9bcd3855945e38b1396158da33a077884cab6aa83656c4b9beed28e015",
         "probe_fm_consumers.py": "3858030b1e67fdfab70e6fc22824418ee484b3125fb743a5f20a25551b44fc6f",
         "machine_lifetime.c": "8bf0a66c8113f2e608c6e4115aef67e056e13f8395f67b172342d9d296496f5a",
         "machine_lifetime.h": "6fb7713aa06d01e52ac5bd32a6057038efb4717f1635662f47c8595803d3cf11",
-        "machine_layout.py": "d394ddf37a025fa77609bc9ca5e1b0091e9cca714e64fc461fad6a613687b35c",
+        "machine_layout.py": "0428dcc546ac2fe7767a7c5e97be52877f680b369855203d54a6e9291facb258",
         "stock_recipe.py": "662b79d9dc612845cf85e5051fa2d711cad4f98244194357fdaaabca092d5ca5"
       },
       "nativeArchives": {
-        "out/emu/libot_machine.a": "15a867f7589ac891ff5b20cdfe4c1709298975de15342d5c3434f008988bef02",
-        "out/emu/mc68k/lib68kEmu.a": "451b2f6c7455b00f5b7b0462ed38c71ac5cccc93fb0bbd58e0fa93c1e391701b",
-        "out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "37224756f1622024e36443cdb6d67ee1cd8ab5b366c92442d3983fb35ffea0bc",
-        "out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "dea1c15cb6bb6cc3f126f64107e454d24aaa2f17ce04753956ac0f341ccc48f4",
-        "out/emu/dsp56300/asmjit/libasmjit.a": "39b4923646d12bb3285a1d0634cf84fc53ee558811d7b4670bea3fc77e721a39"
+        "out/emu/libot_machine.a": "8c46e397b8125af9d4e6818e84166772f76ac0a886e11cfd528c192971152b1e",
+        "out/emu/mc68k/lib68kEmu.a": "b755d6d5aabb9f3074e9cd3892e3ae7ba5984693b3ce2399aa32f5d7cad06735",
+        "out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "a1270ebf7e4159b90ed4e586c21036cd23f6ad02f8aa65a3a2a43057317ca7cd",
+        "out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "9cf193217e774522216c8fdaf31131b619fca6701dd796d4c43da3809420379b",
+        "out/emu/dsp56300/asmjit/libasmjit.a": "ccfa4fb1efd89fda1a328b744b858c1a848c8567236f1643e81496a3f2f5c5a7"
       },
       "origins": [
         {
@@ -58,7 +61,7 @@
               "origin": 1191706624,
               "calls": 2803,
               "widgets": 23,
-              "writes": 628641,
+              "writes": 631300,
               "privateReads": 435094,
               "consumerPCs": 838,
               "escapedPointers": 0,
@@ -85,7 +88,7 @@
               "origin": 1192230912,
               "calls": 2803,
               "widgets": 23,
-              "writes": 628641,
+              "writes": 631300,
               "privateReads": 435094,
               "consumerPCs": 838,
               "escapedPointers": 0,
@@ -114,22 +117,25 @@
       "exhaustiveConsumerCoverage": false,
       "admission": false,
       "memberMask": 4,
-      "privateReceiptSha256": "b3f2e8362c162165b746c855cf37c749b777c00a1a10534c914f80bd76f8cf85"
+      "privateReceiptSha256": "edda06a940e46a2bd552ece203bf25d968eafbb403e4d365d107e0d1534ec287"
     },
     {
       "schema": 1,
       "scope": "FM consumers and known UI-root native observation",
       "stockSha256": "34695b606eb00e1b4dded5fd0c4b66f3a460522a632e47d7416dbd220599e1ad",
       "stockMainSha256": "164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e",
-      "packageSha256": "dc3cb20ccab99d7619a7c00c38aecd95c88771a8dc8efe94e871193b00f69d44",
-      "captureSha256": "65482e35ecbee5872f128aaeee2282d5714fa9ba84b4f1e9e539938c47792917",
+      "packageSha256": "0938e3a737117850899064c2d7ecb7798eb753ec8119c69adefa1167e66cdc3a",
+      "captureSha256": "2433e0bc750a52bb70df61e5d6e8c34a415be6e33900d385d7966921ad218711",
       "sources": {
+        "sdk/runtime/loader/build.py": "174100dd53cc04f0ec5c46efb10b0270f75db85ee34cb35c0dfb5d3d4bfe07c3",
         "sdk/machines/octatrack/module-adapters/machine_composition.py": "4cfa5ae146e1b93c16b478af5882072e3ddefb1bd32960dde577a3f1cb5b3d3e",
         "sdk/machines/octatrack/module-adapters/fm_runtime.py": "ecf39c395bd8231d1dda340e1c6bc26e8473ba548cfa422f9a4ae4ff2bd6807e",
         "sdk/machines/octatrack/module-adapters/vector_runtime.py": "9f0a0ffe8c0e3bacef6e6aad057f8f454b43b5daef32e9adb8fa2def0937ea39",
+        "sdk/machines/octatrack/module-adapters/quantizer_runtime.py": "d40b72c887142cec0bed46b26de6269e7939f7453350b25ae24f48395777e6a4",
         "sdk/machines/octatrack/module-adapters/stock_recipe.py": "662b79d9dc612845cf85e5051fa2d711cad4f98244194357fdaaabca092d5ca5",
         "sdk/octabam/modules/poly8/manifest.py": "1b9dfc90a6d5901ee3e453b7c3854363aad82f7267edc090b5f4439a57f12ddb",
         "sdk/octabam/modules/synth/manifest.py": "7854330aca001d2841de2fb384f0ca8adb7497db49dacc56da2815c1f444c0e6",
+        "sdk/octabam/modules/synth/upstream/synth/manifest.py": "58c7acd5684fe0b59c42501f7fdbfd1b288b3bfb71938dcadf43bc1774b3e5e8",
         "sdk/octabam/modules/poly8/polyphony.s": "ec18d6aed032b684d3c73e1cad63fb72d578e6ea5bcfe2a46655747b5a5ad281",
         "sdk/octabam/modules/poly8/registration.s": "c88815f9b16befe01fd9070f7d39120268936fef11a8d9a8d7706092cf55d987",
         "sdk/octabam/modules/poly8/shared-machine.s": "e49d47ed22aa70a770e5738e69225106219b0337eabe67351d2e09150220ee80",
@@ -147,23 +153,23 @@
         "sdk/octabam/modules/quantizer/composition.json": "d5662ed9972ef629dbaa6120d25fdc1ff7a2d5351b25f32f73fe3a06394531cc"
       },
       "compiledImageSha256": "b7f15699913ae5f90ca00fb5f3acb919ac0646ba796e123e39d46927f0f287ee",
-      "encodedImageSha256": "fa6b5bd5cd2b7092655a59a10f0956f754adbd4d4b3ab578b7c4823b8e3171aa",
-      "reviewedRecipeSha256": "6d25cf9cbef60ddbcfc8bb4aa9c0aa9fcc68b1be0a90ccc1e1e7f80fb9850324",
+      "encodedImageSha256": "b7f15699913ae5f90ca00fb5f3acb919ac0646ba796e123e39d46927f0f287ee",
+      "reviewedRecipeSha256": null,
       "probeSources": {
         "fm_consumer_fixture.cpp": "c0be55efcb12afe929ea3ceeeb0d4d2f9aca00659a1711e961677f2134191ae2",
         "fm_consumer_scanner.c": "7cb82a9bcd3855945e38b1396158da33a077884cab6aa83656c4b9beed28e015",
         "probe_fm_consumers.py": "3858030b1e67fdfab70e6fc22824418ee484b3125fb743a5f20a25551b44fc6f",
         "machine_lifetime.c": "8bf0a66c8113f2e608c6e4115aef67e056e13f8395f67b172342d9d296496f5a",
         "machine_lifetime.h": "6fb7713aa06d01e52ac5bd32a6057038efb4717f1635662f47c8595803d3cf11",
-        "machine_layout.py": "d394ddf37a025fa77609bc9ca5e1b0091e9cca714e64fc461fad6a613687b35c",
+        "machine_layout.py": "0428dcc546ac2fe7767a7c5e97be52877f680b369855203d54a6e9291facb258",
         "stock_recipe.py": "662b79d9dc612845cf85e5051fa2d711cad4f98244194357fdaaabca092d5ca5"
       },
       "nativeArchives": {
-        "out/emu/libot_machine.a": "15a867f7589ac891ff5b20cdfe4c1709298975de15342d5c3434f008988bef02",
-        "out/emu/mc68k/lib68kEmu.a": "451b2f6c7455b00f5b7b0462ed38c71ac5cccc93fb0bbd58e0fa93c1e391701b",
-        "out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "37224756f1622024e36443cdb6d67ee1cd8ab5b366c92442d3983fb35ffea0bc",
-        "out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "dea1c15cb6bb6cc3f126f64107e454d24aaa2f17ce04753956ac0f341ccc48f4",
-        "out/emu/dsp56300/asmjit/libasmjit.a": "39b4923646d12bb3285a1d0634cf84fc53ee558811d7b4670bea3fc77e721a39"
+        "out/emu/libot_machine.a": "8c46e397b8125af9d4e6818e84166772f76ac0a886e11cfd528c192971152b1e",
+        "out/emu/mc68k/lib68kEmu.a": "b755d6d5aabb9f3074e9cd3892e3ae7ba5984693b3ce2399aa32f5d7cad06735",
+        "out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "a1270ebf7e4159b90ed4e586c21036cd23f6ad02f8aa65a3a2a43057317ca7cd",
+        "out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "9cf193217e774522216c8fdaf31131b619fca6701dd796d4c43da3809420379b",
+        "out/emu/dsp56300/asmjit/libasmjit.a": "ccfa4fb1efd89fda1a328b744b858c1a848c8567236f1643e81496a3f2f5c5a7"
       },
       "origins": [
         {
@@ -172,7 +178,7 @@
               "origin": 1191706624,
               "calls": 2803,
               "widgets": 23,
-              "writes": 629721,
+              "writes": 632380,
               "privateReads": 453301,
               "consumerPCs": 915,
               "escapedPointers": 0,
@@ -199,7 +205,7 @@
               "origin": 1192230912,
               "calls": 2803,
               "widgets": 23,
-              "writes": 629721,
+              "writes": 632380,
               "privateReads": 453301,
               "consumerPCs": 915,
               "escapedPointers": 0,
@@ -228,22 +234,25 @@
       "exhaustiveConsumerCoverage": false,
       "admission": false,
       "memberMask": 5,
-      "privateReceiptSha256": "9644c3bce321e413d0f9eb07b0c68899e9d262d4fbd8dd1bd043263a6617cec2"
+      "privateReceiptSha256": "d6fa2b910cfd225920f3a09e4a7e7641be36ec9f7a454748c7877a478f986918"
     },
     {
       "schema": 1,
       "scope": "FM consumers and known UI-root native observation",
       "stockSha256": "34695b606eb00e1b4dded5fd0c4b66f3a460522a632e47d7416dbd220599e1ad",
       "stockMainSha256": "164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e",
-      "packageSha256": "55aa05df7e8b74fd111156a20eadae24fb87b02f04ab3d1ae7679be53d7bff1f",
-      "captureSha256": "2b5441fa500ddae441130724ceb93dcf23c9de70b88141dcaf9297393c0285cd",
+      "packageSha256": "17c623dec3d0ed425f0dbab41e68e82d0726dff55e907643254074f9fc89c67f",
+      "captureSha256": "3896ec1aea652be30a777899bcc1be9a4c373cfec7a8e7ce30e158a1923553e7",
       "sources": {
+        "sdk/runtime/loader/build.py": "174100dd53cc04f0ec5c46efb10b0270f75db85ee34cb35c0dfb5d3d4bfe07c3",
         "sdk/machines/octatrack/module-adapters/machine_composition.py": "4cfa5ae146e1b93c16b478af5882072e3ddefb1bd32960dde577a3f1cb5b3d3e",
         "sdk/machines/octatrack/module-adapters/fm_runtime.py": "ecf39c395bd8231d1dda340e1c6bc26e8473ba548cfa422f9a4ae4ff2bd6807e",
         "sdk/machines/octatrack/module-adapters/vector_runtime.py": "9f0a0ffe8c0e3bacef6e6aad057f8f454b43b5daef32e9adb8fa2def0937ea39",
+        "sdk/machines/octatrack/module-adapters/quantizer_runtime.py": "d40b72c887142cec0bed46b26de6269e7939f7453350b25ae24f48395777e6a4",
         "sdk/machines/octatrack/module-adapters/stock_recipe.py": "662b79d9dc612845cf85e5051fa2d711cad4f98244194357fdaaabca092d5ca5",
         "sdk/octabam/modules/synth/manifest.py": "7854330aca001d2841de2fb384f0ca8adb7497db49dacc56da2815c1f444c0e6",
         "sdk/octabam/modules/vector/manifest.py": "4d921f24256038797a99671534885b0bb9a27eaa79261b11136cf0a95a75af21",
+        "sdk/octabam/modules/synth/upstream/synth/manifest.py": "58c7acd5684fe0b59c42501f7fdbfd1b288b3bfb71938dcadf43bc1774b3e5e8",
         "sdk/octabam/modules/synth/upstream/synth/poly.s": "ce21f5f7cddcd7268d27e25c500f1403cc59a9dff28044b1832cf2b45592d34c",
         "sdk/octabam/modules/synth/upstream/quantizer/keys.s": "e2ffdbfae34b0828794a4eb4cc229e3efcaed25dc953bf7c05c13f6e37f65587",
         "sdk/octabam/modules/synth/upstream/quantizer/core.s": "2992b6c85cff440de03ae84eb22dee8b8a83a84f23e94b699404d28940b6f958",
@@ -259,23 +268,23 @@
         "sdk/octabam/modules/quantizer/composition.json": "d5662ed9972ef629dbaa6120d25fdc1ff7a2d5351b25f32f73fe3a06394531cc"
       },
       "compiledImageSha256": "56984b174b1fc7ed7820fd57f03f4504f1c3f9645079ad6030acbcfbd99ef5e5",
-      "encodedImageSha256": "1eff3e77f4ce932b5d944e7cdbb901a7d8589d9914e4bc52e505e083b89a53d9",
-      "reviewedRecipeSha256": "3e11451d0a2948fa3ee252fbfee1c2c1a8b1db722b6c35e2bff0379268be9479",
+      "encodedImageSha256": "56984b174b1fc7ed7820fd57f03f4504f1c3f9645079ad6030acbcfbd99ef5e5",
+      "reviewedRecipeSha256": null,
       "probeSources": {
         "fm_consumer_fixture.cpp": "c0be55efcb12afe929ea3ceeeb0d4d2f9aca00659a1711e961677f2134191ae2",
         "fm_consumer_scanner.c": "7cb82a9bcd3855945e38b1396158da33a077884cab6aa83656c4b9beed28e015",
         "probe_fm_consumers.py": "3858030b1e67fdfab70e6fc22824418ee484b3125fb743a5f20a25551b44fc6f",
         "machine_lifetime.c": "8bf0a66c8113f2e608c6e4115aef67e056e13f8395f67b172342d9d296496f5a",
         "machine_lifetime.h": "6fb7713aa06d01e52ac5bd32a6057038efb4717f1635662f47c8595803d3cf11",
-        "machine_layout.py": "d394ddf37a025fa77609bc9ca5e1b0091e9cca714e64fc461fad6a613687b35c",
+        "machine_layout.py": "0428dcc546ac2fe7767a7c5e97be52877f680b369855203d54a6e9291facb258",
         "stock_recipe.py": "662b79d9dc612845cf85e5051fa2d711cad4f98244194357fdaaabca092d5ca5"
       },
       "nativeArchives": {
-        "out/emu/libot_machine.a": "15a867f7589ac891ff5b20cdfe4c1709298975de15342d5c3434f008988bef02",
-        "out/emu/mc68k/lib68kEmu.a": "451b2f6c7455b00f5b7b0462ed38c71ac5cccc93fb0bbd58e0fa93c1e391701b",
-        "out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "37224756f1622024e36443cdb6d67ee1cd8ab5b366c92442d3983fb35ffea0bc",
-        "out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "dea1c15cb6bb6cc3f126f64107e454d24aaa2f17ce04753956ac0f341ccc48f4",
-        "out/emu/dsp56300/asmjit/libasmjit.a": "39b4923646d12bb3285a1d0634cf84fc53ee558811d7b4670bea3fc77e721a39"
+        "out/emu/libot_machine.a": "8c46e397b8125af9d4e6818e84166772f76ac0a886e11cfd528c192971152b1e",
+        "out/emu/mc68k/lib68kEmu.a": "b755d6d5aabb9f3074e9cd3892e3ae7ba5984693b3ce2399aa32f5d7cad06735",
+        "out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "a1270ebf7e4159b90ed4e586c21036cd23f6ad02f8aa65a3a2a43057317ca7cd",
+        "out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "9cf193217e774522216c8fdaf31131b619fca6701dd796d4c43da3809420379b",
+        "out/emu/dsp56300/asmjit/libasmjit.a": "ccfa4fb1efd89fda1a328b744b858c1a848c8567236f1643e81496a3f2f5c5a7"
       },
       "origins": [
         {
@@ -284,7 +293,7 @@
               "origin": 1191706624,
               "calls": 2803,
               "widgets": 23,
-              "writes": 632710,
+              "writes": 635369,
               "privateReads": 513787,
               "consumerPCs": 1023,
               "escapedPointers": 0,
@@ -311,7 +320,7 @@
               "origin": 1192230912,
               "calls": 2803,
               "widgets": 23,
-              "writes": 632710,
+              "writes": 635369,
               "privateReads": 513787,
               "consumerPCs": 1023,
               "escapedPointers": 0,
@@ -340,23 +349,26 @@
       "exhaustiveConsumerCoverage": false,
       "admission": false,
       "memberMask": 6,
-      "privateReceiptSha256": "2be6cb3fab5c501931cd2d29803abfd60398c66217d802955371921a6ccf8118"
+      "privateReceiptSha256": "bc19e7f12f4016bd58af05fccddfd7f11e6dbbe888054c355147e8b8465314dd"
     },
     {
       "schema": 1,
       "scope": "FM consumers and known UI-root native observation",
       "stockSha256": "34695b606eb00e1b4dded5fd0c4b66f3a460522a632e47d7416dbd220599e1ad",
       "stockMainSha256": "164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e",
-      "packageSha256": "f0cdc7e37e83fc844a85355f658b4889dc00895dba759e06143978392363d413",
-      "captureSha256": "39c5cb738faa36f97f8def73f8a601c0f0415a6d0cf7438ed1fe0927e819230c",
+      "packageSha256": "60f3f8d36bc3b7a7d9e376ae17ab5b43d92ad2dc10a71910528a482abd00c488",
+      "captureSha256": "6622f88a6e619e830e082ff70a7af58e3b835c200dbae7120fc266ccfd1362e8",
       "sources": {
+        "sdk/runtime/loader/build.py": "174100dd53cc04f0ec5c46efb10b0270f75db85ee34cb35c0dfb5d3d4bfe07c3",
         "sdk/machines/octatrack/module-adapters/machine_composition.py": "4cfa5ae146e1b93c16b478af5882072e3ddefb1bd32960dde577a3f1cb5b3d3e",
         "sdk/machines/octatrack/module-adapters/fm_runtime.py": "ecf39c395bd8231d1dda340e1c6bc26e8473ba548cfa422f9a4ae4ff2bd6807e",
         "sdk/machines/octatrack/module-adapters/vector_runtime.py": "9f0a0ffe8c0e3bacef6e6aad057f8f454b43b5daef32e9adb8fa2def0937ea39",
+        "sdk/machines/octatrack/module-adapters/quantizer_runtime.py": "d40b72c887142cec0bed46b26de6269e7939f7453350b25ae24f48395777e6a4",
         "sdk/machines/octatrack/module-adapters/stock_recipe.py": "662b79d9dc612845cf85e5051fa2d711cad4f98244194357fdaaabca092d5ca5",
         "sdk/octabam/modules/poly8/manifest.py": "1b9dfc90a6d5901ee3e453b7c3854363aad82f7267edc090b5f4439a57f12ddb",
         "sdk/octabam/modules/synth/manifest.py": "7854330aca001d2841de2fb384f0ca8adb7497db49dacc56da2815c1f444c0e6",
         "sdk/octabam/modules/vector/manifest.py": "4d921f24256038797a99671534885b0bb9a27eaa79261b11136cf0a95a75af21",
+        "sdk/octabam/modules/synth/upstream/synth/manifest.py": "58c7acd5684fe0b59c42501f7fdbfd1b288b3bfb71938dcadf43bc1774b3e5e8",
         "sdk/octabam/modules/poly8/polyphony.s": "ec18d6aed032b684d3c73e1cad63fb72d578e6ea5bcfe2a46655747b5a5ad281",
         "sdk/octabam/modules/poly8/registration.s": "c88815f9b16befe01fd9070f7d39120268936fef11a8d9a8d7706092cf55d987",
         "sdk/octabam/modules/poly8/shared-machine.s": "e49d47ed22aa70a770e5738e69225106219b0337eabe67351d2e09150220ee80",
@@ -375,23 +387,23 @@
         "sdk/octabam/modules/quantizer/composition.json": "d5662ed9972ef629dbaa6120d25fdc1ff7a2d5351b25f32f73fe3a06394531cc"
       },
       "compiledImageSha256": "052aea04b61448611bdbdbe385fca0e8048eb0fdee50710c28422f47f3c31b3f",
-      "encodedImageSha256": "fbe4310478cb3e37ecbcbb75c6c4162507e18258b1f07b8805546bc2305efba1",
-      "reviewedRecipeSha256": "3338229e33d04825858d9d5350db4567fbbe609b3d4f50a0a35161df92f5bb7a",
+      "encodedImageSha256": "052aea04b61448611bdbdbe385fca0e8048eb0fdee50710c28422f47f3c31b3f",
+      "reviewedRecipeSha256": null,
       "probeSources": {
         "fm_consumer_fixture.cpp": "c0be55efcb12afe929ea3ceeeb0d4d2f9aca00659a1711e961677f2134191ae2",
         "fm_consumer_scanner.c": "7cb82a9bcd3855945e38b1396158da33a077884cab6aa83656c4b9beed28e015",
         "probe_fm_consumers.py": "3858030b1e67fdfab70e6fc22824418ee484b3125fb743a5f20a25551b44fc6f",
         "machine_lifetime.c": "8bf0a66c8113f2e608c6e4115aef67e056e13f8395f67b172342d9d296496f5a",
         "machine_lifetime.h": "6fb7713aa06d01e52ac5bd32a6057038efb4717f1635662f47c8595803d3cf11",
-        "machine_layout.py": "d394ddf37a025fa77609bc9ca5e1b0091e9cca714e64fc461fad6a613687b35c",
+        "machine_layout.py": "0428dcc546ac2fe7767a7c5e97be52877f680b369855203d54a6e9291facb258",
         "stock_recipe.py": "662b79d9dc612845cf85e5051fa2d711cad4f98244194357fdaaabca092d5ca5"
       },
       "nativeArchives": {
-        "out/emu/libot_machine.a": "15a867f7589ac891ff5b20cdfe4c1709298975de15342d5c3434f008988bef02",
-        "out/emu/mc68k/lib68kEmu.a": "451b2f6c7455b00f5b7b0462ed38c71ac5cccc93fb0bbd58e0fa93c1e391701b",
-        "out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "37224756f1622024e36443cdb6d67ee1cd8ab5b366c92442d3983fb35ffea0bc",
-        "out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "dea1c15cb6bb6cc3f126f64107e454d24aaa2f17ce04753956ac0f341ccc48f4",
-        "out/emu/dsp56300/asmjit/libasmjit.a": "39b4923646d12bb3285a1d0634cf84fc53ee558811d7b4670bea3fc77e721a39"
+        "out/emu/libot_machine.a": "8c46e397b8125af9d4e6818e84166772f76ac0a886e11cfd528c192971152b1e",
+        "out/emu/mc68k/lib68kEmu.a": "b755d6d5aabb9f3074e9cd3892e3ae7ba5984693b3ce2399aa32f5d7cad06735",
+        "out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "a1270ebf7e4159b90ed4e586c21036cd23f6ad02f8aa65a3a2a43057317ca7cd",
+        "out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "9cf193217e774522216c8fdaf31131b619fca6701dd796d4c43da3809420379b",
+        "out/emu/dsp56300/asmjit/libasmjit.a": "ccfa4fb1efd89fda1a328b744b858c1a848c8567236f1643e81496a3f2f5c5a7"
       },
       "origins": [
         {
@@ -400,7 +412,7 @@
               "origin": 1191706624,
               "calls": 2803,
               "widgets": 23,
-              "writes": 633790,
+              "writes": 636449,
               "privateReads": 532594,
               "consumerPCs": 1107,
               "escapedPointers": 0,
@@ -427,7 +439,7 @@
               "origin": 1192230912,
               "calls": 2803,
               "widgets": 23,
-              "writes": 633790,
+              "writes": 636449,
               "privateReads": 532594,
               "consumerPCs": 1107,
               "escapedPointers": 0,
@@ -456,7 +468,7 @@
       "exhaustiveConsumerCoverage": false,
       "admission": false,
       "memberMask": 7,
-      "privateReceiptSha256": "7cb4536a3e0476bf2f2a71ab1f018b3e0452fcab7999ca7216aad6f5eaa9502c"
+      "privateReceiptSha256": "6aae1e4b188210af275ffc44b9fea70158b372555ec2dc11a22f5bffb8dba080"
     }
   ]
 }

@@ -20,7 +20,7 @@ describe('the base self-test as the update stress test', () => {
   })
   it('names the first failure, in the order of selftest.h', async () => {
     expect(await runSelftest(unit([record(1), record(3, 8 | 256)]), { pollMs: 0 })).toBe(SELFTEST_FAILURES[3]) /* the DSP before the CPU */
-    expect(await runSelftest(unit([record(1), record(3, 128)]), { pollMs: 0 })).toBe('a module doesn’t fit on the DSP, even on its own')
+    expect(await runSelftest(unit([record(1), record(3, 128)]), { pollMs: 0 })).toBe('a module doesn’t fit on either DSP core, even with the other effects there removed')
   })
   it('says when it cannot start (playing, or the loader busy)', async () => {
     expect(await runSelftest(unit([record(0)]), { pollMs: 0, startMs: 0 })).toMatch(/stop playback/)
@@ -47,7 +47,7 @@ describe('the base self-test as the update stress test', () => {
   })
   it('names the module that failed, when the unit names one', async () => {
     const named = (failed: number) => ({ ...record(3, failed), culprit: 1, culpritName: 'E-Verb' })
-    expect(await runSelftest(unit([record(1), named(128)]), { pollMs: 0 })).toBe('E-Verb doesn’t fit on the DSP, even on its own')
+    expect(await runSelftest(unit([record(1), named(128)]), { pollMs: 0 })).toBe('E-Verb doesn’t fit on either DSP core, even with the other effects there removed')
     expect(await runSelftest(unit([record(1), named(8)]), { pollMs: 0 })).toBe('a combination the Octatrack allows overloads the DSP (with E-Verb)')
     expect(await runSelftest(unit([record(1), named(1024)]), { pollMs: 0 })).toBe('E-Verb’s code on the DSP doesn’t match its package')
   })

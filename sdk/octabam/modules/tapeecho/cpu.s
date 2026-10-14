@@ -27291,12 +27291,25 @@ te_filter_block:
 | The record sum is one saturating accumulator (Q3.29, +/-4 FS):
 | drive*L + drive*R (drive/2 each) + 2 x feedback*wet + hiss*rng. The FIR
 | and curve index run in Q6.26. Settled full wet writes sat(4*wet); other
-| MIX values sat(4*mix*wet + (1-mix)*dry) per channel; MIX=0 writes nothing.
+| MIX values sat(4*mix*wet + dry*in) per channel with dry = min(1, 4*(1-mix));
+| MIX=0 writes nothing.
 | Knob ramps (any of dm/df/dn) advance before every sample.
 | a0 audio, a1 record, a2 wet, a3 hiss operand (ramp: hiss), a4 curve
 | centre, a5 drive, a6 ONE (full wet) or mix; d0 rng, d1/d2 FIR history
 | (roles swap per sample), d3 wet, d4 record, d5/d6 scratch, d7 feedback.
-| Locals: 44(sp) LCG multiplier, 48(sp) wet end, 52(sp) 1-mix.
+| Locals: 44(sp) LCG multiplier, 48(sp) wet end, 52(sp) dry gain.
+| Dry gain min(1, 4*(1-mix)) in place: \reg holds 1-mix on entry. Dry stays at
+| unity for the first three quarters of MIX, then fades to nothing.
+        .macro TE_TAPE_DRY reg
+        cmp.l   #536870912,\reg
+        bcs     .Ldry_fade\@
+        move.l  #2147483647,\reg
+        bra     .Ldry_done\@
+.Ldry_fade\@:
+        lsl.l   #2,\reg
+.Ldry_done\@:
+        .endm
+
         .balign 4
         .global te_tape_block
 te_tape_block:
@@ -27333,6 +27346,7 @@ te_tape_block:
         beq     .Ltape_wet
         move.l  #2147483647,%d5
         sub.l   %d4,%d5
+        TE_TAPE_DRY %d5
         move.l  %d5,52(%sp)
         bra     .Ltape_mix
 
@@ -27391,7 +27405,7 @@ te_tape_block:
         move.l  %d5,(%a0)+
         .endm
 
-| Per channel: 4*mix*wet + (1-mix)*dry. d4 holds 1-mix; dry L/R reload
+| Per channel: 4*mix*wet + dry gain*in. d4 holds the dry gain; dry L/R reload
 | through multiply-with-load while the wet products accumulate.
         .macro TE_TAPE_MIX load
         .if \load
@@ -27423,6 +27437,7 @@ te_tape_block:
         beq     .Lramp_dry\@
         move.l  #2147483647,%d4
         sub.l   %a6,%d4
+        TE_TAPE_DRY %d4
         TE_TAPE_MIX 0
 .Lramp_next\@:
         .subsection 1

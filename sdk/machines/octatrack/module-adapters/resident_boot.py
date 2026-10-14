@@ -124,7 +124,7 @@ def prepare(image, device, dsp, layout):
     lines = ['        .section .boot,"ax"', '        .globl mw_resident_dsp_boot',
              'mw_resident_dsp_boot:', '        lea -48(%sp),%sp',
              '        movem.l %d0-%d7/%a0-%a3,(%sp)']
-    blobs, sites, receipt, scratch, pooled = [], [], [], [], []
+    blobs, sites, receipt, scratch, pooled, persistent, engines = [], [], [], [], [], ['        .section .rodata'], {}
     for tag in ('A', 'B'):
         pointer, address = POINTERS[tag]
         upload_at, upload_length = device.dsp_payloads[tag]
@@ -163,6 +163,18 @@ def prepare(image, device, dsp, layout):
                     '        .globl ' + blob + '_end', blob + '_end:']
             fragments.append(dict(symbol=found['symbol'], packedBytes=len(found['packed']), packedSha256=sha(found['packed']),
                                   authoredBytes=len(fragment), authoredSha256=sha(fragment), authoredRoll=roll(fragment)))
+        # The x range is Analog BD's engine. The controller board resets it from the same packed record long after
+        # boot, when .boot may be gone, so a copy stays in .rodata (the persistent .run image), one per distinct record.
+        packed = next(item['packed'] for item in pooled if item['symbol'] == fragments[0]['symbol'])
+        name = engines.setdefault(packed, 'mw_resident_ab_x_%s' % tag)
+        if name.endswith('_' + tag):
+            persistent += ['        .balign 4', '        .globl %s, %s_end' % (name, name), name + ':'] + [
+                '        .byte ' + ','.join('0x%02x' % b for b in packed[n:n + 24]) for n in range(0, len(packed), 24)] + [
+                name + '_end:']
+        else:
+            persistent += ['        .globl mw_resident_ab_x_%s, mw_resident_ab_x_%s_end' % (tag, tag),
+                           '        .set mw_resident_ab_x_%s, %s' % (tag, name),
+                           '        .set mw_resident_ab_x_%s_end, %s_end' % (tag, name)]
         total = len(raw) + len(authored)
         if total > MAX_UPLOAD:
             raise ValueError('Prepared DSP upload exceeds scratch ceiling')
@@ -209,7 +221,7 @@ def prepare(image, device, dsp, layout):
               '        moveq #0,%d5', '        move.b (%a2)+,%d5', '        add.l %d5,%d4',
               '        subq.l #1,%d0', '        bne.w mw_resident_hash_byte', '        rts',
               'mw_resident_fatal:', '        bra.w mw_resident_fatal']
-    return dict(assembly='\n'.join(lines + blobs + ['        .section .bss'] + scratch) + '\n',
+    return dict(assembly='\n'.join(lines + blobs + persistent + ['        .section .bss'] + scratch) + '\n',
                 sites=sites, receipt=receipt, packedUniqueBytes=sum(len(item['packed']) for item in pooled))
 
 

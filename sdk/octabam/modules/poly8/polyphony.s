@@ -2319,3 +2319,60 @@ poly_diag_command_calls:
         .long 0
 poly_diag_amp_calls:
         .long 0
+
+        .ifdef  MODWERK_EVENTS
+| On a Modwerk base that owns 0x40004100 and 0x40006820 (sdk/machines/octatrack/
+| events.json) mr_rate_hook's and mr_stop_voice's work is these subscribers
+| (runtime.json), C convention, absolute addressing (appended past the data, so no
+| existing PC-relative displacement moves).
+
+| ev_play_increment, order 20: int f(uint32_t *increment, unsigned track). A POLY
+| track's increment becomes its voices' tuning and the DSP runs it at unity, as
+| poly_increment_shift does; it takes the track (1). Other tracks pass (0).
+        .text
+        .global poly_play_increment
+poly_play_increment:
+        move.l  8(%sp),%d0
+        jsr     poly_is_track             | d1/a0 scratch
+        tst.l   %d0
+        beq.s   1f
+        movea.l 4(%sp),%a1
+        move.l  8(%sp),%d1
+        lea     poly_track_inc,%a0
+        move.l  (%a1),(%a0,%d1.l*4)
+        move.l  #INCREMENT_UNITY,(%a1)
+        moveq   #1,%d0
+1:      rts
+
+| ev_voice_bind, order 20: int f(unsigned track), as mr_stop_voice's first two
+| tests. Rendering an extension voice, stock's reset stops that voice only
+| (poly_stop_voice's first path returns): 1, nothing else runs. Rendering a
+| primary voice, stock's reset runs at once, no later handler: 2. Otherwise 0.
+        .global poly_voice_bind
+poly_voice_bind:
+        tst.l   poly_voice_selector
+        beq.s   1f
+        jsr     poly_stop_voice
+        moveq   #1,%d0
+        rts
+1:      moveq   #0,%d0
+        tst.l   poly_rendering
+        beq.s   2f
+        moveq   #2,%d0
+2:      rts
+
+| ev_voice_bind_run, order 50: void f(unsigned track). Stock's reset runs next (no
+| handler dropped it): discard the track's extension voices and keys, interrupts
+| masked, as poly_stop_voice's .psv_stock.
+        .global poly_voice_bind_run
+poly_voice_bind_run:
+        move.l  %d2,-(%sp)
+        move.w  %sr,%d2
+        move.w  #0x2700,%sr
+        move.l  8(%sp),-(%sp)
+        jsr     pm_clear_extensions
+        addq.l  #4,%sp
+        move.w  %d2,%sr
+        move.l  (%sp)+,%d2
+        rts
+        .endif

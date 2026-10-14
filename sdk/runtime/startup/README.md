@@ -104,16 +104,29 @@ at 11 px tall, NEW and BETA in a small 7 px type, and where each sits. Since
 the 12 October 2026 merge of main the base uses the beta docking edition's art below
 (owner: the newer one); the version is in `boot_art.h` but not on the screen.
 `base_art.py` writes it as C data (`boot_art.h`) for `build_core.py` and gives the
-final frame to the tests. Public builds are unchanged: they keep `artwork.json`, and
-`build.py` still writes only the two graphic tables above.
+final frame to the tests. Changing either file changes the committed base
+(`src/engine/assets/octatrack-base-sources.json` records both), so the card builds'
+docking edition below reads them through `public_art.py` and leaves them as they are.
 
-## Beta docking edition
+## Docking edition
 
-Beta testers and verified administrators get the Elekloader migration's 3.5-second
-docking score in new Octatrack builds: flying mark, arriving module, screen wave,
-and matching panel lamps. The compact screen says **NEW / BETA**; it does not
-claim that the complete new Elekloader base is installed. Ordinary builds retain
-the original two graphics writes and 2.8-second stock renderer.
+Every member's Octatrack card build plays the Elekloader migration's 3.5-second
+docking score: flying mark, arriving module, screen wave and matching panel lamps.
+A configuration can choose the classic startup instead, which keeps the two
+graphics writes above and the 2.8-second stock renderer. A selection that composes
+only without the docking hooks keeps the classic startup too.
+
+`public_art.py` gives this edition the base's mark and wordmark without the NEW /
+BETA labels, so the screen ends on the mark and MODWERK (792 pixels,
+`public_art.final_pixels()`). The shockwave bends the screen and reveals MODWERK
+without drawing a circular outline or dotted echo. The mark flies the base's
+schedule 10/7 as fast (`QUICK` in `boot_anim.c`) and has landed by 0.89 s; the
+module docks at 1.86 s, and the wave, (dt / 55 ms)² px, leaves the screen 0.58 s
+later. Preview the screen from the source alone, without firmware:
+
+```sh
+python3 -B sdk/runtime/startup/preview.py /private/new-preview.gif
+```
 
 `boot_anim.c`, `base.json` and `base_art.py` are ported from migration commit
 `fbef9d564`. `hooks.s` adapts the score to the existing runtime rather than importing
@@ -121,7 +134,7 @@ the migration's loader, DSP, USB or module infrastructure. The two six-byte stoc
 sites are fingerprint-guarded, and the compositor's instruction is recovered from
 verified local firmware into an empty replay slot. Drawing preserves all live
 registers and flags. The rom_gate.s adapter occupies the first 80 bytes of the
-verified descriptor cave (0x400d6b20..0x400d6b70); beta descriptor clones start
+verified descriptor cave (0x400d6b20..0x400d6b70); with the docking startup, descriptor clones start
 80 bytes later, leaving the utility modules' fixed overflow sites intact. Its
 active word is zero in the initial MAIN image, so early compositor
 calls replay the local stock instruction before the RAM runtime is unpacked.
@@ -134,7 +147,8 @@ startup. Outside startup the drawing hook only replays the stock path.
 State is explicitly initialized in the loaded data, because this runtime loader
 does not initialize an added BSS. Existing runtime and staging bounds still apply;
 the sample-memory reservation is unchanged. The logger's configuration and source
-fingerprints identify the beta startup package.
+fingerprints identify the docking startup package. The package and its TypeScript
+loader keep their earlier `beta-startup` names.
 
 Compile only authored sources, without any firmware:
 
@@ -148,7 +162,7 @@ run the separate private composition and boot checks:
 
 ```sh
 node scripts/verify-startup-beta-native.mjs /private/original.bin /private/new-beta-check
-python3 scripts/verify-startup-beta.py --image /private/new-beta-check/beta-MAIN.bin --stock /private/new-beta-check/stock-MAIN.bin --version 3.0.0 --emulator /private/ot_emu
+python3 scripts/verify-startup-beta.py --image /private/new-beta-check/beta-MAIN.bin --stock /private/new-beta-check/stock-MAIN.bin --emulator /private/ot_emu
 ```
 
 The native verifier deliberately keeps test images only in the requested private

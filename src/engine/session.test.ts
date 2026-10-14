@@ -25,18 +25,40 @@ const synthetic = (): DecodedFirmware => ({
 })
 
 describe('Octatrack firmware boot name', () => {
-  it('selects beta startup for an eligible request and returns to classic after revocation', async () => {
+  it('plays the docking startup for every member unless the configuration chooses the classic one', async () => {
     const firmware = synthetic(), replies: EngineResponse[] = []
     const handle = createEngineSession(response => { replies.push(response) })
     await handle({ id: 1, type: 'inspect', name: 'synthetic.bin', buffer: new Uint8Array(encodeFirmware(firmware, firmware.mainOs, 'STOCK')).buffer })
-    for (const [index, betaAccess] of [false, true, false].entries()) {
-      await handle({ id: index + 2, type: 'validate', moduleIds: ['repitch'], keepStockFx2: false, betaAccess })
+    const requests = [{ betaAccess: false }, { betaAccess: true }, { betaAccess: false, startup: 'classic' as const }, { betaAccess: false, startup: 'docking' as const }]
+    for (const [index, request] of requests.entries()) {
+      await handle({ id: index + 2, type: 'validate', moduleIds: ['repitch'], keepStockFx2: false, ...request })
       const reply = replies.at(-1)
       expect(reply?.type).toBe('validated')
       if (reply?.type !== 'validated') throw new Error(JSON.stringify(reply))
-      expect(reply.report.startupAnimation).toBe(betaAccess ? 'beta-docking' : 'classic')
-      expect(vi.mocked(composeSelection).mock.calls.at(-1)?.[4]).toBe(betaAccess)
+      const docking = request.startup !== 'classic'
+      expect(reply.report.startupAnimation).toBe(docking ? 'docking' : 'classic')
+      expect(reply.report.startupFallback).toBeUndefined()
+      expect(vi.mocked(composeSelection).mock.calls.at(-1)?.[4]).toBe(docking)
     }
+  })
+  it('keeps the classic startup for a selection the docking startup cannot compose', async () => {
+    const firmware = synthetic(), replies: EngineResponse[] = []
+    const handle = createEngineSession(response => { replies.push(response) })
+    await handle({ id: 1, type: 'inspect', name: 'synthetic.bin', buffer: new Uint8Array(encodeFirmware(firmware, firmware.mainOs, 'STOCK')).buffer })
+    const compose = vi.mocked(composeSelection)
+    compose.mockRejectedValueOnce(new Error('Beta startup stock guard mismatch: ROM cave'))
+    const before = compose.mock.calls.length
+    await handle({ id: 2, type: 'build', moduleIds: ['repitch'], keepStockFx2: false })
+    const built = replies.at(-1)
+    if (built?.type !== 'built') throw new Error(JSON.stringify(built))
+    expect(compose.mock.calls.slice(before).map(call => call[4])).toEqual([true, false])
+    expect(built.report).toMatchObject({ startupAnimation: 'classic', startupFallback: true })
+    // A member who chose the classic startup gets its own error, without a docking attempt.
+    compose.mockRejectedValueOnce(new Error('Classic composition failed.'))
+    const classic = compose.mock.calls.length
+    await handle({ id: 3, type: 'validate', moduleIds: ['repitch'], keepStockFx2: false, startup: 'classic' })
+    expect(replies.at(-1)).toMatchObject({ type: 'error' })
+    expect(compose.mock.calls.slice(classic).map(call => call[4])).toEqual([false])
   })
   it('uses only the panel boot font letter range', () => {
     expect(FIRMWARE_VERSION).toMatch(/^[A-Z0-9. ]{1,10}$/)

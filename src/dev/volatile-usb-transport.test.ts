@@ -6,7 +6,7 @@ import type { ControlDevice } from '../engine/elekloader/upload-usb.ts'
 const base = '1'.repeat(64), session = '2'.repeat(64), baseline = '3'.repeat(64), offer = '4'.repeat(64)
 const observed = { base, session, capabilities: 64 }
 const begin = () => encodeVolatileRequest({ command: 'begin', sequence: 1, base, session, baseline, digest: offer, length: 1000 })
-const owned = (command: 'verify' | 'activate' | 'startTrial' | 'rollback' | 'abort' | 'touch') =>
+const owned = (command: 'verify' | 'activate' | 'startTrial' | 'rollback' | 'abort' | 'touch' | 'keep') =>
   encodeVolatileRequest({ command, sequence: 2, base, session, transaction: 8, generation: 9 })
 const signal = () => new AbortController().signal
 function idle() {
@@ -32,13 +32,13 @@ describe('private fixed volatile USB transport', () => {
   it('uses only fixed interface requests34/35/36 with exact complete lengths', async () => {
     const { device, transport } = fixture()
     await transport.submit(begin(), signal())
-    for (const command of ['verify', 'activate', 'startTrial', 'rollback', 'abort', 'touch'] as const)
+    for (const command of ['verify', 'activate', 'startTrial', 'rollback', 'abort', 'touch', 'keep'] as const)
       await transport.submit(owned(command), signal())
     await transport.submit(encodeVolatileRequest({ command: 'chunk', sequence: 3, base, session,
       transaction: 8, generation: 9, offset: 0, data: new Uint8Array(3995) }), signal())
     expect(await transport.result(signal())).toEqual(idle())
     expect(await transport.state(signal())).toEqual(idle())
-    expect(device.controlTransferOut.mock.calls.map(([setup]) => setup)).toEqual(Array.from({ length: 8 }, () =>
+    expect(device.controlTransferOut.mock.calls.map(([setup]) => setup)).toEqual(Array.from({ length: 9 }, () =>
       ({ requestType: 'vendor', recipient: 'interface', request: 34, value: 0, index: 3 })))
     expect(device.controlTransferIn.mock.calls).toEqual([
       [{ requestType: 'vendor', recipient: 'interface', request: 35, value: 0, index: 3 }, 212],
@@ -149,7 +149,7 @@ describe('private fixed volatile USB transport', () => {
   it('refuses malformed, unbound or arbitrary command frames locally', async () => {
     const { device, transport } = fixture()
     const changes = [(v: DataView) => v.setUint32(0, 0), (v: DataView) => v.setUint8(4, 2),
-      (v: DataView) => v.setUint8(5, 9), (v: DataView) => v.setUint16(6, 1), (v: DataView) => v.setUint32(8, 0),
+      (v: DataView) => v.setUint8(5, 10), (v: DataView) => v.setUint16(6, 1), (v: DataView) => v.setUint32(8, 0),
       (v: DataView) => v.setUint32(12, 1), (v: DataView) => v.setUint32(16, 1), (v: DataView) => v.setUint32(20, 1),
       (v: DataView) => v.setUint8(24, 0), (v: DataView) => v.setUint8(56, 0), (v: DataView) => v.setUint8(88, 1),
       (v: DataView) => v.setUint32(160, 0), (v: DataView) => v.setUint32(160, 2097153), (v: DataView) => v.setUint32(164, 1)]

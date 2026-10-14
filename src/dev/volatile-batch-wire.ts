@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Private framing preparation only: no USB calls, public imports or persistence commands.
+// Keep (9) accepts a stopped trial only as the board's whole saved set; the board then writes it to the card.
+// MWVS flag bits 4/5 (Idle only): that set is not yet confirmed on the card / its last card write failed.
 // The board must independently verify package/source associations and all lifetime/resource gates.
 import { digestBytes, ZERO_DIGEST } from '../engine/elekloader/upload-wire.ts'
 
@@ -10,7 +12,7 @@ export const VOLATILE_MAX_FRAME = 4096
 export const VOLATILE_HOST_CHUNK = 3995 // Avoid a full 64-byte multiple on the Windows control data stage.
 export const VOLATILE_HOST_MAX_BYTES = 2097152 // Host allocation bound; never proof of board stage/pool fit.
 export const VolatileCommand = Object.freeze({ begin: 1, chunk: 2, verify: 3, activate: 4,
-  startTrial: 5, rollback: 6, abort: 7, touch: 8 } as const)
+  startTrial: 5, rollback: 6, abort: 7, touch: 8, keep: 9 } as const)
 export type VolatileCommandName = keyof typeof VolatileCommand
 export interface VolatileBinding { base: string; session: string; transaction: number; generation: number }
 type OwnedRequest = VolatileBinding & { sequence: number }
@@ -24,11 +26,17 @@ export const VolatilePhase = ['idle', 'receiving', 'verified', 'initializing', '
   'stoppedTrial', 'runningTrial', 'rollingBack', 'quarantined'] as const
 export const VolatileResult = ['ok', 'queued', 'busy', 'state', 'identity', 'stale', 'limit', 'length',
   'conflict', 'hash', 'refused', 'pending', 'quarantined', 'unsupported'] as const
+/** Definite refusals the board reports while staying Idle; they consume the sequence but grant nothing. */
+export const VolatileIdleRefusals: readonly string[] = ['busy', 'state', 'identity', 'stale', 'limit']
 export interface VolatileStatus extends VolatileBinding {
   sequence: number; result: typeof VolatileResult[number]; phase: typeof VolatilePhase[number]
   baseline: string | null; current: string | null; offer: string | null; latchHeld: boolean
   received: number; total: number; records: number; published: number
   required: number; touched: number; confirmed: number; limits: VolatileLimits; poolBytes: number
+  /** The saved set's last change is not yet read back from the card; a reboot now restores the previous set. */
+  saving: boolean
+  /** Its last card write failed; the board retries it every ten seconds. Never a claim that the card has it. */
+  saveFailed: boolean
 }
 
 function fail(message: string): never { throw new Error('Private volatile framing: ' + message) }
@@ -95,7 +103,7 @@ export function parseVolatileStatus(input: Uint8Array, observed: { base: string;
   if (!(observed.capabilities & VOLATILE_CAPABILITY)) fail('service capability is unavailable')
   if (input.byteLength !== VOLATILE_STATUS_BYTES) fail('incomplete status')
   const bytes = new Uint8Array(input), view = new DataView(bytes.buffer)
-  if (view.getUint32(0) !== 0x4d575653 || view.getUint8(4) !== 1 || view.getUint8(7) & ~15 ||
+  if (view.getUint32(0) !== 0x4d575653 || view.getUint8(4) !== 1 || view.getUint8(7) & ~63 ||
     view.getUint8(195) || view.getUint32(208)) fail('unsupported status header')
   const result = VolatileResult[view.getUint8(5)], phase = VolatilePhase[view.getUint8(6)], flags = view.getUint8(7)
   if (!result || !phase || !(flags & 8) || result === 'unsupported') fail('service status is unavailable')
@@ -105,6 +113,9 @@ export function parseVolatileStatus(input: Uint8Array, observed: { base: string;
   const received = view.getUint32(20), total = view.getUint32(24), records = view.getUint16(28), published = view.getUint16(30)
   const baselineHash = hex(bytes.subarray(96, 128)), offerHash = hex(bytes.subarray(128, 160)), currentHash = hex(bytes.subarray(160, 192))
   const baselineKnown = !!(flags & 1), currentKnown = !!(flags & 2), latchHeld = !!(flags & 4)
+  const saving = !!(flags & 16), saveFailed = !!(flags & 32)
+  // A Begin waits for a pending save, so a saving set exists only while the service is Idle.
+  if ((saveFailed && !saving) || (saving && phase !== 'idle')) fail('inconsistent saved-set state')
   if (baselineKnown !== (baselineHash !== ZERO_DIGEST) || currentKnown !== (currentHash !== ZERO_DIGEST)) fail('unknown digest is not zero')
   const available = limits({ stageBytes: view.getUint32(196), records: view.getUint16(204), participants: view.getUint16(206) })
   const poolBytes = uint(view.getUint32(200), 0xffffffff, true)
@@ -113,7 +124,8 @@ export function parseVolatileStatus(input: Uint8Array, observed: { base: string;
     received > total || total > available.stageBytes || records > available.records || published > records) fail('inconsistent counters or core acknowledgments')
   if (phase === 'idle') {
     if (latchHeld || received || total || records || published || offerHash !== ZERO_DIGEST || required || touched || confirmed || !currentKnown ||
-      (baselineKnown ? !transaction || !generation || !sequence || baselineHash !== currentHash : transaction || generation || (sequence && result !== 'queued')))
+      (baselineKnown ? !transaction || !generation || !sequence :
+        transaction || generation || (sequence && result !== 'queued' && !VolatileIdleRefusals.includes(result))))
       fail('inconsistent idle state')
   } else {
     if (!transaction || !generation || !sequence || !baselineKnown || !latchHeld || !total || offerHash === ZERO_DIGEST) fail('unbound active journal')
@@ -124,7 +136,8 @@ export function parseVolatileStatus(input: Uint8Array, observed: { base: string;
   }
   return Object.freeze({ base, session, sequence, transaction, generation, result, phase, received, total, records, published,
     baseline: baselineKnown ? baselineHash : null, current: currentKnown ? currentHash : null,
-    offer: total ? offerHash : null, latchHeld, required, touched, confirmed, limits: Object.freeze(available), poolBytes })
+    offer: total ? offerHash : null, latchHeld, required, touched, confirmed, limits: Object.freeze(available), poolBytes,
+    saving, saveFailed })
 }
 
 async function sha256(bytes: Uint8Array): Promise<string> {

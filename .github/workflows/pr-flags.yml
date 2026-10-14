@@ -1,0 +1,30 @@
+name: Flag fix and improvement PRs
+# A fork cannot label its own PR, so the title carries the flag: "Fix: …", "Improvement: …" or "Docs: …".
+# This reads only the title (passed as data, never as script) and adds the matching existing label.
+# No checkout, no PR code, no dependencies.
+on:
+  pull_request_target:
+    types: [opened, edited, reopened]
+    branches: [main]
+permissions:
+  pull-requests: write
+jobs:
+  flag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Label the PR from its title prefix
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          case "$TITLE" in
+            Fix:*) label=bug ;;
+            Improvement:*) label=enhancement ;;
+            Docs:*) label=documentation ;;
+            *) echo "No flag in the title."; exit 0 ;;
+          esac
+          gh api -X POST "repos/$REPOSITORY/issues/$NUMBER/labels" -f "labels[]=$label" > /dev/null
+          echo "Labelled #$NUMBER $label."

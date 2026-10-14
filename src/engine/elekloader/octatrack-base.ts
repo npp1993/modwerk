@@ -3,9 +3,10 @@
 // (assets/octatrack-base.elemod, from sdk/machines/octatrack/elekloader/build_core.py --dsp-loader) carries no stock
 // bytes: the stock DSP code it needs is left out, and each gap is a fill naming a recipe of stock-dsp-metadata.json.
 // fillBase puts the words back from the user's firmware (every recipe hash-checked), then the unchanged Elekloader kit
-// links, packs and verifies the base exactly as build_core.py's patch.build does.
+// links, packs and verifies the base exactly as build_core.py's patch.build does, .run packed as build_core.py packs it.
 import { BASE_FIRMWARE } from '../base.ts'
 import { recoverStockDsp, type StockDspCore } from '../stock-dsp.ts'
+import { packRun, RUN_UNPACK } from './run-pack.ts'
 import { sha } from '../../../vendor/elekloader/kit/src/bytes.ts'
 import * as formats from '../../../vendor/elekloader/kit/src/formats.ts'
 import { build } from '../../../vendor/elekloader/kit/src/patch.ts'
@@ -71,7 +72,13 @@ export async function buildBase(stock: Uint8Array, packageText: string, fills: r
   const cores = await recoverStockDsp(formats.mainImage(parsed, device))
   const text = fillBase(packageText, fills, cores), base = baseIdentity(text)
   const filled = new TextEncoder().encode(text)
-  const [outputs] = await build({ path: '/' + BASE_FIRMWARE.filename, data: stock }, [{ path: '/octatrack-base.elemod', data: filled }], VERSION)
+  const [outputs, manifest] = await build({ path: '/' + BASE_FIRMWARE.filename, data: stock }, [{ path: '/octatrack-base.elemod', data: filled }], VERSION)
   if (!outputs?.bin) throw new Error('The builder did not write a .bin.')
-  return { bin: outputs.bin, sha256: sha(outputs.bin), base }
+  if (!manifest._map?.has(RUN_UNPACK)) return { bin: outputs.bin, sha256: sha(outputs.bin), base }
+  // Its boot decodes .run packed (run-pack.ts): MAIN again with it packed, repacked and verified as build() does.
+  const main = packRun(formats.mainImage(formats.parse(outputs.bin, device), device), manifest.link.layout, device.mainLoad)
+  const packed = formats.write(parsed, formats.packMain(main), device, VERSION)
+  formats.verify(packed, parsed, main, device, VERSION)
+  if (!packed.bin) throw new Error('The builder did not write a .bin.')
+  return { bin: packed.bin, sha256: sha(packed.bin), base }
 }

@@ -82,7 +82,7 @@ export function OctatrackHub({ view, link, inventory, sets, selectedId, needs, o
   const unitIds = connected ? inventory?.moduleIds : last?.moduleIds
   const selected = sets.find(set => set.id === selectedId) ?? sets[0]
   const same = (set: Configuration) => set.moduleIds.length > 0 && !!unitIds && sameModules(set.moduleIds, unitIds)
-  const review = connected && inventory && selected ? moduleSetReview(selected, inventory, identity?.capabilities) : undefined
+  const review = connected && inventory && selected ? moduleSetReview(selected, inventory, identity?.capabilities, identity?.base) : undefined
   const changes = review?.changes, updates = review?.updates ?? []
   const needsBase = review?.problem instanceof BaseUpdateRequired
   const model = identity?.model ? identity.model.replace('OCTATRACK', 'Octatrack') : 'Octatrack'

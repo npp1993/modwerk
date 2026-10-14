@@ -149,22 +149,18 @@ pitch_gate:
         .word   0x0c40,0x4000            | displaced: cmpi.w #0x4000,%d0
         jmp     (0x400040a6).l
 
-| 0x40004100: finish the stock rate (RATE applied), then scale it by
+| d0 = the increment, d3 = the sample's BPMx24 (nonzero) -> d0 scaled by
 | project/sample tempo, exactly: q*project + (r*project)/source with
 | q, r = increment divmod source, both products bounded by the 720..7200
-| range. Clamped to 2x.
-rate_hook:
-        .word   0xa1c0                   | displaced: movclr.l %acc0,%d0 (V4e)
-        asr.l   %d6,%d0                  | displaced
-        tst.l   %d3
-        beq.s   .rh_store
+| range. Clamped to 2x. Every other register is kept.
+        .macro  RP_SCALE
         lea     -12(%sp),%sp
         movem.l %d1-%d2/%d4,(%sp)
         move.l  (PROJECT_BPM24).l,%d2
         cmpi.l  #BPM24_MIN,%d2
-        blt.s   .rh_restore
+        blt.s   1f
         cmpi.l  #BPM24_MAX,%d2
-        bgt.s   .rh_restore
+        bgt.s   1f
         move.l  %d0,%d1
         divu.l  %d3,%d1                  | q
         move.l  %d1,%d4
@@ -175,14 +171,40 @@ rate_hook:
         divu.l  %d3,%d0
         add.l   %d1,%d0
         cmpi.l  #INC_MAX,%d0
-        bls.s   .rh_restore
+        bls.s   1f
         move.l  #INC_MAX,%d0
-.rh_restore:
-        movem.l (%sp),%d1-%d2/%d4
+1:      movem.l (%sp),%d1-%d2/%d4
         lea     12(%sp),%sp
+        .endm
+
+| 0x40004100: finish the stock rate (RATE applied), then scale it (RP_SCALE).
+rate_hook:
+        .word   0xa1c0                   | displaced: movclr.l %acc0,%d0 (V4e)
+        asr.l   %d6,%d0                  | displaced
+        tst.l   %d3
+        beq.s   .rh_store
+        RP_SCALE
 .rh_store:
         move.l  %d0,36(%a3)              | displaced; CPU and DSP both use it
         jmp     (0x40004108).l
+
+        .ifdef  MODWERK_EVENTS
+| On a Modwerk base that owns 0x40004100 (sdk/machines/octatrack/events.json),
+| rate_hook's scaling is this ev_play_increment subscriber (runtime.json),
+| int f(uint32_t *increment, unsigned track). d3 is the builder's own, set by
+| rate_gate earlier in the same builder: the base and the handlers before
+| this one keep it, as C keeps d2-d7. It never takes the track (0).
+        .global repitch_play_increment
+repitch_play_increment:
+        tst.l   %d3
+        beq.s   9f
+        movea.l 4(%sp),%a0
+        move.l  (%a0),%d0
+        RP_SCALE
+        move.l  %d0,(%a0)
+9:      moveq   #0,%d0
+        rts
+        .endif
 
 | 0x40007d96, in the voice renderer: d1 is the track's TSTR just resolved
 | (SETUP, or the sample's TSMODE for AUTO). REPITCH resolves to OFF, so every

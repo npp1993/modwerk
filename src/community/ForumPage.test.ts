@@ -4,10 +4,10 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { ForumPage } from './ForumPage'
 import { CommunityContext } from './context'
-import { api, post } from './api'
+import { api, onCommunityReconnect, post } from './api'
 import type { ForumVisit } from './forum-contract'
 
-vi.mock('./api', () => ({ api: vi.fn(), apiFetch: vi.fn(), post: vi.fn() }))
+vi.mock('./api', () => ({ api: vi.fn(), apiFetch: vi.fn(), post: vi.fn(), onCommunityReconnect: vi.fn() }))
 vi.mock('./GetStarted', () => ({ GetStarted: () => null }))
 vi.mock('./MembersOnline', () => ({ ForumOnlineNow: () => null }))
 vi.mock('./ForumShowcase', () => ({ ForumShowcase: () => null }))
@@ -18,17 +18,32 @@ vi.mock('./ForumRecentPosts', () => ({ ForumRecentPosts: () => null }))
 const session = { available: true, admin: false, user: { id: 'member', displayName: 'Member', username: 'member', verified: true } }
 const caughtUp: ForumVisit = { since: '2026-10-09 10:00:00', newThreads: 0, newReplies: 0, unreadFollowed: 0 }
 let root: Root, container: HTMLDivElement, visit: ForumVisit
+const reconnectListeners = new Set<() => void>()
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   vi.clearAllMocks()
   visit = caughtUp
   vi.mocked(api).mockImplementation(async path => path === '/forum/visit' ? visit : { threads: [], hasMore: false })
   vi.mocked(post).mockResolvedValue({ ok: true })
+  reconnectListeners.clear()
+  vi.mocked(onCommunityReconnect).mockImplementation(listener => { reconnectListeners.add(listener); return () => { reconnectListeners.delete(listener) } })
   container = document.createElement('div'); document.body.append(container); root = createRoot(container)
 })
 afterEach(async () => { await act(() => root.unmount()); container.remove(); vi.unstubAllGlobals() })
 const render = (route = 'forum') => act(async () => root.render(createElement(CommunityContext.Provider, { value: { session, developer: null, catalog: [], refresh: async () => {}, refreshDeveloper: async () => {} } }, createElement(ForumPage, { route, configurations: [], onCopy: () => {} }))))
 const banner = () => container.querySelector('.forum-since-visit')
+
+it('reloads discussions that failed during an outage once the service answers again', async () => {
+  const offline = new Error('Couldn’t reach the Modwerk community service.')
+  vi.mocked(api).mockImplementation(async path => { if (path === '/forum/visit') return visit; throw offline })
+  await render()
+  expect(container.textContent).toContain('Discussions could not load')
+  expect(reconnectListeners.size).toBe(1)
+  vi.mocked(api).mockImplementation(async path => path === '/forum/visit' ? visit : { threads: [], hasMore: false })
+  await act(async () => { for (const listener of reconnectListeners) listener() })
+  expect(container.textContent).not.toContain('Discussions could not load')
+  expect(reconnectListeners.size).toBe(0)
+})
 
 it('hides the visit banner when caught up and on the first visit', async () => {
   await render()

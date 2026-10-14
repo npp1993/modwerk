@@ -14,7 +14,7 @@ enum { SELFTEST_CONFIGURATION = 1, SELFTEST_TOGETHER, SELFTEST_STRESS, SELFTEST_
 #define SELFTEST_COUNTED 16u     /* a stall, a loader rejection, error or rollback was counted */
 #define SELFTEST_NOT_BACK 32u    /* the tracks did not get back what they ran */
 #define SELFTEST_ABORTED 64u     /* NO, or the transport started */
-#define SELFTEST_NOT_LOADED 128u /* a DSP module did not run even on its own */
+#define SELFTEST_NOT_LOADED 128u /* a DSP module ran on neither core, even with that core's other slots NONE */
 #define SELFTEST_CPU 256u        /* the ColdFire peaked over 90 % */
 #define SELFTEST_LATE 512u       /* a frame came late: interrupts held off too long (the DSP stalls of 11 October 2026) */
 #define SELFTEST_CORRUPT 1024u   /* a module's code on a DSP does not sum as its package */

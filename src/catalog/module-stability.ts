@@ -7,9 +7,12 @@ export type StabilityLevel = 'pending' | 'reported' | 'limited' | 'in-use' | 'pr
 export type ModuleStability = { level: StabilityLevel; label: string; detail: string }
 
 // Highest first. Days in use count from the first download; quiet days from the latest applicable confirmed bug.
+// Set against the first weeks of counting (from 6 Oct 2026 the median module had 38 downloads, 16 of 41 had 100 or
+// more and 4 had 300 or more), so the grades separate modules while traffic is young. Downloads are opted-in requests,
+// not people. Tighten the days again once six to eight weeks of figures show how fast reports arrive.
 export const STABILITY_GRADES = [
-  { level: 'proven', label: 'Lots of use, no recent confirmed bugs', downloads: 500, days: 90, quietDays: 60 },
-  { level: 'in-use', label: 'In regular use', downloads: 100, days: 30, quietDays: 30 },
+  { level: 'proven', label: 'Lots of use, no recent confirmed bugs', downloads: 300, days: 45, quietDays: 30 },
+  { level: 'in-use', label: 'In regular use', downloads: 100, days: 14, quietDays: 14 },
 ] as const
 const LIMITED = 'Limited real-world testing'
 export const STABILITY_NOTE = 'The grade at the foot of each card rises with downloads and time without confirmed bugs; every module starts at ' + LIMITED.toLowerCase() + '. Confirmed bugs affecting the current version, or with unknown applicability, replace the grade. Unconfirmed reports are listed separately. Downloads and quiet time do not prove hardware reliability.'

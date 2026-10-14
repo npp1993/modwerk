@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ADAPTER = ROOT / 'sdk/machines/octatrack/module-adapters'
 ELEK = ROOT / 'sdk/machines/octatrack/elekloader'
 RUNTIME = ADAPTER / 'resident-runtime'
-sys.path.insert(0, str(ADAPTER))
+sys.path.append(str(ADAPTER))
 import resident_source
 
 

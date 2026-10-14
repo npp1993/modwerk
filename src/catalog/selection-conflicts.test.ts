@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { checkSelection } from './compatibility'
-import { selectionConflicts, selectionConflictError } from './selection-conflicts'
+import { selectionConflicts, selectionConflictError, STALE_CONFLICT_FLAGS } from './selection-conflicts'
+import pairs from './compatibility-pairs.json'
+import { MODULE_DOCUMENTS_BY_ID } from './documents'
 
 const seven = ['miniverb', 'tapeecho', 'euclid', 'repitch', 'usb-audio-out-tracks-main-cue', 'quantizer']
 describe('native selection conflicts', () => {
@@ -33,8 +35,11 @@ describe('native selection conflicts', () => {
       const ids = ['poly8', ...companions.filter((_id, bit) => mask & (1 << bit))]
       expect(selectionConflicts(ids)).toEqual([])
     }
-    expect(selectionConflicts(['vector', 'analog-bassdrum'])[0].id).toBe('vector-analog-bd')
-    expect(selectionConflicts(['synth', 'quantizer'])[0].id).toBe('synth-machine-conflict')
+    expect(selectionConflicts(['vector', 'analog-bassdrum'])[0].id).toBe('pair-analog-bassdrum+vector')
+    expect(selectionConflicts(['synth', 'quantizer'])[0].id).toBe('pair-quantizer+synth')
+    expect(selectionConflicts(['synth', 'quantizer', 'vector', 'analog-bassdrum']).map(conflict => conflict.id)).toEqual(
+      ['pair-analog-bassdrum+synth', 'pair-analog-bassdrum+vector', 'pair-quantizer+synth', 'pair-synth+vector'])
+    expect(selectionConflicts(['synth', 'quantizer', 'poly8'])).toEqual([])
     expect(selectionConflicts(['poly8', 'analog-bassdrum', 'character'])[0].id).toBe('analog-bd-custom-dsp')
     expect(selectionConflicts(['poly8', 'analog-bassdrum'], true)[0].id).toBe('stock-fx2-space')
     expect(selectionConflicts(['poly8', ...seven])[0].id).toBe('module-menu-space')
@@ -43,5 +48,13 @@ describe('native selection conflicts', () => {
   it('rejects unknown IDs and includes paused custom DSP modules in Analog BD conflicts', () => {
     expect(() => selectionConflicts(['unknown'])).toThrow()
     expect(selectionConflicts(['analog-bassdrum', 'character'])[0].moduleIds).toContain('character')
+  })
+  it('lists only stale flags their modules still carry, without a collision behind them', () => {
+    for (const key of STALE_CONFLICT_FLAGS) {
+      const [a, b] = key.split('+')
+      expect(MODULE_DOCUMENTS_BY_ID[a]?.compatibility.conflicts.includes(b) || MODULE_DOCUMENTS_BY_ID[b]?.compatibility.conflicts.includes(a)).toBe(true)
+      expect(Object.values(pairs.clashes).some(found => key in found)).toBe(false)
+      expect(selectionConflicts([a, b])).toEqual([])
+    }
   })
 })

@@ -41,13 +41,13 @@ class BetaStartup(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which('cc'), 'Host C compiler unavailable')
     def test_mki_mkii_frame_bounds_led_choreography_and_colour_restore(self):
-        spec = importlib.util.spec_from_file_location('base_art', HERE / 'base_art.py')
+        spec = importlib.util.spec_from_file_location('public_art', HERE / 'public_art.py')
         art = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(art)
         with tempfile.TemporaryDirectory(prefix='modwerk-startup-host-') as temp:
             work = Path(temp)
-            (work / 'boot_art.h').write_text(art.header('3.0.0'))
-            pixels = sorted(art.final_pixels('3.0.0'))
+            (work / 'boot_art.h').write_text(art.header())
+            pixels = sorted(art.final_pixels())
             (work / 'boot_expect.h').write_text('#define BOOT_EXPECT %d\nstatic const unsigned char boot_expect[][2] = {%s};\n' %
                                              (len(pixels), ','.join('{%d,%d}' % p for p in pixels)))
             subprocess.run(['cc', '-std=c99', '-Wall', '-Wextra', '-Werror', '-DMODWERK_HOST', '-I', str(work),

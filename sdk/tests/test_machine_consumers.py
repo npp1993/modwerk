@@ -13,8 +13,9 @@ import unittest
 ADAPTER = Path(__file__).resolve().parents[1] / 'machines/octatrack/module-adapters'
 previous_path = sys.path[:]
 try:
-    sys.path.insert(0, str(ADAPTER))
+    sys.path.append(str(ADAPTER))
     from probe_fm_consumers import reviewed_image
+    import stock_recipe  # reviewed_image imports this checked reconstruction helper lazily.
 finally:
     # The CLI puts its private loader tools first. Importing its pure helper
     # must not redirect the SDK's separate Octabam `build` test imports.

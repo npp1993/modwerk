@@ -10,6 +10,7 @@ Follow [Add or port a module](docs/ADD_A_MODULE.md). It covers porting from octa
 
 What review expects for a new module, or for a change to how a module runs:
 
+- a module that stands alone: it builds and works with no other module chosen. A module that depends on another is refused ([cross-compatibility](docs/module-guides/README.md#cross-compatibility));
 - worst-case cycle counts and exact memory accounting (Octatrack, see [qualification](docs/MODULE_QUALIFICATION.md));
 - a hardware report from a real unit that states its model, how long it ran, what was tested and the limitations. There is no minimum duration or track count;
 - complete documentation with a short tutorial, and real black-and-white screenshots of where the module is selected and of its controls ([captures](docs/MODULE_UI_CAPTURES.md));

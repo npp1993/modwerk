@@ -246,6 +246,12 @@ class RuntimeSlotTests(unittest.TestCase):
     def test_dsp_effect_glue_on_the_host(self):
         self.host_test('test_dsp.c')
 
+    def test_selftest_placement_on_the_host(self):
+        self.host_test('test_selftest.c')
+
+    def test_checked_journal_dsp_on_the_host(self):
+        self.host_test('test_journal_dsp.c')
+
     def test_fx_pages_on_the_host(self):
         self.host_test('test_fxpage.c')
 
@@ -257,7 +263,7 @@ class RuntimeSlotTests(unittest.TestCase):
 
     def test_the_base_at_128_effect_ids_on_the_host(self):
         # docs/OCTATRACK_MORE_EFFECT_IDS.md: the base behind MODWERK_FX_IDS works past 32 before the tables move.
-        for test in ('test_dsp.c', 'test_fxpage.c', 'test_status.c'):
+        for test in ('test_dsp.c', 'test_fxpage.c', 'test_status.c', 'test_selftest.c'):
             with self.subTest(test):
                 self.host_test(test, defines=('-DMODWERK_FX_IDS=128u',))
 

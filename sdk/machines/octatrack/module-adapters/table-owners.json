@@ -1,0 +1,14 @@
+{
+ "schema": 1,
+ "about": "The table owners the public base admits (build_core.py --table-owners): each names its exact published package, its table declaration and recipe (module-adapters/table_declarations.py validates them), the declaration's reviewed SHA-256 and who approved it. Hashes and offsets only; no stock bytes.",
+ "owners": [
+  {
+   "module": "mute-modes",
+   "package": "public/octatrack-modules/mute-modes/0.2.1-experimental.mwrm",
+   "declaration": "sdk/machines/octatrack/module-adapters/table-owners/mute-modes.declaration.json",
+   "recipe": "sdk/machines/octatrack/module-adapters/table-owners/mute-modes.recipe.json",
+   "reviewedSha256": "2e2b3da9570fa1efebeaae2ab687cbce0714fdae50bec731039be052e7eddeba",
+   "approval": "repeat98, 14 Oct 2026: open every module for the beta, hardware evidence waived per version"
+  }
+ ]
+}

@@ -669,3 +669,7 @@ module-absent gates were skipped as expected. ASan/UBSan voice plus stress
 tests passed with no diagnostics. FREE/BEAT peak recurrence residual was
 0.001618 FS. The final standalone build leaves the `tapeecho` remix selected;
 no release image/container is emitted.
+
+## MIX law (0.1.4, 14 October 2026)
+
+Until 0.1.3 MIX was a linear crossfade, `out = (1-mix)*dry + 4*mix*wet`, so the default MIX 90 left the dry signal at -10.7 dB while the echo path itself sits 6 dB or more below its input. From 0.1.4 `dry = min(1, 4*(1-mix))`: unity through MIX 95, then a linear fade to nothing at full wet, with the wet term unchanged. Level and cost figures are in [TESTING.md](TESTING.md). The echo level was left alone because the wet path's headroom is set by the self-oscillation region: with a +5.6 dB makeup it clips at full wet from FDBK 102 up. A level match of the echo needs a limiter or a lower record drive, not a larger makeup.

@@ -14,7 +14,7 @@ import { buildBase, type BaseFill } from './elekloader/octatrack-base'
 // A file of its own, fetched when a base is built: the worker bundle inlines imports, and the package is 600 KB.
 import basePackage from './assets/octatrack-base.elemod?url'
 import baseFills from './assets/octatrack-base-fills.json'
-import { DOWNLOADS_ENABLED, DSP_LOADER, FIRMWARE_VERSION, type BuildReport, type EngineRequest, type EngineResponse } from './protocol'
+import { DOWNLOADS_ENABLED, DSP_LOADER, FIRMWARE_VERSION, type BuildReport, type EngineRequest, type EngineResponse, type StartupAnimation } from './protocol'
 export function createEngineSession(reply: (response: EngineResponse, transfer?: Transferable[]) => void) {
   // `newest` is the latest validate or build: the worker runs requests concurrently, and the page ignores older answers.
   let base: DecodedFirmware | null = null, stock: Uint8Array | null = null, generation = 0, newest = 0
@@ -52,15 +52,26 @@ export function createEngineSession(reply: (response: EngineResponse, transfer?:
       const claims = checkSelection(request.moduleIds, DSP_LOADER && request.keepStockFx2)
       if (!claims.checked || claims.issues.length) throw new Error(claims.issues.join(' ') || 'This module selection could not be validated.')
       reply({ id: request.id, type: 'progress', phase: 'composing' })
-      let result
-      try { result = await composeSelection(original.mainOs, request.moduleIds, request.keepStockFx2, request.usbAudio, request.betaAccess === true) }
+      // Every build plays the docking startup unless the member chose the classic one. Docking adds two guarded hooks,
+      // an 80-byte gate and its runtime; a selection that composes only without them keeps the classic startup, so
+      // nothing that builds with the classic startup is refused for the docking one.
+      const compose = (ids: readonly string[], usbAudio: typeof request.usbAudio, docking: boolean) => composeSelection(original.mainOs, ids, request.keepStockFx2, usbAudio, docking)
+      let result, startupAnimation: StartupAnimation = request.startup === 'classic' ? 'classic' : 'docking', startupFallback = false
+      try {
+        try { result = await compose(request.moduleIds, request.usbAudio, startupAnimation === 'docking') }
+        catch (error) {
+          if (startupAnimation === 'classic') throw error
+          result = await compose(request.moduleIds, request.usbAudio, false)
+          startupAnimation = 'classic'; startupFallback = true
+        }
+      }
       catch (error) {
         if (!isPlacementFailure(error)) throw error
         const conflict = await diagnosePlacement(request.moduleIds, error, ids => {
           const claims = checkSelection(ids, DSP_LOADER && request.keepStockFx2)
           if (!claims.checked || claims.issues.length) return Promise.reject(new Error('Selection declarations did not pass.'))
           // USB settings belong only to the USB Audio module; removing it must remove its settings too.
-          return composeSelection(original.mainOs, ids, request.keepStockFx2, ids.includes('usb-audio-out-tracks-main-cue') ? request.usbAudio : undefined, request.betaAccess === true)
+          return compose(ids, ids.includes('usb-audio-out-tracks-main-cue') ? request.usbAudio : undefined, false)
         }, () => current === generation && newest === request.id)
         if (current !== generation) throw new Error('The selected firmware changed. Build again.', { cause: error })
         // A newer selection replaced this one; its partial diagnosis would mislead and nobody waits for it.
@@ -75,7 +86,7 @@ export function createEngineSession(reply: (response: EngineResponse, transfer?:
         osBytes: result.bytes.length, runtimeBytes: result.runtime.bytes, reservedBytes: result.runtime.reservedBytes,
         fx1Rows: result.chooser.fx1.length, fx2Rows: result.chooser.fx2.length,
         omittedStockFx2: chooserMetadata.stockFx2.filter(key => !result.chooser.fx2.includes(key)),
-        startupAnimation: request.betaAccess === true ? 'beta-docking' : 'classic',
+        startupAnimation, ...(startupFallback ? { startupFallback: true } : {}),
       }
       if (request.type === 'validate') { reply({ id: request.id, type: 'validated', report }); return }
       if (!DOWNLOADS_ENABLED) throw new Error('Firmware downloads are paused while the built-in logger completes verification.')

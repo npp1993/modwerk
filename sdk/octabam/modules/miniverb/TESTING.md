@@ -1,243 +1,154 @@
-# Mini Verb 0.2.1-experimental testing
+# Mini Verb 0.2.2-experimental testing
 
-This candidate fixes a confirmed dry/wet mixer defect found while investigating
-[report #428](https://github.com/repeat98/modwerk/issues/428). The report describes
-noise on a THRU machine around 25% mix, without input routing, other settings,
-a project or an audio recording. Its saved configuration lists Mini Verb,
-Tape Echo, TapeHead, USB Audio, FM Synth and Sidechain Compressor on MKII OS
-1.40C. That selection was reconstructed; it is not a proven copy of the
-reporter's image. The reported hardware symptom remains **unconfirmed**.
+This update only lowers DSP cost. Two `move #>…,y1` coefficient reloads in the
+input diffusers (173 and 449 samples) loaded the value `y1` already held from
+the diffuser before them, with only reads of `y1` in between. They are removed.
+Disassembly of both programs differs in exactly those two instructions (four
+words); the sample loop's `do` end word moves by four and every relative branch
+keeps its encoding. No new instruction form is used. Controls, defaults, the
+native manifest, FX ID 0x17, the 16K ring and the X:(r7+$20..$3f) block are
+unchanged. The exact published 0.2.1 source is preserved as
+[upstream/miniverb-0.2.1.asm](upstream/miniverb-0.2.1.asm).
 
-No physical device was flashed, played or rebooted. On 11 October 2026 the
-owner approved this exact experimental release with the limits disclosed and
-instructed that **#428 stay open until reporter confirmation**. The separate
-0.2.1 source-bound exception waives current hardware, chip timing and complete
-runtime memory-bound qualification. It does not verify played automation,
-Part/project persistence, physical reboot, maximum load or the reported noise.
-The literal approval and exact I428 identities are in
-[evidence/owner-release-0.2.1.md](evidence/owner-release-0.2.1.md). Historical 0.2.0 results remain in
-[evidence/testing-0.2.0.md](evidence/testing-0.2.0.md) and the old JSON reports;
-they have not been relabelled as current evidence.
+No physical device was flashed, played or rebooted for this source. Earlier
+records keep their versions: [0.2.1](evidence/testing-0.2.1.md) (the mixer fix,
+#428 and its owner approval) and [0.2.0](evidence/testing-0.2.0.md).
 
-## Confirmed mixer regression
+## Three cost measures, kept apart
 
-The old mixer subtracts dry from the wide wet accumulator, then copies that
-difference into a 24-bit multiplier register. That copy limits the difference
-before multiplication, even when the final dry/wet mix would fit. Both channels
-now divide the wide difference by eight, multiply in 24-bit arithmetic, then
-restore the scale in the accumulator before adding dry. The neutral wet
-projection is bounded by +/-4 FS and dry by +/-1 FS, so their difference fits
-after scaling. Tone's existing limiting and the tank are unchanged. Final
-output still limits normally. The change adds four program words and four
-executed instructions per stereo sample, without additional state or buffers.
+| Measure | 0.2.0 | 0.2.1 | 0.2.2 | Source |
+| --- | ---: | ---: | ---: | --- |
+| Modeled cycles/sample: static sample-loop word span (`tools/build/cycle_count.py`) | 411 | 415 | **411** | verify.py |
+| Executed instructions/sample, worst matched single instance, both cores | 360.75 | 364.75 | **362.75** | benchmark.py |
+| Chip cycles/sample on hardware | 665 (core 1) | not measured | **not measured** | owner's MKII, 11 Oct 2026 |
 
-A full-wet render of the old mixer is an invalid oracle for this defect: it also
-limits its wet-minus-dry difference. The verifier instead assembles a measured
-raw-wet reference, replacing only both mixer bodies with NOPs and the final wet
-store. That store itself can limit; those samples are excluded from the affine
-comparison and counted separately. All three programs pass the existing
-assembler/disassembler round-trip audit.
+The modeled figure counts words: a two-word instruction (a long immediate, an
+absolute address) counts two, and memory contention and pipeline stalls are not
+modeled. The Octatrack USB loader charges a modeled or executed claim at 7/4
+until a hardware figure exists: 411 is charged 720 chip cycles, within the
+smaller core's 726 left for one module beside seven stock slots of 342; 415
+would be 727 and refused.
 
-At 44.1 kHz, 16-sample blocks, default controls except MIX 32 (25%), a 0.9 FS
-733 Hz mono input and trigger split 7 reproduce the defect on **both cores**.
-After the first second, 167,992 stereo samples have unclipped measured wet
-output; 5,952 raw-wet-limited samples are excluded. On eligible samples the old
-mix differs from `0.75 * dry + 0.25 * rawWet` by up to **1,737,799.75 LSB**;
-the fixed mix differs by at most **468.25 LSB**, below the 512 LSB gate that
-allows the existing mix smoother's quantization. Neither mixed render clips
-its final output. At 0.24 FS, all 173,944 samples are eligible; old/fixed maxima
-are 125 / 125.75 LSB. This proves the intermediate clipping fix, without proving
-that it explains the reporter's physical noise.
+The hardware figure is the 0.2.0 row of "Measured on the owner's MKII
+(11 October 2026)" in
+[OCTATRACK_ELEKLOADER_MIGRATION.md](../../../../docs/OCTATRACK_ELEKLOADER_MIGRATION.md):
+idle-pass meters, FX2 on T1 against NONE, the dearest of three knob settings.
+It is 1.62 times 0.2.0's modeled 411 and 1.84 times its executed 360.75, so an
+executed-instruction claim for Mini Verb would be undercharged by the 7/4 rule;
+keep the modeled claim. It is not a measurement of 0.2.1 or 0.2.2.
 
-## Current native DSP results — 11 October 2026
+## Matched comparison with worst-case SPRING REV
 
-All **53 checks passed**. Exact source hashes, verdicts and measurements are in
-[evidence/dsp-regression-0.2.1.json](evidence/dsp-regression-0.2.1.json). The exact
-published 0.2.0 assembly and manifest are preserved in `upstream/`; both versions
-use the same six parameter slots. These are current-source DSP results, not
-whole-instrument or hardware qualification.
+[benchmark.py](benchmark.py) follows Air Chorus's matched protocol: one instance
+on each core (positions 0 and 4), audio at X:0, 4,096 blocks of 16 frames,
+identical tone/transient input, the null stub's peak subtracted per split and
+core, trigger splits 0 to 15. SPRING REV runs fixed at defaults, at each TYPE,
+and with the moving schedule (minima, maxima, ramps, endpoint jumps, every
+TYPE); Mini Verb fixed at defaults, TONE 0 and TONE 127, and moving. Statistics
+are in [evidence/stock-comparison-0.2.2.json](evidence/stock-comparison-0.2.2.json).
 
-| Measurement | Result |
-| --- | --- |
-| Assembled program | 536 words; 0.2.0: 532 |
-| Static branch-inclusive sample loop | 415 modeled cycles; 0.2.0: 411 |
-| Eight moving instances, four per core, mixed splits | 23,616 executed instructions/core/block; 0.2.0: 23,360; +1.096% |
-| Eight neutral instances | 21,348 executed instructions/core/block; 0.2.0: 21,092 |
-| TONE 64, moving controls, splits 0/1/7/15 | Maximum 4 LSB difference from 0.2.0, within the 8 LSB quantization bound |
-| MIX 0, TONE 0/64/127, bipolar full-range ramp | Bit-exact dry passthrough |
-| Dark endpoint, 70 Hz / 4 kHz relative to neutral | -0.10 dB / -18.85 dB |
-| Bright endpoint, 70 Hz / 4 kHz relative to neutral | -16.60 dB / -0.34 dB |
-| Eight instances vs isolated runs, both cores and skewed scheduling | Bit-identical; no cross-instance influence |
-| One excited instance at each of eight positions | Other seven outputs exactly silent |
-| Dirty X/Y state and private/shared Y/loaded P guards | Passed |
-| 30-second moving, eight-instance guarded render | 82,688 blocks; peak 23,616 instructions/core/block; zero output clipping or guard violations |
-| Dark/neutral/bright percussion and full-range Tone jumps | Unclipped, stereo, decaying; smoother bound passed, return to exact neutral state |
+| Effect | Unsplit worst | Worst over splits | Worst case | Ratio to SPRING |
+| --- | ---: | ---: | --- | ---: |
+| SPRING REV | 257.5 | **314.0** | TYPE 0, split 4 | 1.000 |
+| Mini Verb 0.2.0 | 357.375 | 360.75 | TONE 0, split 1 | 1.149 |
+| Mini Verb 0.2.1 | 361.375 | 364.75 | TONE 0, split 1 | 1.162 |
+| Mini Verb 0.2.2 | 359.375 | **362.75** | TONE 0, split 1 | **1.155** |
 
-The neutral Tone stage is still an exact bypass, but the mixer no longer
-promises bit-identical neutral audio to 0.2.0. The eight-instance render drives
-parameter events directly; it does not play actual project locks, scenes,
-crossfader or LFOs, or eight stock voice engines. Aliasing is not separately
-qualified. Raw logs, WAVs, input signals and stock-derived payloads stay private.
+Executed instructions/sample, identical on both cores. Splits cost SPRING up to
+56.5 instructions/sample and Mini Verb 3.4. Its dark Tone path (TONE below 64)
+is the dearest; TONE 64 skips the tone pole. On the owner's MKII the dearest
+stock SPRING REV measured 299 / 288 chip cycles/sample (core 1 / core 0), so the
+0.2.0 hardware ratio was about 2.2, not the emulator's 1.15: stock code runs
+near one cycle per instruction and Mini Verb did not. That gap is unexplained
+by these runs.
 
-Reproduce with this checkout's host source and the developer's private original
-MAIN OS:
+## Bit-identity with 0.2.1 and native DSP regression — 13 October 2026
+
+All **75 checks passed** in [verify.py](verify.py); exact source hashes and
+verdicts are in [evidence/dsp-regression-0.2.2.json](evidence/dsp-regression-0.2.2.json).
+The new gates compare 0.2.2 with the assembled published 0.2.1 program:
+
+- eight instances, four per core, moving controls, mixed splits 1/3/7/15:
+  bit-identical;
+- one instance per core with moving controls, every split 0 to 15: bit-identical;
+- 0.9 FS 733 Hz input, MIX 32, TONE 0, 64 and 127, split 7, both cores:
+  bit-identical.
+
+Separately, Modwerk's builder-path bench (`sdk/machines/octatrack/elekloader/dspbench`,
+Elekloader's `dsp_assemble`, scratch X:$20-$FF clobbered before every call)
+found both builds bit-identical over 6,000 blocks of noise with every knob
+moving, at splits 0, 1, 7 and 15.
+
+Every earlier gate still passes with the same values as 0.2.1: exact dry at
+MIX 0, neutral voice within 4 LSB of 0.2.0, the raw-wet mixer regression
+(0.9 FS: 468.25 LSB against 0.2.0's 1,737,799.75), Tone endpoint spectra,
+eight-instance isolation, dirty X/Y state and the 30-second guarded moving
+render. Sound quality (`npm run fx:audit`: aliasing, DC, clipping, idle) was not
+tested for this source; its output is bit-identical to 0.2.1, which was not
+audited either.
+
+| Measurement | 0.2.2 | 0.2.1 |
+| --- | ---: | ---: |
+| Assembled program | 532 words | 536 |
+| Eight moving instances, four per core, mixed splits | 23,488 instructions/core/block | 23,616 |
+| Eight neutral instances | 21,220 instructions/core/block | 21,348 |
+| 30-second moving eight-instance guarded render | 82,688 blocks, 23,488 peak; zero clipping or guard violations | 23,616 |
+
+Reproduce with the developer's private original MAIN OS, a disposable Octabam
+tree (this checkout's `sdk/octabam` with the patched `vendor/` and
+`out/raw/section_3_MAIN_OS.bin`) and a `dsp_host` built from this checkout's
+`tools/harness/dsp_host/dsp_host.cpp` (SHA-256
+`27257a3ee152d812629dc9880eb9abbb1d05b6df1dfb558f73d0d251bbf2d921`):
 
 ```sh
-DSP_HOST=/absolute/path/to/reviewed/dsp_host \
-python3 -B sdk/octabam/modules/miniverb/verify.py \
-  --sdk /absolute/path/to/disposable/octabam \
-  --stock /absolute/path/to/private/stock-main-os.bin \
-  --output /absolute/path/to/private/miniverb-0.2.1-results
+DSP_HOST=/abs/dsp_host python3 -B sdk/octabam/modules/miniverb/verify.py \
+  --sdk /abs/disposable/octabam --stock /abs/private/section_3_MAIN_OS.bin \
+  --output /abs/private/miniverb-0.2.2-results
+DSP_HOST=/abs/dsp_host python3 -B sdk/octabam/modules/miniverb/benchmark.py \
+  --sdk /abs/disposable/octabam --output /abs/private/miniverb-0.2.2-bench \
+  --asm 'MINIVERB 0.2.0=/abs/upstream/miniverb-0.2.0.asm' \
+  --asm 'MINIVERB 0.2.1=/abs/upstream/miniverb-0.2.1.asm' \
+  --asm 'MINIVERB 0.2.2=/abs/miniverb.asm'
 ```
 
-The offline render image is
-`sha256:b16d9f284f8df081c4cec6d1941450e38ab34af129104bfab12ddf8879a1dd0e`.
-The DSP host source SHA-256 is
-`27257a3ee152d812629dc9880eb9abbb1d05b6df1dfb558f73d0d251bbf2d921`.
-It matches this checkout and the vendored host used by the image. Runs have
-512 MiB shared memory, 2 CPUs, 4 GiB RAM, no network, read-only sources and only
-private output writable. Heavy work uses the repository's machine-wide lock.
-
-## Exact private composition and instrument diagnostics
-
-[evidence/private-composition-0.2.1.json](evidence/private-composition-0.2.1.json)
-binds both candidate MAIN images and packaged updates to their runtime sources,
-module selections and toolchain. Packages were built from authored sources only
-with the pinned isolated compiler and imported explicitly as **development**
-artifacts; no release approval is asserted. The preparation record describes the pre-approval stage: only Mini Verb's
-catalogue version was adjusted in process memory, with generated files and
-owner approval untouched. Following the exact owner approval, normal catalogue
-generation and composition must reproduce these image hashes. Both
-chooser profiles of the exact saved six-module selection also match native
-module-owned writes with platform differences masked; there are two builds
-and zero mismatches, separate from the 126-selection matrix.
-
-| Private I428 build | MAIN OS SHA-256 | Packaged update SHA-256 |
-| --- | --- | --- |
-| Mini Verb only | `2a517bc54a92fbf811a3f7366ce27713fdcbdb1aeb2ebbd9bd9c2368ba317cfa` | `f0c5f31449f5b6c16d1a88e6c52f3687f4c8d11b4e4335fac2b365632fa516dc` |
-| Saved six-module selection | `af3dddc8263846bcd63e6487e753730d77b1c1c372b893bab143c252c4b0f3b8` | 72dab691058497b1ac2e429aa6e639d2b2887e6ddb57abbe2de539df43467f49 |
-
-Both updates use the normal `ELEKLOADER` container label; Mini Verb has no
-separate boot version tag. Identify the candidate by the source/package receipt
-and decoded MAIN hash, not that shared display label. Firmware stays private.
-
-The 0.2.0 full-instrument diagnostic reconstructed the six-module selection on
-an empty card with the maintained native emulator and actual DSP execution.
-THRU received A+B at 0 dB, AMP HOLD INF, Mini Verb defaults except MIX 32.
-Manually triggering **TRACK + PLAY** produced nonzero audio on T1 and T5;
-incorrect or untriggered silent captures were rejected. Valid T1/T5 outputs had
-peaks below 0.018 FS, RMS about -43.6 dBFS, zero output clipping and no crash;
-repeated T5 triggers also passed. These moderate-input baseline runs did not
-reproduce the reported noise and do not qualify the hot-input candidate.
-
-The exact 0.2.1 six-module candidate subsequently passed separate native
-THRU runs on T1/core 1 and T5/core 0 with the same settings. Each produced
-88,280 frames (2 seconds) of nonzero audio; four repeated triggers produced
-123,591 frames (2.80 seconds). Peaks were 0.01709 / 0.01706 FS, RMS -43.59 /
--43.61 dBFS and output-clipped samples zero on both tracks. Active scalar state
-was observed on each core. See
-[evidence/thru-diagnostics-0.2.1.json](evidence/thru-diagnostics-0.2.1.json).
-These are separately booted, moderate-input software runs, without a listening
-verdict or a claim that the original hardware noise is fixed. Simultaneous
-full-instrument instance isolation and save/reload/reboot remain unverified.
-
-The native emulator uses pinned MC68k
-`4a6d0d17a1f2b30077ab726c27fe9bb770fa0456`. For the six-module image only, its
-private diagnostic watchdog allows eight stalled windows instead of four:
-the actual runtime checksum otherwise falsely trips it at 1.5 million CPU
-instructions. The instrument source and firmware are unchanged; the watchdog
-remains bounded. The extended emulator SHA-256 is
-`3e04ecbfb9f00a45d7f8a832215241f3832443cd485d5cc58b3b5b97cfd7a4f0`;
-the unmodified binary is
-`908a0f8deb76fc8ab3cc0968b924db68e108d9b4f54145e7a8facfe6cad0732c`.
-EMAC and peripheral self-tests passed; other emulator tests were not run.
-No actual USB host stream, maximum voice/streaming load, saved project or
-hardware noise recording was exercised.
+The stock MAIN OS SHA-256 is
+`164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e`. Raw dumps,
+inputs, meters and WAVs stay private; only statistics are committed.
 
 ## Software resource bounds
 
-The audited loop is 415 modeled cycles/sample. Two split process calls per
-16-sample block cost 6,640 loop cycles, plus twice all 121 outside-loop words,
+The audited loop is 411 modeled cycles/sample. Two split process calls per
+16-sample block cost 6,576 loop cycles, plus twice all 121 outside-loop words,
 twice 128 ring-clear stores, 32 initialization stores and a 256-cycle setup,
-branch and return allowance: **7,426 modeled cycles**. Round upward to
-**8,192 modeled cycles/instance/block**. This conditional software model excludes
-chip memory contention and does not turn host instructions into chip timing.
+branch and return allowance: **7,362 modeled cycles**, rounded up to **8,192
+modeled cycles/instance/block** as before. Four instances per core with the
+inherited 1,415 cycles/sample stock reserve total 55,408 of the arithmetic
+72,560/core/block. This conditional model excludes chip memory contention.
 
-Four instances/core cost 32,768 modeled cycles/block. The inherited stock reserve
-is 1,415 cycles/sample, or 22,640/block. Total 55,408 is below octabam's arithmetic
-200 MIPS / 44.1 kHz budget of 72,560/core/block by 17,152. The reserve is inherited,
-not a new measurement of whole-instrument load, USB, streaming or companion FX.
+Per instance: 49,920 logical bytes (full inherited X block and the 16K Y ring).
+Shared: both programs 1,064 words (3,192 bytes) and the 384-byte hardware stack
+capacity. Eight instances: **402,936 logical bytes**. No new ColdFire code,
+table, CPU RAM or allocation.
 
-| Logical reservation | Scope | Words | Bytes |
-| --- | --- | ---: | ---: |
-| Full inherited X block, including 32 scalar words | instance | 256 × 24 bit | 768 |
-| Allocator-owned Y ring | instance | 16,384 × 24 bit | 49,152 |
-| Programs on both cores | shared | 1,072 × 24 bit | 3,216 |
-| Full hardware system stack capacity on both cores | shared | 64 × 48 bit | 384 |
+## Not yet done for this source
 
-Per instance: 49,920 bytes. Shared: 3,600 bytes. Eight instances:
-**402,960 logical bytes**. X r7+0x20..0x3f is fully cleared; the inherited instance
-range is r7..r7+0xff with dispatcher stride 0x300. The ring has modulo 0x3fff,
-occupied positions 0..13,749 and progressive clear stride 128, unchanged.
-No new ColdFire callback, table, CPU RAM/SDRAM, heap or variable allocation is
-introduced. Logical DSP words differ from the emulator's int32 backing.
-These reservations and dirty-state guards do not establish complete runtime
-lifetime/stack bounds or physical memory canaries.
+- Native/browser composition parity (`npm run module:verify -- miniverb --os …`),
+  the isolated Docker package build and its import, and the regenerated Analog BD
+  companion proof.
+- The USB loader package: once the package import carries 0.2.2, set Mini Verb's
+  `cycles` in `src/engine/assets/octatrack-module-packages.json` (and the
+  elekloader README command) from 0.2.1's 415 to 411 and run
+  `npm run octatrack:module-packages`.
+- LCD captures: the committed ones are from 0.2.1; 0.2.2 changes no page.
+- Owner approval of this exact source. Hardware, chip timing, played
+  automation, Part/project persistence, physical reboot, maximum load and the
+  original #428 noise remain unverified.
 
-## Hardware steps for these exact private builds
+## Hardware steps for a private 0.2.2 build
 
-1. Preserve the original project and identify the I428 image by the hashes above.
-   On an MKII with OS 1.40C, first test the Mini Verb-only update, then the saved
-   six-module update. Record model, date, image, input routing/level and settings.
-2. Assign THRU and Mini Verb FX2 to T1 and T5; route a known input, raise its
-   input volume as needed, and trigger each with **TRACK + PLAY**. Compare MIX
-   0, 32 and 127 at TONE 64, then 0 and 127; include a hot signal whose input and
-   final output meters are not clipping. Capture an audio example if noise remains.
-3. Use distinct settings simultaneously on T1/T5 (both DSP cores) and additional
-   tracks. Edit, reset or replace one instance and verify the others keep their
-   settings and working audio. Include stock FX1 and the saved companions.
-4. Exercise played locks, LFOs, scenes, crossfader, bypass and repeated triggers.
-   Check Part save/reload and project save/load/reload restore a saved baseline
-   after subsequent edits, with usable audio.
-5. Physically reboot with only the saved card and battery RAM retained, without
-   manually loading a project first. Verify assignments, distinct settings,
-   routing and working audio survive. Report failures and untested steps.
-
-No results from these steps have been supplied. Hardware, audio after actual
-reload/reboot, played automation, maximum load, chip timing and complete runtime
-memory bounds remain unverified. Native/browser verification passed 126 selections: 52 matching images
-(18 identical outright, 34 with platform writes masked), 74 matching refusals
-and zero mismatches. A modified original is refused. The current record is
-`sdk/native-comparisons/miniverb.json`. The in-memory preparation label does
-not waive catalogue or publication checks. The owner approval now covers this
-exact source. Keep #428 open unless the
-owner explicitly authorizes closure despite its unconfirmed symptom; any such
-closure must give the released version, these limits and how to reopen.
-
-
-## Release preparation verification — 11 October 2026
-
-`npm run check -- --base origin/main` passed: all 228 test files and 1,706
-app tests, lint, types, bundle, SDK, licences and catalogue checks.
-`npm run module:doctor -- miniverb` has every integration point green.
-The changed Mini Verb DSP also required regenerating the full Analog BD
-companion proof: 212 profiles passed, comprising 162 matching native OS and
-GNU bootloader builds, 50 matching refusals and six complete firmware round
-trips. This is software compatibility evidence, not hardware qualification.
-
-A clean source-only export of commit
-`89d189e53192c76d8d3c5e26495578f61316fdf4` with
-`bash scripts/build-modules-isolated.sh` and the pinned compiler image below
-passed `scripts/import-module-build.mjs --development --check-only
---verify-existing`. It reproduces all eleven committed package payloads;
-only source-commit provenance differs from the preparation export. The
-container had no firmware, network or credentials. Compiler image:
-`sha256:445effdc2b5446de89bd70ba0f7632222e98cd29e749c3f059668cb246c060a5`.
-
-The bundled Octatrack worker was run headlessly with the private original
-update. Both saved full downloads were read back and matched the exact I428
-update and MAIN hashes above. Their report names Mini Verb
-0.2.1-experimental and compiled source tree
-`3726d7c2c4c4d39265eada72f1bc8e1179e923855fbf4dbeb6516d88f1b7f9f0`.
-This preparation check is separate from saved live-download verification,
-which must follow the owner merge and successful deployment.
+Follow the 0.2.1 steps in [evidence/testing-0.2.1.md](evidence/testing-0.2.1.md)
+with the 0.2.2 image, and in addition: load Mini Verb over USB with seven
+stock effects on the other slots of core 0 (T5–T8 FX1/FX2) and check it is
+admitted; read PROJ > MODWERK > MODULE LOAD and the LOAD meters with TONE 0 on
+T1 and T5 and record the measured chip cycles per sample. Report failures and
+untested steps.

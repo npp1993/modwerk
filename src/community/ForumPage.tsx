@@ -2,6 +2,7 @@ import { ForumThreadView } from './ForumThreadView'
 import { BackLink } from '../components/BackLink'
 import { ForumProfile, ForumProfileReplies } from './ForumProfile'
 import { ForumHighlights } from './ForumHighlights'
+import { useReconnectRetry } from './useReconnectRetry'
 import { ForumOnlineNow } from './MembersOnline'
 import type { MemberProfile } from './forum-contract'
 import { useEffect, useRef, useState } from 'react'
@@ -54,7 +55,8 @@ function ForumList({query,profile,machineHint}:{query:URLSearchParams;profile?:s
   const serialized=query.toString(),category=query.get('category')??'',page=Number(query.get('page')??0)
   // Phones fold the topic and machine filters behind a toggle next to the search field.
   const [filtersOpen,setFiltersOpen]=useState(false),[member,setMember]=useState<MemberProfile|null>(null)
-  useEffect(()=>{let cancelled=false;void api<{threads:ForumThread[];hasMore:boolean}>('/forum/threads?'+serialized+(profile?'&author='+encodeURIComponent(profile):'')).then(value=>{if(!cancelled)setData(value)}).catch(error=>{if(!cancelled)setError(errorText(error))});return()=>{cancelled=true}},[serialized,profile,revision])
+  useEffect(()=>{let cancelled=false;void api<{threads:ForumThread[];hasMore:boolean}>('/forum/threads?'+serialized+(profile?'&author='+encodeURIComponent(profile):'')).then(value=>{if(!cancelled){setData(value);setError('')}}).catch(error=>{if(!cancelled)setError(errorText(error))});return()=>{cancelled=true}},[serialized,profile,revision])
+  useReconnectRetry(!!error,setRevision)
   function link(values:Record<string,string>){const next=new URLSearchParams(query);next.delete('page');next.delete('welcome');for(const [key,value] of Object.entries(values)){if(value)next.set(key,value);else next.delete(key)}return (profile?profileHref(profile):'#forum')+(next.size?'?'+next.toString():'')}
   const saved=query.get('saved')==='1',following=query.get('following')==='1',unreadOnly=query.get('unread')==='1'&&!!session.user?.verified,moduleView=query.get('view')==='modules',machine=DEVICES_BY_ID[query.get('machine')??''],filtered=!!query.get('q')||!!query.get('module')||!!query.get('status')||unreadOnly
   // Feature requests open on the most voted ideas; the other views keep recent activity unless an order is chosen.

@@ -3,15 +3,16 @@ import { act, createElement, useEffect } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { api } from './api'
+import { api, onCommunityReconnect } from './api'
 import { CommunityContext } from './context'
 import { ForumOnlineNow, MembersOnlineChip, MembersOnlineList } from './MembersOnline'
 import { useMembersOnline } from './useMembersOnline'
 import type { MembersOnline } from './forum-contract'
 
-vi.mock('./api', () => ({ api: vi.fn() }))
+vi.mock('./api', () => ({ api: vi.fn(), onCommunityReconnect: vi.fn() }))
 const presence: MembersOnline = { online: 3, members: [{ username: 'alpha', avatar: null }], more: 2, guests: 1 }
 let root: Root, container: HTMLDivElement, current: MembersOnline | null, visible: boolean
+const reconnectListeners = new Set<() => void>()
 function Harness({ poll = true, registerPresence = true }: { poll?: boolean; registerPresence?: boolean }) {
   const value = useMembersOnline(poll,registerPresence)
   useEffect(() => { current = value },[value])
@@ -20,6 +21,8 @@ function Harness({ poll = true, registerPresence = true }: { poll?: boolean; reg
 beforeEach(() => {
   vi.useFakeTimers(); vi.clearAllMocks(); vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true)
   vi.mocked(api).mockResolvedValue(presence)
+  reconnectListeners.clear()
+  vi.mocked(onCommunityReconnect).mockImplementation(listener => { reconnectListeners.add(listener); return () => { reconnectListeners.delete(listener) } })
   visible = true
   vi.spyOn(document,'visibilityState','get').mockImplementation(() => visible ? 'visible' : 'hidden')
   localStorage.clear()
@@ -78,6 +81,18 @@ it('falls back to the public read if check-ins are unavailable during backend ro
   expect(api).toHaveBeenCalledTimes(2)
   expect(api).toHaveBeenLastCalledWith('/community/online',expect.not.objectContaining({ method: 'POST' }))
   expect(current).toEqual(presence)
+})
+
+it('brings back a count lost to a dropped connection as soon as reads work again',async () => {
+  vi.mocked(api).mockRejectedValue(new Error('Couldn’t reach the Modwerk community service.'))
+  await render()
+  expect(current).toBeNull()
+  vi.mocked(api).mockResolvedValue(presence)
+  await act(async () => { for (const listener of reconnectListeners) listener() })
+  expect(current).toEqual(presence)
+  expect(api).toHaveBeenCalledTimes(3)
+  await act(() => root.unmount()); root = createRoot(container)
+  expect(reconnectListeners.size).toBe(0)
 })
 
 it('checks in immediately when the signed-in account changes and aborts the previous effect',async () => {

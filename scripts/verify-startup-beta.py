@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Explicit private check of the base's startup (boot_anim.c in sdk/runtime/startup); never
+"""Explicit private check of the docking startup (boot_anim.c in sdk/runtime/startup); never
 part of npm check.
 
 Boots a composed base MAIN image in the headless emulator with the boot logo on, records the panel stream
 (LCD blocks, LED levels, rows and colours) while it plays and checks, for MKI and MKII:
-  * the last startup frame equals the authored pixels exactly (mark, wordmark, NEW, BETA);
+  * the last startup frame equals the authored pixels exactly (mark and wordmark, public_art.py);
   * the LEDs use one channel (even ids) with levels 0-15, light while the cube is out over the panel
     and are all dark before the stock code takes over;
   * the unit hands over to the normal screen, with the same LED rows, levels and colours as the stock
@@ -12,7 +12,7 @@ Boots a composed base MAIN image in the headless emulator with the boot logo on,
 Firmware, images and captures stay private; only --gif / --png (authored boot graphics) and --record
 (hashes and results) write anything, and only where you point them.
 
-  verify-startup-beta.py --image MAIN.raw --stock STOCK-MAIN.raw --version 3.0.0 --emulator ot_emu
+  verify-startup-beta.py --image MAIN.raw --stock STOCK-MAIN.raw --emulator ot_emu
                          [--docker-image IMAGE] [--gif OUT.gif] [--png OUT.png] [--record OUT.json]
 
 --emulator is the Linux ot_emu; with --docker-image it runs in that image (Docker Desktop must be up).
@@ -22,9 +22,10 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location('base_art', ROOT / 'sdk/runtime/startup/base_art.py')
-base_art = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(base_art)
+spec = importlib.util.spec_from_file_location('public_art', ROOT / 'sdk/runtime/startup/public_art.py')
+public_art = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(public_art)
+PACKAGE = json.loads((ROOT / 'src/engine/assets/beta-startup.json').read_text())
 FRAME = {**{o: 10 for o in range(0x10, 0x18)}, **{o: 2 for o in [*range(0x20, 0x40), *range(0xa0, 0xb0)]},
          **{o: 1 for o in range(0x40, 0x50)}, 0x60: 2, 0x70: 2, 0x74: 2, 0xb5: 6, 0xb7: 2}  # tools/panel/panel_link.py
 
@@ -109,11 +110,11 @@ def led_story(led, length_ms=3500):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--image', required=True); ap.add_argument('--stock', required=True); ap.add_argument('--version', required=True)
+    ap.add_argument('--image', required=True); ap.add_argument('--stock', required=True)
     ap.add_argument('--emulator', required=True); ap.add_argument('--docker-image')
     ap.add_argument('--gif'); ap.add_argument('--png'); ap.add_argument('--record')
     args = ap.parse_args()
-    expected, results = base_art.final_pixels(args.version), {}
+    expected, results = public_art.final_pixels(), {}
     for model, mkii in (('MKI', False), ('MKII', True)):
         frames, led, rows, colours = capture(args, mkii)
         _, stock_led, stock_rows, stock_colours = capture(args, mkii, args.stock)
@@ -139,6 +140,7 @@ def main():
         if mkii and (args.gif or args.png):
             t0 = frames[0][0]
             shown = [lcd(next(p for tt, p in reversed(frames) if tt <= t0 + 40 * k)) for k in range(int((frames[final_index][0] - t0) / 40) + 1)]
+            shown[-1] = final   # the 40 ms grid can stop short of the last frame, while the wave still bends the screen
             scale = lambda im: im.convert('P').resize((768, 384), Image.NEAREST)
             if args.gif:
                 scale(shown[0]).save(args.gif, save_all=True, append_images=[scale(im) for im in shown[1:]],
@@ -148,14 +150,14 @@ def main():
     if args.record:
         sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
         Path(args.record).write_text(json.dumps(dict(
-            kind='modwerk-beta-startup-emulator', version=args.version, imageSha256=sha(args.image), emulatorSha256=sha(args.emulator),
+            kind='modwerk-beta-startup-emulator', version=PACKAGE['version'], packageSha256=PACKAGE['sha256'], imageSha256=sha(args.image), emulatorSha256=sha(args.emulator),
             captureMethod='--boot-logo --ms 50 --main-level off --interactive --rtc off (+ --mkii); run 10 ms, read the panel UART with tx',
             results=results, hardware='untested',
             sourceSha256={p: sha(ROOT / p) for p in ('sdk/runtime/startup/boot_anim.c', 'sdk/runtime/startup/hooks.s',
-                                                      'sdk/runtime/startup/rom_gate.s', 'sdk/runtime/startup/base_art.py',
+                                                      'sdk/runtime/startup/rom_gate.s', 'sdk/runtime/startup/public_art.py', 'sdk/runtime/startup/base_art.py',
                                                       'sdk/runtime/startup/base.json', 'sdk/runtime/startup/package.py',
                                                       'scripts/verify-startup-beta.py')}), indent=1) + '\n')
-    print('startup base: both models passed')
+    print('docking startup: both models passed')
 
 
 if __name__ == '__main__':

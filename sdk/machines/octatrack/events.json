@@ -1,0 +1,1503 @@
+{
+ "schema": 1,
+ "device": "octatrack",
+ "os": "1.40C",
+ "about": "The stock sites the Modwerk base owns and turns into events, and the tables modules contribute to (EVENTS.md). Modules subscribe or contribute; none patches these sites. events.py generates the base's dispatch, the loader's table header, the SDK header and EVENTS.md from this file. Adding an event or a table is one reviewed entry here.",
+ "sites": [
+  {
+   "site": "0x40004100",
+   "length": 8,
+   "guard": "cfb51026afa59069c37a05dce3ec521567135c112d210e4a0f29129e3e353df7",
+   "routine": "the playback-increment builder 0x40004008(track, ping, start, end): STATIC, FLEX and PICKUP, and POLY8's tracks through it; lea -48(sp) and 44 bytes of saved registers put its track at 52(sp) here",
+   "head": [
+    ".word 0xa1c0 | movclr.l %acc0,%d0: the increment, PTCH and RATE applied",
+    "asr.l %d6,%d0"
+   ],
+   "tail": [
+    "move.l %d0,36(%a3) | the track state's increment, read by the source fetch and the DSP voice command",
+    "jmp 0x40004108"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x40006820",
+   "length": 8,
+   "guard": "87faf47c9893d1a9506259f68551bf06eb1ce723ac12cfae49a5b10b8b169fb6",
+   "routine": "0x40006820(track): stops a track's voice and binds it fresh (clears its active byte and state, then 0x4000672c), interrupts masked; 8 or more does every track by calling this site once per track. Callers: the trig path 0x4000f518, the frame handler 0x4000d45a, the renderer 0x40008110, UI paths (0x40043c50 and five more)",
+   "head": [],
+   "tail": [
+    "move.l 4(%sp),%d1 | stock's own prologue, its loads in another order",
+    "move.l %a2,-(%sp)",
+    "move.l %d2,-(%sp)",
+    "jmp 0x40006828"
+   ],
+   "done": [
+    "rts | the call returns as stock's does when it has nothing to do"
+   ]
+  },
+  {
+   "site": "0x4000e746",
+   "length": 6,
+   "guard": "c1891b97a86df058cd89d4808e381ecdcf3303e96b08c5e0fd525ea46ffe4d69",
+   "routine": "MIDI IN chromatic note-on (the STANDARD map's chromatic block), once per listening track d2, a3 the message's note",
+   "head": [],
+   "tail": [
+    {
+     "stock": 6
+    },
+    "jmp 0x4000e74c"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x4000dfd4",
+   "length": 8,
+   "guard": "85d5478797bd0d879fe58aa4de88956a8f8fbacdd65ac8faa8a28da95e9c14f4",
+   "routine": "MIDI IN chromatic note-off, once per listening track d2; a0 the track's held-note byte, a3 the note, d3 1 << track",
+   "head": [],
+   "tail": [
+    {
+     "stock": 6
+    },
+    "bne.s 1f | stock's bne.s, which cannot be copied",
+    "jmp 0x4000dfdc",
+    "1: jmp 0x4000dff8"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x40045918",
+   "length": 8,
+   "guard": "112b7d2434bae65950506429fa2e8d01b20316d7ab6d1848ba91f10c451e11ac",
+   "routine": "FUNC + LEFT/RIGHT in CHROMATIC mode: stock toggles its octave word 0x460d16fc (d2 the key)",
+   "head": [],
+   "tail": [
+    {
+     "stock": 8
+    },
+    "jmp 0x40045920"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x400449be",
+   "length": 8,
+   "guard": "494435e3f72313a14453f642bdba5b064022c657c63c015752fe23092eabd19f",
+   "routine": "the CHROMATIC drawer's common octave push (audio and MIDI reach it with the octave in d0)",
+   "head": [],
+   "tail": [
+    {
+     "stock": 8
+    },
+    "jmp 0x400449c6"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x40010212",
+   "length": 6,
+   "guard": "8728078b48ce7f9e9ac9b2d41c454e293ecc0dc4af302ea1885264064442c9e4",
+   "routine": "boot: stock's sanitiser of the battery-RAM settings block, at its first test",
+   "head": [],
+   "tail": [
+    {
+     "stock": 6
+    },
+    "jmp 0x40010218 | its flags are the continuation's"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x40025ac2",
+   "length": 6,
+   "guard": "46484a409ff4c92ca7811222b2a050a935c53122a69184d8a18db71d69820ca9",
+   "routine": "project defaults (cold boot, no project, before a load, new project)",
+   "head": [],
+   "tail": [
+    {
+     "stock": 6
+    },
+    "jmp 0x40025ac8"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x40044968",
+   "length": 8,
+   "guard": "d6d1c7b3caf3215f6590e479a282b5c09d27c1d52c221d596ba9c7fa293896e9",
+   "routine": "the CHROMATIC drawer picks the keyboard's octave",
+   "head": [],
+   "tail": [
+    {
+     "stock": 8
+    },
+    "jmp 0x40044970 | its flags are the continuation's"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x4004fbde",
+   "length": 6,
+   "guard": "7daba4e508057c5320565e7ccc62d4e55d0fa501b0c2586445df51ff9503b3de",
+   "routine": "CHROMATIC key handler 0x4004fb94, the release path",
+   "head": [],
+   "tail": [
+    {
+     "stock": 6
+    },
+    "jmp 0x4004fbe4"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x4004fbfe",
+   "length": 8,
+   "guard": "f974dcd132df96148fe8c38e662bf638aba29290a8ca4467402e8ac707eba123",
+   "routine": "CHROMATIC key handler: another key of the track is held",
+   "head": [],
+   "tail": [
+    {
+     "stock": 6
+    },
+    "bne.s 1f",
+    "jmp 0x4004fc06",
+    "1: jmp 0x4004fc44"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x4004fc58",
+   "length": 10,
+   "guard": "ddfca03eed59b4f4fffffc9061b138ce3e2a33c30712b5e377d94d054fa7b0f0",
+   "routine": "CHROMATIC key handler: the key index becomes the raw pitch (5 * index + 4)",
+   "head": [],
+   "tail": [
+    {
+     "stock": 10
+    },
+    "jmp 0x4004fc62"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x4004fc94",
+   "length": 8,
+   "guard": "617ecbc4d5386f7ed57bfdc6e37dd7a1e1cc60850934d5c635ead626999e847e",
+   "routine": "CHROMATIC key handler: the trig",
+   "head": [],
+   "tail": [
+    {
+     "stock": 6
+    },
+    "beq.s 1f",
+    "jmp 0x4004fc9c",
+    "1: jmp 0x4004fcb2"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x4004fce0",
+   "length": 8,
+   "guard": "e31f7bb195174d49c320879317409c3d2187cc42f337ac0845f41acaebf509bf",
+   "routine": "CHROMATIC key handler: the live recorder",
+   "head": [],
+   "tail": [
+    {
+     "stock": 6
+    },
+    "beq.s 1f",
+    "jmp 0x4004fce8",
+    "1: jmp 0x4004fcf8"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x4004fd06",
+   "length": 6,
+   "guard": "c8e4de3e3a3d28c808f812c9316fd22097f36ec2afb558ef6b81b2a8d66cebe7",
+   "routine": "CHROMATIC key handler: after the recorder call",
+   "head": [],
+   "tail": [
+    {
+     "stock": 4
+    },
+    "blt.s 1f",
+    "jmp 0x4004fd0c",
+    "1: jmp 0x4004fd3e"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x4004fd20",
+   "length": 6,
+   "guard": "902ec18f60fbd1fe19c6a380f31a74290976edd45422b224a3905d550636c94f",
+   "routine": "CHROMATIC key handler: after the recorded PTCH lock",
+   "head": [],
+   "tail": [
+    {
+     "stock": 4
+    },
+    "jmp 0x4004fd3e | stock's bra.s"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x40050254",
+   "length": 8,
+   "guard": "cee8c24bcad796ec96a96aad2d0073265ca9900179292d7c1c942604aeafd8c3",
+   "routine": "a CHROMATIC key becomes a key index (stock's octave word * 12)",
+   "head": [],
+   "tail": [
+    {
+     "stock": 8
+    },
+    "jmp 0x4005025c"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x40050e60",
+   "length": 10,
+   "guard": "ccf689e403ebd88a651c829b4ae191d609c85baa2a99409bd0a2870d20aaa73e",
+   "routine": "the p-lock editor (TRIG held) stores a lock",
+   "head": [],
+   "tail": [
+    {
+     "stock": 10
+    },
+    "jmp 0x40050e6a"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x40055170",
+   "length": 6,
+   "guard": "dc6543d672cdf223fc2ec7cc3c04b8a584dbd6e7bb1e3590b91cd3e469e0b324",
+   "routine": "knob handler 0x40055008: the store of the clamped value",
+   "head": [],
+   "tail": [
+    {
+     "stock": 6
+    },
+    "jmp 0x40055176"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x400866cc",
+   "length": 8,
+   "guard": "de4845a149f0373201be2e55cd61ae41f52a03afd7c4cb717b70d9c6bd64c5ad",
+   "routine": "the project loader's entry (a storing load)",
+   "head": [],
+   "tail": [
+    {
+     "stock": 8
+    },
+    "jmp 0x400866d4"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x400867a2",
+   "length": 8,
+   "guard": "51d1dc3c3bf8d2441df47bad2355b22c942d333b44557d35171c891cb573f3fb",
+   "routine": "the project loader's '#' line test",
+   "head": [],
+   "tail": [
+    {
+     "stock": 8
+    },
+    "jmp 0x400867aa"
+   ],
+   "done": null
+  },
+  {
+   "site": "0x400888aa",
+   "length": 8,
+   "guard": "ef2b6bc9ba56b8cd1d05117b22c2fafc71e1aa07952c0999da4d4eb54e0489e6",
+   "routine": "the project writer, after PATTERN_CHANGE_CHAIN_BEHAVIOR",
+   "head": [],
+   "tail": [
+    {
+     "stock": 8
+    },
+    "jmp 0x400888b2"
+   ],
+   "done": null
+  }
+ ],
+ "events": [
+  {
+   "event": "ev_play_increment",
+   "index": 4,
+   "site": "0x40004100",
+   "length": 8,
+   "prototype": "int f(uint32_t *increment, unsigned track)",
+   "args": [
+    "&d0",
+    "site+52"
+   ],
+   "results": {
+    "0": "next",
+    "*": "tail"
+   },
+   "when": "the increment builder recomputes a track's playback increment (Q26, 0x04000000 = unity), after stock applied PTCH and RATE and before it stores it; when the builder reuses the stored increment no handler runs",
+   "context": "the audio render, at interrupt level: short, no firmware call that can block, the EMAC kept as found",
+   "contract": "Change *increment to change what the track plays at. Return nonzero to take the track: no later handler runs. The base stores *increment either way. The builder's d2-d7/a2-a6 are intact in a handler (a3 the track's 40-byte state, d6 the shift just applied) and must be kept, as C keeps them.",
+   "order": "lower first, then module id. 10-29: a machine that owns its tracks' increment and takes them; 40-69: tempo and rate changes on other tracks.",
+   "subscribers": [
+    {
+     "module": "poly8",
+     "fn": "poly_play_increment",
+     "order": 20,
+     "does": "a POLY track's increment becomes its voices' tuning (poly_track_inc) and the DSP runs it at unity; it takes the track",
+     "evidence": "sdk/octabam/modules/poly8/polyphony.s poly_increment_shift; shared-machine-hooks.s mr_rate_hook sends POLY tracks there before any other module's rate_hook"
+    },
+    {
+     "module": "repitch",
+     "fn": "repitch_play_increment",
+     "order": 50,
+     "does": "scales the increment by project tempo over the sample's tempo when REPITCH is on the track, clamped to 2x; d3 holds the sample tempo its rate_gate (0x4000406a) found in the same builder",
+     "evidence": "sdk/octabam/modules/repitch/repitch.s rate_hook and rate_gate"
+    }
+   ],
+   "orderEvidence": "sdk/octabam/modules/poly8/composition.json replaces Repitch's 0x40004100 detour with POLY8's mr_rate_hook, which takes POLY tracks first and passes the others to rate_hook. POLY8 also forces a POLY track's live TSTR off (poly_config_tstr), so REPITCH never acts on one."
+  },
+  {
+   "event": "ev_voice_bind",
+   "index": 5,
+   "site": "0x40006820",
+   "length": 8,
+   "prototype": "int f(unsigned track)",
+   "args": [
+    "site+4"
+   ],
+   "results": {
+    "0": "next",
+    "1": "done",
+    "*": "tail"
+   },
+   "when": "before stock stops a track's voice and binds it fresh; track 8 or more means every track, and stock then comes back here once per track",
+   "context": "the frame interrupt or a task: short, no firmware call that can block",
+   "contract": "Return 0 to pass. 1 drops this reset: stock does nothing and the call returns. 2 runs stock's reset at once: no later ev_voice_bind handler and no ev_voice_bind_run handler. Any other nonzero acts as 2. d2-d7/a2-a6 are the caller's and must be kept.",
+   "order": "lower first, then module id. 10-29: a machine that renders voices itself and redirects the resets its renderer causes; 30-69: gates on ordinary tracks (mute modes).",
+   "subscribers": [
+    {
+     "module": "poly8",
+     "fn": "poly_voice_bind",
+     "order": 20,
+     "does": "while POLY8 renders an extension voice, the reset stops that voice only (1); while it renders a primary voice, stock's reset runs at once (2)",
+     "evidence": "sdk/octabam/modules/poly8/shared-machine-hooks.s mr_stop_voice; polyphony.s poly_stop_voice, whose .psv_replay goes to stock without fresh_bind while rendering"
+    },
+    {
+     "module": "mute-modes",
+     "fn": "mm_voice_bind",
+     "order": 50,
+     "does": "in OTFX-T and DT-T a single muted or soloed-out track's reset is dropped, so no new voice starts (a SIDE-CHAIN key track keeps it)",
+     "evidence": "sdk/octabam/modules/mute-modes/patch_softmute.s fresh_bind (hook 10)"
+    }
+   ],
+   "orderEvidence": "POLY8's mr_stop_voice checks its renderer state before anything else, then Mute Modes' gate (its mr_mute_suppressed, a copy of fresh_bind's test, when fresh_bind is linked), and only then discards the track's extension voices (ev_voice_bind_run)."
+  },
+  {
+   "event": "ev_voice_bind_run",
+   "index": 6,
+   "site": "0x40006820",
+   "length": 8,
+   "prototype": "void f(unsigned track)",
+   "args": [
+    "site+4"
+   ],
+   "results": "notify",
+   "when": "every ev_voice_bind handler passed: stock's reset runs next",
+   "context": "as ev_voice_bind",
+   "contract": "A notification: every handler runs; none can stop the reset. d2-d7/a2-a6 are the caller's and must be kept.",
+   "order": "lower first, then module id; 10-90.",
+   "subscribers": [
+    {
+     "module": "poly8",
+     "fn": "poly_voice_bind_run",
+     "order": 50,
+     "does": "discards the track's extension voices, held keys and queued presses, interrupts masked",
+     "evidence": "sdk/octabam/modules/poly8/polyphony.s poly_stop_voice .psv_stock (pm_clear_extensions)"
+    }
+   ],
+   "orderEvidence": "In POLY8 + Mute Modes the extension voices are discarded only when the reset is not dropped (mr_mute_suppressed returns first)."
+  },
+  {
+   "event": "ev_mute_keep",
+   "index": 7,
+   "site": null,
+   "prototype": "unsigned f(void)",
+   "args": [],
+   "results": "or",
+   "when": "a module that silences muted and soloed-out tracks asks, once per frame while one of its silencing modes is on, which tracks' audio another module still takes as an input (a side-chain key); no stock site: the asking module calls the base's modwerk_raise_ev_mute_keep(), which returns every handler's answer OR'd, 0 with none",
+   "context": "the frame builder (0x40004dbc), once per frame: short, no firmware call that can block",
+   "contract": "Return the tracks whose audio this module reads while they may be muted: bit t for track t+1, bits 0-7; higher bits are ignored. Every handler runs. A silencer mutes these tracks as stock does (the post-FX cut) in every mode and lets their trigs and voices run, so the audio keeps reaching the module that reads it. d2-d7/a2-a6 must be kept.",
+   "order": "lower first, then module id; every handler runs and the answers are OR'd, so the order does not change the answer. 10-90.",
+   "subscribers": [],
+   "raisers": [
+    {
+     "module": "mute-modes",
+     "fn": "p1_key",
+     "does": "in OTFX, OTFX-T and DT-T, takes the answer's tracks out of the silenced set and gives them stock's own mute bit back (OT's post-FX cut); its trig, rebind, fresh-bind and trig-flag hooks let their trigs through (KEYMASK)",
+     "evidence": "sdk/octabam/modules/mute-modes/patch_softmute.s p1_key (Session 116); natively the SC_KEY build reads SIDECHAIN_COMPRESSOR's KEY slots itself"
+    }
+   ],
+   "orderEvidence": "The answer is an OR: no handler can take or hide another's tracks. Natively the only provider is SIDECHAIN_COMPRESSOR's KEY (COMPRESSOR, FX id 0x18, page-2 slot 8: OFF or T1-T8), which the SC_KEY build of Mute Modes scans itself; here the module that owns the key answers for it."
+  },
+  {
+   "event": "ev_midi_note_on",
+   "index": 8,
+   "kind": "take",
+   "site": "0x4000e746",
+   "length": 6,
+   "entry": "jmp",
+   "arg": "d2",
+   "room": 8,
+   "when": "a MIDI chromatic note-on reaches a listening track (d2), before stock posts its trigger and PTCH",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "poly8",
+     "fn": "mw_take_midi_note_on",
+     "order": 20,
+     "does": "a POLY track's note presses a POLY key (queued, owned); claims only POLY tracks (poly_is_track)",
+     "evidence": "sdk/octabam/modules/poly8/polyphony.s poly_midi_note_on; shared-machine-hooks.s mr_note_on"
+    },
+    {
+     "module": "synth",
+     "fn": "mw_take_midi_note_on",
+     "order": 40,
+     "does": "a synth track's PTCH raw is note - 20, stored before the START, and the note is posted to the engine; other tracks replay stock",
+     "evidence": "sdk/octabam/modules/synth/upstream/synth/poly.s po_mon"
+    }
+   ],
+   "orderEvidence": "POLY8 claims only its own tracks (poly_is_track), first, as its shared hooks' MR_TRACK did before MR_NEXT."
+  },
+  {
+   "event": "ev_midi_note_off",
+   "index": 9,
+   "kind": "take",
+   "site": "0x4000dfd4",
+   "length": 8,
+   "entry": "jmp",
+   "arg": "d2",
+   "room": 8,
+   "when": "a MIDI chromatic note-off reaches a listening track (d2), before stock compares it with the track's one held note",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "poly8",
+     "fn": "mw_take_midi_note_off",
+     "order": 20,
+     "does": "stops the voices the note owns on a POLY track; claims only POLY tracks",
+     "evidence": "sdk/octabam/modules/poly8/polyphony.s poly_midi_note_off; shared-machine-hooks.s mr_note_off"
+    },
+    {
+     "module": "synth",
+     "fn": "mw_take_midi_note_off",
+     "order": 40,
+     "does": "a paraphonic synth track releases that note's voice alone; other tracks replay stock",
+     "evidence": "sdk/octabam/modules/synth/upstream/synth/poly.s po_moff"
+    }
+   ],
+   "orderEvidence": "POLY8 claims only its own tracks (poly_is_track), first, as its shared hooks' MR_TRACK did before MR_NEXT."
+  },
+  {
+   "event": "ev_octave_key",
+   "index": 10,
+   "kind": "take",
+   "site": "0x40045918",
+   "length": 8,
+   "entry": "jmp",
+   "arg": "u8:0x100b14cc",
+   "room": 8,
+   "when": "FUNC + LEFT or RIGHT in CHROMATIC mode, before stock toggles its octave word; the argument is the current track",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "poly8",
+     "fn": "mw_take_octave_key",
+     "order": 20,
+     "does": "a POLY track walks its own octave -6..+3; claims POLY tracks outside MIDI mode",
+     "evidence": "sdk/octabam/modules/poly8/polyphony.s poly_octave_button; shared-machine-hooks.s mr_octkey"
+    },
+    {
+     "module": "synth",
+     "fn": "mw_take_octave_key",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: a synth track's octave steps -4..+4 (qz_oct), stock's word stays 0",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_octkey"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_octave_key",
+     "order": 50,
+     "does": "a synth track's octave steps -4..+4 (qz_oct), stock's word stays 0",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_octkey"
+    }
+   ],
+   "orderEvidence": "POLY8 claims its own tracks outside MIDI mode first (mr_octkey/mr_octnum's MR_TRACK); then FM's bundled quantizer (40) before standalone Scale Quantizer (50), as for every quantizer seam."
+  },
+  {
+   "event": "ev_octave_number",
+   "index": 11,
+   "kind": "take",
+   "site": "0x400449be",
+   "length": 8,
+   "entry": "jmp",
+   "arg": "u8:0x100b14cc",
+   "room": 8,
+   "when": "the keyboard drawer pushes the octave it prints (d0); the argument is the current track",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "poly8",
+     "fn": "mw_take_octave_number",
+     "order": 20,
+     "does": "a POLY track keeps the octave POLY8's own 0x400449b8 detour loaded (entry 0: stock prints it); claims POLY tracks outside MIDI mode",
+     "evidence": "sdk/octabam/modules/poly8/polyphony.s poly_oct_number; shared-machine-hooks.s mr_octnum"
+    },
+    {
+     "module": "synth",
+     "fn": "mw_take_octave_number",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: prints qz_oct on a synth track and the keyboard position on a sample track, with ROOT's name when a scale is on",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_octnum"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_octave_number",
+     "order": 50,
+     "does": "prints qz_oct on a synth track and the keyboard position on a sample track, with ROOT's name when a scale is on",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_octnum"
+    }
+   ],
+   "orderEvidence": "POLY8 claims its own tracks outside MIDI mode first (mr_octkey/mr_octnum's MR_TRACK); then FM's bundled quantizer (40) before standalone Scale Quantizer (50), as for every quantizer seam."
+  },
+  {
+   "event": "ev_settings_sanitise",
+   "index": 12,
+   "kind": "take",
+   "site": "0x40010212",
+   "length": 6,
+   "entry": "jsr",
+   "arg": null,
+   "room": 8,
+   "when": "boot, while stock sanitises the battery-RAM settings block",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock with rts; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_settings_sanitise",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: clamps SCALE/GLIDE/ROOT (0x100b14ec..ee) to OFF / C when out of range",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_boot"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_settings_sanitise",
+     "order": 50,
+     "does": "clamps SCALE/GLIDE/ROOT (0x100b14ec..ee) to OFF / C when out of range",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_boot"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_project_defaults",
+   "index": 13,
+   "kind": "take",
+   "site": "0x40025ac2",
+   "length": 6,
+   "entry": "jsr",
+   "arg": null,
+   "room": 8,
+   "when": "stock resets a project's settings to their defaults",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock with rts; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_project_defaults",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: SCALE/GLIDE := OFF, ROOT := C",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_defaults"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_project_defaults",
+     "order": 50,
+     "does": "SCALE/GLIDE := OFF, ROOT := C",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_defaults"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_keyboard_draw",
+   "index": 14,
+   "kind": "take",
+   "site": "0x40044968",
+   "length": 8,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "the CHROMATIC drawer reads stock's octave word",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_keyboard_draw",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: a synth track draws the keyboard at stock octave 0",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_octdraw"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_keyboard_draw",
+     "order": 50,
+     "does": "a synth track draws the keyboard at stock octave 0",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_octdraw"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_chromatic_release",
+   "index": 15,
+   "kind": "take",
+   "site": "0x4004fbde",
+   "length": 6,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "a CHROMATIC key is released",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_chromatic_release",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: on a paraphonic synth track the held-key mask decides the note-off",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_leg0"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_chromatic_release",
+     "order": 50,
+     "does": "on a paraphonic synth track the held-key mask decides the note-off",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_leg0"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_chromatic_held",
+   "index": 16,
+   "kind": "take",
+   "site": "0x4004fbfe",
+   "length": 8,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "a CHROMATIC key is pressed while another is held",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_chromatic_held",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: the LEG gate (mono legato keeps the held key, paraphonic ends nothing)",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_leg1"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_chromatic_held",
+     "order": 50,
+     "does": "the LEG gate (mono legato keeps the held key, paraphonic ends nothing)",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_leg1"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_chromatic_pitch",
+   "index": 17,
+   "kind": "take",
+   "site": "0x4004fc58",
+   "length": 10,
+   "entry": "jsr",
+   "arg": null,
+   "room": 8,
+   "when": "a CHROMATIC key index becomes a raw pitch",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock with rts; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_chromatic_pitch",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: transposes the key by ROOT and snaps it to the scale",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_chrom"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_chromatic_pitch",
+     "order": 50,
+     "does": "transposes the key by ROOT and snaps it to the scale",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_chrom"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_chromatic_trig",
+   "index": 18,
+   "kind": "take",
+   "site": "0x4004fc94",
+   "length": 8,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "a CHROMATIC key trigs the voice",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_chromatic_trig",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: mono legato is the trigless trig; paraphonic is a fresh voice posted for the engine",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_leg2"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_chromatic_trig",
+     "order": 50,
+     "does": "mono legato is the trigless trig; paraphonic is a fresh voice posted for the engine",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_leg2"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_chromatic_record",
+   "index": 19,
+   "kind": "take",
+   "site": "0x4004fce0",
+   "length": 8,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "a CHROMATIC key goes to the live recorder",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_chromatic_record",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: a legato press records a trigless trig",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_leg3"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_chromatic_record",
+     "order": 50,
+     "does": "a legato press records a trigless trig",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_leg3"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_chromatic_recorded",
+   "index": 20,
+   "kind": "take",
+   "site": "0x4004fd06",
+   "length": 6,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "a CHROMATIC key was recorded",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_chromatic_recorded",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: notes the step and time; the release writes the note length as HOLD",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_leg4"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_chromatic_recorded",
+     "order": 50,
+     "does": "notes the step and time; the release writes the note length as HOLD",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_leg4"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_chromatic_locked",
+   "index": 21,
+   "kind": "take",
+   "site": "0x4004fd20",
+   "length": 6,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "a recorded CHROMATIC key got its PTCH lock",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_chromatic_locked",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: the synth engine recognises a fingered chord",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_leg5"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_chromatic_locked",
+     "order": 50,
+     "does": "the synth engine recognises a fingered chord",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_leg5"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_chromatic_index",
+   "index": 22,
+   "kind": "take",
+   "site": "0x40050254",
+   "length": 8,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "a CHROMATIC key's index is computed from stock's octave",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_chromatic_index",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: a synth track's index is the key itself",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_keyidx"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_chromatic_index",
+     "order": 50,
+     "does": "a synth track's index is the key itself",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_keyidx"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_plock_store",
+   "index": 23,
+   "kind": "take",
+   "site": "0x40050e60",
+   "length": 10,
+   "entry": "jsr",
+   "arg": null,
+   "room": 8,
+   "when": "the p-lock editor stores a lock byte",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock with rts; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_plock_store",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: PTCH steps by scale degree",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_plock"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_plock_store",
+     "order": 50,
+     "does": "PTCH steps by scale degree",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_plock"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_knob_store",
+   "index": 24,
+   "kind": "take",
+   "site": "0x40055170",
+   "length": 6,
+   "entry": "jsr",
+   "arg": null,
+   "room": 8,
+   "when": "a knob turn stores a Part byte",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock with rts; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_knob_store",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: PTCH steps by scale degree",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_knob"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_knob_store",
+     "order": 50,
+     "does": "PTCH steps by scale degree",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_knob"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_project_load",
+   "index": 25,
+   "kind": "take",
+   "site": "0x400866cc",
+   "length": 8,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "a project load starts",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_project_load",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: a storing load starts from SCALE = OFF, ROOT = C, GLIDE = OFF",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_ld_entry"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_project_load",
+     "order": 50,
+     "does": "a storing load starts from SCALE = OFF, ROOT = C, GLIDE = OFF",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_ld_entry"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_project_line",
+   "index": 26,
+   "kind": "take",
+   "site": "0x400867a2",
+   "length": 8,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "the project loader meets a line",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_project_line",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: reads #SEQUENCER_SCALE=n / #SEQUENCER_ROOT=n / #SYNTH_GLIDE=n",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_ld_line"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_project_line",
+     "order": 50,
+     "does": "reads #SEQUENCER_SCALE=n / #SEQUENCER_ROOT=n / #SYNTH_GLIDE=n",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_ld_line"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ev_project_write",
+   "index": 27,
+   "kind": "take",
+   "site": "0x400888aa",
+   "length": 8,
+   "entry": "jmp",
+   "arg": null,
+   "room": 8,
+   "when": "the project writer writes the settings lines",
+   "context": "a task (UI, MIDI or project file): short, no firmware call that can block",
+   "contract": "The taker's entry gets every register and the stack as at the site and replays what the site held (the stock tail below) before it returns to stock; it must not jump into the site's bytes.",
+   "order": "10-29: a machine claiming its own tracks (claims set); 30-49: a machine's bundled feature; 50-69: a standalone feature module. The first record that claims the call takes it.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_take_project_write",
+     "order": 40,
+     "does": "FM Synth's bundled quantizer: writes #SEQUENCER_SCALE=n, #SEQUENCER_ROOT=n, #SYNTH_GLIDE=n",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_wr"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_take_project_write",
+     "order": 50,
+     "does": "writes #SEQUENCER_SCALE=n, #SEQUENCER_ROOT=n, #SYNTH_GLIDE=n",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_wr"
+    }
+   ],
+   "orderEvidence": "FM Synth bundles Tim Hastie's quantizer; FM's engine reads its own copy's mailbox, so FM's copy (40) serves before standalone Scale Quantizer (50). Both keep SCALE/GLIDE/ROOT in the same battery-RAM bytes (0x100b14ec..ee), so either alone, or FM's with both, is the one quantizer the user sees."
+  },
+  {
+   "event": "ot_machines",
+   "index": 28,
+   "kind": "table",
+   "site": null,
+   "length": 0,
+   "record": 80,
+   "key": null,
+   "room": 4,
+   "declaration": "struct modwerk_machine {\n    uint32_t abi;                       /* MODWERK_MACHINE_ABI */\n    uint8_t sig[2], sig_lo, sig_hi;     /* the Part signature at 60 + 30 * track: two letters and a version range */\n    const char *label;                  /* its chooser and SRC SETUP name */\n    uint32_t flags;                     /* MODWERK_MACHINE_* */\n    uint32_t page;                      /* its parameter page without track_page; 0: stock's FLEX page */\n    const uint8_t *defaults;            /* without assign: the 12 FLEX bytes a track takes when it becomes this machine */\n    unsigned (*assign)(volatile uint8_t *part, unsigned track, unsigned on); /* it signs and unsigns its tracks itself */\n    unsigned (*admit_track)(const volatile uint8_t *part, unsigned track);  /* 0 refuses the track */\n    unsigned (*chooser_type)(unsigned type, const volatile uint8_t *slot);  /* 5: its row is the track's */\n    uint32_t (*track_page)(const volatile uint8_t *slot);\n    void (*ui_tick)(void);\n    void (*leave)(unsigned track);      /* the track becomes another machine */\n    void (*pool_open)(void);            /* RIGHT or double-tap TRACK on its row; 0: stock's sample pool */\n    void (*pool_left)(unsigned key, unsigned edge);\n    void (*choice_left)(unsigned key, unsigned edge);\n    const void *list_draw;              /* its pool list drawer, entered as stock's 0x4006d784 */\n    int (*render)(unsigned track, unsigned ping, unsigned start, unsigned end);\n    int (*validate)(uint8_t *part, int (*next)(uint8_t *part));\n    uint16_t source_voice, source_engine; /* a DSP voice that replaces its track's stock source: its price per voice */\n    uint8_t source_kind, reserved[3];   /* and per core while one runs, of this kind (loader.h runtime_cycles); 0 none */\n};\n#define MODWERK_MACHINE_ABI 1u\n#define MODWERK_MACHINE_PROTECT 1u      /* stock's validator never sees its tracks' 12 FLEX bytes */\n#define MODWERK_MACHINE_POOL 2u         /* its row has a pool or engine list (the title's chevron) */\n#define MODWERK_MACHINE_RENDER_FLEX 4u  /* its render is also offered FLEX tracks no machine owns */\n#define MODWERK_MACHINE_BACKING 8u      /* its page is STATIC's when its track's backing pool is STATIC */",
+   "when": "the machine chooser, SRC SETUP, the page resolver, the Part validator, the UI tick, pool navigation and the FLEX renderer ask the contributed machines, in row order: chooser rows 5 on",
+   "context": "the UI task and the audio render (render only): short, no firmware call that can block",
+   "contract": "Contribute one struct modwerk_machine (every field but abi, sig and label optional, 0). A Part keeps its signature when the machine is absent and reads as stock. Leaving a PROTECT machine that has no assign of its own puts stock's FLEX defaults back in both Part copies before the signature goes. A priced machine (source_kind) is charged on its track's core before the track becomes it, and every owned track at each UI tick; a track the core cannot carry renders stock's silent source. Removal is refused while a Part, a UI root or a paused task still holds the machine.",
+   "order": "lower first, then module id: the chooser's row order. 10 POLY8, 20 Analog BD, 30 VECTOR, 40 FM Synth (the order of POLY8's shared controller); others 50-90.",
+   "subscribers": [
+    {
+     "module": "poly8",
+     "fn": "mw_machine",
+     "order": 10,
+     "does": "POLY8: PL/1, its own assign, chooser type, ui tick, extensions cleared on leave, pool choice, list drawer",
+     "evidence": "sdk/octabam/modules/poly8/registration.s pm_*"
+    },
+    {
+     "module": "analog-bassdrum",
+     "fn": "mw_machine",
+     "order": 20,
+     "does": "ANALOG BD: AB/1, admit, defaults, its page, ui tick, engine list, render; PROTECT",
+     "evidence": "sdk/octabam/modules/analog-bassdrum/control.s ab_*"
+    },
+    {
+     "module": "vector",
+     "fn": "mw_machine",
+     "order": 30,
+     "does": "VECTOR: S2/1-2, its own assign, chooser type, ui tick, pool choice, list drawer, Part validator wrapper; BACKING",
+     "evidence": "sdk/octabam/modules/vector/control.s st_*"
+    },
+    {
+     "module": "synth",
+     "fn": "mw_machine",
+     "order": 40,
+     "does": "FM SYNTH: FM/1, admit, defaults, its page, ui tick, render (also unowned FLEX tracks); PROTECT",
+     "evidence": "sdk/octabam/modules/synth/registration.s fm_*, upstream/synth/poly.s sy_render"
+    }
+   ],
+   "orderEvidence": "sdk/octabam/modules/poly8/shared-machine.c (MIT, Sam Banks / repeat98) dispatched POLY, AB, VECTOR, FM in this order; the base registry (elekloader/machine_registry.c) is that controller reading this table.",
+   "sites": [
+    {
+     "site": "0x40002318",
+     "length": 8,
+     "guard": "3d25d06bf11f3a7bccef894d0016b52adbb4ae468a0f475dd497d7b5966e2694",
+     "op": "jmp",
+     "target": "mw_validate_hook",
+     "what": "the Part validator: machines with PROTECT keep their 12 FLEX bytes, a machine's validate wraps stock's"
+    },
+    {
+     "site": "0x40031e74",
+     "length": 10,
+     "guard": "d880dea0093da506649a37047bede3bd7c472f757b8a1d143e62338ccc8dfff9",
+     "op": "jmp",
+     "target": "mw_resolve_pb",
+     "what": "the page resolver: a machine track's parameter page"
+    },
+    {
+     "site": "0x400334d8",
+     "length": 6,
+     "guard": "d6c9f1f60272197a17511f496fc19dd21ddd7df5f1f1ec0cab7a16cad60b0609",
+     "op": "jmp",
+     "target": "mw_machine_name",
+     "what": "machine names by chooser row"
+    },
+    {
+     "site": "0x4003a526",
+     "length": 4,
+     "guard": "76ce29042319b4438a2dfcb9964200138834c3f569c7ff914a10161182b4615c",
+     "op": "ptr",
+     "target": "mw_pb_table",
+     "what": "the PB table by machine row"
+    },
+    {
+     "site": "0x4003a52e",
+     "length": 8,
+     "guard": "cae34bf50383462ed4f92d8044e3021247edb8bf69c17a9c7ead62f6edf79510",
+     "op": "jmp",
+     "target": "mw_setup_edit6",
+     "what": "SETUP's editor addresses a machine row as its pool"
+    },
+    {
+     "site": "0x4003bff4",
+     "length": 4,
+     "guard": "76ce29042319b4438a2dfcb9964200138834c3f569c7ff914a10161182b4615c",
+     "op": "ptr",
+     "target": "mw_pb_table",
+     "what": "the PB table by machine row"
+    },
+    {
+     "site": "0x4003c8cc",
+     "length": 4,
+     "guard": "76ce29042319b4438a2dfcb9964200138834c3f569c7ff914a10161182b4615c",
+     "op": "ptr",
+     "target": "mw_pb_table",
+     "what": "the PB table by machine row"
+    },
+    {
+     "site": "0x4003c928",
+     "length": 6,
+     "guard": "237cd1acd4da7acb61dc7fda7c88e648a5186b36732f433b4dd91966c5a669af",
+     "op": "lea",
+     "target": "mw_src_names",
+     "what": "SRC SETUP's machine names"
+    },
+    {
+     "site": "0x4003c950",
+     "length": 2,
+     "guard": "74d01dadcbe6a57ef61bc53a5a65404cd8446c6738ff0ac86b1b1a78d8ae7d41",
+     "op": "own",
+     "what": "SRC SETUP name lookup: moveq #4+n"
+    },
+    {
+     "site": "0x4003c980",
+     "length": 6,
+     "guard": "237e017ccd95444195ca390a3e6ca6076fbfa1f0931f2e7dfbdbee8c5ec72ca3",
+     "op": "jmp",
+     "target": "mw_setup_row",
+     "what": "SRC SETUP row highlight"
+    },
+    {
+     "site": "0x4003cd98",
+     "length": 8,
+     "guard": "ed71ef874312890edc87cef7e19cd8c0f8ac4ac9b90182c2364f78d3a4567f45",
+     "op": "jmp",
+     "target": "mw_setup_draw6",
+     "what": "SETUP's drawer addresses a machine row as its pool"
+    },
+    {
+     "site": "0x4003d136",
+     "length": 4,
+     "guard": "76ce29042319b4438a2dfcb9964200138834c3f569c7ff914a10161182b4615c",
+     "op": "ptr",
+     "target": "mw_pb_table",
+     "what": "the PB table by machine row"
+    },
+    {
+     "site": "0x4003d718",
+     "length": 6,
+     "guard": "53b8d23acf2c3fe0f794c0a5f37475b17c3433bc6a466e0e1861515989cfecda",
+     "op": "jmp",
+     "target": "mw_name_a",
+     "what": "main page name lookup"
+    },
+    {
+     "site": "0x4004c36a",
+     "length": 6,
+     "guard": "53b8d23acf2c3fe0f794c0a5f37475b17c3433bc6a466e0e1861515989cfecda",
+     "op": "jmp",
+     "target": "mw_name_b",
+     "what": "second main page name lookup"
+    },
+    {
+     "site": "0x4005221e",
+     "length": 10,
+     "guard": "8f0fa4f7d6db857f695996b185b38b788fa6af0eacd86d7dd01e2ff61201ffed",
+     "op": "jmp",
+     "target": "mw_tick_hook",
+     "what": "the UI tick: machines' ui_tick, rows and pages"
+    },
+    {
+     "site": "0x400585dc",
+     "length": 10,
+     "guard": "22fb6e2bea4520003d2fae7035c0cd57bcd6fe6f2cfdd5b70580a3f6f2a68034",
+     "op": "jmp",
+     "target": "mw_setup_open",
+     "what": "SRC SETUP opens on the track's machine row"
+    },
+    {
+     "site": "0x400585ec",
+     "length": 4,
+     "guard": "76ce29042319b4438a2dfcb9964200138834c3f569c7ff914a10161182b4615c",
+     "op": "ptr",
+     "target": "mw_pb_table",
+     "what": "the PB table by machine row"
+    },
+    {
+     "site": "0x400585fa",
+     "length": 4,
+     "guard": "8fbd3190028fe564c11b56e3e73e8eaf36925cbabf94164176eeb4c4f57bc6ac",
+     "op": "own",
+     "what": "SRC SETUP selector rows: pea 5+n"
+    },
+    {
+     "site": "0x4005a616",
+     "length": 6,
+     "guard": "7a7350a69423ec41ec468a189ba167059626cb7f499d9862394d2388a23c8b59",
+     "op": "jmp",
+     "target": "mw_src_commit",
+     "what": "SRC SETUP commit: assign/admit"
+    },
+    {
+     "site": "0x4005a850",
+     "length": 6,
+     "guard": "7a7350a69423ec41ec468a189ba167059626cb7f499d9862394d2388a23c8b59",
+     "op": "jmp",
+     "target": "mw_src_commit2",
+     "what": "SRC SETUP's second commit path"
+    },
+    {
+     "site": "0x4006d784",
+     "length": 8,
+     "guard": "74c9188127d3241e9b2f750392fda1550a0be1780b7e06291e415aaa6d20de19",
+     "op": "jmp",
+     "target": "mw_list_draw",
+     "what": "the pool list drawer: a machine's own"
+    },
+    {
+     "site": "0x40077b5c",
+     "length": 6,
+     "guard": "fc4b77b1c83703e8c61dda0b64b9ec139541c633433304b843f270cd461c6370",
+     "op": "jmp",
+     "target": "mw_pool_title",
+     "what": "the machine title's right chevron for rows with a pool"
+    },
+    {
+     "site": "0x40078678",
+     "length": 2,
+     "guard": "04cd1c6d463ba6752ff68f9125991b1c4af983ae355b62366122ba2d47eee3b2",
+     "op": "own",
+     "what": "machine chooser draws: moveq #4+n"
+    },
+    {
+     "site": "0x400786c8",
+     "length": 6,
+     "guard": "c611970befafba97f882ab297bd19f0efe0c7d927bfd6110c53f03ad4b7da1c7",
+     "op": "jmp",
+     "target": "mw_chooser_row",
+     "what": "machine chooser row highlight"
+    },
+    {
+     "site": "0x400786ce",
+     "length": 2,
+     "guard": "04cd1c6d463ba6752ff68f9125991b1c4af983ae355b62366122ba2d47eee3b2",
+     "op": "own",
+     "what": "machine chooser highlight bound: moveq #4+n"
+    },
+    {
+     "site": "0x40078886",
+     "length": 10,
+     "guard": "fe6cb52458c7d968dc467c1cd7721d832baf6bc2fac1826c8c10ed07fee2e7f8",
+     "op": "jmp",
+     "target": "mw_chooser_open",
+     "what": "the machine list opens on the track's machine row"
+    },
+    {
+     "site": "0x400791e4",
+     "length": 8,
+     "guard": "fa7132fac15d6e498fd0e73744e1f94218824f3f54d5b3bad6083b60363e9f14",
+     "op": "jmp",
+     "target": "mw_pool_open",
+     "what": "double-tap TRACK opens a machine's pool"
+    },
+    {
+     "site": "0x40079248",
+     "length": 4,
+     "guard": "8fbd3190028fe564c11b56e3e73e8eaf36925cbabf94164176eeb4c4f57bc6ac",
+     "op": "own",
+     "what": "machine chooser rows: pea 5+n"
+    },
+    {
+     "site": "0x4007981c",
+     "length": 6,
+     "guard": "89c50ac3ca041fdf5647ec5ee2c3580f9a67dd79f0b5cc15ceadda4b9e9bede0",
+     "op": "jmp",
+     "target": "mw_main_commit",
+     "what": "machine chooser commit: assign/admit"
+    },
+    {
+     "site": "0x40079904",
+     "length": 2,
+     "guard": "577d7ba37f9786ab02a7dc9eeb612bb55936018179b550b14f4b9f000a89bf20",
+     "op": "own",
+     "what": "machine chooser persists: moveq #4+n"
+    },
+    {
+     "site": "0x400ce10e",
+     "length": 4,
+     "guard": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+     "op": "ptr",
+     "target": "mw_choice_left",
+     "what": "LEFT from a machine's pool choice to the chooser"
+    },
+    {
+     "site": "0x400cf6fa",
+     "length": 4,
+     "guard": "34a9c46c59fd21b2521e3cdb179f2388808d2f49e6aaa0d368fbe6961da0d179",
+     "op": "ptr",
+     "target": "mw_pool_left",
+     "what": "LEFT from a machine's samples"
+    },
+    {
+     "site": "0x400cf702",
+     "length": 4,
+     "guard": "34a9c46c59fd21b2521e3cdb179f2388808d2f49e6aaa0d368fbe6961da0d179",
+     "op": "ptr",
+     "target": "mw_pool_left",
+     "what": "repeated LEFT"
+    },
+    {
+     "site": "0x400cf714",
+     "length": 4,
+     "guard": "6e883be7dc9df41d93523a4cec3b965133de531510ed56e23aa54a73414ee97b",
+     "op": "ptr",
+     "target": "mw_pool_right",
+     "what": "RIGHT on a machine row opens its pool"
+    },
+    {
+     "site": "0x400d6438",
+     "length": 4,
+     "guard": "97f0e8a3a010d3298daa5af020a86806f3390bf4b5843ef4db6c3e02da79bfa8",
+     "op": "ptr",
+     "target": "mw_source_render",
+     "what": "the FLEX renderer: a machine track's render, unowned tracks to RENDER_FLEX machines"
+    }
+   ]
+  },
+  {
+   "event": "ot_sequencer_rows",
+   "index": 29,
+   "kind": "table",
+   "site": null,
+   "length": 0,
+   "record": 4,
+   "key": null,
+   "room": 8,
+   "declaration": "struct modwerk_sequencer_row {\n    const char *label;                  /* one row per label: the first contribution's */\n    const void *get;                    /* as stock's rows: returns the value's string in d0 */\n    const void *set;                    /* as stock's rows: (delta, wrap) on the stack */\n};\nstruct modwerk_sequencer_rows { uint32_t count; struct modwerk_sequencer_row row[]; };",
+   "when": "PROJECT > CONTROL > SEQUENCER lists stock's three rows, then one per contributed label",
+   "context": "the UI task",
+   "contract": "Contribute one struct modwerk_sequencer_rows: its rows, in order. The window shows stock's three rows and up to eight more; a row with a label an earlier row has is not shown; the getter and setter follow stock's rows' convention (CHAIN AFTER's 0x400659ec).",
+   "order": "lower first, then module id: the rows' order. 40 FM Synth's bundled quantizer, 50 Scale Quantizer.",
+   "subscribers": [
+    {
+     "module": "synth",
+     "fn": "mw_sequencer_rows",
+     "order": 40,
+     "does": "SCALE, ROOT, GLIDE rows of FM's bundled quantizer",
+     "evidence": "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s (FM's bundled copy, fm_ units) qz_lbl_*, qz_get*, qz_set*"
+    },
+    {
+     "module": "quantizer",
+     "fn": "mw_sequencer_rows",
+     "order": 50,
+     "does": "SCALE, ROOT, GLIDE rows",
+     "evidence": "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s qz_lbl_*, qz_get*, qz_set*"
+    }
+   ],
+   "orderEvidence": "Both quantizers name the same rows and keep them in the same bytes, so the keyed table shows one set: FM's with FM installed, Scale Quantizer's otherwise.",
+   "sites": [
+    {
+     "site": "0x40065bca",
+     "length": 6,
+     "guard": "484a241b3cea4a13c5b18550e3ab44eaffc021673bd5677a424bb05cc6486a37",
+     "op": "jmp",
+     "target": "mw_seq_draw",
+     "what": "the SEQUENCER draw loop indexes the rows from the list's scroll offset"
+    },
+    {
+     "site": "0x40065bd8",
+     "length": 4,
+     "guard": "03a0ff675d78af69c16c486ac16b89ede86f724564d253199e253408928b7f32",
+     "op": "ptr",
+     "target": "mw_seq_labels",
+     "what": "SEQUENCER labels"
+    },
+    {
+     "site": "0x40065bde",
+     "length": 4,
+     "guard": "abc559cc89984b3c1747cffb5cf2f3ed997e623d29aa0308c966961499759212",
+     "op": "ptr",
+     "target": "mw_seq_getters",
+     "what": "SEQUENCER getters"
+    },
+    {
+     "site": "0x40065c7c",
+     "length": 4,
+     "guard": "a3e547e08c1f288e512f2e52ac9becc3502ccd0dcfcf55e5ab9863859f34e2bc",
+     "op": "own",
+     "what": "SEQUENCER window rows: pea 3+n"
+    },
+    {
+     "site": "0x40065cc4",
+     "length": 4,
+     "guard": "e623bc6ff9cf6deffe5b5593f50c1a5b563c7e3236b0eebb3e7705bc1a2579ac",
+     "op": "ptr",
+     "target": "mw_seq_setters",
+     "what": "SEQUENCER setters"
+    },
+    {
+     "site": "0x40065d3e",
+     "length": 4,
+     "guard": "e623bc6ff9cf6deffe5b5593f50c1a5b563c7e3236b0eebb3e7705bc1a2579ac",
+     "op": "ptr",
+     "target": "mw_seq_setters",
+     "what": "SEQUENCER setters"
+    },
+    {
+     "site": "0x40065d58",
+     "length": 4,
+     "guard": "e623bc6ff9cf6deffe5b5593f50c1a5b563c7e3236b0eebb3e7705bc1a2579ac",
+     "op": "ptr",
+     "target": "mw_seq_setters",
+     "what": "SEQUENCER setters"
+    },
+    {
+     "site": "0x40065d72",
+     "length": 4,
+     "guard": "e623bc6ff9cf6deffe5b5593f50c1a5b563c7e3236b0eebb3e7705bc1a2579ac",
+     "op": "ptr",
+     "target": "mw_seq_setters",
+     "what": "SEQUENCER setters"
+    }
+   ]
+  }
+ ]
+}

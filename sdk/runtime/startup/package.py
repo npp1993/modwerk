@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Compile the authored beta startup object; never reads firmware."""
+"""Compile the authored docking startup object; never reads firmware."""
 import argparse
 import hashlib
 import json
 from pathlib import Path
 import subprocess
 import tempfile
-import base_art
+import public_art
 
 HERE = Path(__file__).resolve().parent
-VERSION = '3.0.0-beta.1'
-SOURCE_FILES = ('boot_anim.c', 'hooks.s', 'rom_gate.s', 'base_art.py', 'base.json', 'beta-guards.json', 'package.py')
+VERSION = '3.0.0'
+SOURCE_FILES = ('boot_anim.c', 'hooks.s', 'rom_gate.s', 'public_art.py', 'base_art.py', 'base.json', 'beta-guards.json', 'package.py')
 sha = lambda data: hashlib.sha256(data).hexdigest()
 
 
@@ -18,7 +18,7 @@ def compile_package(output):
     sources = {name: sha((HERE / name).read_bytes()) for name in SOURCE_FILES}
     with tempfile.TemporaryDirectory(prefix='modwerk-beta-startup-') as temp:
         work = Path(temp)
-        (work / 'boot_art.h').write_text(base_art.header('3.0.0'))
+        (work / 'boot_art.h').write_text(public_art.header())
         subprocess.run(['m68k-elf-gcc', '-mcpu=54455', '-Os', '-std=c99', '-ffreestanding', '-fno-builtin',
                         '-fno-zero-initialized-in-bss', '-fno-common', '-fno-merge-constants',
                         '-fno-asynchronous-unwind-tables', '-fno-unwind-tables', '-Wall', '-Wextra', '-Werror',

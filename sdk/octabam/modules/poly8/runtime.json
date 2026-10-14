@@ -1,0 +1,8 @@
+{
+ "schema": 1,
+ "subscribe": [
+  {"event": "ev_play_increment", "fn": "poly_play_increment", "order": 20, "replaces": "mr_rate_hook"},
+  {"event": "ev_voice_bind", "fn": "poly_voice_bind", "order": 20, "replaces": "mr_stop_voice"},
+  {"event": "ev_voice_bind_run", "fn": "poly_voice_bind_run", "order": 50}
+ ]
+}

@@ -1,0 +1,76 @@
+// Will this pull request merge without the owner's help? Run it before every push:
+//
+//   npm run pr:ready                        # any change: up to date, regenerated, every check green
+//   npm run pr:ready -- --author <login>    # a registered author's update: also the bot's merge scope
+//   npm run pr:ready -- --remote upstream   # the remote that holds Modwerk's main (default: upstream, else origin)
+//
+// It reads and writes only this checkout: no push, no GitHub API. CI repeats the same checks against
+// the PR's base, and the author-update bot runs the same scope inspection (scripts/author-update-git.mjs).
+import { execFileSync, spawnSync } from 'node:child_process'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+
+const GENERATORS = [['licenses:generate'], ['machines:generate'], ['modules:generate'], ['modules:pairs', '--', '--write']]
+
+/** The verdict from what was found; every problem says what to do. */
+export function readiness({ dirty = [], behind = false, remote = 'upstream', regenerated = [], checkPassed = true, author = null, scope = null }) {
+  const problems = [], notes = []
+  if (dirty.length) problems.push('Commit or discard these changes first; only commits reach the PR: ' + dirty.join(', '))
+  if (behind) problems.push(`Your branch does not contain current main. Merge it (git merge ${remote}/main), resolve any conflict, then run this again.`)
+  if (regenerated.length) problems.push('The generated files were stale. They are regenerated now; commit them: ' + regenerated.join(', '))
+  if (!checkPassed) problems.push('npm run check failed: fix every failure above; CI runs the same checks.')
+  if (author) {
+    if (scope?.error) problems.push(`This is not an automatic author update (${scope.error}). Keep the PR to your own module's folder and its changelog entry, or ask the owner for a review.`)
+    else if (scope) notes.push('Automatic merge: the bot can merge this update to ' + scope.modules.join(', ') + ' once both release boxes are ticked and CI is green.')
+  } else notes.push('Without --author this is a new module or a shared change: the owner reviews it and merges it with one click once CI is green.')
+  notes.push('Then push, open or update the PR, and watch it: gh pr checks <number> --watch. If main moves before the merge, run this again and push.')
+  return { ok: problems.length === 0, problems, notes }
+}
+
+async function main(argv) {
+  const root = fileURLToPath(new URL('../', import.meta.url))
+  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+  const option = name => { const index = argv.indexOf(name); return index < 0 ? null : argv[index + 1] }
+  const remotes = git('remote').split('\n')
+  const remote = option('--remote') ?? (remotes.includes('upstream') ? 'upstream' : 'origin')
+  const author = option('--author')?.replace(/^@/, '') ?? null
+  const npmCli = process.env.npm_execpath
+  if (!npmCli) throw new Error('Run this through npm run pr:ready.')
+  const npm = (...args) => spawnSync(process.execPath, [npmCli, 'run', ...args], { cwd: root, stdio: 'inherit' }).status === 0
+  const tracked = () => git('status', '--porcelain', '--untracked-files=no').split('\n').filter(Boolean).map(line => line.slice(3))
+
+  console.log(`Fetching ${remote}/main`)
+  git('fetch', '--no-tags', remote, 'main')
+  const base = git('rev-parse', 'FETCH_HEAD'), head = git('rev-parse', 'HEAD')
+  const dirty = tracked()
+  let behind = false
+  try { git('merge-base', '--is-ancestor', base, head) } catch { behind = true }
+  // Each step runs only when the ones before it passed, so the first problem is the one to fix.
+  let regenerated = [], checkPassed = true, scope = null
+  if (!dirty.length && !behind) {
+    for (const args of GENERATORS) if (!npm(...args)) throw new Error('npm run ' + args.join(' ') + ' failed')
+    regenerated = tracked()
+    if (!regenerated.length) checkPassed = npm('check', '--', '--base', base)
+  }
+  if (author && !behind) scope = await authorScope(root, git, base, head, author)
+  const verdict = readiness({ dirty, behind, remote, regenerated, checkPassed, author, scope })
+  console.log('')
+  for (const line of verdict.problems) console.log('✗ ' + line)
+  for (const line of verdict.notes) console.log('· ' + line)
+  console.log(verdict.ok ? 'Ready: this PR can merge without the owner repairing it.' : 'Not ready yet.')
+  return verdict.ok ? 0 : 1
+}
+
+async function authorScope(root, git, base, head, login) {
+  const { inspectAuthorUpdate } = await import('./author-update-git.mjs')
+  const registry = JSON.parse(git('show', base + ':.github/module-authors.json'))
+  const id = registry.accounts?.[login.toLowerCase()]
+  if (!id) return { error: login + ' is not in .github/module-authors.json on main' }
+  try { return inspectAuthorUpdate(root, base, head, { login, id, type: 'User' }) }
+  catch (error) { return { error: error.message } }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  try {
+    process.exitCode = await main(process.argv.slice(2))
+  } catch (error) { console.error(error.message); process.exitCode = 1 }
+}

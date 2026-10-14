@@ -12,6 +12,11 @@ unsigned mw_stock_hooks_held(const struct mw_stock_hooks *s) {
     }
     return held;
 }
+struct mw_hook_buffer_claim mw_hook_default_claim(unsigned kind,unsigned stock) {
+    struct mw_hook_buffer_claim claim={kind ? 16384u : 3072u,1,0};
+    if(stock) { claim.head_safe=1; if(kind) claim.words=MW_HOOK_STOCK_FX2_WORDS; }
+    return claim;
+}
 static int valid(const struct mw_hook_span *r) {
     if(r->core>1 || r->space>2 || !r->words || r->address>=0x40000u || r->words>0x40000u-r->address) return 0;
     /* A span cannot straddle private memory and the physical shared aliases. */
@@ -38,7 +43,11 @@ static int meets(unsigned feature,const struct mw_hook_span *r) {
 }
 int mw_hook_buffer_permitted(const struct mw_stock_hooks *s,unsigned core,unsigned kind,unsigned block,
                              const struct mw_hook_buffer_claim *claim) {
-    if(!s || core>1 || kind>1 || block>3 || !claim || claim->complete!=1 || claim->head_safe>1 ||
+    return s && mw_hook_buffer_permitted_held(mw_stock_hooks_held(s),core,kind,block,claim);
+}
+int mw_hook_buffer_permitted_held(unsigned held,unsigned core,unsigned kind,unsigned block,
+                                  const struct mw_hook_buffer_claim *claim) {
+    if(held>7u || core>1 || kind>1 || block>3 || !claim || claim->complete!=1 || claim->head_safe>1 ||
        !claim->words || claim->words>(kind ? 16384u : 3072u)) return 0;
     struct mw_hook_span span={kind ? fx2[core][block] : fx1[block],claim->words,(uint8_t)core,MW_HOOK_Y};
     /* T7's staging / T3's mailbox are live stock tenants even with no hook.
@@ -46,7 +55,7 @@ int mw_hook_buffer_permitted(const struct mw_stock_hooks *s,unsigned core,unsign
     if(kind && block==2 && !claim->head_safe) return 0;
     /* The reservation begins before reset, survives disable ACK, and ends
      * only when the exact generation's foreign-root retirement succeeded. */
-    return !meets(mw_stock_hooks_held(s),&span);
+    return !meets(held,&span);
 }
 int mw_hook_ranges_idle(unsigned feature,const struct mw_hook_span *live,unsigned live_count,
                         const struct mw_hook_span *target,unsigned target_count,unsigned complete_cores) {

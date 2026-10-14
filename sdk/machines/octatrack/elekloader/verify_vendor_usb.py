@@ -30,6 +30,12 @@ _spec.loader.exec_module(bench)
 _spec = importlib.util.spec_from_file_location('modwerk_usb_base', HERE / 'usb_base.py')
 usb = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(usb)
+_spec = importlib.util.spec_from_file_location('modwerk_usb_functions', APP / 'sdk/machines/octatrack/module-adapters/base_usb_functions.py')
+functions = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(functions)
+_spec = importlib.util.spec_from_file_location('authored_usb_descriptors', APP / 'sdk/octabam/platform/usb-midi/descriptors.py')
+descriptors = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(descriptors)
 
 VENDOR_IN, VENDOR_OUT, IDENTIFY, SUBMIT, RESULT = 0xc1, 0x41, 3, 1, 2
 
@@ -97,17 +103,37 @@ def status(response):
                 session=response[80:112], active=response[112:144].hex())
 
 
-def audio_checks(b, hs):
-    """Development bases: USB AUDIO OUT MAIN CUE's clock and stream (AudioControl 2, AudioStreaming 3)."""
-    ac, as_ = usb.AUDIO_INTERFACES
+def descriptor_expectations(hs, audio=False, composite=None):
+    if composite:
+        if composite.get('midi') != 'bounded-rx-1':
+            raise ValueError('Unsupported base-owned MIDI declaration.')
+        configuration = lambda high, other: functions.configuration(usb, descriptors, high, other, composite.get('audio'))
+    else:
+        configuration = lambda high, other: usb.configuration(high, other, audio)
+    return configuration(hs, False), configuration(not hs, True), usb.device(bool(composite) or audio)
+
+
+def audio_shape(hs, composite_audio=None):
+    if composite_audio:
+        channels = descriptors.HS_LAYOUT[composite_audio][0] if hs else descriptors.FS_CHANNELS
+        return 4, 5, channels * descriptors.SUBSLOT
+    return (*usb.AUDIO_INTERFACES, 16 if hs else 8)
+
+
+def audio_checks(b, hs, composite_audio=None):
+    """Check the exact declared output layout at its base-owned interfaces."""
+    ac, as_, frame = audio_shape(hs, composite_audio)
     results = {'audio clock reports 44.1 kHz': answers(
         lambda: b.ctrl_in(0xa1, 1, 0x0100, 0x10 << 8 | ac, 4), struct.pack('<I', 44100))}
     b.iso_hz(4000 if hs else 1000)  # bInterval 2 at high speed, 1 at full speed
     b.ctrl_nodata(0x01, 0x0b, 1, as_)
     results['audio alt 1 reported'] = answers(lambda: b.ctrl_in(0x81, 0x0a, 0, as_, 1), b'\x01')
     sizes = [len(b.ep_in(3, 1024)) for _ in range(400)]
-    frame = 16 if hs else 8  # MAIN + CUE at high speed, MAIN alone at full speed, 4 bytes a sample
     results['audio stream flows'] = sum(1 for n in sizes if n) > 300 and all(n % frame == 0 for n in sizes)
+    if not results['audio stream flows']:
+        print('audio packet lengths (%s): nonempty %d/400, expected frame %d B, counts %s' %
+              ('high' if hs else 'full', sum(bool(n) for n in sizes), frame,
+               {n: sizes.count(n) for n in sorted(set(sizes))}))
     b.ctrl_nodata(0x01, 0x0b, 0, as_)
     after = [len(b.ep_in(3, 1024)) for _ in range(12)]
     results['audio alt 0 stops the stream'] = all(n == 0 for n in after[2:])  # two may still be in flight
@@ -115,18 +141,22 @@ def audio_checks(b, hs):
     return results
 
 
-def check(b, base, hs, sessions, audio=False):
+def check(b, base, hs, sessions, audio=False, composite=None):
     results = {}
+    composite_audio = composite.get('audio') if composite else None
+    configuration, other, device = descriptor_expectations(hs, audio, composite)
     _, cfg = bench.enumerate_device(b, hs)
-    results['configuration'] = cfg == usb.configuration(hs, False, audio)
-    results['other speed'] = answers(lambda: b.ctrl_in(0x80, 6, 0x0700, 0, 255), usb.configuration(not hs, True, audio))
+    results['configuration'] = cfg == configuration
+    # The six-interface TRACKS/MAIN/CUE descriptor is 259 bytes, so a fixed
+    # 255-byte request cannot verify its complete alternate-speed declaration.
+    results['other speed'] = answers(lambda: b.ctrl_in(0x80, 6, 0x0700, 0, len(other)), other)
     vendor = usb.VENDOR_INTERFACE
     results['identify'] = answers(lambda: b.ctrl_in(VENDOR_IN, IDENTIFY, 0, vendor, 72), expected_identity(base))
     results['identify length refused'] = stalls(lambda: b.ctrl_in(VENDOR_IN, IDENTIFY, 0, vendor, 64))
     results['identify value refused'] = stalls(lambda: b.ctrl_in(VENDOR_IN, IDENTIFY, 1, vendor, 72))
     results['other interface refused'] = stalls(lambda: b.ctrl_in(VENDOR_IN, IDENTIFY, 0, usb.MSC_INTERFACE, 72))
     # What Windows reads before it binds WinUSB to the vendor interface.
-    results['device reports USB 2.10'] = answers(lambda: b.ctrl_in(0x80, 6, 0x0100, 0, 18), usb.device(audio))
+    results['device reports USB 2.10'] = answers(lambda: b.ctrl_in(0x80, 6, 0x0100, 0, 18), device)
     results['BOS header'] = answers(lambda: b.ctrl_in(0x80, 6, 0x0f00, 0, 5), usb.bos()[:5])
     results['BOS'] = answers(lambda: b.ctrl_in(0x80, 6, 0x0f00, 0, 255), usb.bos())
     results['Microsoft OS 2.0 set'] = answers(lambda: b.ctrl_in(0xc0, usb.MS_VENDOR_CODE, 0, usb.MS_OS_20_INDEX,
@@ -154,8 +184,8 @@ def check(b, base, hs, sessions, audio=False):
     results['identify after refusals'] = answers(lambda: b.ctrl_in(VENDOR_IN, IDENTIFY, 0, vendor, 72),
                                                  expected_identity(base))
     results['mass storage'] = bench.msc_test(b)
-    if audio:
-        results.update(audio_checks(b, hs))
+    if audio or composite_audio:
+        results.update(audio_checks(b, hs, composite_audio))
     return results
 
 
@@ -166,10 +196,14 @@ def main():
     args = parser.parse_args()
     proofs = json.loads(args.proofs.read_text())
     base, audio = proofs['configurationHash'], 'usb-audio-main-cue' in proofs['configuration'].get('dev', [])
+    composite = proofs['configuration'].get('usb', {})
+    if composite.get('midi') != 'bounded-rx-1':
+        if composite.get('midi'): raise ValueError('Unsupported base-owned MIDI declaration.')
+        composite = None
     b = bench.Bench(args.socket, timeout=60.0)
     failed, sessions = 0, []
     for hs in (True, False):
-        for name, ok in check(b, base, hs, sessions, audio).items():
+        for name, ok in check(b, base, hs, sessions, audio, composite).items():
             print('%-34s %s %s' % (name, 'high' if hs else 'full', 'passed' if ok else 'FAILED'))
             failed += not ok
     same = len(sessions) == 2 and sessions[0] is not None and sessions[0] == sessions[1]

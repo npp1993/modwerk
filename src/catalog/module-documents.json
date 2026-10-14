@@ -514,7 +514,7 @@
       "id": "miniverb",
       "key": "MINIVERB",
       "name": "Mini Verb",
-      "version": "0.2.1-experimental",
+      "version": "0.2.2-experimental",
       "category": "effects",
       "access": {
         "location": "Audio track FX2 SETUP: Mini Verb in the effect chooser.",
@@ -619,19 +619,19 @@
         ]
       },
       "resources": {
-        "recorded": "2026-10-11",
+        "recorded": "2026-10-13",
         "storage": {
           "label": "DSP program / buffer",
-          "display": "536 words / 16K ring",
+          "display": "532 words / 16K ring",
           "value": null,
           "unit": "see display",
           "method": "static",
-          "conditions": "536 assembled DSP program words; unchanged 16K Y ring and 32-word X scalar allocation. Mixer adds four program words and no state.",
+          "conditions": "532 assembled DSP program words (0.2.1: 536; two redundant coefficient reloads removed); unchanged 16K Y ring and 32-word X scalar allocation.",
           "source": "TESTING.md"
         },
         "processing": {
           "label": "DSP instruction peak",
-          "display": "23,616 instructions/core/block",
+          "display": "23,488 instructions/core/block",
           "value": null,
           "unit": "see display",
           "method": "emulator",
@@ -649,24 +649,25 @@
           "dsp": {
             "level": "moderate",
             "basis": "source-estimate",
-            "rationale": "415 modeled loop cycles/sample; conservative 8,192 modeled cycles/instance/block. Eight moving instances add 256 executed instructions/core/block over 0.2.0; chip timing and full-instrument contention are unmeasured.",
+            "rationale": "411 modeled loop cycles/sample (0.2.1: 415); conservative 8,192 modeled cycles/instance/block. Worst matched single instance 362.75 executed instructions/sample against worst SPRING REV 314.0 (1.16x) on both cores. Chip timing of this source and full-instrument contention are unmeasured; 0.2.0 measured 665 chip cycles/sample on one MKII core.",
             "source": "TESTING.md"
           },
           "memory": {
             "level": "moderate",
             "basis": "source-estimate",
-            "rationale": "Existing 16K ring and X reservation unchanged; 402,960 logical bytes for eight instances including both programs and full hardware stack capacity. Complete runtime bounds and hardware canaries remain unverified.",
+            "rationale": "Existing 16K ring and X reservation unchanged; 402,936 logical bytes for eight instances including both programs and full hardware stack capacity. Complete runtime bounds and hardware canaries remain unverified.",
             "source": "TESTING.md"
           }
         }
       },
       "tests": {
         "report": "TESTING.md",
-        "summary": "53 current-source native DSP checks and 126 native/browser selections passed: 52 matching builds, 74 matching refusals, zero mismatches. The mixer clipping defect is reproduced on both cores and fixed; hardware and the original THRU noise remain unverified. Current source, private images and reviewed LCD captures are recorded in TESTING.md.",
+        "summary": "0.2.2 output is bit-identical to published 0.2.1 under moving controls, every trigger split and hot input on both DSP cores; it removes two redundant coefficient reloads (411 instead of 415 modeled cycles/sample). 75 current-source native DSP checks passed. Native/browser parity, isolated packages, hardware and the original THRU noise are not yet verified for this source; see TESTING.md.",
         "hardwareStatus": "untested",
         "evidenceRevision": "89d189e53192c76d8d3c5e26495578f61316fdf4",
         "gates": [
-          "verify.py: exact dry, bounded neutral quantization, raw-wet mixer regression, endpoint spectra, eight-instance isolation, dirty-state guards and 30-second moving render",
+          "verify.py: bit-identity with published 0.2.1, exact dry, bounded neutral quantization, raw-wet mixer regression, endpoint spectra, eight-instance isolation, dirty-state guards and 30-second moving render",
+          "benchmark.py: matched worst-case SPRING REV comparison on both cores, all trigger splits",
           "Native/browser composition parity and changed-original refusal",
           "Reproducible source-only packages"
         ],
@@ -742,7 +743,7 @@
       "id": "tapeecho",
       "key": "TAPE ECHO",
       "name": "Tape Echo",
-      "version": "0.1.3-experimental",
+      "version": "0.1.4-experimental",
       "category": "effects",
       "access": {
         "location": "Audio track FX2 SETUP: Tape Echo in the effect chooser.",
@@ -778,7 +779,7 @@
         ],
         "usage": [
           "Choose TAPE ECHO in FX2. SYNC selects FREE timing or BEAT divisions; TIME adjusts the delay.",
-          "FDBK controls repeats, WOW adds pitch movement and flutter, and AGE changes bandwidth and tape noise. MIX controls dry/wet balance.",
+          "FDBK controls repeats, WOW adds pitch movement and flutter, and AGE changes bandwidth and tape noise. MIX sets the echo level: the dry signal stays at full level through 95, then fades out to full wet at 127.",
           "When migrating older projects, former HEADS locks now address AGE. Back up projects and review old effect defaults and parameter locks."
         ]
       },
@@ -825,7 +826,7 @@
           "name": "MIX",
           "default": 90,
           "count": 128,
-          "doc": "dry/wet crossfade; 0 is exact passthrough",
+          "doc": "echo level; the dry signal stays at full level through 95, then fades to full wet at 127; 0 is exact passthrough",
           "labels": null
         }
       ],
@@ -882,31 +883,12 @@
       },
       "tests": {
         "report": "TESTING.md",
-        "summary": "The pinned hardware record reports six instances running and a seventh freezing the unit; that limit remains open. Recorded gates cover native arithmetic parity, dirty state, eight-instance stress, moving controls and repeat/feedback behavior. Hardware timing and worst-case CPU headroom remain unqualified.",
-        "hardwareStatus": "historical",
+        "summary": "0.1.4 holds the dry signal at full level through MIX 95 so raising MIX no longer turns the track down (issue #607). The kernel matches its native oracle bit for bit on the ColdFire emulator; the echo path, feedback law and self-oscillation headroom are unchanged. The pinned hardware record reports six instances running and a seventh freezing the unit; that limit remains open, and no hardware run, chip timing or listening test exists for 0.1.4. See TESTING.md.",
+        "hardwareStatus": "untested",
         "evidenceRevision": "b8deefc88b2c3e5f3c6158e364eb741df1924e1d",
         "gates": [
           "tools/verify/verify_tapeecho_cpu.py"
-        ],
-        "retainedEvidence": {
-          "commit": "32ac46b0c7e8c11e48ebc41674695e033142b46e",
-          "moduleVersion": "0.1.2-experimental",
-          "documentation": {
-            "tutorial": {
-              "title": "Quick tutorial",
-              "steps": [
-                "In a backed-up test project, select an audio track, hold FUNC and press FX2, then choose Tape Echo with LEVEL and YES.",
-                "Press FX2 to leave SETUP. Set SYNC to BEAT, TIME to 80 (1/8), FDBK to 64, WOW and AGE to 0, and MIX to 64; play a short sound at 120 BPM.",
-                "Listen for clean eighth-note repeats, then raise WOW to 72 and AGE to 100 for drifting, darker repeats. Set MIX to 0 to compare dry audio and stop transport when finished."
-              ]
-            },
-            "screenshots": [
-              "media/ot-setup-mono.png",
-              "media/ot-controls-mono.png"
-            ],
-            "screenshotStyle": "black-and-white"
-          }
-        }
+        ]
       },
       "license": {
         "spdx": "MIT",
@@ -951,7 +933,7 @@
         {
           "path": "media/audio-preview.mp3",
           "captureType": "audio",
-          "caption": "Legowelt Juno 106 chord pluck: dry (0 s), clean 1/8 repeats (0.85 s; FDBK 78, WOW 10, AGE 20), worn dotted-1/8 repeats (3.85 s; FDBK 94, WOW 80, AGE 70). BEAT, 128 BPM, MIX 75. 7.85 s, no added gaps; tails edited short. First-hit RMS matched (20 ms). Offline computer render through Tape Echo 0.1.2's unchanged CPU engine, not recorded on an Octatrack.",
+          "caption": "Legowelt Juno 106 chord pluck: dry (0 s), clean 1/8 repeats (0.85 s; FDBK 78, WOW 10, AGE 20), worn dotted-1/8 repeats (3.85 s; FDBK 94, WOW 80, AGE 70). BEAT, 128 BPM, MIX 75, 7.85 s. Offline render through Tape Echo 0.1.2, before 0.1.4's MIX change (the dry notes are louder now); not recorded on an Octatrack.",
           "alt": "A warm Legowelt chord pluck moves from dry to clean eighth-note repeats and worn dotted-eighth echoes.",
           "credit": "Legowelt — 106 Synth Chord Short Blue Synth 2.wav. Modwerk contributors (offline processing).",
           "license": "LicenseRef-Legowelt-Juno106-Sample-Permission",
@@ -1446,7 +1428,7 @@
       "id": "repitch",
       "key": "REPITCH",
       "name": "Repitch",
-      "version": "0.1.2-experimental",
+      "version": "0.2.0-experimental",
       "category": "playback",
       "access": {
         "location": "STATIC or FLEX track SRC SETUP: TSTR = RPCH. The sample attribute route also offers TIMESTRETCH = REPITCH.",
@@ -5724,7 +5706,7 @@
       "id": "mute-modes",
       "key": "MUTE_MODES",
       "name": "Mute Modes",
-      "version": "0.1.0-experimental",
+      "version": "0.2.1-experimental",
       "category": "system",
       "source": {
         "repository": "https://github.com/sambanks/octabam",
@@ -6149,7 +6131,7 @@
       "id": "poly8",
       "key": "POLY8",
       "name": "POLY8",
-      "version": "0.2.7-experimental",
+      "version": "0.3.0-experimental",
       "category": "machines",
       "source": {
         "repository": "https://github.com/repeat98/octamad",

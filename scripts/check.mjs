@@ -52,21 +52,25 @@ const buildOnly = process.argv.includes('--build')
 const baseIndex = process.argv.indexOf('--base'), base = baseIndex < 0 ? null : process.argv[baseIndex + 1]
 if (baseIndex >= 0 && !base) throw new Error('--base requires a Git commit/ref')
 const documentationOnly = !buildOnly && !!base && readChangeScope({ root, base }).documentation
-let passed = true
+// The combined module list and changelog are generated, never committed; write them as npm ci does before anything reads them.
+let passed = await run('prepare')
 // Reject stale notices/catalog before generation can overwrite the evidence of staleness.
-if (!buildOnly) passed = await run('licenses:check') && await run('machines:check') && await run('modules:check', base ? ['--base', base] : [])
-if (!buildOnly && !documentationOnly && passed) passed = await run('elekloader:check')
+if (!buildOnly && passed) passed = await run('licenses:check') && await run('machines:check') && await run('modules:check', base ? ['--base', base] : [])
+// Every active Octatrack module must still install beside every other (declarations only, no firmware), and the card
+// builder's native pair checks must be current, proved and flagged.
+if (!buildOnly && !documentationOnly && passed) passed = await run('elekloader:check') && await run('modules:compat') && await run('modules:pairs')
 // Finish generated notice/catalog/media writes before lint, tests, typecheck or bundling read them.
 if (passed && !documentationOnly) passed = await run('licenses:generate') && await run('machines:generate') && await run('modules:generate')
 // Every path, including documentation-only checks and release builds, requires current-version notes.
 if (passed) {
   try {
-    const notes = checkModuleChangelogs(root)
+    const notes = await checkModuleChangelogs(root)
     console.log(`Module changelogs: ${notes.modules} modules, ${notes.releases} releases`)
   } catch (error) { console.error(error.message); passed = false }
 }
-// Documentation uses the same import policy as publication without running firmware gates.
-if (passed && documentationOnly) passed = await run('sdk:imports:check')
+// Documentation uses the same import policy as publication without running firmware gates. The catalogue tests read Markdown
+// (the module guides' links, the agent files, the pull request template), so a prose-only change can break them and must run them.
+if (passed && documentationOnly) passed = await run('sdk:imports:check') && await run('test', ['src/catalog'])
 if (passed && !documentationOnly) {
   const results = buildOnly
     ? [await build()]

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "moduleId": "poly8",
-  "moduleVersion": "0.2.7-experimental",
-  "moduleSourceSha256": "e5b8ed40809a3f5f4812a83d3fe20d50c1f6c87d38183e26072c1ce0f3439121",
+  "moduleVersion": "0.3.0-experimental",
+  "moduleSourceSha256": "f8b12d55e76faaa98113f26a2af9575a996cdbf40e1225ab0c1c1fac79be3765",
   "revision": "b8deefc88b2c3e5f3c6158e364eb741df1924e1d",
   "originalOsSha256": "164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e",
   "pool": [
@@ -143,8 +143,8 @@
       },
       "native": {
         "bytes": 1125764,
-        "osSha256": "2b600c20fd7492800ce0f5b85dc5dcb38be760039d0dcbb765d83ecf6ad8d306",
-        "maskedOsSha256": "08ef12ea1927f9876e69a98dcb087f2987796fc2d0affa9bfb9efb48f149034c"
+        "osSha256": "d9c05129067ed17b1025757f178de45907561d7df885d1287e20b977433a8224",
+        "maskedOsSha256": "759dcd675b8c349ac5b00d2c197e28876961988b96f809a9f62fd3d1c732113f"
       },
       "result": "masked"
     },
@@ -173,8 +173,8 @@
       },
       "native": {
         "bytes": 1125764,
-        "osSha256": "d5e926ed5067e9a8c5035b5a79903703fdc8dabfb79292dffb9ed7fe649802e2",
-        "maskedOsSha256": "b6bf8ed64f187a01268c96754152ba7de876564f0812cfac3b5f87a163734f5e"
+        "osSha256": "4e7366751287a7cefa056a90570c560de00268226644d7eb92a5142980ac9d57",
+        "maskedOsSha256": "1255ed310a385479f6ae57d87dcf0b60d81517fe7705a67f1ad99f10486918ba"
       },
       "result": "masked"
     },
@@ -8845,8 +8845,8 @@
       },
       "native": {
         "bytes": 1132238,
-        "osSha256": "4e7ad9918bf5fe751fb52536694b1694255012319180d14b7e75eb0467f59201",
-        "maskedOsSha256": "cf2b9204a4bec2d4bc6943223dbd62f85bb304968d6ff04afb3cebad5816f25b"
+        "osSha256": "082ea5c5c0c5e6449e6c758294a13c79d96608b7aebbad1df8fbf74f93a351c1",
+        "maskedOsSha256": "556f184ae313e03e982bd0494dbfa6d88d922a1c494944c0dce92526339d41cf"
       },
       "result": "masked"
     },
@@ -8881,8 +8881,8 @@
       },
       "native": {
         "bytes": 1132238,
-        "osSha256": "6acbdb06efe9f36dc64706931cc67cfea48791d81fd9d2401dafd02f3d23c193",
-        "maskedOsSha256": "388ae570458c36c4f3b031749e1fc43c6d3c65377efec976a0a88523c5e91494"
+        "osSha256": "3d9584b179e06e5bc4ad2fd1dfd7201b022299027c92b01fc62ef5639275e510",
+        "maskedOsSha256": "dcfb80e55e67115f5a9c3a43d5b6faec71397b9572f6d682810e98875dfceb56"
       },
       "result": "masked"
     },
@@ -9301,8 +9301,8 @@
       },
       "native": {
         "bytes": 1130967,
-        "osSha256": "4b80aadea4bfc0bcfecba7c5a11c4812227460eac4a7ebe812e6b7fdfed4f4a4",
-        "maskedOsSha256": "c0df9dc1e8e4b42d7e10442b631086e23ea981d39766ebfc58c4bda3de6b96f9"
+        "osSha256": "ecce0c45abf907ab2bd9e6a7e71cade231f7312480e95e71fffa939082295bf7",
+        "maskedOsSha256": "af410753438c1ed799e0a7662de602ff21cab76c2119de00d763d1366cbbfe8e"
       },
       "result": "masked"
     },
@@ -9334,8 +9334,8 @@
       },
       "native": {
         "bytes": 1130967,
-        "osSha256": "32d2be8cecd30fc552764df091a8fbfc1164acfb1cdd87eccb7a62e0f441c374",
-        "maskedOsSha256": "66e74bc9edd6e07ea065e2f97788e8f75d9b61bfc6784f38adc7737e15ac31b1"
+        "osSha256": "c30767aece84722d12fa4a0d0e6507f057010102232f2813d0cf5303d63efe5b",
+        "maskedOsSha256": "9d16179e0977cfcbd76d41196c04d6f79e351b5ea5720c070fd85e04801cec0d"
       },
       "result": "masked"
     },
@@ -9642,7 +9642,7 @@
         ]
       },
       "native": {
-        "refused": "payload A: EVERB overruns the region (3741 > 2724 words)"
+        "refused": "payload A: EVERB overruns the region (3737 > 2724 words)"
       },
       "result": "refused"
     },
@@ -9687,7 +9687,7 @@
         ]
       },
       "native": {
-        "refused": "payload A: EVERB overruns the region (3741 > 2724 words)"
+        "refused": "payload A: EVERB overruns the region (3737 > 2724 words)"
       },
       "result": "refused"
     },

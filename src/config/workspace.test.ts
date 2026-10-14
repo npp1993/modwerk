@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { afterDeleting, configurationDevice, newConfiguration, validateConfiguration, pinModuleVersions } from './workspace'
+import { afterDeleting, configurationDevice, newConfiguration, validateConfiguration, pinModuleVersions, startupSettings } from './workspace'
 describe('persistent configuration version pins',()=>{
  it('starts empty with stock FX2 disabled while dynamic loading is unavailable',()=>{
   const configuration=newConfiguration('Empty')
@@ -23,6 +23,16 @@ describe('persistent configuration version pins',()=>{
   expect(validateConfiguration({...current,moduleVersions:undefined}).moduleVersions).toEqual(current.moduleVersions)
   expect(validateConfiguration({...current,moduleVersions:{}}).moduleVersions).toEqual(current.moduleVersions)
   for(const pins of [[],null,{repitch:'latest'},{repitch:123},{repitch:'0.1.0',spectrum:'0.1.0'}])expect(()=>validateConfiguration({...current,moduleVersions:pins})).toThrow()
+ })
+})
+describe('startup choice',()=>{
+ it('keeps an Octatrack configuration\'s classic startup and drops it everywhere else',()=>{
+  const current=newConfiguration('Startup',['repitch'])
+  expect(validateConfiguration(current)).not.toHaveProperty('classicStartup')
+  expect(validateConfiguration({...current,classicStartup:false})).not.toHaveProperty('classicStartup')
+  expect(validateConfiguration({...current,classicStartup:true}).classicStartup).toBe(true)
+  expect(()=>validateConfiguration({...current,classicStartup:'yes'})).toThrow()
+  expect(startupSettings('digitakt',true)).toEqual({})
  })
 })
 describe('deleting a configuration',()=>{

@@ -220,7 +220,7 @@ elekloader packaged its builder as a kit that any website can use, with nothing 
 
 - **Vendored kit.** [`vendor/elekloader/kit`](../vendor/elekloader/README.md) is the kit's release zip, unchanged: the engine, the builder worker, the page's client and the catalog format.
 - **The catalog.** [`vendor/elekloader/catalog`](../vendor/elekloader/README.md) holds the same cores and mods, in the kit's catalog format, with revision `e4d8ba8`, so backups keep importing.
-- **The lock.** `vendor/elekloader/elekloader.lock.json` pins every kit file and the catalog. `npm run elekloader:check` checks against it.
+- **The lock.** `vendor/elekloader/elekloader.lock.json` pins every kit file and the upstream catalog (`upstream-catalog.json`). Site-owned modules keep their pins in their own records under `sdk/imports/`, so module PRs never edit the lock; the served `catalog.json` is generated from both. `npm run elekloader:check` checks against it.
 - **What Modwerk keeps.** `src/engine/elekloader/digi-build.ts` maps machine ids to the kit's device keys and starts the kit's worker. Modwerk's own worker and client are gone.
 - **Same builds.** It is the same engine, so the same bytes: the browser check gave the parity record's identities ([verification record](VERIFICATION.md)).
 
@@ -299,3 +299,11 @@ Every report belonged to one module and went to that module's author. A freeze t
 - **The modules and versions are public;** the build fingerprint, the FX2 setting and the log are not. Authors without a Modwerk account need the list to reproduce the problem, and the `module:<id>` labels reveal it anyway. This widens what a report publishes beyond a module report's single version, so the privacy notice needs the owner's review.
 - **It does not count against a module.** A report that may not be that module's fault stays out of the per-module statistics behind the stability grade; each module's Issues tab still lists and counts it.
 - **Not done:** the module-page report form still files against one module and is unchanged, and the log reader is a copy in the configuration report rather than shared with it.
+
+## 13 October 2026 — Reports live entirely on GitHub
+
+A contributor following a report's "open them on Modwerk" link landed on Creator settings: only the module's own verified maintainers could open the private part, and a coding agent working from the issue asked for "the full report". The owner chose to keep report work completely on GitHub.
+
+- **New GitHub reports publish everything.** The issue also carries the firmware state, build fingerprint, module configuration and the validated `OCTAMOD.LOG` in a collapsed block (oldest records left out when it would pass GitHub's size limit). The forms say so before posting. Reports filed earlier are never republished; their `public_json` lacks `full`.
+- **Maintainers talk to reporters on GitHub.** Comments reach the reporter on Modwerk; the reporter's replies from Modwerk appear on the issue.
+- **The maintainer report page is gone from the frontend.** `#developer/report/<id>` shows Creator settings, and the report page no longer shows maintainer triage, close or release forms. The private-report API, the reporter's sharing toggle, Creator settings with claims and Ko-fi links, `/modwerk` commands and the release-completion endpoint are unchanged.

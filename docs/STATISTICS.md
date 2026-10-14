@@ -94,9 +94,9 @@ The foot of each library card grades how far real use backs a module, so nobody 
 | Grade | Requires |
 | --- | --- |
 | Limited real-world testing | The default for every module, and whenever the summary cannot be fetched |
-| In regular use | 100 downloads, 30 days since the first download, no report for 30 days |
-| Lots of use, no recent issues | 500 downloads, 90 days since the first download, no report for 60 days |
+| In regular use | 100 downloads, 14 days since the first download, no confirmed bug for 14 days |
+| Lots of use, no recent confirmed bugs | 300 downloads, 45 days since the first download, no confirmed bug for 30 days |
 
-Any open issue report replaces the grade with the number of open reports, and a module whose build is still being verified says so first. Hovering the grade (or a screen reader) gives the figures behind it, the next step and the hardware record. Reports count per module, not per version, and download requests are not unique people, so the thresholds stay deliberately high.
+A confirmed bug that affects the current version, or whose applicability is unknown, replaces the grade with the number of confirmed bugs; unconfirmed reports and reports waiting for the reporter are shown beside the grade and do not change it. A module whose build is still being verified says so first. Hovering the grade (or a screen reader) gives the figures behind it, the next step and the hardware record. Download requests are opted-in and not unique people, and the days were set from the first weeks of counting (from 6 Oct 2026), so raise them in `STABILITY_GRADES` once six to eight weeks of figures show how fast reports arrive.
 
 For this the summary adds `openIssues`, `lastIssueAt` (the latest report, open or closed) and `firstDownloadAt` to each module. Private reports count too, but only as a number and a date. `0052_module_first_download.sql` adds `first_download_at` to `module_downloads`; existing rows take their first retained daily count, else the start of daily or overall counting, which is never earlier than the real first download.

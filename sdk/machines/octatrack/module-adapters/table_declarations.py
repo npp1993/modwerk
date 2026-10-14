@@ -9,11 +9,13 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 import struct
-from machine_layout import _envelope, _integer, _json, _sha, SHA
+from machine_layout import _envelope, _integer, _json, _sha, SHA, participants
 
-CAPACITY, HEADER, RECORD = 16, 16, 60
+CAPACITY, HEADER, RECORD = 24, 16, 60
 BYTES = HEADER + CAPACITY * RECORD
 SCHEMA = 'modwerk-table-layout-v1'
+PARTICIPANT_SCHEMA = 'modwerk-table-layout-v2'
+ANALOG_BD_SCHEMA = 'modwerk-table-layout-v3'
 KEYS = frozenset(('schema', 'packageSha256', 'imageSha256', 'compiledImageSha256', 'recipeSha256',
                   'family', 'stateLayoutRevision', 'parameterLayoutRevision', 'arrayOffsets', 'tableSymbols', 'sources'))
 ENTRY_KEYS = frozenset(('package', 'declaration', 'recipe', 'reviewed_sha256', 'source_root'))
@@ -41,12 +43,31 @@ def empty():
     return b'MWTD' + bytes((1, 0, CAPACITY)) + bytes(BYTES - 7)
 
 
+def _hookless(package):
+    """A table owner that is no group may carry hook words since the events migration (Mute Modes subscribes and
+    raises): loader.h's core handlers and site-event words, each unused or an even image offset. Checked here, the
+    rest of the package goes through machine_layout's unchanged envelope as the same package without them."""
+    if not isinstance(package, bytes) or len(package) < 76:
+        return package
+    image_size, hooks = struct.unpack_from('>I', package, 8)[0], struct.unpack_from('>I', package, 20)[0]
+    if not hooks:
+        return package
+    if hooks > 4 + 64 or len(package) < 76 + 4 * hooks:
+        raise ValueError('Invalid table owner hook words.')
+    words = struct.unpack_from('>%dI' % hooks, package, 76)
+    if any(w != 0xffffffff and ((w if i < 4 else w & 0xffffff) >= image_size or w & 1) for i, w in enumerate(words)):
+        raise ValueError('Invalid table owner hook word.')
+    return package[:20] + bytes(4) + package[24:76] + package[76 + 4 * hooks:]
+
+
 def validate(package, declaration, recipe, *, reviewed_sha256, source_root):
     if (not isinstance(reviewed_sha256, str) or not SHA.fullmatch(reviewed_sha256) or
             not isinstance(declaration, bytes) or _sha(declaration) != reviewed_sha256):
         raise ValueError('The independently reviewed table declaration changed.')
     doc, captured = _json(declaration, 65536), _json(recipe, 1048576)
-    if (not isinstance(doc, dict) or set(doc) != KEYS or doc['schema'] != SCHEMA or
+    explicit = isinstance(doc, dict) and doc.get('schema') in (PARTICIPANT_SCHEMA, ANALOG_BD_SCHEMA)
+    if (not isinstance(doc, dict) or set(doc) != KEYS | ({'participants'} if explicit else set()) or
+            doc.get('schema') not in (SCHEMA, PARTICIPANT_SCHEMA, ANALOG_BD_SCHEMA) or
             not isinstance(doc['family'], str) or doc['family'] not in SHAPES):
         raise ValueError('Unsupported private table declaration.')
     for key in ('packageSha256', 'imageSha256', 'compiledImageSha256', 'recipeSha256'):
@@ -54,9 +75,13 @@ def validate(package, declaration, recipe, *, reviewed_sha256, source_root):
     if not all(_integer(doc[key], 1, 65535) for key in ('stateLayoutRevision', 'parameterLayoutRevision')):
         raise ValueError('Explicit positive state/parameter revisions are required.')
     group = isinstance(package, bytes) and len(package) >= 8 and package[7] == 4
-    image, mask, parameters, module = _envelope(package, group=group)
+    image, mask, parameters, module = _envelope(_hookless(package) if not group else package, group=group)
     family, count, insert, added, identity, roots, refs, count_at, count_code = SHAPES[doc['family']]
-    if module != identity and not (family == 1 and group and mask & 4 and module == 0xdb769930):
+    analog_bd = doc.get('schema') == ANALOG_BD_SCHEMA and isinstance(doc.get('participants'), list) and 'analog-bassdrum' in doc['participants']
+    optional = participants(mask, doc['participants'], analog_bd=analog_bd) if explicit and group else False
+    if explicit and not group:
+        raise ValueError('Explicit group participants require an actual canonical group.')
+    if module != identity and not (family == 1 and group and (mask & 4 or optional) and module == 0xdb769930):
         raise ValueError('The exact package is not this canonical table owner.')
     if (_sha(package) != doc['packageSha256'] or _sha(image) != doc['imageSha256'] or parameters != doc['parameterLayoutRevision']):
         raise ValueError('Package identity/parameter layout changed.')
@@ -86,7 +111,7 @@ def validate(package, declaration, recipe, *, reviewed_sha256, source_root):
             raise ValueError('A table moved, overlapped or escaped its exact image.')
     relocation_count, site_count = struct.unpack_from('>I', package, 16)[0], struct.unpack_from('>I', package, 24)[0]
     copies, fills = struct.unpack_from('>II', package, 68)
-    at = 76 + len(image)
+    at = 76 + 4 * struct.unpack_from('>I', package, 20)[0] + len(image)  # past any hook words (_hookless checked them)
     relocations = struct.unpack_from('>%dI' % relocation_count, package, at)
     at += 4 * relocation_count
     sites = {}

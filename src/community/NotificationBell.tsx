@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api, post } from './api'
+import { api, onCommunityReconnect, post } from './api'
 import { useCommunity } from './context'
 import { Icon } from '../components/Icon'
 import { NotificationList } from './NotificationList'
@@ -24,7 +24,8 @@ function NotificationBellContent({ member, next }: { member: boolean; next: stri
     const timer = window.setInterval(() => { if (document.visibilityState === 'visible') count() }, POLL_MS)
     const visible = () => { if (document.visibilityState === 'visible') count() }
     document.addEventListener('visibilitychange', visible)
-    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', visible) }
+    const reconnected = onCommunityReconnect(count)
+    return () => { window.clearInterval(timer); reconnected(); document.removeEventListener('visibilitychange', visible) }
   }, [member, count])
   useEffect(() => {
     if (!open) return

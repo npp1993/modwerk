@@ -28,6 +28,17 @@
 // CARD by keys, on a development base; the project file's map lines go out through the writer's seam; ot_emu needs
 // --mkii, whose panel has PROJ, and --card-rw to keep the file).
 // parts (no module: Parts 2, 3, 4 and 1 in turn, so every effect the bank's Parts name runs; for memory censuses).
+// sites (a package with stock-code sites, ABI 8 or earlier, any module: installed, then removed; RAM, read a long at a
+// time, must hold each site's new bytes while it is live (kept bytes as stock, relocated words at one base) and its
+// image's first 64 bytes, every relocation word and every original stock copy there,
+// and every site the bytes from before once it is removed).
+// Additional sites packages can be passed in SECOND, comma-separated; each is installed then removed in turn. A removal
+// the base answers RUNTIME_BUSY (5: a resident controller's hooks are still being disabled) is staged again.
+// controllers (PACKAGE Sidechain's, SECOND Output Matrix's encoded controller packages, stock_hook_controllers.py, for
+// a base built with their trust rows): each alone, then both: installed and kept, its registry slot ACTIVE (every
+// reset and enable ACKed by the emulated DSPs), Sidechain's COMPRESSOR page applied in place and restored, MATRIX
+// entered and left through the AUDIO page's actions, removal refused in MATRIX and taken once disabled, and a trial
+// undone (rollback) after activation, retried while the base disables it.
 // SCENARIO:MODULE names the module by its catalogue id (src/engine/assets/dsp-packages.json); E-Verb by default.
 // The card needs a project whose Part 1 has no module effect on T1, T2, T5 or T6.
 // Emulator evidence only: executed instructions, no hardware timing or audio.
@@ -39,6 +50,7 @@ import { UploadSession } from '../src/engine/elekloader/upload-session.ts'
 import { findVendorInterface, UsbVendorTransport } from '../src/engine/elekloader/upload-usb.ts'
 import { diagnostics, removal } from '../src/dev/octatrack-usb-lifecycle.ts'
 import { Bench, device, enumerate } from './usb-bench.mjs'
+import { captureStockCopies, verifyRuntimeRelocations } from './octatrack-runtime-verifier.mjs'
 
 const [mode, ...args] = process.argv.slice(2)
 const LIVE_FX = 0x80000ec4
@@ -57,6 +69,25 @@ const served = json(new URL('../src/engine/assets/chooser-metadata.json', import
 const place = (proofs, fx1First) => {
   const serves = [!!served?.fx1, !served?.fx1Only], slot = fx1First ? (serves[0] ? 0 : 1) : (serves[1] ? 1 : 0)
   return [slot, (slot ? proofs.configuration.fx2 : proofs.configuration.fx1).length]
+}
+
+/** Runtime image, relocations, hashed sites, stock copies and authored initializers. */
+function unpack(data) {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength), abi = view.getUint16(4), u32 = at => view.getUint32(at)
+  let at = { 3: 28, 4: 32, 5: 50, 6: 68, 7: 72, 8: 76 }[abi] + 4 * u32(20)
+  const image = data.subarray(at, at += u32(8)), relocations = Array.from({ length: u32(16) }, (_, i) => u32(at + 4 * i)), sites = []
+  at += 4 * relocations.length
+  for (let i = 0; i < u32(24); i++) {
+    const hashed = abi >= 7, n = hashed ? data[at + 4] : view.getUint16(at + 4), r = hashed ? data[at + 7] : view.getUint16(at + 6)
+    const code = at + 8 + (hashed ? 32 : n)
+    sites.push({ address: u32(at), length: n, keep: hashed ? data[at + 5] : 0, code: data.subarray(code, code + n),
+      relocations: Array.from({ length: r }, (_, k) => view.getUint16(code + n + 2 * k)) })
+    at = code + n + 2 * r
+  }
+  const copies = Array.from({ length: abi >= 7 ? u32(68) : 0 }, (_, i) => ({ offset: u32(at + 44 * i), address: u32(at + 44 * i + 4), length: view.getUint16(at + 44 * i + 8) }))
+  at += 44 * copies.length
+  const fills = Array.from({ length: abi >= 8 ? u32(72) : 0 }, (_, i) => ({ offset: u32(at + 12 * i), length: u32(at + 12 * i + 4), value: data[at + 12 * i + 8] }))
+  return { image, relocations, sites, copies, fills }
 }
 
 /** Where the dispatch tables are (init[ids], then proc[ids]): the receiver's since step 4, stock's X:$215 before. */
@@ -90,6 +121,17 @@ if (mode === 'dumps') {
   const keep = async data => {
     await session.stage({ base, data, sha256: sha(data) }); await session.activate(); await session.startTrial()
     await session.holdTrial(); await session.accept(); await session.leaveUploadMode()
+  }
+  const refusal = async () => (await transport.selftest(false))?.refusal
+  // Stage, publish and keep, again while the base answers RUNTIME_BUSY (a resident controller still disabling).
+  const keepRetry = async (data, what) => {
+    for (let tries = 0; ; tries++) {
+      try { await keep(data); return tries } catch (error) {
+        const why = await refusal()
+        if (why !== 5 || tries >= 60) throw new Error(`${what}: ${error.message} (loader refusal ${why})`, { cause: error })
+        await session.cancel().catch(() => {}); await settle(30)
+      }
+    }
   }
   const pick = async (track, slot, chooserRow) => {
     const [, queued] = await bench.command(`call 0x${symbols.modwerk_dsp_pick.toString(16)} ${slot} ${track} ${chooserRow}`)
@@ -150,6 +192,156 @@ if (mode === 'dumps') {
   // Install once the project load has set the map (fxmap.c, battery RAM 0x100fe000), as a user would: handles follow
   // the project, and a large package's commit does not wait behind the load's engine work.
   for (let tries = 0; tries < 120 && (await long(0x100fe000)) >>> 8 !== 0x4d5746; tries++) await settle(10) // 'MWFX', or 'MWF' and the id count
+  if (scenario === 'controllers') {
+    const peek = async (address, n) => {
+      const out = Buffer.alloc(n + 8), from = address - address % 4
+      for (let a = from; a < address + n; a += 4) out.writeUInt32BE(await long(a), a - from)
+      return out.subarray(address - from, address - from + n)
+    }
+    const SLOT = 180, STATE = 172, MODULE = 64, ACTIVE = 6, RELEASED = 10, CUE_CFG = 0x80000037, CUE_CFG_CS1 = 0x100b1497
+    const COMP = 0x400d5a82, FIELDS = [[70, 24], [102, 4], [186, 16], [234, 4], [394, 8]] // names, defaults, counts, KEY formatter, enables
+    const registry = symbols.modwerk_controller_registry
+    const states = async module => {
+      const out = []
+      for (let i = 0; i < 6; i++) if (await long(registry + SLOT * i + MODULE) === module) out.push(await byte(registry + SLOT * i + STATE))
+      return out
+    }
+    const until = async (module, state, what) => {
+      for (let tries = 0; tries < 200; tries++) { if ((await states(module)).includes(state)) return; await settle(20) }
+      throw new Error(`${what}: slot states ${await states(module)}`)
+    }
+    const page = async () => Buffer.concat(await Promise.all(FIELDS.map(([o, n]) => peek(COMP + o, n))))
+    const stockPage = await page()
+    const packages = [file, second].map(path => {
+      const data = new Uint8Array(readFileSync(path)), view = new DataView(data.buffer)
+      return { data, id: view.getUint32(28), ...unpack(data) }
+    })
+    const [sc, matrix] = packages
+    const imageAt = async p => { // the live image: a site's relocated word less the offset the package holds
+      const site = p.sites.find(s => s.relocations.length), o = site.relocations[0]
+      return (await long(site.address + o) - Buffer.from(site.code).readUInt32BE(o)) >>> 0
+    }
+    const checkPage = async live => {
+      const now = await page()
+      if (!live) return assert.deepEqual(now, stockPage, 'COMPRESSOR\'s page is stock again')
+      const at = await imageAt(sc), formatter = now.readUInt32BE(24 + 4 + 16)
+      assert.equal(now.toString('latin1', 0, 24).replace(/\0+/g, ' ').trim(), 'KEY KFLT KGN MON', 'the KEY page names')
+      assert(formatter >= at && formatter < at + sc.image.length, 'the KEY formatter is the package\'s own')
+    }
+    const install = async (p, name) => {
+      await keepRetry(p.data, name + ' install'); await until(p.id, ACTIVE, name + ' activation')
+      console.log(`${name}: installed and kept; its controller is ACTIVE`)
+    }
+    const remove = async (p, name) => {
+      const tries = await keepRetry(removal(base, p.id).data, name + ' removal')
+      await until(p.id, RELEASED, name + ' retirement')
+      for (const site of p.sites) assert.notDeepEqual(await peek(site.address, Math.min(site.length, 4)), Buffer.from(site.code).subarray(0, 4))
+      console.log(`${name}: removed after ${tries} RUNTIME_BUSY answer(s); released`)
+    }
+    const undo = async (p, name) => {
+      await session.stage({ base, data: p.data, sha256: sha(p.data) }); await session.activate(); await session.startTrial()
+      await until(p.id, ACTIVE, name + ' activation in the trial')
+      let tries = 0
+      for (;; tries++) {
+        try { await session.rollback(); break } catch (error) {
+          if (session.status?.phase !== 'recovery' || tries >= 60) throw error
+          await settle(30)
+        }
+      }
+      await session.leaveUploadMode()
+      await until(p.id, RELEASED, name + ' undo retirement')
+      console.log(`${name}: trial undone after activation (${tries} retried rollback(s)); released`)
+    }
+    const action = async index => { // NORMAL, STUDIO, MATRIX rows of the AUDIO page's CUE CFG actions (cue_actions)
+      const table = await long(0x400654c0)
+      return call(await long(table + 4 * index))
+    }
+    // Sidechain alone
+    await install(sc, 'Sidechain'); await checkPage(true)
+    await remove(sc, 'Sidechain'); await checkPage(false)
+    await undo(sc, 'Sidechain'); await checkPage(false)
+    // Output Matrix alone
+    await install(matrix, 'Output Matrix')
+    await action(2); assert.equal(await byte(CUE_CFG), 2); assert.equal(await byte(CUE_CFG_CS1), 2)
+    console.log('Output Matrix: MATRIX entered under its lease (CUE CFG and its CS1 mirror 2)')
+    await assert.rejects(keep(removal(base, matrix.id).data)); assert.equal(await refusal(), 7, 'RUNTIME_IN_USE in MATRIX')
+    await session.cancel().catch(() => {})
+    console.log('Output Matrix: removal refused while MATRIX is selected')
+    await action(0); assert.equal(await byte(CUE_CFG), 0); assert.equal(await byte(CUE_CFG_CS1), 0)
+    console.log('Output Matrix: MATRIX left for NORMAL under its lease')
+    await remove(matrix, 'Output Matrix')
+    await undo(matrix, 'Output Matrix')
+    // Both
+    await install(sc, 'Sidechain'); await install(matrix, 'Output Matrix'); await checkPage(true)
+    await action(2); assert.equal(await byte(CUE_CFG), 2); await action(1); assert.equal(await byte(CUE_CFG), 1)
+    console.log('both: MATRIX entered and left for STUDIO beside Sidechain')
+    await remove(matrix, 'Output Matrix'); assert.deepEqual(await states(sc.id), [ACTIVE]); await checkPage(true)
+    await undo(matrix, 'Output Matrix'); assert.deepEqual(await states(sc.id), [ACTIVE])
+    await remove(sc, 'Sidechain'); await checkPage(false)
+    console.log('controllers: install, activation, page, MATRIX, removal and undo passed, alone and together')
+    bench.socket.end(); process.exit(0)
+  }
+  if (scenario === 'sites') {
+    const peek = async (address, n) => { // ot_emu's USB bench reads no memory: a long at a time through `long`
+      const out = Buffer.alloc(n + 8), from = address - address % 4
+      for (let a = from; a < address + n; a += 4) out.writeUInt32BE(await long(a), a - from)
+      return out.subarray(address - from, address - from + n)
+    }
+    for (const path of [file, ...(second ? second.split(',') : [])]) {
+      const data = new Uint8Array(readFileSync(path)), id = new DataView(data.buffer).getUint32(28)
+      const { image, relocations, sites, copies, fills } = unpack(data), before = []
+      if (new DataView(data.buffer).getUint16(4) >= 8) {
+        const caps = await bench.controlIn(0xc1, 29, 0, index, 12)
+        assert(caps && caps.length === 12, 'ABI 8 capabilities are readable')
+        assert.equal(caps.toString('ascii', 0, 4), 'MWCP')
+        assert.equal(caps[4], 1); assert.equal(caps[5], 8)
+        assert.equal(caps.readUInt16BE(6), 7, 'only CF, copies and fills are supported')
+        assert.equal(caps.readUInt16BE(8), 128); assert.equal(caps.readUInt16BE(10), 128)
+        console.log(`capabilities: ${caps.toString('hex')}`)
+      }
+      for (const site of sites) before.push(await peek(site.address, site.length))
+      const originalCopies = await captureStockCopies(copies, peek)
+      await keep(data).catch(async error => { // loader.h runtime_refusal: 8, the stock bytes under a site are not the ones it names
+        throw new Error(`${error.message} (loader refusal ${(await transport.selftest(false))?.refusal})`)
+      })
+      let at
+      for (const [i, site] of sites.entries()) {
+        const now = await peek(site.address, site.length), want = Buffer.from(site.code)
+        before[i].copy(want, 0, 0, site.keep)
+        for (const o of site.relocations) {
+          const placed = now.readUInt32BE(o) - want.readUInt32BE(o) >>> 0
+          assert(at === undefined || placed === at, `site 0x${hex(site.address)}: relocated to another base`)
+          at = placed; want.writeUInt32BE(now.readUInt32BE(o), o)
+        }
+        assert.deepEqual(now, want, `site 0x${hex(site.address)} while the module is live`)
+      }
+      if (at !== undefined) { // its code, relocated, and the stock bytes it copied
+        const code = Buffer.from(image)
+        for (const o of relocations) code.writeUInt32BE(code.readUInt32BE(o) + at >>> 0, o)
+        for (const [i, c] of copies.entries()) {
+          originalCopies[i].copy(code, c.offset)
+          assert.deepEqual(await peek(at + c.offset, c.length), code.subarray(c.offset, c.offset + c.length), `stock copy of 0x${hex(c.address)}`)
+        }
+        for (const f of fills) {
+          code.fill(f.value, f.offset, f.offset + f.length)
+          assert.deepEqual(await peek(at + f.offset, f.length), code.subarray(f.offset, f.offset + f.length), `authored initializer at ${f.offset}`)
+        }
+        if (new DataView(data.buffer).getUint16(6) & 1) { // fxpage_build records its destination descriptor in MWPG+48
+          assert.equal(code.toString('ascii', 0, 4), 'MWPG')
+          const item = (await transport.inventory())?.find(item => item.module === id.toString(16).padStart(8, '0'))
+          assert(item && item.handle !== 0xff, 'the live effect is present in inventory')
+          code.writeUInt32BE(symbols.pages + 0x1a0 * item.handle, 48)
+        }
+        assert.deepEqual(await peek(at, Math.min(64, code.length)), code.subarray(0, 64), `code at 0x${hex(at)}`)
+        await verifyRuntimeRelocations(code, relocations, at, peek)
+      }
+      console.log(`installed: ${sites.length} sites hold, code and ${copies.length} stock copies at 0x${hex(at ?? 0)}; ${fills.length} authored initializers`)
+      await keepRetry(removal(base, id).data, 'removal')
+      for (const [i, site] of sites.entries()) assert.deepEqual(await peek(site.address, site.length), before[i], `site 0x${hex(site.address)} after removal`)
+      console.log(`removed: every site holds what it held before`)
+    }
+    bench.socket.end(); process.exit(0)
+  }
   await keep(data); console.log('module installed')
   await settle(60) // the manager handles the project's own effects in its first ticks
   // missing: what the project named is restored; restore: install only (old_projects.py checks the result).
@@ -236,6 +428,21 @@ if (mode === 'dumps') {
   bench.socket.end()
 } else if (mode === 'check') {
   const [dir, out] = args, { proofs } = build(dir)
+  if (scenario === 'controllers') {
+    const drive = readFileSync(join(out, 'drive.txt'), 'utf8')
+    assert.match(drive, /controllers: install, activation, page, MATRIX, removal and undo passed, alone and together/)
+    assert.equal(readFileSync(join(out, 'dl_errors.bin')).readUInt32BE(0), 0, 'transport errors')
+    console.log('controllers: passed')
+    process.exit(0)
+  }
+  if (scenario === 'sites') {
+    const drive = readFileSync(join(out, 'drive.txt'), 'utf8'), log = readFileSync(join(out, 'log.txt'), 'utf8')
+    assert.match(log, /M6a gate\s+: PASS/, 'all stock tasks, including the displaced idle initialization, must run')
+    assert.match(drive, /installed: \d+ sites hold, code and \d+ stock copies at 0x[0-9a-f]+/)
+    assert.match(drive, /removed: every site holds what it held before/)
+    console.log('sites: task initialization, installation, stock copies and restoration passed')
+    process.exit(0)
+  }
   const words = Array.from({ length: pkg.words }, (_, i) => parseInt(pkg.code.slice(i * 6, i * 6 + 6), 16))
   const log = readFileSync(join(out, 'log.txt'), 'utf8'), bytes = name => readFileSync(join(out, name + '.bin'))
   const u32 = name => Array.from({ length: bytes(name).length / 4 }, (_, i) => bytes(name).readUInt32BE(4 * i))

@@ -8,6 +8,7 @@
  * reads today's catalogue assignments (identity.c's modwerk_fx_legacy). */
 #include <stdint.h>
 #include "fxids.h"
+#include "fxmap.h"
 
 struct fx_entry { uint32_t module; uint16_t layout, spare; char name[16]; };
 struct fx_map { uint32_t magic, generation; struct fx_entry e[MODWERK_FX_IDS]; uint32_t sum; };
@@ -147,6 +148,24 @@ void modwerk_fxmap_assign(unsigned id, uint32_t module, unsigned layout, const c
     if (!valid()) { MAP->generation = 0; for (unsigned k = 0; k < MODWERK_FX_IDS; ++k) put(&MAP->e[k], 0, 0, 0); }
     put(&MAP->e[id], module, layout, name);
     seal();
+}
+
+/* Journal checks never repair/seed a map or adopt a new generation. */
+uint32_t modwerk_fxmap_checked_generation(void)
+{ return MAP->magic==MAGIC && MAP->generation && MAP->sum==checksum()?MAP->generation:0; }
+int modwerk_fxmap_allows_checked(unsigned id,uint32_t module)
+{ return id<MODWERK_FX_IDS && modwerk_fxmap_checked_generation() && (!MAP->e[id].module || MAP->e[id].module==module); }
+int modwerk_fxmap_current(unsigned id,uint32_t module,unsigned layout,const char *name)
+{
+    if(id>=MODWERK_FX_IDS || !modwerk_fxmap_checked_generation() || MAP->e[id].module!=module || MAP->e[id].layout!=layout) return 0;
+    for(unsigned i=0;i<16u;++i) if(MAP->e[id].name[i]!=(name?name[i]:0)) return 0;
+    return 1;
+}
+int modwerk_fxmap_assign_checked(unsigned id,uint32_t module,unsigned layout,const char *name)
+{
+    if(!fx_in(modwerk_fx_modules,id) || !module || !name || name[15] || !modwerk_fxmap_checked_generation() || MAP->generation==UINT32_MAX) return 0;
+    put(&MAP->e[id],module,layout,name);seal();
+    return modwerk_fxmap_current(id,module,layout,name);
 }
 
 /* The project file (fxmap.s). The loader parses project.work twice; the storing pass fills `staged`,

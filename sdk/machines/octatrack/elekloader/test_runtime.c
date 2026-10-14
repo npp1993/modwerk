@@ -1,8 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Host check of the Octatrack trampolines (cc -DMODWERK_HOST): hooks point at
  * host functions; the loader itself is checked in sdk/runtime/loader/tests. */
+#define MODWERK_RUNTIME_REFERENCE_EXTERNAL /* runtime.c defines the Octatrack's modwerk_machine_reference */
 #include "loader.c"
 #include "runtime.c"
+#include "sha256.c" /* the loader checks ABI 7 sites against stock hashes */
 #include <stdio.h>
 
 static unsigned failures;

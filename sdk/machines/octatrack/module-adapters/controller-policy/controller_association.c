@@ -66,7 +66,8 @@ int mw_controller_bind(struct mw_controller_registry *r,unsigned at,const struct
     if(at>=MW_CONTROLLER_SLOTS || !b) return MW_CTL_STALE;
     struct mw_controller_slot *s=&r->slots[at];
     if(s->state!=MW_CTL_RESERVED || !identity(&s->binding.identity,&b->identity) || !b->generation ||
-       b->generation<=r->last_generation || !b->canonical_extent || (b->canonical_extent&15u) || (b->canonical_extent&0x08000000u) ||
+       b->generation<=r->last_generation || !b->canonical_extent || (b->canonical_extent&15u) ||
+       (b->canonical_extent>=0x48000400u && b->canonical_extent<0x4ff00000u) ||
        !b->extent_bytes || b->canonical_extent+b->extent_bytes<=b->canonical_extent || !b->image_bytes ||
        b->image_offset>b->extent_bytes || b->image_bytes>b->extent_bytes-b->image_offset || !r->backend || !r->backend->owns_image ||
        r->backend->owns_image(r->context,b)!=1) return MW_CTL_CLOSED;
@@ -99,7 +100,9 @@ int mw_controller_start(struct mw_controller_registry *r,const struct mw_control
            !r->backend->resources_idle || r->backend->resources_idle(r->context,b)!=1) return MW_CTL_CLOSED;
         next=MW_CTL_PUBLISHING;
     } else if(j->operation==MW_CTL_DISABLE) {
-        if(s->state<MW_CTL_INITIALIZING || s->state>MW_CTL_QUARANTINED || j->offset || j->count ||
+        /* A restored generation is touched before its first reset ACK: its
+         * feature is already off, so this disable is the exact no-op CAS. */
+        if((s->state<MW_CTL_INITIALIZING && !(s->state==MW_CTL_BOUND && s->touched)) || s->state>MW_CTL_QUARANTINED || j->offset || j->count ||
            (j->expected&~(c ? 5u : 7u)) || j->desired!=(j->expected&~feature)) return MW_CTL_CLOSED;
         if(s->state!=MW_CTL_DISABLING) {
             if(jobs(s)) return MW_CTL_CLOSED;
@@ -149,18 +152,35 @@ int mw_controller_publish(struct mw_controller_registry *r,const struct mw_contr
     if(confirmed!=1) { quarantine(r,s); return MW_CTL_PENDING; }
     s->state=MW_CTL_ACTIVE; return MW_CTL_OK;
 }
-int mw_controller_control_write_allowed(struct mw_controller_registry *r,const struct mw_controller_binding *b) {
-    struct mw_controller_slot *s=find(r,b);
-    if(!s || (s->state!=MW_CTL_PUBLISHING && s->state!=MW_CTL_ACTIVE) || s->enable_acks!=cores(b->identity.feature) || jobs(s)) return 0;
+int mw_controller_slot_write_allowed(struct mw_controller_registry *r,unsigned at) {
+    if(at>=MW_CONTROLLER_SLOTS) return 0;
+    const struct mw_controller_slot *s=&r->slots[at];
+    if((s->state!=MW_CTL_PUBLISHING && s->state!=MW_CTL_ACTIVE) || s->enable_acks!=cores(s->binding.identity.feature) || jobs(s)) return 0;
     const struct mw_controller_backend *t=r->backend;
     return t && t->owns_image && t->resources_idle && t->writes_blocked && !t->writes_blocked(r->context) &&
-        t->owns_image(r->context,b)==1 && t->resources_idle(r->context,b)==1;
+        t->resources_idle(r->context,&s->binding)==1;
+}
+int mw_controller_control_write_allowed(struct mw_controller_registry *r,const struct mw_controller_binding *b) {
+    struct mw_controller_slot *s=find(r,b);
+    return s && mw_controller_slot_write_allowed(r,(unsigned)(s-r->slots))==1 && r->backend->owns_image(r->context,b)==1;
 }
 int mw_controller_cancel(struct mw_controller_registry *r,const struct mw_controller_binding *b) {
     struct mw_controller_slot *s=find(r,b);
     if(!s || !held(s)) return MW_CTL_STALE;
     if(!s->touched && !jobs(s) && (s->state==MW_CTL_RESERVED || s->state==MW_CTL_BOUND)) { s->state=MW_CTL_RELEASED; return MW_CTL_OK; }
     quarantine(r,s); return MW_CTL_PENDING;
+}
+int mw_controller_restore(struct mw_controller_registry *r,const struct mw_controller_binding *b) {
+    struct mw_controller_slot *s=find(r,b);
+    if(!s || s->state!=MW_CTL_RETIRING || jobs(s)) return MW_CTL_STALE;
+    for(unsigned i=0;i<MW_CONTROLLER_SLOTS;++i) {
+        const struct mw_controller_slot *o=&r->slots[i];
+        if(o!=s && held(o) && o->binding.identity.feature==b->identity.feature && o->state!=MW_CTL_RETIRING &&
+           !((o->state==MW_CTL_RESERVED || o->state==MW_CTL_BOUND) && !o->touched)) return MW_CTL_CONFLICT;
+    }
+    if(!r->backend || !r->backend->owns_image || r->backend->owns_image(r->context,b)!=1) return MW_CTL_CLOSED;
+    s->acknowledged_words[0]=s->acknowledged_words[1]=0; s->enable_acks=s->disable_acks=0;
+    s->state=MW_CTL_BOUND; return MW_CTL_OK;
 }
 int mw_controller_retire(struct mw_controller_registry *r,const struct mw_controller_binding *b) {
     struct mw_controller_slot *s=find(r,b);

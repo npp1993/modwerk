@@ -5,7 +5,8 @@ import { isDigiIssue, FLASH_STATES, LOG_MISSING_REASONS, OT_MODELS } from './iss
 import type { IssueContext, LogMissingReason } from './issue-context'
 import { describeOtLog } from './ot-log'
 import type { OtLogSummary } from './ot-log'
-import { reportStatusLabel, type ReportMetadata } from './report-closure'
+import type { ReportMetadata } from './report-closure'
+import { ReportState } from './ReportState'
 import { ReportTriageForm } from './ReportTriageForm'
 import { CloseReportForm } from './CloseReportForm'
 type Issue = ReportMetadata & {
@@ -37,7 +38,7 @@ export function IssueInbox({moduleId = '',onClearModule}: {moduleId?: string;onC
     <div className="statistics-controls inbox-controls"><label>Issue status<select value={status} disabled={!!busy} onChange={event => { setStatus(event.target.value); setLoading(true); setError('') }}><option value="all">All reports</option><option value="open">Open reports</option><option value="closed">Closed reports</option></select></label>{moduleId && <span className="service-note">Module: {moduleId} <button className="text-button" onClick={onClearModule}>Clear module filter</button></span>}</div>
     {items.length===200 && <p className="service-note">Showing the latest 200 matching reports.</p>}
     {loading ? <p role="status">Loading reports…</p> : items.length ? items.map(item => <article className="inbox-issue" key={item.id}>
-      <div className="section-title"><h3>{item.title}</h3><span className="pill">{reportStatusLabel(item)}</span></div>
+      <div className="section-title"><h3>{item.title}</h3><ReportState report={item}/></div>
       <small>{item.scope === 'configuration' ? 'Whole configuration · ' + configurationSummary(item.module_count ?? 0) : item.module_id} · from {item.reporter} · for @{item.author_login}</small>
       <p className="preserve-lines">{item.body}</p>
       <dl>

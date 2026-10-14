@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / 'sdk/machines/octatrack/module-adapters'))
+sys.path.append(str(ROOT / 'sdk/machines/octatrack/module-adapters'))
 import base_usb_functions as functions
 
 
@@ -180,9 +180,11 @@ class BaseUsbFunctions(unittest.TestCase):
     def test_zero_ring_move_refuses_changed_or_nonzero_allocations(self):
         original = base.AUDIO_SOURCE.read_text()
         transformed = functions.audio_storage_source(original)
-        self.assertEqual(transformed.replace('    .bss\n    .balign 4\n', '').replace('    .data\nusbaudio_alt:', 'usbaudio_alt:'), original)
+        self.assertEqual(transformed.replace('    .bss\n    .balign 4\n', '').replace('    .data\nusbaudio_alt:', 'usbaudio_alt:')
+                         .replace('    .bss\n    .balign 32\naud_dtds:', '    .balign 32\naud_dtds:'), original)
         for broken in (original.replace('.space AUD_FRAMES*SLOT_BYTES', '.space AUD_FRAMES*SLOT_BYTES,1'),
-                       original.replace('aud_ring:', 'other_ring:'), original + '\nusbaudio_alt:'):
+                       original.replace('aud_ring:', 'other_ring:'), original + '\nusbaudio_alt:',
+                       original.replace('.space NSLOT*PKT_BUF', '.space NSLOT*PKT_BUF,1'), original + '\n    .balign 32\naud_dtds:'):
             with self.assertRaises(ValueError):
                 functions.audio_storage_source(broken)
 

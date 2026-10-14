@@ -46,7 +46,7 @@ describe('the Octatrack page', () => {
     expect(container.querySelector('.hub-set-open[aria-current="page"] strong')?.textContent).toBe('Studio')
     expect(open().querySelector('h2')?.textContent).toBe('Studio')
     expect(open().querySelector('.hub-sync')?.textContent).toContain('Adds 1 · Removes 1')
-    expect(vi.mocked(moduleSetReview)).toHaveBeenLastCalledWith(second, inventory, undefined)
+    expect(vi.mocked(moduleSetReview)).toHaveBeenLastCalledWith(second, inventory, undefined, ready.identity?.base)
     expect(props.onSync).not.toHaveBeenCalled(); expect(link.update).not.toHaveBeenCalled()
     await act(() => button('Sync to Octatrack').click())
     expect(props.onSync).toHaveBeenCalledExactlyOnceWith(second.id); expect(link.update).not.toHaveBeenCalled()

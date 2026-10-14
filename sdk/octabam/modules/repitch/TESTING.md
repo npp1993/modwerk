@@ -1,8 +1,15 @@
 # Repitch testing
 
-Version: 0.1.2-experimental · author: [Jannik Aßfalg](https://github.com/repeat98)
+Version: 0.2.0-experimental · author: [Jannik Aßfalg](https://github.com/repeat98)
 
-This revision updates author credits only. The historical evidence below is retained; no new hardware or DSP qualification is claimed.
+0.2.0 changes the runtime package only: on a base that owns 0x40004100, REPITCH subscribes to `ev_play_increment` (order 50) instead of patching the site. The historical evidence below is retained; no new hardware or DSP qualification is claimed.
+
+## 0.2.0: the playback-increment event (prepared 14 October 2026, not released)
+
+- **Native builds unchanged.** `repitch.s` assembled without `MODWERK_EVENTS` (`m68k-elf-as -mcpu=54455`) gives the same `.text` bytes and relocations as 0.1.2-experimental (SHA-256 `cbf8ce918648f752731e22538ef4f88f7e3766bcc1f4f293f2697535ba824326`); only the local label `.rh_restore` became a macro label. `verify_repitch.py` was not rerun: its input bytes did not change.
+- **Runtime package.** `runtime.json` replaces the `rate_hook` detour with `repitch_play_increment`, the same `RP_SCALE` arithmetic on the increment the base passes. The package has 14 sites (was 15) and one hook word; a base without site events refuses it.
+- **Emulator comparison** (loader-integration `loader_events_fixture.cpp`, 14 October 2026; synthetic register and stack state at the site, PROJECT 120 BPM, sample 100 BPM): the 0.1.2 raw package on a base without events and this package on an events base give the same increment and registers on a REPITCH track, a plain track and a POLY track; beside POLY8's subscriber, POLY tracks get POLY8's result and the other tracks REPITCH's, in either install order. The 0.1.2 package is refused on an events base (`RUNTIME_EVENT`).
+- Not run: hardware, audio, the native gates.
 
 
 ## Source evidence

@@ -4,6 +4,7 @@
  * the park, the reset) is checked in the emulator and on the unit.
  * Built with loader.c and runtime.c as separate units, as in the base. */
 #include "boot.c"
+#include "sha256.c" /* the loader's, for ABI 7 sites */
 #include <stdio.h>
 #include <string.h>
 

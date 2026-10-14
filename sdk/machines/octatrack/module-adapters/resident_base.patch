@@ -1,6 +1,6 @@
 --- a/dsp.c
 +++ b/dsp.c
-@@ -908,6 +908,82 @@
+@@ -1216,6 +1216,88 @@
  /* Development (dev.c request 20): this many microseconds with interrupts masked on the next tick, timed by DTCN3
   * (132 MHz), to find how long the frame chain survives a held-off frame interrupt. Off the USB request path. */
  volatile uint32_t modwerk_dsp_mask_test;
@@ -46,13 +46,19 @@
 +    stock_hook_init();
 +    return mw_hook_driver_export_idle(&stock_hook_driver);
 +}
++/* Every effect's ring lies inside its block. With no reviewed exact claim, stock's own effect claims stock's extent
++ * and head (mw_hook_default_claim: it keeps T3/T7's FX2 block 2 as stock does), anything else the whole block (FX1
++ * 3072 words, FX2 16384) and never FX2 block 2 (stock tenants at its head) without a reviewed head proof. It places
++ * wherever no held controller's fixed range meets its claim: the stock-hook leases and the board's controllers. */
 +int modwerk_dsp_buffer_permitted(unsigned core, unsigned kind, unsigned block, unsigned id)
 +{
-+    struct mw_hook_buffer_claim claim = {0};
++    struct mw_hook_buffer_claim claim = mw_hook_default_claim(kind, id < 32u && !fx_in(modwerk_fx_modules, id)), exact = {0};
++    unsigned modwerk_controller_held(void);
 +    stock_hook_init();
 +    if (modwerk_saved_set_busy()) return 0;
-+    if (!modwerk_stock_hook_buffer_policy(core, id, &claim)) return 0;
-+    return mw_hook_buffer_permitted(&stock_hook_driver.leases, core, kind, block, &claim);
++    if (modwerk_stock_hook_buffer_policy(core, id, &exact)) claim = exact;
++    return mw_hook_buffer_permitted_held(mw_stock_hooks_held(&stock_hook_driver.leases) | modwerk_controller_held(),
++                                         core, kind, block, &claim);
 +}
 +int modwerk_stock_hook_begin(unsigned feature, uint32_t module, uint32_t generation, int enable)
 +{
@@ -83,7 +89,7 @@
  void modwerk_dsp_tick(void)
  {
      modwerk_dsp_watch_ticks = modwerk_dsp_watch_ticks + 1; /* the watchdog's heartbeat */
-@@ -920,9 +996,14 @@
+@@ -1228,9 +1310,14 @@
      }
      static int unpacked;
      if (!unpacked) unpacked = 1, modwerk_dsp_unpack();
@@ -101,7 +107,7 @@
      if (probing >= 0 && dl_job_status((unsigned)probing) != 0) {
          if (dl_job_status((unsigned)probing) > 0) modwerk_dsp_probes_ok = modwerk_dsp_probes_ok + 1;
          else modwerk_dsp_probes_failed = modwerk_dsp_probes_failed + 1;
-@@ -931,7 +1012,7 @@
+@@ -1239,7 +1326,7 @@
      }
      if ((dl_phase || dl_c1_phase) && EDMA_ES >> 31 && !(EDMA_ES >> 8 & 0xfu)) recover(2); /* eDMA refused our transfer: at once */
      else if (modwerk_dsp_stalled(dl_frames, dl_phase || !dl_job_status(0) || !dl_job_status(1))) recover(1);

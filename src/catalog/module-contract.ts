@@ -37,7 +37,7 @@ export type ModuleDocument = {
   presentation: { label: string; family: string; summary: string; overview: string; highlights: string[]; usage: string[] }
   access?: { location: string; steps: string[]; screenshots: string[]; noUiReason?: string }
   controls: ModuleControl[]
-  compatibility: { firmware: '1.40C'; effectId: number | null; location: 'FX1' | 'FX2' | 'FX1 / FX2' | 'Flex / Static' | 'Track machine' | 'Audio tracks' | 'MIDI tracks' | 'Project sequencer' | 'USB'; conflicts: string[]; limitations: string[] }
+  compatibility: { firmware: '1.40C'; effectId: number | null; location: 'FX1' | 'FX2' | 'FX1 / FX2' | 'Flex / Static' | 'Track machine' | 'Audio tracks' | 'MIDI tracks' | 'Project sequencer' | 'USB'; conflicts: string[]; uiClaims?: string[]; limitations: string[] }
   resources: { recorded: string; storage: ModuleMetric; processing: ModuleMetric; impact?: ModuleResourceImpact }
   tests: { report: string; summary: string; hardwareStatus: 'untested' | 'historical' | 'reported' | 'verified'; evidenceRevision: string; gates: string[]; documentation?: ModuleQualification['documentation']; qualification?: ModuleQualification; releaseWaiver?: ModuleReleaseWaiver; retainedEvidence?: { commit: string; moduleVersion: string; documentation: ModuleQualification['documentation'] } }
   license: { spdx: string; file: string; declaration: string }
@@ -64,6 +64,14 @@ function list(value: unknown, path: string, maximum: number): unknown[] {
   return value
 }
 function texts(value: unknown, path: string, maximum: number): string[] { return list(value,path,maximum).map((v,i)=>text(v,path+'['+i+']')) }
+// What a module may claim in compatibility.uiClaims (docs/module-guides/README.md#ui-claims): panel keys, encoder turns
+// (A-F, LEVEL), TRACK and TRIG for any of their keys.
+const UI_KEYS=['FUNC','YES','NO','UP','DOWN','LEFT','RIGHT','PROJ','PART','AED','ARR','MIXER','MIDI','CUE','REC1','REC2','REC3','PLAY','STOP','TEMPO','BANK','PATTERN','PAGE','SCENEA','SCENEB','SRC','AMP','LFO','FX1','FX2','TRACK','TRIG','A','B','C','D','E','F','LEVEL']
+function uiClaim(value: unknown, path: string): string {
+  const claim=text(value,path,80), key=/^key:([A-Z0-9+]+)(?:@[A-Z0-9][A-Z0-9 ]*)?$/.exec(claim)
+  if(key?key[1].split('+').every(name=>UI_KEYS.includes(name)):/^screen:[A-Z0-9][A-Z0-9 ]*$/.test(claim)) return claim
+  fail(path,'expected key:HELD+PRESSED, optionally @PAGE, with keys from '+UI_KEYS.join(' ')+'; or screen:NAME in capitals')
+}
 function integer(value: unknown, path: string, minimum=0, maximum=Number.MAX_SAFE_INTEGER): number {
   if(typeof value!=='number'||!Number.isSafeInteger(value)||value<minimum||value>maximum) fail(path,'expected an exact integer between '+minimum+' and '+maximum)
   return value
@@ -181,7 +189,7 @@ export function parseModuleDocument(value: unknown): ModuleDocument {
   if(!/^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(github)) fail('author.github','invalid GitHub login')
   const authorName={...('name' in a ? { name:text(a.name,'author.name',100) } : {}),...('contributors' in a ? {contributors:parseModuleContributors(a.contributors,github,'author.contributors')} : {})}
   const p=object(d.presentation,'presentation',['label','family','summary','overview','highlights','usage'])
-  const c=object(d.compatibility,'compatibility',['firmware','effectId','location','conflicts','limitations'])
+  const c=object(d.compatibility,'compatibility',['firmware','effectId','location','conflicts','limitations'],['uiClaims'])
   if(c.effectId!==null&&(typeof c.effectId!=='number'||!Number.isInteger(c.effectId)||c.effectId<4||c.effectId>31))fail('compatibility.effectId','expected a valid effect ID or null for contributions without an effect slot')
   if(c.firmware!=='1.40C') fail('compatibility.firmware','only 1.40C is supported')
   const r=object(d.resources,'resources',['recorded','storage','processing'],['impact'])
@@ -242,7 +250,7 @@ export function parseModuleDocument(value: unknown): ModuleDocument {
     access={location:text(a.location,'access.location',300),steps,screenshots,...(noUiReason?{noUiReason}:{})}
   }
   const documentation='documentation' in t?qualificationDocumentation(t.documentation,'tests',!!access?.noUiReason):undefined
-  return {schemaVersion:2,id,key:text(d.key,'key',60),name:text(d.name,'name',100),version,category:enumeration(d.category,'category',MODULE_CATEGORIES),...(source?{source}:{}),...(build?{build}:{}),...(access?{access}:{}),author:{github,...authorName,credits:texts(a.credits,'author.credits',30)},nativeManifest,presentation:{label:text(p.label,'presentation.label',80),family:text(p.family,'presentation.family',80),summary:text(p.summary,'presentation.summary',300),overview:text(p.overview,'presentation.overview'),highlights:texts(p.highlights,'presentation.highlights',12),usage:texts(p.usage,'presentation.usage',12)},controls,compatibility:{firmware:'1.40C',effectId:c.effectId as number|null,location:enumeration(c.location,'compatibility.location',['FX1','FX2','FX1 / FX2','Flex / Static','Track machine','Audio tracks','MIDI tracks','Project sequencer','USB']),conflicts:texts(c.conflicts,'compatibility.conflicts',64),limitations:texts(c.limitations,'compatibility.limitations',24)},resources:{recorded:text(r.recorded,'resources.recorded',100),storage:metric(r.storage,'resources.storage'),processing:metric(r.processing,'resources.processing'),...(impact?{impact}:{})},tests:{report:modulePath(t.report,'tests.report'),summary:text(t.summary,'tests.summary'),hardwareStatus:enumeration(t.hardwareStatus,'tests.hardwareStatus',['untested','historical','reported','verified']),evidenceRevision,gates:texts(t.gates,'tests.gates',64),...(documentation?{documentation}:{}),...(proof?{qualification:proof}:{}),...(waiver?{releaseWaiver:waiver}:{}),...(retainedEvidence?{retainedEvidence}:{})},license:{spdx:text(l.spdx,'license.spdx',100),file:modulePath(l.file,'license.file'),declaration:text(l.declaration,'license.declaration')},media}
+  return {schemaVersion:2,id,key:text(d.key,'key',60),name:text(d.name,'name',100),version,category:enumeration(d.category,'category',MODULE_CATEGORIES),...(source?{source}:{}),...(build?{build}:{}),...(access?{access}:{}),author:{github,...authorName,credits:texts(a.credits,'author.credits',30)},nativeManifest,presentation:{label:text(p.label,'presentation.label',80),family:text(p.family,'presentation.family',80),summary:text(p.summary,'presentation.summary',300),overview:text(p.overview,'presentation.overview'),highlights:texts(p.highlights,'presentation.highlights',12),usage:texts(p.usage,'presentation.usage',12)},controls,compatibility:{firmware:'1.40C',effectId:c.effectId as number|null,location:enumeration(c.location,'compatibility.location',['FX1','FX2','FX1 / FX2','Flex / Static','Track machine','Audio tracks','MIDI tracks','Project sequencer','USB']),conflicts:texts(c.conflicts,'compatibility.conflicts',64),...('uiClaims' in c?{uiClaims:list(c.uiClaims,'compatibility.uiClaims',16).map((v,i)=>uiClaim(v,'compatibility.uiClaims['+i+']'))}:{}),limitations:texts(c.limitations,'compatibility.limitations',24)},resources:{recorded:text(r.recorded,'resources.recorded',100),storage:metric(r.storage,'resources.storage'),processing:metric(r.processing,'resources.processing'),...(impact?{impact}:{})},tests:{report:modulePath(t.report,'tests.report'),summary:text(t.summary,'tests.summary'),hardwareStatus:enumeration(t.hardwareStatus,'tests.hardwareStatus',['untested','historical','reported','verified']),evidenceRevision,gates:texts(t.gates,'tests.gates',64),...(documentation?{documentation}:{}),...(proof?{qualification:proof}:{}),...(waiver?{releaseWaiver:waiver}:{}),...(retainedEvidence?{retainedEvidence}:{})},license:{spdx:text(l.spdx,'license.spdx',100),file:modulePath(l.file,'license.file'),declaration:text(l.declaration,'license.declaration')},media}
 }
 
 /** New modules and updates need real UI evidence; unchanged legacy publications remain readable. */

@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include "upload.h"
 #include "fxids.h"
+#include "fxpage.h"
 
 #define PAGE 0x192u
 extern uint32_t modwerk_fx1_list[MODWERK_LIST_ROWS], modwerk_fx2_list[MODWERK_LIST_ROWS]; /* identity.c: NONE and the stock rows, then 0 */
@@ -37,6 +38,11 @@ static volatile uint32_t *const tables[4] = {modwerk_fx1_ids, modwerk_fx2_ids, m
 static uint8_t pages[MODWERK_FX_IDS][0x1a0] __attribute__((aligned(4)));
 #endif
 static uint8_t serves[MODWERK_FX_IDS]; /* the slots each id's page is listed in: 1 FX1, 2 FX2 */
+static const uint8_t *checked_recipe[MODWERK_FX_IDS];
+static uint32_t checked_bytes[MODWERK_FX_IDS];
+static uint8_t checked_digest[MODWERK_FX_IDS][MU_DIGEST_BYTES];
+static int page_stamp(unsigned,const uint8_t *,uint32_t,unsigned,uint8_t *);
+static int recipe_end(unsigned,const uint8_t *,uint32_t,unsigned,uint32_t *);
 #define WIDE 4u /* wide formatters a page may have (EUCLID 3) */
 static uint32_t wide[MODWERK_FX_IDS][WIDE][2];  /* per id: a formatter that draws over the whole dial, and its maximum */
 uint32_t modwerk_wide_table[2u * (MODWERK_FX_IDS * WIDE + 1u)]; /* fxpage.s: the listed pages' wide formatters, 0-ended */
@@ -67,26 +73,19 @@ static void rows(void)
 }
 
 /* Builds id's page from `recipe` (the head of the module's `bytes`-long image, which the loader relocated)
- * and lists it in `slots`. 0, with nothing written outside the page, when the recipe is malformed, reaches
- * past the image or names a donor that is not the stock descriptor it says. */
+ * and lists it in `slots`. 0, with nothing written, when the recipe is malformed, reaches past the image,
+ * lets a fixup reach a record or another fixup, or names a donor that is not the stock descriptor it says. */
 int modwerk_fxpage_build(unsigned id, uint8_t *recipe, uint32_t bytes, unsigned slots)
 {
-    if (!fx_in(modwerk_fx_modules, id) || !recipe || bytes < 52u || be32(recipe) != 0x4d575047u) return 0; /* 'MWPG' */
-    const uint8_t *end = recipe + bytes;
-    uint32_t low = ADDR(recipe), high = ADDR(end);
-    uint32_t donor = be32(recipe + 4);
-    if (donor - DONOR_LOW > DONOR_HIGH - PAGE - DONOR_LOW) return 0; /* below DONOR_LOW wraps high */
-    uint8_t digest[MU_DIGEST_BYTES], *d = pages[id];
-    mu_sha256(AT(donor), PAGE, digest);
-    for (unsigned i = 0; i < MU_DIGEST_BYTES; ++i) if (digest[i] != recipe[8 + i]) return 0;
-    for (unsigned i = 0; i < PAGE; ++i) d[i] = ((const volatile uint8_t *)AT(donor))[i];
+    if (!recipe_end(id, recipe, bytes, slots, 0)) return 0; /* the whole recipe, before any write */
+    uint8_t *d = pages[id];
+    const uint8_t *donor = AT(be32(recipe + 4));
+    for (unsigned i = 0; i < PAGE; ++i) d[i] = ((const volatile uint8_t *)donor)[i];
     uint32_t enable[2] = {be32(d + 0x18e), be32(d + 0x18a)}, inherited = be16(recipe + 40); /* before the patches */
     const uint8_t *e = recipe + 52;
-    if (e + 8u * recipe[42] > end) return 0;
     for (unsigned i = 0; i < recipe[42]; ++i, e += 8) {
-        uint32_t at = be16(e), width = e[2];
-        if ((width != 1u && width != 4u) || at + width > PAGE) return 0;
-        if (width == 1u) d[at] = (uint8_t)be32(e + 4);
+        uint32_t at = be16(e);
+        if (e[2] == 1u) d[at] = (uint8_t)be32(e + 4);
         else put32(d + at, be32(e + 4));
     }
     for (unsigned slot = 0; slot < 12u; ++slot) {
@@ -95,22 +94,11 @@ int modwerk_fxpage_build(unsigned id, uint8_t *recipe, uint32_t bytes, unsigned 
         put32(d + at, (be32(d + at) & ~mask) | (enable[slot >= 8u] & mask));
     }
     for (unsigned i = 0; i < recipe[43]; ++i) {
-        if (e + 4 > end) return 0;
         uint32_t at = be16(e), width = e[2], length = e[3];
-        if (!width || length >= width || at + width > PAGE || e + 4 + length > end) return 0;
         for (unsigned c = 0; c < width; ++c) d[at + c] = c < length ? e[4 + c] : 0;
         e += (4u + length + 3u) & ~3u;
     }
     d[3] = (uint8_t)id; /* the effect id: the handle, whatever the catalogue's was */
-    /* Every formatter, its code and its fixups inside the image before any is touched. */
-    const uint8_t *scan = e;
-    for (unsigned i = 0; i < recipe[44]; ++i) {
-        if (scan + 12 > end || scan + 12u + 2u * scan[1] > end) return 0;
-        uint32_t code = be32(scan + 4), length = be16(scan + 8);
-        if (scan[0] >= 12u || code < low || code + length > high || code % 2u || (scan[3] && (scan[3] < 5u || scan[3] > 127u))) return 0;
-        for (unsigned k = 0; k < scan[1]; ++k) if (be16(scan + 12 + 2u * k) + 4u > length) return 0;
-        scan += (12u + 2u * scan[1] + 3u) & ~3u;
-    }
     uint32_t delta = ADDR(d) - be32(recipe + 48); /* the fixups held the last page's address */
     unsigned wides = 0;
     for (unsigned w = 0; w < WIDE; ++w) wide[id][w][0] = wide[id][w][1] = 0;
@@ -122,18 +110,122 @@ int modwerk_fxpage_build(unsigned id, uint8_t *recipe, uint32_t bytes, unsigned 
         }
         put32(d + 0xca + 4u * slot, code);
         if (e[2]) put32(d + 0xfa + 4u * slot, 0); /* its own formatter draws it: no stock widget */
-        if (e[3] && wides < WIDE) wide[id][wides][0] = code, wide[id][wides++][1] = e[3]; /* more than five labels */
+        if (e[3]) wide[id][wides][0] = code, wide[id][wides++][1] = e[3]; /* more than five labels */
         e += (12u + 2u * fixups + 3u) & ~3u;
     }
     put32(recipe + 48, ADDR(d));
     modwerk_machine_invalidate_code(); /* the fixups changed formatter code */
     serves[id] = (uint8_t)(slots & 3u);
     rows();
+    checked_recipe[id] = recipe; checked_bytes[id] = bytes;
+    if (!page_stamp(id, recipe, bytes, slots, checked_digest[id])) checked_recipe[id] = 0;
     return 1;
 }
 void modwerk_fxpage_drop(unsigned id)
 {
     if (id >= MODWERK_FX_IDS || !serves[id]) return;
     serves[id] = 0;
+    checked_recipe[id] = 0; checked_bytes[id] = 0;
     rows();
+}
+
+/* Walk the entire recipe, including each padded record, before either path
+ * writes a descriptor, formatter fixup or chooser entry. */
+static int recipe_end(unsigned id,const uint8_t *p,uint32_t bytes,unsigned slots,uint32_t *records)
+{
+    if (!fx_in(modwerk_fx_modules,id) || !p || bytes<52u || !slots || slots>3u || be32(p)!=0x4d575047u) return 0;
+    uint32_t donor=be32(p+4), low=ADDR(p), at=52u, wides=0;
+    if (bytes>UINT32_MAX-low || donor-DONOR_LOW>DONOR_HIGH-PAGE-DONOR_LOW) return 0;
+    uint8_t digest[MU_DIGEST_BYTES];mu_sha256(AT(donor),PAGE,digest);
+    for(unsigned i=0;i<MU_DIGEST_BYTES;++i) if(digest[i]!=p[8+i]) return 0;
+    for(unsigned i=0;i<p[42];++i,at+=8u) {
+        if(at>bytes || bytes-at<8u) return 0;
+        uint32_t address=be16(p+at),width=p[at+2];
+        if((width!=1u && width!=4u) || address>PAGE-width) return 0;
+    }
+    for(unsigned i=0;i<p[43];++i) {
+        if(at>bytes || bytes-at<4u) return 0;
+        uint32_t address=be16(p+at),width=p[at+2],length=p[at+3],n=(4u+length+3u)&~3u;
+        if(!width || length>=width || address>PAGE-width || n>bytes-at) return 0;
+        at+=n;
+    }
+    uint32_t record=at;
+    for(unsigned i=0;i<p[44];++i) {
+        if(at>bytes || bytes-at<12u) return 0;
+        uint32_t n=(12u+2u*p[at+1]+3u)&~3u;
+        if(n>bytes-at) return 0;
+        at+=n;
+    }
+    /* Formatter code follows every record, ascending and disjoint, and its fixups ascend a word apart:
+     * the builder's fixups then never reach a record, the head or another fixup while it walks them. */
+    uint32_t next=at;
+    for(unsigned i=0;i<p[44];++i) {
+        const uint8_t *f=p+record;uint32_t code=be32(f+4),length=be16(f+8),last=0;
+        if(f[0]>=12u || code<low || code-low<next || code-low>bytes || length>bytes-(code-low) ||
+           code%2u || (f[3] && (f[3]<5u || f[3]>127u || ++wides>WIDE))) return 0;
+        for(unsigned k=0;k<f[1];++k) {
+            uint32_t o=be16(f+12u+2u*k);
+            if(length<4u || o>length-4u || (k && o<last+4u)) return 0;
+            last=o;
+        }
+        next=code-low+length;
+        record+=(12u+2u*f[1]+3u)&~3u;
+    }
+    if(records) *records=at;
+    return 1;
+}
+int modwerk_fxpage_validate(unsigned id,const uint8_t *p,uint32_t bytes,unsigned slots)
+{ return recipe_end(id,p,bytes,slots,0); }
+
+/* Include only the bounded recipe and declared formatter code, rather than
+ * mutable module data. Retain the stamp in board memory outside the image. */
+static int page_stamp(unsigned id,const uint8_t *p,uint32_t bytes,unsigned slots,uint8_t *out)
+{
+    uint32_t end;
+    if(!recipe_end(id,p,bytes,slots,&end)) return 0;
+    uint8_t chain[2u*MU_DIGEST_BYTES];mu_sha256(p,end,chain);mu_sha256(pages[id],PAGE,chain+MU_DIGEST_BYTES);
+    mu_sha256(chain,sizeof chain,out);
+    uint32_t at=52u+8u*p[42];
+    for(unsigned i=0;i<p[43];++i) at+=(4u+p[at+3]+3u)&~3u;
+    for(unsigned i=0;i<p[44];++i) {
+        const uint8_t *f=p+at;
+        for(unsigned k=0;k<MU_DIGEST_BYTES;++k) chain[k]=out[k];
+        mu_sha256(AT(be32(f+4)),be16(f+8),chain+MU_DIGEST_BYTES);mu_sha256(chain,sizeof chain,out);
+        at+=(12u+2u*f[1]+3u)&~3u;
+    }
+    return 1;
+}
+static int routing_current(void)
+{
+    for(unsigned slot=0;slot<2u;++slot) {
+        const uint32_t *list=slot?modwerk_fx2_list:modwerk_fx1_list;
+        unsigned n=modwerk_fx_rows[slot];
+        for(unsigned k=0;k<MODWERK_FX_IDS;++k) if(fx_in(modwerk_fx_modules,k)) {
+            unsigned yes=(serves[k]>>slot&1u) && n+1u<MODWERK_LIST_ROWS;
+            if(TABLE(slot)[k]!=(yes?ADDR(pages[k]):modwerk_fx1_list[0]) || TABLE(2u+slot)[k]!=(yes?n:0u)) return 0;
+            if(yes && list[n++]!=ADDR(pages[k])) return 0;
+        }
+        while(n<MODWERK_LIST_ROWS) if(list[n++]) return 0;
+    }
+    unsigned n=0;
+    for(unsigned k=0;k<MODWERK_FX_IDS;++k) for(unsigned w=0;serves[k] && w<WIDE && wide[k][w][0];++w) {
+        if(modwerk_wide_table[n++]!=wide[k][w][0] || modwerk_wide_table[n++]!=wide[k][w][1]) return 0;
+    }
+    return !modwerk_wide_table[n] && !modwerk_wide_table[n+1u];
+}
+int modwerk_fxpage_current(unsigned id,const uint8_t *p,uint32_t bytes,unsigned slots)
+{
+    if(!fx_in(modwerk_fx_modules,id) || !routing_current()) return 0;
+    if(!p) return !serves[id] && !checked_recipe[id];
+    if(checked_recipe[id]!=p || checked_bytes[id]!=bytes || serves[id]!=slots) return 0;
+    uint8_t digest[MU_DIGEST_BYTES];
+    if(!page_stamp(id,p,bytes,slots,digest)) return 0;
+    for(unsigned i=0;i<MU_DIGEST_BYTES;++i) if(digest[i]!=checked_digest[id][i]) return 0;
+    return 1;
+}
+int modwerk_fxpage_commit_checked(unsigned id,uint8_t *p,uint32_t bytes,unsigned slots)
+{
+    if(!p) modwerk_fxpage_drop(id);
+    else if(!modwerk_fxpage_build(id,p,bytes,slots)) return 0;
+    return modwerk_fxpage_current(id,p,bytes,slots);
 }

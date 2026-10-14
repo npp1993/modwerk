@@ -1,14 +1,15 @@
 # Mini Verb
 
-Version: 0.2.1-experimental · author: [Jannik Aßfalg](https://github.com/repeat98)
+Version: 0.2.2-experimental · author: [Jannik Aßfalg](https://github.com/repeat98)
 
 ## Overview
 
 Mini Verb is a four-branch, eight-allpass reverb with stereo output tone and
-modulation. This update fixes intermediate dry/wet clipping at hot input
-levels: the mixer preserves headroom for the wet-minus-dry difference before
-multiplication, then limits only its final output. The tank, controls, defaults,
-FX ID 0x17 and state allocation are unchanged.
+modulation. Its dry/wet mixer preserves headroom for the wet-minus-dry
+difference before multiplication, then limits only its final output (0.2.1).
+This update only lowers its DSP cost: two coefficient reloads whose register
+already held the value are removed, and the output is bit-identical to 0.2.1.
+The tank, controls, defaults, FX ID 0x17 and state allocation are unchanged.
 
 The mixer defect is reproduced on both native emulated DSP cores. The original
 THRU noise reported in [#428](https://github.com/repeat98/modwerk/issues/428)
@@ -99,9 +100,12 @@ The 16K ring allocation and its occupied 13,750 positions are unchanged.
 Tone adds target/current state at X:(r7+$2e/$2f) and left/right pole history at
 X:(r7+$3c/$3d), within the original X:(r7+$20..$3f) block. Initialization still
 clears all 32 scalar words and progressively clears the same 16K ring.
-The mixer adds four program words and four instructions per stereo sample,
-with no additional scalar or ring state. Historical cost and hardware records
-remain version-labelled; they are not tests of this update.
+The 0.2.1 mixer added four program words and four instructions per stereo
+sample, with no additional scalar or ring state; 0.2.2 removes four program
+words and two instructions per sample from the sample loop (411 instead of 415
+modeled cycles/sample). [benchmark.py](benchmark.py) compares it with worst-case
+stock SPRING REV under matched conditions on both cores. Historical cost and
+hardware records remain version-labelled; they are not tests of this update.
 
 ## Authorship and licences
 
@@ -120,6 +124,8 @@ Actual firmware-rendered LCD captures from the private common-builder image:
 
 These emulator captures show the six-control layout with transport stopped and an
 empty scratch card; they do not prove hardware behavior or audible playback.
+They were captured on 0.2.1-experimental; 0.2.2 changes no page, descriptor or
+control (its native manifest is unchanged).
 See [capture provenance](media/capture.json) and [capture rights](media/LICENSE.md).
 The native verifier writes private dark/neutral/bright percussion WAVs for
 level-preserving listening. Physical hardware remains untested for this source.

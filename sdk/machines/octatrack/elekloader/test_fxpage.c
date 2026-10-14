@@ -66,6 +66,23 @@ int main(void)
     CHECK(modwerk_wide_table[0] == ADDR(image + 128) && modwerk_wide_table[1] == 64 && !modwerk_wide_table[2]);
     modwerk_fxpage_drop(26); CHECK(!modwerk_wide_table[0]);
     bytes = recipe(); image[52 + 16 + 3] = 4; CHECK(!modwerk_fxpage_build(26, image, bytes, 2)); /* 5 labels or fewer: no */
+    /* Refused before any write, page and image alike: formatter code over a record or the head, a repeated or
+     * overlapping fixup, a second formatter's code inside the first's. A fixup there would move what is read next. */
+    uint8_t page_before[PAGE], image_before[256];
+    memcpy(page_before, pages[26], PAGE);
+#define REFUSED(edit) do { bytes = recipe(); edit; memcpy(image_before, image, 256); \
+        CHECK(!modwerk_fxpage_build(26, image, bytes, 2) && !memcmp(pages[26], page_before, PAGE) && !memcmp(image, image_before, 256)); } while (0)
+    REFUSED(put32(image + 52 + 16 + 4, ADDR(image + 64)));
+    REFUSED(put32(image + 52 + 16 + 4, ADDR(image + 40)));
+    REFUSED((image[52 + 16 + 1] = 2, image[52 + 16 + 15] = 8));
+    REFUSED((image[52 + 16 + 1] = 2, image[52 + 16 + 15] = 10));
+    REFUSED((image[44] = 2, memcpy(image + 84, image + 68, 16), put32(image + 84 + 4, ADDR(image + 136))));
+    bytes = recipe(); image[52 + 16 + 1] = 2, image[52 + 16 + 15] = 12; CHECK(modwerk_fxpage_build(26, image, bytes, 2));
+    modwerk_fxpage_drop(26);
+    bytes = recipe(); image[44] = 2, memcpy(image + 84, image + 68, 16), image[84] = 9, put32(image + 84 + 4, ADDR(image + 144));
+    CHECK(modwerk_fxpage_build(26, image, bytes, 2) && be32(pages[26] + 0xca + 36) == ADDR(image + 144) &&
+          be32(image + 144 + 8) == ADDR(pages[26]));
+    modwerk_fxpage_drop(26);
     if (failures) { fprintf(stderr, "%u FX page checks failed\n", failures); return 1; }
     puts("Octatrack FX pages: a recipe becomes its descriptor and chooser rows, follows its handle, and is refused when it is wrong.");
     return 0;

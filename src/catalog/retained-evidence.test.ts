@@ -81,12 +81,6 @@ describe('risk-based retained module evidence',()=>{
     put('sdk/octabam/modules/'+example.id+'/media/ui.png',Buffer.from('invalid PNG'))
     await expect(check()).rejects.toThrow('black-and-white PNG')
   })
-  it('does not require an obsolete builder exception for exact approved infrastructure',async()=>{
-    put('sdk/builder-preservation/old.json',JSON.stringify({moduleIds:[document.id]}))
-    expect(await check()).toBe('retained-evidence')
-    put('src/engine/compose-os.ts','changed runtime dependency\n')
-    await expect(check()).rejects.toThrow('Invalid or stale builder preservation')
-  })
   it.each([
     ['manifest.py','raise AssertionError("changed code")\n'],
     ['runtime-data.txt','new runtime coefficients'],
@@ -109,8 +103,24 @@ describe('risk-based retained module evidence',()=>{
   ])('requires full qualification for changed %s',async(label,mutate)=>{
     expect(label).toBeTruthy();mutate(document);await expect(check()).rejects.toThrow('full qualification')
   })
-  it.each(['src/engine/compose-os.ts','sdk/octabam/dsp/shared.asm','sdk/octabam/platform/shared/manifest.py','sdk/octabam/tools/build/build_bus.py','sdk/octabam/tools/remix/platform_build.py','scripts/build-module-packages.py'])('invalidates reuse after a shared runtime/build change: %s',async path=>{
-    put(path,'changed runtime dependency\n');await expect(check()).rejects.toThrow('full qualification')
+  it.each(['src/engine/compose-os.ts','sdk/octabam/dsp/shared.asm','sdk/octabam/platform/shared/manifest.py','sdk/octabam/tools/build/build_bus.py','sdk/octabam/tools/remix/platform_build.py','scripts/build-module-packages.py'])('keeps reuse after a shared runtime/build change, which the app tests cover: %s',async path=>{
+    put(path,'changed runtime dependency\n');expect(await check()).toBe('retained-evidence')
+  })
+  it('sets aside only a USB package row the owner waived for this exact version and SHA-256',async()=>{
+    const path='src/engine/assets/octatrack-module-packages.json',sha='5'.repeat(64)
+    const row={id:document.id,version:document.version,path:`octatrack-modules/${document.id}/${document.version}.mwrm`,sha256:sha,bytes:96}
+    put(path,JSON.stringify({packages:[row]}))
+    await expect(check()).rejects.toThrow('package rows changed')
+    const waiver={module:document.id,version:document.version,path:row.path,sha256:sha,approval:'Synthetic owner beta waiver',hardware:'not tested',emulator:'not tested'}
+    const waive=(item:object)=>put('sdk/usb-package-waivers.json',JSON.stringify({schemaVersion:1,about:'Synthetic',waivers:[item]}))
+    waive(waiver);expect(await check()).toBe('retained-evidence')
+    waive({...waiver,sha256:'6'.repeat(64)});await expect(check()).rejects.toThrow('full qualification')
+    waive({...waiver,version:'0.1.0',path:`octatrack-modules/${document.id}/0.1.0.mwrm`});await expect(check()).rejects.toThrow('package rows changed')
+    waive({...waiver,hardware:'verified'});await expect(check()).rejects.toThrow('malformed')
+  })
+  it('ignores shared assets without rows of this module',async()=>{
+    put('src/engine/assets/beta-startup.json',JSON.stringify({version:'3.0.0',code:'changed shared startup'}))
+    expect(await check()).toBe('retained-evidence')
   })
   it('accepts rebuilt version labels but rejects changed browser package bytes or placement',async()=>{
     const path='src/engine/assets/dsp-packages.json'
@@ -125,7 +135,7 @@ describe('risk-based retained module evidence',()=>{
     artifact.packages[0].code='changed browser code'
     put(path,JSON.stringify(artifact));await expect(check()).rejects.toThrow('full qualification')
   })
-  it('accepts release approval metadata while protecting compiler identity and qualification verdicts',async()=>{
+  it('accepts release approval and shared build metadata while protecting the module version label',async()=>{
     const path='src/engine/assets/module-build.json'
     const artifact=JSON.parse(readFileSync(resolve(root,path),'utf8'))
     artifact.sourceCommit='b'.repeat(40)
@@ -135,10 +145,10 @@ describe('risk-based retained module evidence',()=>{
     put(path,JSON.stringify(artifact))
     expect(await check()).toBe('retained-evidence')
     artifact.compilerSha256='e'.repeat(64)
-    put(path,JSON.stringify(artifact));await expect(check()).rejects.toThrow('full qualification')
-    artifact.compilerSha256='c'.repeat(64)
-    artifact.qualification='New hardware pass'
-    put(path,JSON.stringify(artifact));await expect(check()).rejects.toThrow('full qualification')
+    artifact.qualification='Shared builder note'
+    put(path,JSON.stringify(artifact));expect(await check()).toBe('retained-evidence')
+    artifact.moduleVersions[document.id]='9.9.9'
+    put(path,JSON.stringify(artifact));await expect(check()).rejects.toThrow('package rows changed')
   })
   it('allows a derived composition inventory label while preserving every native proof',async()=>{
     const path='src/engine/assets/analog-bd-composition-proofs.json'
@@ -149,6 +159,19 @@ describe('risk-based retained module evidence',()=>{
     artifact.moduleSourceTreeSha256='c'.repeat(64)
     put(path,JSON.stringify(artifact));expect(await check()).toBe('retained-evidence')
     artifact.proofs[0].maskedOsSha256='d'.repeat(64)
+    put(path,JSON.stringify(artifact));await expect(check()).rejects.toThrow('full qualification')
+  })
+  it('leaves native proofs of combinations with another module to that module, freezing only its own',async()=>{
+    const path='src/engine/assets/analog-bd-composition-proofs.json',companion='companion-module'
+    const catalog=JSON.parse(readFileSync(resolve(root,'sdk/catalog.json'),'utf8'))
+    put('sdk/catalog.json',JSON.stringify({...catalog,modules:[...catalog.modules,{id:companion,version:'0.1.0',addedAt:'2026-10-05T12:00:00Z'}]}))
+    const artifact={proofs:[{moduleIds:[document.id],maskedOsSha256:'b'.repeat(64)},{moduleIds:[document.id,companion],maskedOsSha256:'c'.repeat(64)}]}
+    put(path,JSON.stringify(artifact))
+    git('add',path,'sdk/catalog.json');git('-c','user.name=Evidence test','-c','user.email=fixture@example.invalid','commit','--quiet','-m','Synthetic native proofs')
+    document.tests.retainedEvidence!.commit=git('rev-parse','HEAD');git('update-ref','refs/remotes/origin/main',document.tests.retainedEvidence!.commit)
+    artifact.proofs[1].maskedOsSha256='d'.repeat(64)
+    put(path,JSON.stringify(artifact));expect(await check()).toBe('retained-evidence')
+    artifact.proofs[0].maskedOsSha256='e'.repeat(64)
     put(path,JSON.stringify(artifact));await expect(check()).rejects.toThrow('full qualification')
   })
   it('preserves historical status when retaining a frozen baseline release',async()=>{

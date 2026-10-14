@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { issueMarkdown, issueTitle, type MirroredIssue } from '../../server/github'
 import { DEVICES_BY_ID } from '../devices/registry'
 import { catalogModules, CONFIGURATION_MODULES_REQUIRED, CONFIGURATION_REPORT_MAX_OWNERS, configurationOwners, configurationSummary, validateConfigurationReportContext } from './configuration-report'
-import { IssueInputError } from './issue-context'
+import { IssueInputError, type IssueContext } from './issue-context'
 import { ModuleIssueCard } from './ModuleIssues'
 import { communityModule } from './modules'
 import type { PublicModuleIssue } from './issue-tracker'
@@ -70,6 +70,22 @@ describe('the public GitHub issue for a configuration', () => {
     expect(markdown).toContain('`/modwerk resolve <published-version> verified-download`')
     expect(markdown).not.toMatch(/whole configuration|Configuration \|/)
     expect(issueTitle({ module_id: 'miniverb', title: 'Freeze' })).toBe('[miniverb] Freeze')
+  })
+  it('publishes a full report’s configuration and log, leaving out the oldest records to fit GitHub', () => {
+    const records = Array.from({ length: 3000 }, (_, index) => String(index).padStart(5, '0') + ' 00000000 I TEST 0001 00000000 00000000')
+    const log = ['# OCTAMOD-LOG v2', '# configuration=```x', '# boot=1', ...records, '# complete=00000000'].join('\n')
+    const context: IssueContext = { machine: 'octatrack', model: 'mk2', flash: 'flashed', os: '1.40C', modules: [{ id: 'miniverb', version: '0.2.0' }], keepStockFx2: null, build: 'c'.repeat(64) }
+    const markdown = issueMarkdown({ ...issue([]), scope: 'module', moduleIds: undefined, details: { ...issue([]).details, modules: undefined, version: '0.2.0', full: true }, context, log }, 'https://modwerk.app/')
+    expect(markdown.length).toBeLessThan(60000)
+    expect(markdown).toContain('| Build fingerprint | `' + 'c'.repeat(64) + '` |')
+    expect(markdown).toContain('### Configuration\n\n- `miniverb` 0.2.0')
+    expect(markdown).toContain('Everything the reporter submitted is in this issue.')
+    expect(markdown).toMatch(/OCTAMOD\.LOG \(oldest \d+ records left out to fit GitHub\)/)
+    // The backticks in the header lengthen the fence; boot and completion lines stay in place.
+    expect(markdown).toContain('````text\n# OCTAMOD-LOG v2\n# configuration=```x\n# boot=1\n')
+    expect(markdown).toContain(records.at(-1) + '\n# complete=00000000\n````')
+    expect(markdown).not.toContain(records[0])
+    expect(markdown).toContain('### Module maintainer actions')
   })
 })
 

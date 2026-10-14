@@ -124,6 +124,17 @@ int main() {
     auto low=render(params(),2,1000,.001),hot=render(params(),2,1000,1);
     double compression=db(rms(hot,fs,hot.size())/rms(low,fs,low.size()))-60;
     check("Fixed DRIVE=0 retains gentle record compression (dB)",compression<0&&compression>-4,compression);
+    // Level match (#607): the dry signal stays at unity until MIX 95 before it
+    // fades out. The burst's first 1024 samples are dry only: the echo arrives
+    // 5888 samples later and the unrecorded history reads as silence.
+    auto dryLevel=[&](unsigned mix) {
+        auto p=params();p.mix=mix;
+        auto x=render(p,.5,1000,.003,true);
+        return db(rms(x,128,896)/(.003/std::sqrt(2.)));
+    };
+    check("Dry stays at unity through MIX 95",std::abs(dryLevel(95))<.05&&std::abs(dryLevel(64))<.05,dryLevel(95));
+    check("Dry fades out above MIX 95 (MIX 111 about -6 dB)",std::abs(dryLevel(111)+6)<1,dryLevel(111));
+    check("Full wet carries no dry",dryLevel(127)<-60,dryLevel(127));
     auto fast=params(),slow=params();fast.time=20;slow.time=100;
     auto f1=render(fast,2,1000),f8=render(fast,2,8000);
     auto s1=render(slow,2,1000),s8=render(slow,2,8000);

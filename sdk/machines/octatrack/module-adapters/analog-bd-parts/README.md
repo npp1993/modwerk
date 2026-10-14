@@ -37,3 +37,32 @@ The helper has no loader wiring, production source registry, enable path or
 public admission. It does not qualify descriptor ownership, group composition,
 DSP audio/headroom, complete-base fit, physical timing, persistence or reboot.
 All CI fixture data is authored synthetic state; no firmware is required.
+
+## Retirement conversion (owner decision, 14 October 2026)
+
+On Undo or removal of Analog BD, `mw_ab_restore_parts` converts every FLEX +
+AB/1 track in the source-known Part copies back to FLEX, exactly as AB 0.1.5
+does when one track leaves the machine: the six PLAYBACK and six SETUP bytes
+from the stock FLEX defaults (0x400d320c), then the three marker bytes cleared.
+The copies are all sixteen banks' working and saved Parts, the four working and
+four saved CS1 mirrors, and the stock Part clipboard (0x460c8122) and undo
+buffer (0x460bf218) while their kind word (0x460d0ffa, 0x460c80f0) is 17, the
+only kind stock pastes back as a Part. Other kinds hold other copy data and
+are never written.
+
+It plans read-only first and refuses (UNKNOWN, no write) on any failed read,
+an invalid bank pointer, an AB marker with another revision or machine type,
+or a machine type above 4. Every write is read back; the marker is cleared
+last, so an interrupted conversion still reads as AB-owned and returns
+PARTIAL. Only a CLEAR re-scan permits the next retirement gate. Callers must
+hold one qualified stable snapshot across plan and apply; each access moves at
+most four bytes, and this does not qualify physical timing.
+
+**Residual risk (accepted by the owner):** copies outside these known ones are
+not converted. That covers task-stack temporaries and any other stock copy path
+that is not source-proven here, including clipboard kinds other than a whole
+Part that may carry per-track machine bytes. If such a copy later puts an AB
+marker back into a Part after removal, the stock validator can reject that bank
+at power-up. Projects saved to the card while AB was installed keep their AB
+tracks; the module README's advice to keep a separate project copy for firmware
+without the module still applies.

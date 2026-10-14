@@ -1,12 +1,21 @@
 {
-  "version": "0.2.7-experimental",
-  "date": "2026-10-12",
+  "version": "0.3.0-experimental",
+  "date": "2026-10-14",
   "changes": [
-    "Release the previous sequenced chord once before the next native sample trig, so finite AMP REL can end its tails even with HOLD INF. Preserve all notes in the new chord and independently owned panel/MIDI notes. Related to https://github.com/repeat98/modwerk/issues/447.",
-    "Keep finite HOLD, intentional REL INF sustain and native STOP behavior. Recorded key-up timing remains unsupported; the final chord with HOLD INF sustains until another trig or STOP.",
-    "The owner approved this scoped experimental release with current-build hardware, chip worst-case timing and complete memory qualification waived. Native playback tests pass; physical MKI confirmation remains pending. Keep issue 447 open until the exact published download is verified on the affected unit."
+    "Runtime package only: on a Modwerk base that owns 0x40004100 and 0x40006820 (sdk/machines/octatrack/events.json), POLY8 subscribes instead of patching them: ev_play_increment (order 20) takes POLY tracks, ev_voice_bind (order 20) handles resets its renderer causes, ev_voice_bind_run discards a track's extension voices when a reset runs. Repitch and Mute Modes then install beside it without POLY8 linking their code.",
+    "The subscribers are appended to polyphony.s under MODWERK_EVENTS with absolute addressing, so no existing PC-relative displacement moves; native octabam builds assemble byte-identical.",
+    "Limits: needs a base built with site events; older bases refuse this package, and Undo keeps 0.2.7-experimental for them. Emulator evidence only (synthetic renderer flags and register state); current-build hardware, chip worst-case timing and complete memory bounds remain unqualified."
   ],
   "history": [
+    {
+      "version": "0.2.7-experimental",
+      "date": "2026-10-12",
+      "changes": [
+        "Release the previous sequenced chord once before the next native sample trig, so finite AMP REL can end its tails even with HOLD INF. Preserve all notes in the new chord and independently owned panel/MIDI notes. Related to https://github.com/repeat98/modwerk/issues/447.",
+        "Keep finite HOLD, intentional REL INF sustain and native STOP behavior. Recorded key-up timing remains unsupported; the final chord with HOLD INF sustains until another trig or STOP.",
+        "The owner approved this scoped experimental release with current-build hardware, chip worst-case timing and complete memory qualification waived. Native playback tests pass; physical MKI confirmation remains pending. Keep issue 447 open until the exact published download is verified on the affected unit."
+      ]
+    },
     {
       "version": "0.2.6-experimental",
       "date": "2026-10-09",

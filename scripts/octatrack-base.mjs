@@ -7,6 +7,13 @@
 // a new directory outside Git: what `npm run device -- boot DIR` and the emulator's run scripts read. Firmware and generated images never enter the checkout.
 //
 //   npm run octatrack:base -- --stock OCTATRACK_OS1.40C.bin [--upstream ELEKLOADER] [--write] [--out NEW-DIR]
+// Private transport candidates may add --usb-midi and --usb-audio "USB AUDIO OUT TRACKS MAIN CUE". --site-events builds the
+// base that owns sdk/machines/octatrack/events.json's sites and tables and dispatches them to subscribed packages;
+// --table-owners also fills its table-owner storage from module-adapters/table-owners.json (the reviewed table owners).
+// --resident-stock-hooks --controllers adds the resident Sidechain, Output Matrix and Analog BD engines and admits their packages
+// through committed trust rows (module-adapters/controller-policies.json). Every build also writes
+// sdk/machines/octatrack/base-binding.json, which the base-bound packages link against (module_packages.py). The beta base:
+//   npm run octatrack:base -- --stock OS.bin --usb-midi --usb-audio 'USB AUDIO OUT TRACKS MAIN CUE' --site-events --table-owners --resident-stock-hooks --controllers
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
@@ -20,22 +27,50 @@ import { buildBase } from '../src/engine/elekloader/octatrack-base.ts'
 const { values: args } = parseArgs({ options: {
   stock: { type: 'string' }, upstream: { type: 'string', default: join(homedir(), '.cache/modwerk-upstream/elekloader') },
   write: { type: 'boolean', default: false }, out: { type: 'string' },
+  'usb-midi': { type: 'boolean', default: false }, 'usb-audio': { type: 'string' }, 'site-events': { type: 'boolean', default: false },
+  'table-owners': { type: 'boolean', default: false },
+  'resident-stock-hooks': { type: 'boolean', default: false },
+  'saved-set-export': { type: 'boolean', default: false },
+  controllers: { type: 'boolean', default: false },
 } })
 if (!args.stock) throw new Error('Usage: npm run octatrack:base -- --stock OCTATRACK_OS1.40C.bin [--upstream ELEKLOADER] [--write] [--out NEW-DIR]')
 const root = resolve(import.meta.dirname, '..'), here = join(root, 'sdk/machines/octatrack/elekloader')
+const adapters = join(root, 'sdk/machines/octatrack/module-adapters')
 const committed = { package: join(root, 'src/engine/assets/octatrack-base.elemod'), fills: join(root, 'src/engine/assets/octatrack-base-fills.json'),
-  sources: join(root, 'src/engine/assets/octatrack-base-sources.json') }
+  sources: join(root, 'src/engine/assets/octatrack-base-sources.json'), binding: join(root, 'sdk/machines/octatrack/base-binding.json'),
+  policies: join(adapters, 'controller-policies.json') }
 const asm = process.env.ELEKLOADER_DSP_ASM ?? join(homedir(), '.cache/modwerk-upstream/octabam/vendor/dsp56300/build/source/dsp_host/dsp_asm')
-const python = (script, ...rest) => execFileSync('python3', ['-B', join(here, script), ...rest], { stdio: 'inherit', env: { ...process.env, ELEKLOADER_DSP_ASM: asm } })
-
-const core = join(mkdtempSync(join(tmpdir(), 'modwerk-base-')), 'core')
-python('build_core.py', '--stock', args.stock, '--upstream', args.upstream, '--output', core, '--dsp-loader')
-python('check_stock_free.py', join(core, 'base.elemod'), '--stock', args.stock, '--upstream', args.upstream)
-for (const [key, file] of [['package', 'base.elemod'], ['fills', 'base-fills.json'], ['sources', 'base-sources.json']]) {
-  const fresh = readFileSync(join(core, file))
-  if (args.write) writeFileSync(committed[key], fresh)
-  else assert(existsSync(committed[key]) && fresh.equals(readFileSync(committed[key])), committed[key] + ' is not what this source builds: run with --write and commit it.')
+const python = (script, ...rest) => execFileSync('python3', ['-B', script.includes('/') ? script : join(here, script), ...rest], { stdio: 'inherit', env: { ...process.env, ELEKLOADER_DSP_ASM: asm } })
+const same = (fresh, path) => {
+  if (args.write) writeFileSync(path, fresh)
+  else assert(existsSync(path) && fresh.equals(readFileSync(path)), path + ' is not what this source builds: run with --write and commit it.')
 }
+
+const work = mkdtempSync(join(tmpdir(), 'modwerk-base-')), core = join(work, 'core')
+const build = (output, ...rest) => python('build_core.py', '--stock', args.stock, '--upstream', args.upstream, '--output', output, '--dsp-loader',
+  ...(args['usb-midi'] ? ['--usb-midi'] : []), ...(args['usb-audio'] ? ['--usb-audio', args['usb-audio']] : []),
+  ...(args['site-events'] ? ['--site-events'] : []),
+  ...(args['table-owners'] ? ['--table-owners', join(adapters, 'table-owners.json')] : []),
+  ...(args['resident-stock-hooks'] ? ['--resident-stock-hooks'] : []),
+  ...(args['saved-set-export'] ? ['--saved-set-export'] : []), ...rest)
+if (args.controllers) {
+  // Sidechain, Output Matrix and Analog BD call the base's lease entries by address, and the base admits them by their
+  // hashes: build it with empty trust rows, encode the packages against that link (base_bound.py rows), then build it
+  // again with their rows. build_core.py refuses the second build if any symbol moved (--controller-layout), so the
+  // packages hold for the final base.
+  if (!args['resident-stock-hooks']) throw new Error('--controllers needs --resident-stock-hooks.')
+  const empty = join(work, 'empty'), encoded = join(work, 'controllers')
+  build(empty)
+  python(join(adapters, 'base_bound.py'), 'rows', '--base-symbols', join(empty, 'symbols.json'), '--upstream', args.upstream, '--out', encoded)
+  same(readFileSync(join(encoded, 'controller-policies.json')), committed.policies)
+  build(core, '--controller-policies', committed.policies, '--controller-layout', join(empty, 'symbols.json'))
+} else build(core)
+python('check_stock_free.py', join(core, 'base.elemod'), '--stock', args.stock, '--upstream', args.upstream)
+for (const [key, file] of [['package', 'base.elemod'], ['fills', 'base-fills.json'], ['sources', 'base-sources.json']])
+  same(readFileSync(join(core, file)), committed[key])
+// What the base-bound packages link against (module-adapters/base_bound.py): its identity, arena, pool and lease entries.
+python(join(adapters, 'base_bound.py'), 'bind', core, ...(args.controllers ? ['--policies', committed.policies] : []), '-o', join(work, 'binding.json'))
+same(readFileSync(join(work, 'binding.json')), committed.binding)
 
 const stock = new Uint8Array(readFileSync(args.stock))
 const browser = await buildBase(stock, readFileSync(committed.package, 'utf8'), JSON.parse(readFileSync(committed.fills, 'utf8')))

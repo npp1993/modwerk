@@ -52,6 +52,20 @@ unsigned modwerk_dsp_module_loads(struct modwerk_module_load *out)
 }
 int main(void)
 {
+    uint8_t load_out[MODWERK_LOAD_BYTES];
+    CHECK(modwerk_status_load(load_out) == 48u && load_out[5] == 0u);
+    modwerk_status[0] = 123u; modwerk_status[1] = 456u; modwerk_status[2] = 789u;
+    modwerk_status[3] = 234u; modwerk_status[4] = 567u;
+    modwerk_runtime_ticks = 120u; dl_frames = 1000u;
+    load_flags = 7u; load_at[0] = 118u; load_at[1] = 115u; load_at[2] = 119u;
+    publish_load();
+    CHECK(modwerk_status_load(load_out) == 48u && load_out[0] == 'M' && load_out[3] == 'D' && load_out[5] == 7u);
+    CHECK(load_out[11] == 120u && load_out[14] == 3u && load_out[15] == 232u && load_out[19] == 118u);
+    CHECK(load_out[31] == 123u && load_out[34] == 1u && load_out[35] == 200u && load_out[47] == 55u);
+    /* Writes to unpublished state do not leak through a concurrent IRQ read. */
+    modwerk_status[0] = 1000u; load_at[0] = 120u;
+    modwerk_status_load(load_out); CHECK(load_out[31] == 123u && load_out[19] == 118u);
+    publish_load(); modwerk_status_load(load_out); CHECK(load_out[30] == 3u && load_out[31] == 232u && load_out[19] == 120u);
     CHECK(!modwerk_status_key(0, 1) && !modwerk_status_key(0, 0)); /* TRIG 1, dialog closed */
     CHECK(!modwerk_status_key(CUE, 1));
     CHECK(modwerk_status_key(PROJ, 1) && modwerk_status_key(PROJ, 0)); /* CUE + PROJ: open, its release taken */

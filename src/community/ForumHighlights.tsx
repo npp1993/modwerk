@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './api'
+import { useReconnectRetry } from './useReconnectRetry'
 import type { ForumHighlights as Highlights } from './forum-contract'
 import { ForumAuthorName, ForumAvatar } from './ForumIdentity'
 import { Icon } from '../components/Icon'
@@ -7,8 +8,9 @@ import { Icon } from '../components/Icon'
 const likes = (count: number) => count + (count === 1 ? ' like' : ' likes')
 /** The forum home's "This month" block: the most liked posts and reply authors of the last 30 days, and the newest members. */
 export function ForumHighlights() {
-  const [data, setData] = useState<Highlights | null>(null), [unavailable, setUnavailable] = useState(false)
-  useEffect(() => { let cancelled = false; void api<Highlights>('/forum/highlights').then(value => { if (!cancelled) setData(value) }).catch(() => { if (!cancelled) setUnavailable(true) }); return () => { cancelled = true } }, [])
+  const [data, setData] = useState<Highlights | null>(null), [unavailable, setUnavailable] = useState(false), [revision, setRevision] = useState(0)
+  useEffect(() => { let cancelled = false; void api<Highlights>('/forum/highlights').then(value => { if (!cancelled) { setData(value); setUnavailable(false) } }).catch(() => { if (!cancelled) setUnavailable(true) }); return () => { cancelled = true } }, [revision])
+  useReconnectRetry(unavailable, setRevision)
   if (unavailable) return null
   const quiet = data && !data.topPosts.length && !data.topMembers.length && !data.newMembers.length
   return <section className="forum-highlights" aria-labelledby="forum-highlights-title">

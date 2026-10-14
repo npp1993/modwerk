@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "about": "USB loader packages the owner admitted for the beta without new qualification, each bound to one module version and one package SHA-256. A module that retains an earlier version's evidence (tests.retainedEvidence) keeps every other package row frozen; only this exact row in src/engine/assets/octatrack-module-packages.json is set aside (scripts/retained-evidence.mjs). It is no hardware or emulator evidence.",
+  "waivers": [
+    {
+      "module": "tapeecho",
+      "version": "0.1.3-experimental",
+      "path": "octatrack-modules/tapeecho/0.1.3-experimental.mwrm",
+      "sha256": "21b953eb038429a5f7428c655cb889aa871e6c794313e51b00568150528630d1",
+      "approval": "repeat98, 14 Oct 2026: open every module for the beta with the hardware evidence waived per version; Tape Echo ships its USB package through this hash-bound waiver.",
+      "hardware": "not tested",
+      "emulator": "not tested"
+    }
+  ]
+}

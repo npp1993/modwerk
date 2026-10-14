@@ -1,10 +1,10 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { SubmissionPage } from './SubmissionPage'
 import { cloneCommands, STARTER_MACHINES, starterPrompt, starterReading, startersFor, updatePrompt } from './starter-prompts'
-import { AUTHOR_RELEASE_OPT_IN, DEVELOPER_CONTEXT, DEVELOPER_RULES, ISSUE_COMMANDS, RELEASE_STEPS } from './developer-guidance'
+import { RELEASE_STEPS } from './developer-guidance'
 import { DEVICES } from '../devices/registry'
 
 const all = STARTER_MACHINES.flatMap(machine => startersFor(machine.id).map(starter => ({ machine: machine.id, starter })))
@@ -44,7 +44,7 @@ describe('starter prompts', () => {
     expect(cloneCommands('https://github.com/repeat98/modwerk', 'octo-dev')).toBe('git clone https://github.com/octo-dev/modwerk.git\ncd modwerk\ngit remote add upstream https://github.com/repeat98/modwerk.git\nnvm use && npm ci')
   })
 
-  it('includes the displayed workflow and distribution guidance in every complete prompt', () => {
+  it('names the displayed workflow stages in every prompt and leaves their rules to the repository', () => {
     for (const machine of STARTER_MACHINES.filter(item => DEVICES.find(device => device.id === item.id)?.sdk)) {
       const prompts = {
         create: starterPrompt(machine.id, startersFor(machine.id)[0]),
@@ -53,21 +53,24 @@ describe('starter prompts', () => {
       for (const task of ['create', 'update'] as const) {
         const prompt = prompts[task]
         for (const step of RELEASE_STEPS[task]) expect(prompt).toContain(step.summary)
-        for (const item of DEVELOPER_CONTEXT) expect(prompt).toContain(item.summary)
-        for (const rule of DEVELOPER_RULES) expect(prompt).toContain(rule.summary)
-        expect(prompt).toContain(AUTHOR_RELEASE_OPT_IN)
-        expect(prompt).toContain(ISSUE_COMMANDS)
+        expect(prompt).toContain('AGENTS.md first')
+        expect(prompt).toContain('docs/DEVELOPER_WORKFLOW.md')
+        expect(prompt).toContain('record only results I actually report')
+        expect(prompt).toContain('never commit firmware')
         expect(prompt).not.toMatch(/Jannik|Assfalg/i)
+        // The prompt carries the order of work; the rules live in files every agent reads.
+        expect(prompt.length, machine.id + ' ' + task).toBeLessThan(6000)
       }
     }
   })
 
   it('asks the agent to share findings as a separate docs-only PR', () => {
     for (const prompt of [starterPrompt('octatrack', startersFor('octatrack')[0]), updatePrompt('digitakt')]) {
-      expect(prompt).toContain('Share what you learn')
-      expect(prompt).toContain('separate docs-only PR')
-      expect(prompt).toContain('Leave sdk/octabam/AGENTS.md unchanged')
+      expect(prompt).toContain('Fixes and improvements')
+      expect(prompt).toContain('"Fix: …", "Improvement: …" or "Docs: …"')
+      expect(prompt).toContain('Never put it in the module PR')
     }
+    expect(readFileSync('AGENTS.md', 'utf8')).toContain('Leave `sdk/octabam/AGENTS.md` unchanged')
   })
 
   it('has the agent check the catalogue for duplicates before it plans a new module', () => {
@@ -75,10 +78,34 @@ describe('starter prompts', () => {
       const prompt = starterPrompt(machine, starter)
       expect(prompt).toContain('look at what Modwerk already has')
       expect(prompt).toContain('instead of building a duplicate')
-      expect(prompt.indexOf('look at what Modwerk already has')).toBeLessThan(prompt.indexOf('Before you write code, read:'))
+      expect(prompt.indexOf('look at what Modwerk already has')).toBeLessThan(prompt.indexOf('Before you write code, read'))
+      expect(prompt).toContain('never patch a site another module or the base patches')
+      expect(prompt).toContain('on my unit (recommended')
     }
     for (const file of ['sdk/catalog.json', 'src/catalog/machine-modules.json', 'sdk/drafts']) expect(existsSync(file), file).toBe(true)
     expect(updatePrompt('digitakt')).not.toContain('look at what Modwerk already has')
+  })
+
+  it('keeps the rules the prompts no longer carry in the files they send the agent to', () => {
+    const agents = readFileSync('AGENTS.md', 'utf8'), workflow = readFileSync('docs/DEVELOPER_WORKFLOW.md', 'utf8')
+    expect(agents).toContain('instead of building a duplicate')
+    expect(agents).toContain('Refuse a module that copies someone else')
+    expect(workflow).toContain('## Check what already exists')
+    expect(workflow).toContain('## Refuse infringing work')
+    expect(readFileSync('docs/module-guides/README.md', 'utf8')).toContain('## Cross-compatibility')
+    expect(workflow).toContain('## Your development setup')
+    expect(workflow).toContain('## Make it mergeable')
+    expect(workflow).toContain('### Fixes and improvements')
+    expect(readFileSync('.github/workflows/pr-flags.yml', 'utf8')).toContain('Improvement:*) label=enhancement')
+    expect(readFileSync('.github/pull_request_template.md', 'utf8')).toContain('**What was wrong or hard:**')
+    expect(agents).toContain('npm run pr:ready')
+    expect(updatePrompt('digitakt')).toContain('npm run pr:ready -- --author <my login>')
+    expect(readFileSync('docs/ADD_A_MACHINE.md', 'utf8')).toContain("## Aim for the Octatrack's interface")
+    expect(workflow).toContain('--device-socket')
+    expect(workflow).toContain('Building a USB interface for the machine is recommended')
+    expect(agents).toContain('Emulators (')
+    expect(updatePrompt('digitakt')).toContain('"Your development setup" in docs/DEVELOPER_WORKFLOW.md')
+    expect(readFileSync('docs/MODULE_AUTHOR_UPDATES.md', 'utf8')).toContain('Automatically merge and publish my module update after checks pass.')
   })
 
   it('opens every prompt with a setup check: coding agents skip it, chat assistants guide a newcomer', () => {
@@ -107,11 +134,11 @@ describe('starter prompts', () => {
     expect(prompt).toContain('Digitakt mk1')
     expect(prompt).toContain('Fix a filter click')
     expect(prompt).not.toContain('module:new')
-    expect(prompt).toContain('never check the evidence box on my behalf without my actual verification')
-    expect(prompt).toContain('actual saved compatible firmware download')
+    expect(prompt).toContain('never check them for me')
+    expect(prompt).toContain('docs/MODULE_AUTHOR_UPDATES.md')
     expect(prompt).toContain('A push or merge alone never closes a Modwerk report')
     expect(prompt).toContain('Missing, failed or untested required checks block automatic publication')
-    expect(prompt).toContain('“Related to #<number>” instead of merge-time closing keywords')
+    expect(prompt).toContain('"Related to #<number>", not closing keywords')
   })
 })
 
@@ -123,6 +150,7 @@ describe('start developing page', () => {
     expect(html).toContain('Copy prompt')
     expect(html.match(/Copy prompt/g)).toHaveLength(1)
     expect(html).toContain('Preview complete prompt')
+    expect(html).toContain('DEVELOPER_WORKFLOW.md#your-development-setup')
     expect(html).not.toContain('<details open')
     expect(html.indexOf('Your coding prompt')).toBeLessThan(html.indexOf('Your first release'))
   })

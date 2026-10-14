@@ -30,3 +30,20 @@ export function issueReplyStatements(db: Database, issue: { id: string; reporter
     return [db.prepare(`INSERT INTO notifications(id,user_id,kind,actor_id,issue_id,module_id,excerpt,delivery_id) SELECT lower(hex(randomblob(16))),user_id,'issue_comment',?,?,?,?,? FROM (${recipients}) WHERE 1 ON CONFLICT DO NOTHING`).bind(actorId, issue.id, module.id, excerpt, delivery, ...values)]
   })
 }
+
+/** Public conversations notify their reporter and members who have successfully replied through Modwerk.
+ * Completed authenticated receipts establish participation; typed names, commands and failed writes do not.
+ * Reuse the event key for every recipient so a retry or service-account echo cannot notify twice. */
+export function publicIssueReplyStatement(db: Database, issueId: string, delivery: string, body: string, actorId: string | null, githubActor: string | null = null, githubId: string | null = null) {
+  return db.prepare(`INSERT INTO notifications(id,user_id,kind,actor_id,issue_id,module_id,github_actor,excerpt,delivery_id)
+    SELECT lower(hex(randomblob(16))),u.id,'issue_comment',?,i.id,i.module_id,?,?,?
+    FROM issues i JOIN users u ON u.id IN (
+      SELECT i.reporter_id UNION SELECT actor FROM github_actions WHERE issue_id=i.id AND completed=1 AND id LIKE 'reply:%'
+    ) WHERE i.id=? AND i.public_json IS NOT NULL AND i.github_number IS NOT NULL AND i.github_url IS NOT NULL
+    AND u.email_verified=1 AND u.suspended=0 AND u.username IS NOT NULL AND u.id IS NOT ?
+    AND NOT EXISTS(SELECT 1 FROM social_pending_accounts p WHERE p.user_id=u.id)
+    AND NOT EXISTS(SELECT 1 FROM auth_accounts g WHERE g.userId=? AND g.providerId='github' AND g.accountId=u.github_id)
+    AND (? IS NULL OR (COALESCE(u.github_id,'')<>? AND NOT EXISTS(SELECT 1 FROM auth_accounts g WHERE g.userId=u.id AND g.providerId='github' AND g.accountId=?)))
+    AND NOT EXISTS(SELECT 1 FROM github_webhook_deliveries WHERE id=?) ON CONFLICT DO NOTHING`)
+    .bind(actorId, githubActor, body.slice(0, 400), delivery, issueId, actorId, actorId, githubId, githubId, githubId, delivery)
+}

@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "module": "poly8",
-  "version": "0.2.7-experimental",
+  "version": "0.3.0-experimental",
   "kind": "coldfire",
   "cycles": {
     "unit": "cycles/event",
     "static": null,
     "measured": null,
     "budget": null,
-    "method": "No chip-cycle bound or worst-case interrupt timing has been established. evidence/performance-t06.json records native instruction averages only; those are not substituted for cycles."
+    "method": "No chip-cycle bound or worst-case interrupt timing for 0.3.0. evidence/performance-t06.json records historical native instruction averages only; those are not substituted for cycles. The owner waived chip worst-case cycles for this exact source (sdk/poly8-build-approval.json)."
   },
   "load": {
     "frameUs": 362.8,
@@ -16,7 +16,7 @@
     "moduleLongestUs": null,
     "stockIdlePercent": null,
     "moduleIdlePercent": null,
-    "method": "No physical cfmeter.py stock/module interrupt and idle capture is available."
+    "method": "No physical cfmeter.py stock/module interrupt and idle capture for 0.3.0."
   },
   "stress": {
     "floodMessagesPerSecond": null,
@@ -25,11 +25,11 @@
     "stuckNotes": null,
     "hangs": null,
     "dropped": null,
-    "droppedExplanation": "No qualified physical wire-rate MIDI/audio flood for 0.2.7. Three native sequencer release cases pass; historical 128-key/load workloads are recorded separately and do not qualify this hardware measurement."
+    "droppedExplanation": "No qualified physical wire-rate MIDI/audio flood for 0.3.0. The historical 128-key/load workloads and the 0.2.7 native sequencer release cases are recorded separately and do not qualify this version."
   },
   "nativeEvidence": {
     "report": "evidence/performance-t06.json",
-    "method": "Historical 0.2.5/T06 only: twelve 1,000-block before/after native ColdFire instruction comparisons; all eight-channel 16,000-frame audio comparisons identical. These averages do not qualify the 0.2.7 sequencer release pass. Current functional cases are in evidence/sequence-release-0.2.7.md; they are not timing or load measurements.",
+    "method": "Historical 0.2.5/T06 only: twelve 1,000-block before/after native ColdFire instruction comparisons; all eight-channel 16,000-frame audio comparisons identical. These averages do not qualify the 0.2.7 sequencer release pass or 0.3.0. Current functional cases are in evidence/sequence-release-0.2.7.md; they are not timing or load measurements.",
     "highestTestedAverageInstructionsPer16SampleBlock": 58606.766,
     "hardwareTiming": null
   }

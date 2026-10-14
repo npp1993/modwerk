@@ -1,52 +1,29 @@
 /**
- * The native declaration checks in src/catalog/native-metadata.json record every module selection
- * the pinned octabam ledger has composed, keyed by the sorted module ids joined with '+'. Almost all
- * values are empty (no problem found), and the keys repeat the same ids thousands of times, so the
- * site ships a compact form instead: the sorted id universe, each checked selection as a bit mask
- * over it, and only the selections that recorded a problem by key.
+ * The native declaration checks, one pair at a time (src/catalog/compatibility-pairs.json, written by
+ * `npm run modules:pairs -- --write`). octabam's ledger compares modules two at a time, except POLY8's shared
+ * composition, which changes the machine modules' claims when POLY8 (and FM Synth) are selected. So the table holds,
+ * per context, each module alone and each pair the ledger refuses; everything else among its modules is clean.
+ * scripts/module-pairs.py proves on every check that the pairs decide every selection.
  */
-export type NativeChecks = { revision: string; checks: Record<string, string[]> }
-export type CompactChecks = { schemaVersion: 1; revision: string; modules: string[]; checked: number[]; problems: Record<string, string[]> }
-const MAX_MODULES = 30 // masks stay exact 31-bit integers
+export type PairChecks = { schemaVersion: 2; revision: string; modules: string[]; contexts: string[]; clashes: Record<string, Record<string, string[]>> }
 
 export function selectionKey(ids: readonly string[]) { return [...ids].sort().join('+') }
 
-export function compactChecks(metadata: NativeChecks): CompactChecks {
-  const modules = [...new Set(Object.keys(metadata.checks).flatMap(key => key.split('+')))].sort()
-  if (modules.length > MAX_MODULES) throw new Error(`Compatibility checks cover ${modules.length} modules; the compact bit masks allow ${MAX_MODULES}`)
-  const index = new Map(modules.map((id, position) => [id, position] as const))
-  const checked: number[] = [], problems: Record<string, string[]> = {}
-  for (const [key, notes] of Object.entries(metadata.checks)) {
-    const ids = key.split('+')
-    if (selectionKey(ids) !== key || new Set(ids).size !== ids.length) throw new Error('Compatibility check keys must be sorted, unique module ids: ' + key)
-    checked.push(ids.reduce((mask, id) => mask | (1 << index.get(id)!), 0))
-    if (notes.length) problems[key] = notes
-  }
-  checked.sort((a, b) => a - b)
-  for (let position = 1; position < checked.length; position++) if (checked[position] === checked[position - 1]) throw new Error('Duplicate compatibility check: ' + checked[position])
-  return { schemaVersion: 1, revision: metadata.revision, modules, checked, problems }
+/** The longest context whose modules the selection holds, '' for none (scripts/module-pairs.py context_of). */
+export function selectionContext(checks: PairChecks, ids: readonly string[]) {
+  const held = new Set(ids), size = (context: string) => context ? context.split('+').length : 0
+  return checks.contexts.filter(context => !context || context.split('+').every(id => held.has(id)))
+    .reduce((best, context) => size(context) > size(best) ? context : best, '')
 }
 
-/** The recorded notes for a selection: an empty list when the check passed, undefined when never recorded. */
-export function recordedCheck(compact: CompactChecks, ids: readonly string[], checkedSet = new Set(compact.checked)): string[] | undefined {
-  let mask = 0
-  for (const id of ids) {
-    const position = compact.modules.indexOf(id)
-    if (position < 0) return undefined
-    mask |= 1 << position
-  }
-  if (!checkedSet.has(mask)) return undefined
-  return compact.problems[selectionKey(ids)] ?? []
+/** What the ledger refuses between two modules in this selection's context; [] when they are clean together. */
+export function pairClash(checks: PairChecks, ids: readonly string[], a: string, b: string) {
+  return checks.clashes[selectionContext(checks, ids)]?.[selectionKey([a, b])] ?? []
 }
 
-/** The two-module selections recorded as passing. Pair rules use this small list so the main bundle never loads every check. */
-export function passingPairs(compact: CompactChecks): string[] {
-  const pairs: string[] = []
-  for (const mask of compact.checked) {
-    const rest = mask & (mask - 1)
-    if (!rest || rest & (rest - 1)) continue // exactly two modules
-    const key = selectionKey(compact.modules.filter((_, position) => mask & (1 << position)))
-    if (!compact.problems[key]) pairs.push(key)
-  }
-  return pairs.sort()
+/** The ledger's notes for a selection: [] when it is clean, undefined when a module is outside the table. */
+export function recordedCheck(checks: PairChecks, ids: readonly string[]): string[] | undefined {
+  if (ids.some(id => !checks.modules.includes(id))) return undefined
+  const clashes = checks.clashes[selectionContext(checks, ids)] ?? {}, sorted = [...new Set(ids)].sort()
+  return sorted.flatMap((a, index) => [...(clashes[a] ?? []), ...sorted.slice(index + 1).flatMap(b => clashes[a + '+' + b] ?? [])])
 }

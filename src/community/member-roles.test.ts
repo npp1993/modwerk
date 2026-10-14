@@ -62,11 +62,11 @@ describe('member roles', () => {
     const f = await fixture(), tester = await f.member('00schneider'), admin = await f.admin()
     const beta = '/admin/forum/beta-testers/00schneider'
     const access = () => f.call('/auth/build-access', 'POST', { moduleIds: ['airwindows-chorus'] }, tester.session)
+    // The docking startup is public: a cached frontend's former beta flag no longer gates or refuses a build.
     const startup = () => f.call('/auth/build-access', 'POST', { moduleIds: ['repitch'], betaStartup: true }, tester.session)
     expect((await access()).status).toBe(403)
-    expect((await startup()).status).toBe(403)
+    expect((await startup()).status).toBe(200)
     expect((await f.call('/auth/build-access', 'POST', { moduleIds: ['repitch'] }, tester.session)).status).toBe(200)
-    expect((await f.call('/auth/build-access', 'POST', { betaStartup: 'true' }, tester.session)).status).toBe(400)
     expect((await f.call(beta, 'PUT', { betaTester: true, reason: 'Beta invitation' }, tester.session)).status).toBe(403)
     f.db.prepare("UPDATE users SET role='developer' WHERE id=?").run(tester.id)
     expect((await f.call(beta, 'PUT', { betaTester: true, reason: 'Beta invitation' }, '', admin)).status).toBe(200)
@@ -80,7 +80,7 @@ describe('member roles', () => {
     const thread = await (await f.call('/forum/threads', 'POST', { title: 'Testing', body: 'Beta', category: 'general' }, tester.session)).json() as { id: string }
     expect(await (await f.call('/forum/threads/' + thread.id)).json()).toMatchObject({ posts: [{ betaTester: true, role: 'developer' }] })
     expect((await f.call(beta, 'PUT', { betaTester: false, reason: 'Testing complete' }, '', admin)).status).toBe(200)
-    expect((await startup()).status).toBe(403)
+    expect((await startup()).status).toBe(200)
     expect((await access()).status).toBe(403)
     expect((await f.call('/modules/airwindows-chorus/download', 'POST', {}, tester.session)).status).toBe(400)
     expect(f.role(tester.id)).toBe('developer')

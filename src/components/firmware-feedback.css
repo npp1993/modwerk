@@ -29,7 +29,7 @@
 .firmware-feedback-choice .module-preview .preview-led, .firmware-feedback-thumbnail .preview-controls { display: none; }
 .firmware-feedback-choice .module-preview .signal-art { height: 100%; }
 .firmware-feedback-no-thumbnail { display: grid; place-items: center; width: 70px; height: 60px; color: var(--muted); flex-shrink: 0; }
-.firmware-feedback-choice-copy > .firmware-feedback-result { display: flex; align-items: center; gap: 5px; color: #efd17c; font-size: 11px; }
+.firmware-feedback-choice-copy > .firmware-feedback-result { display: flex; align-items: center; gap: 5px; color: var(--issue-confirmed); font-size: 11px; }
 .firmware-feedback-choice-copy > .firmware-feedback-result.is-working { color: #91d5bd; }
 .firmware-feedback-guide { min-width: 0; overflow-y: auto; scrollbar-width: thin; padding: 4px 0 24px 24px; overscroll-behavior: contain; }
 .firmware-feedback-guide h3 { margin: 0 0 6px; font-size: 24px; font-weight: 600; letter-spacing: -.4px; }

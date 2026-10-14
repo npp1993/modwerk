@@ -10,7 +10,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 FOLDER = ROOT / 'sdk/machines/octatrack/elekloader'
-sys.path.insert(0, str(ROOT / 'sdk/machines/octatrack/module-adapters'))
+sys.path.append(str(ROOT / 'sdk/machines/octatrack/module-adapters'))
 import resident_source
 loader = resident_source.load_loader()
 

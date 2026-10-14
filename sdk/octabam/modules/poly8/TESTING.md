@@ -1,6 +1,13 @@
 # POLY8 validation
 
 Status: experimental release preparation, **not hardware-qualified**.
+
+## 0.3.0: site-event subscribers (prepared 14 October 2026, not released)
+
+- **Native builds unchanged.** `polyphony.s` assembled without `MODWERK_EVENTS` (`m68k-elf-as -mcpu=54455`) gives the same `.text` bytes and relocations as 0.2.7 (SHA-256 `09e0afb64086bcfbbd2e12dce2ef4417da4ddd710ba422637d7c54bae67e457a`). The pinned shared-machine sources are untouched.
+- **Runtime package.** `runtime.json` replaces `mr_rate_hook` and `mr_stop_voice` with `poly_play_increment`, `poly_voice_bind` and `poly_voice_bind_run`; `mr_mute_suppressed` and the weak `rate_hook`/`fresh_bind` links are no longer needed, because the base orders the handlers. The mask-1 group has 61 sites (was 63) and three hook words; a base without site events refuses it.
+- **Emulator comparison** (loader-integration `loader_events_fixture.cpp`, 14 October 2026; synthetic renderer flags, Part machine byte and register state at the sites): the 0.2.7 group on a base without events and this group on an events base give the same increment, tuning record, resets, extension stops and discarded extensions, for POLY and other tracks, single-track and all-track resets. Beside Repitch and Mute Modes, in either install order, POLY tracks keep POLY8's increment and other tracks get Repitch's; a muted track's reset is dropped without discarding its extensions, and resets during POLY8's rendering run as stock, as in the native composition. The 0.2.7 group is refused on an events base (`RUNTIME_EVENT`).
+- Not run: hardware, audio, the native gates (their input bytes are unchanged).
 The current 0.2.7 candidate is described in
 [sequence release evidence](evidence/sequence-release-0.2.7.md). Earlier results
 below retain their original versions and do not qualify this changed source.

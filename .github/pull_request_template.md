@@ -1,4 +1,10 @@
-Describe the change in behavior, module version(s), compatibility and source/media attribution.
+**A fix or improvement outside a module?** Title it `Fix: …`, `Improvement: …` or `Docs: …` (it is labelled from that), keep it to one change, delete everything below and answer three questions in plain words:
+
+- **What was wrong or hard:**
+- **What this changes:**
+- **How I checked it:** (`npm run pr:ready` and anything else you ran)
+
+**A module or module update:** describe the change in behavior, module version(s), compatibility and source/media attribution.
 
 Existing module authors can opt into [automatic publication](../docs/MODULE_AUTHOR_UPDATES.md) after reviewing all evidence:
 
@@ -6,6 +12,7 @@ Existing module authors can opt into [automatic publication](../docs/MODULE_AUTH
 - [ ] I verified the source, licences, UI and qualification reports, including instance isolation and Part/project/reboot persistence where applicable; no required acceptance check is failed or untested.
 
 - [ ] New or changed module: I read the guide for its category in `docs/module-guides/` (and `sequencing.md` if it acts in time), walked its checklists, and TESTING.md lists what I did not test. `npm run module:doctor -- <id>` is green.
+- [ ] The module builds, installs and works when it is the only module chosen. It depends on no other module: no `requires`, no hooks into another module, not stacked on another module's pull request. Its key gestures and stock screens are in `compatibility.uiClaims` (`[]` for none).
 - [ ] Every code change to a module has a greater semantic version and exact catalog pin (documentation and media edits need none).
 - [ ] Source and media are original or properly licensed; authors and full licence texts are preserved.
 - [ ] No Elektron firmware, extracted routines/tables, upgrade files or other infringing material is included.

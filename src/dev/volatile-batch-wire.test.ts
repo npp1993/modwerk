@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createHash } from 'node:crypto'
 import { encodeVolatileBundle, encodeVolatileRequest, parseVolatileStatus, splitVolatileChunks, VOLATILE_HOST_MAX_BYTES,
-  type VolatileRecord, type VolatileRequest } from './volatile-batch-wire.ts'
+  VolatileResult, type VolatileRecord, type VolatileRequest } from './volatile-batch-wire.ts'
 
 const base = '1'.repeat(64), session = '2'.repeat(64), baseline = '3'.repeat(64), digest = '4'.repeat(64)
 const bound = { base, session, transaction: 5, generation: 7, sequence: 9 }
@@ -37,10 +37,13 @@ describe('private volatile command framing', () => {
     expect([...data.slice(88, 96)]).toEqual(Array(8).fill(0)); expect(view.getUint32(160)).toBe(7000)
     expect(view.getUint32(164)).toBe(0)
   })
-  it.each(['verify', 'activate', 'startTrial', 'rollback', 'abort', 'touch'] as const)('encodes %s without payload or persistence mode', command => {
+  it.each(['verify', 'activate', 'startTrial', 'rollback', 'abort', 'touch', 'keep'] as const)('encodes %s without payload or persistence mode', command => {
     const data = encodeVolatileRequest({ ...bound, command }), view = new DataView(data.buffer)
     expect(data.byteLength).toBe(96); expect(view.getUint32(12)).toBe(5); expect(view.getUint32(16)).toBe(7)
     expect(view.getUint32(20)).toBe(0)
+  })
+  it('encodes RAM-only Keep as command 9 on the existing 96-byte header', () => {
+    expect([...encodeVolatileRequest({ ...bound, command: 'keep' }).slice(4, 8)]).toEqual([1, 9, 0, 0])
   })
   it.each([0, -1, 0x100000000, 1.5, NaN])('refuses invalid sequence %s', sequence => {
     expect(() => encodeVolatileRequest({ ...bound, command: 'touch', sequence })).toThrow()
@@ -48,7 +51,7 @@ describe('private volatile command framing', () => {
   it('refuses missing bindings, unknown commands, excessive chunks and 64-byte-multiple frames', () => {
     for (const request of [
       { ...bound, command: 'touch', transaction: 0 }, { ...bound, command: 'touch', generation: 0 },
-      { ...bound, command: 'keep' }, { ...bound, command: 'touch', session: '0'.repeat(64) },
+      { ...bound, command: 'persist' }, { ...bound, command: 'touch', session: '0'.repeat(64) },
       { ...bound, command: 'chunk', offset: 0, data: new Uint8Array(3996) },
       { ...bound, command: 'chunk', offset: 0, data: new Uint8Array(28) },
       { ...bound, command: 'chunk', offset: VOLATILE_HOST_MAX_BYTES, data: new Uint8Array(1) },
@@ -151,16 +154,31 @@ describe('private cached volatile status validation', () => {
     for (let phase = 0; phase <= 8; ++phase) expect(parseVolatileStatus(status(phase), observed).phase).toBeTruthy()
     expect(parseVolatileStatus(status(), observed)).toMatchObject({ phase: 'idle', transaction: 0, baseline: null, current: baseline, offer: null })
   })
-  it('permits confirmed rollback Idle to retain consumed tokens only with exact baseline restoration', () => {
+  it('permits rollback Idle to retain consumed tokens while its live current moves on', () => {
     const bytes = status(), view = new DataView(bytes.buffer); bytes[7] = 11
     bytes.set(Buffer.from(baseline, 'hex'), 96); view.setUint32(8, 9); view.setUint32(12, 5); view.setUint32(16, 7)
     expect(parseVolatileStatus(bytes, observed)).toMatchObject({ transaction: 5, generation: 7, current: baseline, baseline })
-    bytes[160] ^= 1; expect(() => parseVolatileStatus(bytes, observed)).toThrow('idle state')
+    // The board refreshes current every Idle tick; a later legacy upload moves it off the rolled-back baseline.
+    bytes[160] ^= 1; expect(parseVolatileStatus(bytes, observed).current).not.toBe(baseline)
+    view.setUint32(12, 0); expect(() => parseVolatileStatus(bytes, observed)).toThrow('idle state')
   })
   it('accepts an unowned queued Begin without a baseline or new token', () => {
     const bytes = status(); bytes[5] = 1; new DataView(bytes.buffer).setUint32(8, 9)
     expect(parseVolatileStatus(bytes, observed)).toMatchObject({ result: 'queued', phase: 'idle', transaction: 0, generation: 0, baseline: null })
     bytes[5] = 0; expect(() => parseVolatileStatus(bytes, observed)).toThrow('idle state')
+  })
+  it('accepts a definite refused first Begin that leaves Idle without tokens or a baseline', () => {
+    // The board consumes the sequence but issues no transaction for these pre-ownership refusals.
+    for (const result of ['busy', 'state', 'identity', 'stale', 'limit'] as const) {
+      const bytes = status(); bytes[5] = VolatileResult.indexOf(result); new DataView(bytes.buffer).setUint32(8, 9)
+      expect(parseVolatileStatus(bytes, observed)).toMatchObject({ result, phase: 'idle', sequence: 9, transaction: 0,
+        generation: 0, baseline: null, current: baseline, latchHeld: false })
+      new DataView(bytes.buffer).setUint32(12, 1); expect(() => parseVolatileStatus(bytes, observed)).toThrow('idle state')
+    }
+    for (const result of ['ok', 'length', 'conflict', 'hash', 'refused', 'pending', 'quarantined'] as const) {
+      const bytes = status(); bytes[5] = VolatileResult.indexOf(result); new DataView(bytes.buffer).setUint32(8, 9)
+      expect(() => parseVolatileStatus(bytes, observed), result).toThrow('idle state')
+    }
   })
   it('keeps cumulative touched cores distinct from current-operation acknowledgments', () => {
     const bytes = status(4); bytes[192] = 1; bytes[193] = 3; bytes[194] = 1
@@ -171,6 +189,15 @@ describe('private cached volatile status validation', () => {
     const bytes = status(8); bytes[5] = 12; bytes[7] = 13; bytes.fill(0, 160, 192)
     expect(parseVolatileStatus(bytes, observed)).toMatchObject({ result: 'quarantined', current: null, latchHeld: true })
     bytes[160] = 1; expect(() => parseVolatileStatus(bytes, observed)).toThrow('unknown digest')
+  })
+  it('reports an unsaved or failed saved-set write only in Idle, never a failure without the save', () => {
+    const bytes = status(); bytes[7] = 10 | 16
+    expect(parseVolatileStatus(bytes, observed)).toMatchObject({ phase: 'idle', saving: true, saveFailed: false })
+    bytes[7] = 10 | 16 | 32; expect(parseVolatileStatus(bytes, observed)).toMatchObject({ saving: true, saveFailed: true })
+    expect(parseVolatileStatus(status(), observed)).toMatchObject({ saving: false, saveFailed: false })
+    bytes[7] = 10 | 32; expect(() => parseVolatileStatus(bytes, observed)).toThrow('saved-set state')
+    const trial = status(5); trial[7] |= 16; expect(() => parseVolatileStatus(trial, observed)).toThrow('saved-set state')
+    for (const bit of [64, 128]) { const reserved = status(); reserved[7] |= bit; expect(() => parseVolatileStatus(reserved, observed)).toThrow('header') }
   })
   it('refuses missing capability, changed boot/base, reserved bytes, unknown enums and partial records', () => {
     expect(() => parseVolatileStatus(status(), { ...observed, capabilities: 7 })).toThrow('capability')

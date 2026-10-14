@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api } from './api'
+import { api, onCommunityReconnect } from './api'
 import type { MembersOnline } from './forum-contract'
 import { useCommunity } from './context'
 import { anonymousCountsAllowed } from './usage'
@@ -32,11 +32,13 @@ export function useMembersOnline(poll = true, registerPresence = true) {
       finally { pending = false }
     }
     load()
-    if (!poll) return () => { cancelled = true; controller.abort() }
+    // A count lost to a dropped connection returns as soon as reads work again, not at the next poll.
+    const reconnected = onCommunityReconnect(() => { if (document.visibilityState === 'visible') load() })
+    if (!poll) return () => { cancelled = true; controller.abort(); reconnected() }
     const timer = window.setInterval(() => { if (document.visibilityState === 'visible') load() }, POLL_MS)
     const visible = () => { if (document.visibilityState === 'visible') load() }
     document.addEventListener('visibilitychange', visible); window.addEventListener('online', visible)
-    return () => { cancelled = true; controller.abort(); window.clearInterval(timer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible) }
+    return () => { cancelled = true; controller.abort(); reconnected(); window.clearInterval(timer); document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', visible) }
   }, [poll, registerPresence, memberId])
   return presence
 }

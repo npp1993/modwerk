@@ -3,6 +3,8 @@
 // publishes as runtime packages (public/octatrack-modules, made from source by `npm run octatrack:module-packages`)
 // are installed from them; anything the set leaves out is removed with an empty package naming its module.
 import manifest from '../assets/octatrack-module-packages.json' with { type: 'json' }
+import siteEvents from '../../../sdk/machines/octatrack/site-events.json' with { type: 'json' }
+import baseBinding from '../../../sdk/machines/octatrack/base-binding.json' with { type: 'json' }
 import { sha } from '../../../vendor/elekloader/kit/src/bytes.ts'
 import { MODULES } from '../../catalog/modules.ts'
 import { inventoryChanges, type Inventory, type InventoryTarget } from '../../config/inventory.ts'
@@ -14,6 +16,8 @@ export class ModuleSetError extends Error {}
 export interface RuntimePackage {
   bytes: number; sha256: string; path: string; name?: string
   abi?: number; features?: number; sites?: number; copies?: number; fills?: number
+  /** Exact IDENTIFY digest when authored code depends on this base's addresses. */
+  requiredBase?: string
 }
 export interface MachineVariant extends RuntimePackage {
   layout: number; current: boolean; members: { id: string; version: string }[]
@@ -48,13 +52,25 @@ export async function fetchPackage(entry: RuntimePackage): Promise<Uint8Array> {
 }
 
 const MACHINE_BITS: Record<string, number> = { poly8: 1, vector: 2, synth: 4 }
+/** The Octatrack base's site events and tables (sdk/machines/octatrack/events.json, through events.py): hook words a
+ * subscriber may carry after the core four, by hook index. */
+export const SITE_EVENTS = siteEvents.events.length
+const SITE_KINDS = siteEvents.events.map((event, i) => {
+  if (event.index !== 4 + i) throw new Error('sdk/machines/octatrack/site-events.json is out of order: run events.py --write')
+  return { kind: event.kind, record: (event as { record?: number }).record ?? 0 }
+})
+/** loader.h RUNTIME_RAISE: a raised event's hook word with this order points at a zero slot for the base's entry. */
+const RAISE = 255
+/** loader.h struct modwerk_take: claims and entry, the record a take event's hook word points at. */
+const TAKE_RECORD = 8
 const invalidPackage = () => new ModuleSetError('The site’s module package list is inconsistent. Reload the page before syncing.')
 const bounded = (n: unknown, max: number) => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= max
 function requirements(entry: RuntimePackage, group = false) {
   const abi = entry.abi ?? ('octabam' in entry && entry.octabam ? 7 : 6), sites = entry.sites ?? 0, copies = entry.copies ?? 0, fills = entry.fills ?? 0
   if (![6, 7, 8].includes(abi) || !bounded(sites, 128) || !bounded(copies, 128) || !bounded(fills, 64) ||
       !bounded(entry.features ?? 0, 65535) || (abi < 8 && fills) || (abi < 7 && copies) ||
-      (group && abi !== 8) || (abi >= 7 && [entry.features, entry.sites, entry.copies, ...(abi === 8 ? [entry.fills] : [])].some(value => value === undefined)))
+      (group && abi !== 8) || (entry.requiredBase !== undefined && (typeof entry.requiredBase !== 'string' || !/^[0-9a-f]{64}$/.test(entry.requiredBase))) ||
+      (abi >= 7 && [entry.features, entry.sites, entry.copies, ...(abi === 8 ? [entry.fills] : [])].some(value => value === undefined)))
     throw invalidPackage()
   // Required features follow the actual record types even if a manifest accidentally omits a bit.
   const features = (entry.features ?? 0) | (sites ? RuntimeFeature.sites : 0) | (copies ? RuntimeFeature.stockCopies : 0) |
@@ -71,7 +87,10 @@ function checkPackage(entry: RuntimePackage, data: Uint8Array, id: string, varia
       view.getUint32(28) !== Number.parseInt(runtimeId(id), 16) || view.getUint32(24) !== want.sites ||
       (abi >= 7 ? view.getUint32(68) : 0) !== want.copies || (abi === 8 ? view.getUint32(72) : 0) !== want.fills) fail()
   const flags = view.getUint16(6), image = view.getUint32(8), bss = view.getUint32(12), relocations = view.getUint32(16), hooks = view.getUint32(20)
-  if (flags & ~(abi === 8 ? 7 : 3) || image + bss > 131072 || relocations > 2048 || hooks > 4 ||
+  // Hooks 0-3 are the core handlers; an ABI 8 package that subscribes to the base's site events (feature 128) adds one
+  // word per event of sdk/machines/octatrack/events.json after them: its order in the top byte, its handler below.
+  const subscriber = abi === 8 && (want.features & RuntimeFeature.siteEvents) !== 0
+  if (flags & ~(abi === 8 ? 7 : 3) || image + bss > 131072 || relocations > 2048 || hooks > (subscriber ? 4 + SITE_EVENTS : 4) ||
       view.getUint32(32) > 4096 || view.getUint16(36) > 256 || header + 4 * hooks + image + 4 * relocations > data.length) fail()
   if (variant) {
     const mask = variant.members.reduce((value, member) => value | MACHINE_BITS[member.id], 0), start = header + 4 * hooks
@@ -81,10 +100,19 @@ function checkPackage(entry: RuntimePackage, data: Uint8Array, id: string, varia
   } else if (flags & 4) fail() // a group cannot masquerade as one ordinary module
   const imageStart = header + 4 * hooks, imageRelocations: number[] = [], changedSpans: [number, number][] = []
   const overlaps = (start: number, size: number, spans: [number, number][]) => spans.some(([at, length]) => start < at + length && at < start + size)
+  let subscribed = false
   for (let i = 0; i < hooks; i++) {
-    const hook = view.getUint32(header + 4 * i)
-    if (hook !== 0xffffffff && (hook >= image || hook % 2)) fail()
+    const hook = view.getUint32(header + 4 * i), handler = i < 4 ? hook : hook & 0xffffff
+    if (hook !== 0xffffffff && (handler >= image || handler % 2)) fail()
+    subscribed ||= i >= 4 && hook !== 0xffffffff
+    if (i < 4 || hook === 0xffffffff) continue
+    // As the loader: a raise asks for the base's entry in a zero 4-byte slot of the image, only on a raised event; a
+    // take event's word points at a whole {claims, entry} record, a table's at a whole record of the table's size.
+    const { kind, record } = SITE_KINDS[i - 4] ?? fail(), at = header + 4 * hooks + handler
+    if (hook >>> 24 === RAISE ? kind !== 'raise' || handler + 4 > image || data.subarray(at, at + 4).some(byte => byte !== 0) :
+      handler + (kind === 'take' ? TAKE_RECORD : kind === 'table' ? record : 0) > image) fail()
   }
+  if (subscribed !== subscriber) fail() // the manifest names the base feature its subscriptions need
   for (let i = 0; i < relocations; i++) {
     const at = view.getUint32(imageStart + image + 4 * i)
     if (at % 2 || at + 4 > image || (abi >= 7 ? i > 0 && at < imageRelocations[i - 1] + 4 :
@@ -203,9 +231,12 @@ export function createRuntimeCatalogue(document: RuntimePackageManifest) {
       ...added.map(id => ({ id, name: name(id), add: published.get(id) })),
     ] as Step[] }
   }
-  function requireBase(steps: Step[], capabilities?: RuntimeCapabilities) {
+  function requireBase(steps: Step[], capabilities?: RuntimeCapabilities, base?: string) {
     for (const step of steps) for (const entry of [step.add, step.undo]) {
       if (!entry) continue
+      // A published package bound to the published base (sdk/machines/octatrack/base-binding.json) needs that base: an older one is an update.
+      if (entry.requiredBase && entry.requiredBase !== base) throw entry.requiredBase === baseBinding.identity ? new BaseUpdateRequired() :
+        new ModuleSetError('This module package needs the exact Modwerk base it was prepared for. Reconnect that base before syncing.')
       const { abi, features, sites, copies } = requirements(entry, step.group)
       if ((!capabilities && (abi > 6 || features)) || capabilities && (abi > capabilities.abi || (features & capabilities.features) !== features || sites > capabilities.maxSites || copies > capabilities.maxCopies))
         throw new BaseUpdateRequired()
@@ -221,13 +252,13 @@ export function createRuntimeCatalogue(document: RuntimePackageManifest) {
     if (new Set(moduleIds).size !== moduleIds.length) throw new ModuleSetError('The Octatrack’s module list contains overlapping machine packages. Reconnect and read it again.')
     return { moduleIds, removedStockFx: [], ...runtimeGroups.length ? { runtimeGroups } : {} }
   }
-  function review(target: InventoryTarget, current: Inventory, capabilities?: RuntimeCapabilities) {
+  function review(target: InventoryTarget, current: Inventory, capabilities?: RuntimeCapabilities, base?: string) {
     const changes = inventoryChanges(current, target)
     let updates: string[] = [], needsSync = !!(changes.add.length + changes.remove.length + changes.stockOff.length + changes.stockOn.length)
     try {
       const planned = plan(target, current)
       updates = planned.updates; needsSync = planned.steps.length > 0
-      requireBase(planned.steps, capabilities)
+      requireBase(planned.steps, capabilities, base)
       return { changes, updates, needsSync, problem: undefined as ModuleSetError | undefined }
     } catch (error) {
       if (!(error instanceof ModuleSetError)) throw error
@@ -236,9 +267,9 @@ export function createRuntimeCatalogue(document: RuntimePackageManifest) {
   }
   return {
     ids, inventory, review,
-    problem: (target: InventoryTarget, current: Inventory, capabilities?: RuntimeCapabilities) => review(target, current, capabilities).problem,
-    async prepare(target: InventoryTarget, current: Inventory, load = fetchPackage, capabilities?: RuntimeCapabilities): Promise<{ name: string; changes: SetChange[] }> {
-      const { steps } = plan(target, current); requireBase(steps, capabilities)
+    problem: (target: InventoryTarget, current: Inventory, capabilities?: RuntimeCapabilities, base?: string) => review(target, current, capabilities, base).problem,
+    async prepare(target: InventoryTarget, current: Inventory, load = fetchPackage, capabilities?: RuntimeCapabilities, base?: string): Promise<{ name: string; changes: SetChange[] }> {
+      const { steps } = plan(target, current); requireBase(steps, capabilities, base)
       // Fetch and verify every forward and rollback package before the first write to the unit.
       const packages = new Map<RuntimePackage, Uint8Array>()
       await Promise.all(steps.flatMap(step => [step.add, step.undo].filter((entry): entry is RuntimePackage => !!entry).map(async entry => {
@@ -268,5 +299,8 @@ export function moduleSetKit(link: OctatrackLink) {
     if (!modules) throw new ModuleSetError('This Octatrack’s base doesn’t list its modules. Install the latest Modwerk base, then try again.')
     return inventoryFrom(modules)
   }
-  return { readInventory, prepareUpdate: async (target: InventoryTarget) => prepareModuleSet(target, await readInventory(), fetchPackage, link.getState().identity?.capabilities) }
+  return { readInventory, prepareUpdate: async (target: InventoryTarget) => {
+    const inventory = await readInventory(), identity = link.getState().identity
+    return prepareModuleSet(target, inventory, fetchPackage, identity?.capabilities, identity?.base)
+  } }
 }

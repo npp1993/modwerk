@@ -33,6 +33,11 @@ static int32_t gain(uint32_t knob) {
  * ColdFire kernels bit-for-bit and is their arithmetic oracle. */
 #define TE_FULL_WET 2147483640
 #define TE_ONE 2147483647
+/* Level-matched MIX (#607): the dry signal stays at unity until MIX 95
+ * (a quarter of the way down from full wet), then fades to nothing at full
+ * wet: dry = min(1, 4*(1-mix)). The wet makeup already returns the echo at
+ * input level, so the track no longer drops when MIX comes up. */
+#define TE_DRY_KNEE 536870912
 #ifndef __m68k__
 static inline int64_t emac(int32_t x, int32_t y) { return ((int64_t)x * y) >> 23; }
 static inline int32_t readout(int64_t acc) {
@@ -220,9 +225,10 @@ static void filter_block(int32_t *buffer, const int32_t *lp, int32_t *z) {
 /* One record/output sample set per block. The record sum is a single
  * saturating accumulator: drive*(L+R)/2 + feedback*wet + hiss. wet already
  * carries the makeup; feedback (Q2.30) is applied twice. Full wet is 4*wet
- * (Q3.29 -> Q1.31) and other MIX values L*(1-mix) + 4*wet*mix, each clipped
- * by the read-out. Knob ramps advance before each sample, as they always
- * have; a settled full-wet block uses the dedicated full-wet output. */
+ * (Q3.29 -> Q1.31) and other MIX values L*dry + 4*wet*mix with
+ * dry = min(1, 4*(1-mix)), each clipped by the read-out. Knob ramps
+ * advance before each sample, as they always have; a settled full-wet block
+ * uses the dedicated full-wet output. */
 static void tape_block(TapeState *restrict s, const int32_t *restrict wet,
                        int32_t *restrict audio, int32_t *restrict record,
                        int32_t dm, int32_t df, int32_t dn) {
@@ -248,7 +254,10 @@ static void tape_block(TapeState *restrict s, const int32_t *restrict wet,
         if (settled && s->mix==TE_FULL_WET) {
             audio[2*i]=audio[2*i+1]=readout(4*emac(w,TE_ONE));
         } else {
-            int32_t m=s->mix, keep=TE_ONE-m;
+            int32_t m=s->mix;
+            /* Wraps and compares unsigned like the kernel's sub.l / cmp.l. */
+            uint32_t rest=(uint32_t)TE_ONE-(uint32_t)m;
+            int32_t keep=rest >= (uint32_t)TE_DRY_KNEE ? TE_ONE : (int32_t)(rest << 2);
             audio[2*i]=readout(4*emac(w,m) + emac(L,keep));
             audio[2*i+1]=readout(4*emac(w,m) + emac(R,keep));
         }

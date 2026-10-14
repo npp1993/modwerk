@@ -4,6 +4,8 @@
  * the commit and the retirement only that package sits elsewhere. */
 #include "allocator.h"
 #include <stdio.h>
+static uint32_t source[2]; /* dsp.c: the machines' source-stage charge per core */
+uint32_t modwerk_dsp_source_charge(unsigned c) { return source[c]; }
 
 static unsigned failures;
 #define CHECK(x) do { if (!(x)) { failures++; fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, #x); } } while (0)
@@ -50,6 +52,17 @@ int main(void)
     CHECK(dl_allocator_cancel(&b, 6) == DL_ALLOC_OK);
     catalog[5].words = 341; /* no run holds it, nor the whole arena */
     CHECK(dl_allocator_prepare(&b, ids, 7) == DL_ALLOC_MEMORY);
+
+    /* Source stage: each core's FX slots are admitted beside its machines' charge; past the allowance, nothing. */
+    static struct dl_allocator s;
+    dl_allocator_init(&s, catalog, 1000, 1000, 100, 100);
+    for (unsigned i = 0; i < 16; ++i) ids[i] = DL_NONE;
+    ids[0] = 1; /* track 1, core 1: 10 cycles */
+    source[1] = 90; CHECK(dl_allocator_prepare(&s, ids, 11) == DL_ALLOC_OK); dl_allocator_cancel(&s, 11);
+    source[1] = 91; CHECK(dl_allocator_prepare(&s, ids, 12) == DL_ALLOC_CYCLES);
+    source[1] = 101; ids[0] = DL_NONE; CHECK(dl_allocator_prepare(&s, ids, 13) == DL_ALLOC_CYCLES); /* no underflow */
+    source[1] = 0; source[0] = 95; ids[4] = 1; CHECK(dl_allocator_prepare(&s, ids, 14) == DL_ALLOC_CYCLES); /* track 5: core 0 */
+    source[0] = 0;
     if (failures) { fprintf(stderr, "%u move checks failed\n", failures); return 1; }
     puts("allocator move: clear of live code, one at a time, only that package moves; big packages placed from the top.");
     return 0;

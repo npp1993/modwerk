@@ -93,6 +93,15 @@
 | tools/build_kyoti.py passes --defsym SC_KEY=1; octabam's remix.inc carries `.set SC_KEY,1`
 | when SIDECHAIN_COMPRESSOR is in the remix. Standalone builds include an empty remix.inc.
     .include "remix.inc"
+    .ifdef MODWERK_EVENTS
+| On a Modwerk base with site events (sdk/machines/octatrack/events.json) the exemption is
+| always built and its tracks are ev_mute_keep's answer (p1_key): the installed modules that
+| read a track's audio name it, so this module never needs to know which one does. With none
+| installed the answer is 0, which is the plain build's behaviour.
+    .ifndef SC_KEY
+    .set SC_KEY,1
+    .endif
+    .endif
 
     .equ GATE,        0x800000dc     | MUTE MODE word (0 = OT/stock, 1 = OT+FX).  Ignored when ALWAYS_ON.
     .equ MUTE_STATE,  0x80000008     | bits 0..7 SOLO   bits 8..15 MUTE   bits 16..23 CUE
@@ -240,6 +249,19 @@ p1_solo_fold:
 | 8 is unused and could hold anything -- and without SC_KEY this file assembles byte-for-byte
 | as it did before Session 116.
 p1_key:
+    .ifdef MODWERK_EVENTS
+| ev_mute_keep, raised here (no stock site): the base asks every module that reads a track's
+| audio and returns their tracks OR'd in %d0 bits 0..7 -- what the scan below finds for
+| SIDE-CHAIN, answered by the module that owns the KEY. The loader writes the base's entry
+| into raise_ev_mute_keep at install (runtime.json "raise"). C convention: %d2/%d5 survive,
+| the caller's %a0/%a1 are kept here, %d0/%d1 are hook 1's own.
+    lea     (-8,%sp),%sp
+    movem.l %a0-%a1,(%sp)
+    movea.l raise_ev_mute_keep,%a0
+    jsr     (%a0)
+    movem.l (%sp),%a0-%a1
+    lea     (8,%sp),%sp
+    .else
     move.l  %a0,-(%sp)
     lea     0x80000110,%a0              | track 0's record, ping-pong half 0
     moveq   #0,%d0                      | D0 = key mask
@@ -266,6 +288,7 @@ pk_next:
     subq.l  #1,%d3
     bpl.s   pk_loop
     movea.l (%sp)+,%a0
+    .endif
     move.b  %d0,KEYMASK                 | for mt_trig / mt_rebind / dt_trig / fresh_bind / trigflag
     move.l  %d0,%d1
     and.l   %d2,%d1                     | silenced key tracks ...
@@ -1098,8 +1121,16 @@ dt_pass:
 | free to clobber. %d3 is not read by the displaced code or by 0x40006844's own per-track
 | work (checked directly in the disassembly) -- also free, and only touched on the
 | track<8 path (the track>=8 early-out never reaches it).
+    .ifdef MODWERK_EVENTS
+| On a Modwerk base that owns 0x40006820 (sdk/machines/octatrack/events.json) this
+| hook is the ev_voice_bind subscriber mm_voice_bind (below, runtime.json): its two
+| exits answer it instead of going on into stock.
+    .equ FB_BACK,     mm_bind_pass
+    .equ FB_EPILOGUE, mm_bind_drop
+    .else
     .equ FB_BACK,     0x40006828      | right after the displaced track-number load
     .equ FB_EPILOGUE, 0x40006888      | stock's own shared epilogue: pop %d2/%a2, rts
+    .endif
     .global fresh_bind
 fresh_bind:
     move.l  %a2,-(%sp)                  | displaced 1
@@ -1151,6 +1182,26 @@ fb_pass:
     jmp     FB_BACK                     | %d0 is reloaded fresh by stock's own very next
                                          | instruction either way, so it does not matter
                                          | here whether this hook has already clobbered it
+
+    .ifdef MODWERK_EVENTS
+| ev_voice_bind, order 50: int mm_voice_bind(unsigned track). fresh_bind runs on the
+| frame stock's 0x40006820 has -- (sp) the return, 4(sp) the track -- and answers
+| 1 where it would skip the bind (FB_EPILOGUE), 0 where stock would go on (FB_BACK),
+| after popping its displaced pushes as stock's epilogue does: d2/a2 are kept.
+    .global mm_voice_bind
+mm_voice_bind:
+    bra     fresh_bind
+mm_bind_pass:
+    move.l  (%sp)+,%d2
+    movea.l (%sp)+,%a2
+    moveq   #0,%d0
+    rts
+mm_bind_drop:
+    move.l  (%sp)+,%d2
+    movea.l (%sp)+,%a2
+    moveq   #1,%d0
+    rts
+    .endif
 
 | ============================ hook 11: 0x4000d0ba (THE REL_STATE RACE, FIXED SAFELY) ====
 | Session 58 continued again -- user clarification: "first cycle" means the first full
@@ -1366,6 +1417,12 @@ tf_sil:
 | SDRAM with the image, like DIRECT JUMP's DJ_MODE). 0 until the first active-mode frame.
     .balign 2
 KEYMASK: .byte 0
+    .ifdef MODWERK_EVENTS
+    .balign 4
+    .global raise_ev_mute_keep
+raise_ev_mute_keep:
+    .long   0                           | the base's ev_mute_keep entry, written by the loader at install
+    .endif
     .balign 2
     .else
     .set    tf_sil, tf_skip             | no SIDE-CHAIN: the silenced branches are stock's skip, as before

@@ -1,0 +1,533 @@
+{
+ "schema": 1,
+ "about": "Machine packages' reconstruction recipes (sdk/runtime/loader/build.py --octabam-machine): authored runs of each package image that coincide with stock, as copies of the identical bytes of the user's own OS, so the package passes the unchanged strict stock-free scans. Addresses, lengths and SHA-256 only; captured with --capture-stock-recipe and bound to the exact image and sources. Purposes are machine-captured and await review.",
+ "ports": {
+  "poly8": {
+   "schema": 1,
+   "imageSha256": "6d089aa05fb1351400d4c154e306aac90e81effb55257c0db9f9aab8804b4dce",
+   "sources": {
+    "sdk/machines/octatrack/module-adapters/machine-ports.json": "d98a9934e001d0966d38c2f8eb21246445c59d527368d76e25eaffbe59bf2ec6",
+    "sdk/machines/octatrack/module-adapters/machine_ports.py": "94261835964867f1dcfaf44173da2562794d319c3ab223742711f7cd34e30cff",
+    "sdk/octabam/modules/poly8/manifest.py": "1b9dfc90a6d5901ee3e453b7c3854363aad82f7267edc090b5f4439a57f12ddb",
+    "sdk/octabam/modules/poly8/polyphony.s": "2507d1c3df48724b30f41b649f583643399eb88dbdf84f250eba30334f920ad1",
+    "sdk/octabam/modules/poly8/registration.s": "c88815f9b16befe01fd9070f7d39120268936fef11a8d9a8d7706092cf55d987",
+    "sdk/octabam/modules/poly8/shared-machine.s": "e49d47ed22aa70a770e5738e69225106219b0337eabe67351d2e09150220ee80",
+    "sdk/runtime/loader/build.py": "1bc1a0e66f9b93871f429c53c8adebb39d21b5da7b7b101bf0f1f7c558313407"
+   },
+   "copies": [
+    {
+     "offset": 10,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "poly8: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 1304,
+     "length": 15,
+     "address": 1073899102,
+     "sha256": "fc763eb6eb8fdb76998e60d1b32659ddcaa82bda8f02e938d3ea7c32b78213b3",
+     "purpose": "poly8: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 3892,
+     "length": 18,
+     "address": 1073799142,
+     "sha256": "3167c7fdac0bdf54487c1d5faa4e775f7dca4fa9fd0ba54e5a3914d1b952bbe0",
+     "purpose": "poly8: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 53234,
+     "length": 20,
+     "address": 1073802002,
+     "sha256": "4c14741dff5ce18a933b30875f7e3a0ac8d633db0096af8f7a7a31a88e1313b0",
+     "purpose": "poly8: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 53332,
+     "length": 20,
+     "address": 1074428104,
+     "sha256": "96966986164a24f9ca5be84cca807a016a828da2bcc3167b831be52acad2a9a7",
+     "purpose": "poly8: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 53750,
+     "length": 12,
+     "address": 1074100132,
+     "sha256": "fa4871f504c0f71c15f06b76536f127ec74d257852ce50a1b9f16b3d14e8688c",
+     "purpose": "poly8: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    }
+   ],
+   "fills": []
+  },
+  "quantizer": {
+   "schema": 1,
+   "imageSha256": "eb2c30d222a63ed062dc07f057f172973cd35c7b7c2b952d3662be809d600df4",
+   "sources": {
+    "sdk/machines/octatrack/module-adapters/machine-ports.json": "d98a9934e001d0966d38c2f8eb21246445c59d527368d76e25eaffbe59bf2ec6",
+    "sdk/machines/octatrack/module-adapters/machine_ports.py": "94261835964867f1dcfaf44173da2562794d319c3ab223742711f7cd34e30cff",
+    "sdk/machines/octatrack/module-adapters/quantizer_runtime.py": "d40b72c887142cec0bed46b26de6269e7939f7453350b25ae24f48395777e6a4",
+    "sdk/octabam/modules/quantizer/manifest.py": "0cb4a79f7cd68e1881cd1076a0f6ba2e132b1c199da3a2d4923906b443797602",
+    "sdk/octabam/modules/quantizer/upstream/quantizer/core.s": "2992b6c85cff440de03ae84eb22dee8b8a83a84f23e94b699404d28940b6f958",
+    "sdk/octabam/modules/quantizer/upstream/quantizer/keys.s": "e2ffdbfae34b0828794a4eb4cc229e3efcaed25dc953bf7c05c13f6e37f65587",
+    "sdk/octabam/modules/quantizer/upstream/quantizer/manifest.py": "e637e3718e4b65320b847ef0758e0d46800f8be6b8020290f89192c798c535ef",
+    "sdk/octabam/modules/quantizer/upstream/quantizer/quantizer.s": "b14f214cc8236c19b8881d1113ea42359052a6d7ef0e9e0f02aaa88279da64a9",
+    "sdk/octabam/modules/quantizer/upstream/quantizer/scale.s": "82242c407847ac61a6f60fe15bdc5b0b4fc852bac82c39745b5c838ec9389c64",
+    "sdk/runtime/loader/build.py": "1bc1a0e66f9b93871f429c53c8adebb39d21b5da7b7b101bf0f1f7c558313407"
+   },
+   "copies": [
+    {
+     "offset": 264,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "quantizer: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 276,
+     "length": 16,
+     "address": 1074099596,
+     "sha256": "0443a9b7913a4441a26b9b47b9b668df5664dcf3d30780e4e9487f7125168303",
+     "purpose": "quantizer: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 340,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "quantizer: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 619,
+     "length": 12,
+     "address": 1074274063,
+     "sha256": "d46710227eb16ca7f895bc1fcc43aac26472d6aa09684a2ec2e999d35729445b",
+     "purpose": "quantizer: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 2797,
+     "length": 21,
+     "address": 1074301031,
+     "sha256": "dc5b5a7b1180e5d35d1338363d2f5c3e4a1e61799f9f3e23027dc17f67996483",
+     "purpose": "quantizer: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    }
+   ],
+   "fills": []
+  },
+  "synth": {
+   "schema": 1,
+   "imageSha256": "11afe489011aa243c5bc579a824635f7d1334b17f0a21d554d897ceec3d3fb1a",
+   "sources": {
+    "sdk/machines/octatrack/module-adapters/fm_runtime.py": "ecf39c395bd8231d1dda340e1c6bc26e8473ba548cfa422f9a4ae4ff2bd6807e",
+    "sdk/machines/octatrack/module-adapters/machine-ports.json": "d98a9934e001d0966d38c2f8eb21246445c59d527368d76e25eaffbe59bf2ec6",
+    "sdk/machines/octatrack/module-adapters/machine_ports.py": "94261835964867f1dcfaf44173da2562794d319c3ab223742711f7cd34e30cff",
+    "sdk/octabam/modules/synth/machine.s": "de9d849bf0b6e5d5ad747df32ae5806e7f9516674a14ac74b1c15d73d30d280a",
+    "sdk/octabam/modules/synth/manifest.py": "7854330aca001d2841de2fb384f0ca8adb7497db49dacc56da2815c1f444c0e6",
+    "sdk/octabam/modules/synth/registration.s": "d04e47d6d21287ea969e4d39d0fea8c90b262a577081ba8376915f96cd2d9d2d",
+    "sdk/octabam/modules/synth/upstream/quantizer/core.s": "2992b6c85cff440de03ae84eb22dee8b8a83a84f23e94b699404d28940b6f958",
+    "sdk/octabam/modules/synth/upstream/quantizer/keys.s": "e2ffdbfae34b0828794a4eb4cc229e3efcaed25dc953bf7c05c13f6e37f65587",
+    "sdk/octabam/modules/synth/upstream/quantizer/manifest.py": "e637e3718e4b65320b847ef0758e0d46800f8be6b8020290f89192c798c535ef",
+    "sdk/octabam/modules/synth/upstream/quantizer/quantizer.s": "d1737168a1750f540b3dfbefdd2a64b11084013b9f7b71b31aa4f189d33a24c5",
+    "sdk/octabam/modules/synth/upstream/quantizer/scale.s": "82242c407847ac61a6f60fe15bdc5b0b4fc852bac82c39745b5c838ec9389c64",
+    "sdk/octabam/modules/synth/upstream/synth/manifest.py": "58c7acd5684fe0b59c42501f7fdbfd1b288b3bfb71938dcadf43bc1774b3e5e8",
+    "sdk/octabam/modules/synth/upstream/synth/page.s": "25e2a0624fcc30ee3a8db5966954113119fb5942855042f765e664a2f8544a70",
+    "sdk/octabam/modules/synth/upstream/synth/poly.s": "ce21f5f7cddcd7268d27e25c500f1403cc59a9dff28044b1832cf2b45592d34c",
+    "sdk/runtime/loader/build.py": "1bc1a0e66f9b93871f429c53c8adebb39d21b5da7b7b101bf0f1f7c558313407"
+   },
+   "copies": [
+    {
+     "offset": 782,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 794,
+     "length": 16,
+     "address": 1074099596,
+     "sha256": "0443a9b7913a4441a26b9b47b9b668df5664dcf3d30780e4e9487f7125168303",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 1936,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 5046,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 6284,
+     "length": 16,
+     "address": 1073984446,
+     "sha256": "2208dade979a9235783eacb36cdde6fac1f68a1c1e97629678e6ef71eaa7643b",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 6300,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 6312,
+     "length": 16,
+     "address": 1074099596,
+     "sha256": "0443a9b7913a4441a26b9b47b9b668df5664dcf3d30780e4e9487f7125168303",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 6548,
+     "length": 14,
+     "address": 1073821426,
+     "sha256": "3a5e9e60ca4af797b19adcd76b00ec6d52d11d32b1baa2438b1df68d23b7dfeb",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 7742,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 7754,
+     "length": 16,
+     "address": 1074099596,
+     "sha256": "0443a9b7913a4441a26b9b47b9b668df5664dcf3d30780e4e9487f7125168303",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 8638,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 8896,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 8908,
+     "length": 16,
+     "address": 1074099596,
+     "sha256": "0443a9b7913a4441a26b9b47b9b668df5664dcf3d30780e4e9487f7125168303",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 10622,
+     "length": 22,
+     "address": 1073953624,
+     "sha256": "74b17511c768556db73d1d32f95ccb70b832d032a452bb9e0313d49e7d0c6c43",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 10704,
+     "length": 18,
+     "address": 1073976912,
+     "sha256": "3a343ffe9a3e59955db4a0ef6eaea2fb74f9ebb4d8bcaa560e4aa4c8e89d2e89",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 10722,
+     "length": 13,
+     "address": 1073979022,
+     "sha256": "5fd9c4504844e014c18f9b4ab8f2e3796f86a4d1a9fe88e3e602122481cfdae0",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 10748,
+     "length": 16,
+     "address": 1074071684,
+     "sha256": "c182891edb39df5d2ead4c1b0ec8da864d26c1fdb22774ef01e52f0de768f1b6",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 10790,
+     "length": 14,
+     "address": 1074065618,
+     "sha256": "e4e12e84065f4974ace18b805405cb4b7a64a4c23edc7f13bbdb6bfe2b34c1c5",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 10804,
+     "length": 12,
+     "address": 1074132974,
+     "sha256": "22b5709ed8f18cc283beb233798b9bfb276bd424b56cca22e0b142cf4975736f",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 10858,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 11272,
+     "length": 12,
+     "address": 1073983040,
+     "sha256": "3e401f14e70d67d18fcec37faf084580fd6bfa25426424788fe2828eb89f5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 11636,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 11792,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 18632,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 18644,
+     "length": 16,
+     "address": 1074099596,
+     "sha256": "0443a9b7913a4441a26b9b47b9b668df5664dcf3d30780e4e9487f7125168303",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 19124,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 19136,
+     "length": 16,
+     "address": 1074099596,
+     "sha256": "0443a9b7913a4441a26b9b47b9b668df5664dcf3d30780e4e9487f7125168303",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 19200,
+     "length": 12,
+     "address": 1074060574,
+     "sha256": "90c9629c67fce3e7f53f55ad64f7e5a3306a04a3c7dab1c2a21e2f5d6a4d5c53",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 19519,
+     "length": 12,
+     "address": 1074274063,
+     "sha256": "d46710227eb16ca7f895bc1fcc43aac26472d6aa09684a2ec2e999d35729445b",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 21697,
+     "length": 21,
+     "address": 1074301031,
+     "sha256": "dc5b5a7b1180e5d35d1338363d2f5c3e4a1e61799f9f3e23027dc17f67996483",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 23076,
+     "length": 16,
+     "address": 1073984446,
+     "sha256": "2208dade979a9235783eacb36cdde6fac1f68a1c1e97629678e6ef71eaa7643b",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 23234,
+     "length": 14,
+     "address": 1073984070,
+     "sha256": "77fcee373ae8ddb75137053122a312995198e8adddcf8c4c022c87b885b43d35",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 24096,
+     "length": 32,
+     "address": 1074570798,
+     "sha256": "4caf830aa333fd8660437b0f320a5e96432a6baa11cefc84b0d99ec099d22731",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 24128,
+     "length": 32,
+     "address": 1074570830,
+     "sha256": "4caf830aa333fd8660437b0f320a5e96432a6baa11cefc84b0d99ec099d22731",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 24160,
+     "length": 32,
+     "address": 1074570862,
+     "sha256": "e51c8879a1ea0e358e3ab1ed093eb5447cd1187003b8717a70bbb3bff13b4ff6",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 24784,
+     "length": 20,
+     "address": 1074428104,
+     "sha256": "96966986164a24f9ca5be84cca807a016a828da2bcc3167b831be52acad2a9a7",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 24834,
+     "length": 14,
+     "address": 1074059128,
+     "sha256": "607e18a72c4d065fa82645a12718abdb61e3a4333b631c6832024549a96d66e9",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 24932,
+     "length": 12,
+     "address": 1073884530,
+     "sha256": "20a84e151dffa9280a9d434c41366eb046609e3eb16c32f7b4c778fe18d1a2de",
+     "purpose": "synth: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    }
+   ],
+   "fills": []
+  },
+  "vector": {
+   "schema": 1,
+   "imageSha256": "12db7a860bad918abd20b40cd465d8d4742fcf58aa3763cdcbf0fab392fd33e9",
+   "sources": {
+    "sdk/machines/octatrack/module-adapters/machine-ports.json": "d98a9934e001d0966d38c2f8eb21246445c59d527368d76e25eaffbe59bf2ec6",
+    "sdk/machines/octatrack/module-adapters/machine_ports.py": "94261835964867f1dcfaf44173da2562794d319c3ab223742711f7cd34e30cff",
+    "sdk/machines/octatrack/module-adapters/vector_runtime.py": "9f0a0ffe8c0e3bacef6e6aad057f8f454b43b5daef32e9adb8fa2def0937ea39",
+    "sdk/octabam/modules/vector/control.s": "c4f829e437ffbde1275c00827031b694a86011013d37269077e4696818323471",
+    "sdk/octabam/modules/vector/manifest.py": "4d921f24256038797a99671534885b0bb9a27eaa79261b11136cf0a95a75af21",
+    "sdk/runtime/loader/build.py": "1bc1a0e66f9b93871f429c53c8adebb39d21b5da7b7b101bf0f1f7c558313407"
+   },
+   "copies": [
+    {
+     "offset": 3410,
+     "length": 14,
+     "address": 1074149512,
+     "sha256": "079db88a4b98775059e3e9b221b27a5436dfe7bfaaa30ec1d8a805faea0e9fd6",
+     "purpose": "vector: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 5602,
+     "length": 14,
+     "address": 1074073374,
+     "sha256": "5f460b9d4661db855641f1e3d7cb71cf2c6b0a6e8ad754886d283c9f1a3c5299",
+     "purpose": "vector: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 7166,
+     "length": 12,
+     "address": 1073882466,
+     "sha256": "f6838b012beac6d6395527d401c6eabefbded04cd643d14afbf356781cb4aeb6",
+     "purpose": "vector: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 10032,
+     "length": 14,
+     "address": 1074237950,
+     "sha256": "0939a4ca02b038ba72eec962b17c37d00c17ed240b08a4400cc3d071c8ebbe31",
+     "purpose": "vector: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 11272,
+     "length": 14,
+     "address": 1074235542,
+     "sha256": "4be6e9d8ab86bfb63e91b242f2d2824f061a003fabd5eeea29fc4f33af158a54",
+     "purpose": "vector: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 11494,
+     "length": 20,
+     "address": 1073802002,
+     "sha256": "4c14741dff5ce18a933b30875f7e3a0ac8d633db0096af8f7a7a31a88e1313b0",
+     "purpose": "vector: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 12210,
+     "length": 20,
+     "address": 1074428104,
+     "sha256": "96966986164a24f9ca5be84cca807a016a828da2bcc3167b831be52acad2a9a7",
+     "purpose": "vector: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 12584,
+     "length": 12,
+     "address": 1074100132,
+     "sha256": "fa4871f504c0f71c15f06b76536f127ec74d257852ce50a1b9f16b3d14e8688c",
+     "purpose": "vector: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    }
+   ],
+   "fills": []
+  },
+  "analog-bassdrum": {
+   "schema": 1,
+   "imageSha256": "40ec919aeb2634caf44bf41c8659cbd091d907530f0f9a27c7021462cd31c728",
+   "sources": {
+    "sdk/machines/octatrack/module-adapters/analog_bd_runtime.py": "c3e3f51076e9ae3579e2e00d96d21eee87a2d12afa4ae69fb7067da3399fa17a",
+    "sdk/machines/octatrack/module-adapters/analog_bd_write_lease.py": "ff7a9f553de1a2ee44793c6cfabac4a95c9c21c62a462ced15e5c509b5364e0b",
+    "sdk/machines/octatrack/module-adapters/machine-ports.json": "d98a9934e001d0966d38c2f8eb21246445c59d527368d76e25eaffbe59bf2ec6",
+    "sdk/machines/octatrack/module-adapters/machine_ports.py": "94261835964867f1dcfaf44173da2562794d319c3ab223742711f7cd34e30cff",
+    "sdk/machines/octatrack/module-adapters/stock_hook_write_lease.h": "ab14679a5faae84ef47d1ca37e46b3171da45252d12310e0b4458228be8334be",
+    "sdk/octabam/modules/analog-bassdrum/control.s": "644f10fbc534d8351424e55ee96c2d0ff2f39a1b691ad8a695422d1c05e37a3f",
+    "sdk/octabam/modules/analog-bassdrum/engine.s": "c86a6ac24326fb52f71dd766b1ccc25e5dfd8511028b162459447c279da48425",
+    "sdk/octabam/modules/analog-bassdrum/machine.s": "90f9ddb5c2a4cee47e0334c3cd35a7e92d42b0ee37eb3bbc8062cc7821e6aeb4",
+    "sdk/octabam/modules/analog-bassdrum/manifest.py": "20fa1f744630354b3986a3ad82ac6a41744345796dc783891a4c9f0bd81c787e",
+    "sdk/runtime/loader/build.py": "1bc1a0e66f9b93871f429c53c8adebb39d21b5da7b7b101bf0f1f7c558313407"
+   },
+   "copies": [
+    {
+     "offset": 296,
+     "length": 20,
+     "address": 1074428104,
+     "sha256": "96966986164a24f9ca5be84cca807a016a828da2bcc3167b831be52acad2a9a7",
+     "purpose": "analog-bassdrum: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 346,
+     "length": 14,
+     "address": 1074059128,
+     "sha256": "607e18a72c4d065fa82645a12718abdb61e3a4333b631c6832024549a96d66e9",
+     "purpose": "analog-bassdrum: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 444,
+     "length": 12,
+     "address": 1073884530,
+     "sha256": "20a84e151dffa9280a9d434c41366eb046609e3eb16c32f7b4c778fe18d1a2de",
+     "purpose": "analog-bassdrum: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 3442,
+     "length": 16,
+     "address": 1073802002,
+     "sha256": "cb540dc6673ad766d174c3076671b07e32f5064511c8cd575ccad58fb9d7934b",
+     "purpose": "analog-bassdrum: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    },
+    {
+     "offset": 3958,
+     "length": 14,
+     "address": 1074237950,
+     "sha256": "0939a4ca02b038ba72eec962b17c37d00c17ed240b08a4400cc3d071c8ebbe31",
+     "purpose": "analog-bassdrum: authored bytes coinciding with stock (strict scan), reconstructed from the identical bytes of the user's OS; review"
+    }
+   ],
+   "fills": []
+  }
+ }
+}

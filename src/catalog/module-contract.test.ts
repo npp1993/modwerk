@@ -5,6 +5,11 @@ import example from '../../public/module-repository.example.json'
 import catalog from './module-documents.json'
 import sdkCatalog from '../../sdk/catalog.json'
 describe('module folder contract',()=>{
+ it('accepts key gestures and screens in uiClaims and refuses unknown keys',()=>{
+  const claims=(uiClaims:unknown)=>parseModuleDocument({...example,compatibility:{...example.compatibility,uiClaims}}).compatibility.uiClaims
+  expect(claims(['key:UP+TEMPO','key:FUNC+LEFT@CHROMATIC','key:CUE+LEVEL','screen:TEMPO'])).toEqual(['key:UP+TEMPO','key:FUNC+LEFT@CHROMATIC','key:CUE+LEVEL','screen:TEMPO'])
+  for(const invalid of [['key:UP+TMPO'],['key:up+TEMPO'],['TEMPO'],['screen:tempo'],'key:UP'])expect(()=>claims(invalid)).toThrow('compatibility.uiClaims')
+ })
  it('retains multiple credited contributors without replacing the primary author',()=>{
   const contributors=[{github:'bryantysinger',name:'Bryan Tysinger'},{github:'tester-two'}]
   expect(parseModuleDocument({...example,author:{...example.author,contributors}}).author).toEqual({...example.author,contributors})

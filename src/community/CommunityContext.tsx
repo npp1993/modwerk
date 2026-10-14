@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { api } from './api'
+import { api, onCommunityReconnect } from './api'
 import type { DeveloperSession, PublishedModule, Session } from './api'
 import { CommunityContext, emptyDeveloperSession, emptySession } from './context'
 import { recheck } from './recheck'
@@ -40,14 +40,17 @@ export function CommunityProvider({children}:{children:ReactNode}){
   void refresh(false)
   const resume=()=>{if(document.visibilityState==='visible')void refresh(false)}
   const changed=(event:StorageEvent)=>{if(event.key===null||event.key.startsWith('octamod.community.session:'))void refresh()}
+  // Another read reaching the service again ends this check's backoff at once.
+  const reconnected=onCommunityReconnect(()=>{void refresh(false)})
   window.addEventListener('focus',resume);window.addEventListener('online',resume);window.addEventListener('storage',changed)
-  return()=>{active.current=false;retry.cancel();window.removeEventListener('focus',resume);window.removeEventListener('online',resume);window.removeEventListener('storage',changed)}
+  return()=>{active.current=false;retry.cancel();reconnected();window.removeEventListener('focus',resume);window.removeEventListener('online',resume);window.removeEventListener('storage',changed)}
  },[refresh])
  useEffect(()=>{
   const load=()=>{void refreshDeveloper(false)},retry=developerRetry.current=recheck(load)
   const changed=(event:StorageEvent)=>{if(event.key===null||event.key.startsWith('modwerk.developer.session:'))void refreshDeveloper()}
+  const reconnected=onCommunityReconnect(load)
   load();window.addEventListener('focus',load);window.addEventListener('online',load);window.addEventListener('storage',changed)
-  return()=>{retry.cancel();window.removeEventListener('focus',load);window.removeEventListener('online',load);window.removeEventListener('storage',changed)}
+  return()=>{retry.cancel();reconnected();window.removeEventListener('focus',load);window.removeEventListener('online',load);window.removeEventListener('storage',changed)}
  },[refreshDeveloper])
  return <CommunityContext.Provider value={{session,loading,developer,catalog,refresh,refreshDeveloper}}>{children}</CommunityContext.Provider>
 }

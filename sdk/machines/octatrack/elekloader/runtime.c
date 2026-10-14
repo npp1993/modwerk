@@ -20,6 +20,12 @@
 #define STOCK_FROM 0x40000400u      /* the OS image in RAM */
 #define BOOTLOADER_FROM 0x400de1e0u /* what the OS re-flashes the bootloader from; bank data follows it */
 
+/* Code/data references may retain either alias of the same physical DRAM. */
+uint32_t modwerk_machine_reference(uint32_t value)
+{
+    return value >= STOCK_FROM && value < 0x47f00000u ? value + 0x08000000u : value;
+}
+
 #ifdef MODWERK_HOST
 int modwerk_test_stopped = 1;
 int modwerk_machine_stopped(void) { return modwerk_test_stopped; }
@@ -31,7 +37,8 @@ uint32_t modwerk_machine_mask(void) { return 0; }
 void modwerk_machine_unmask(uint32_t sr) { (void)sr; }
 uint32_t modwerk_machine_lock(void) { return 0; }
 void modwerk_machine_unlock(uint32_t sr) { (void)sr; }
-unsigned modwerk_machine_paused(struct runtime_span *span, unsigned max) { (void)span; return max + 1u; }
+unsigned modwerk_machine_paused(struct runtime_span *span, unsigned max, const struct runtime_context *context)
+{ (void)span; (void)context; return max + 1u; }
 #else
 #define U8(a) (*(volatile uint8_t *)(a))
 #define U32(a) (*(volatile uint32_t *)(a))
@@ -115,20 +122,28 @@ static int ready_tasks_known(void)
     }
     return 1;
 }
-unsigned modwerk_machine_paused(struct runtime_span *span, unsigned max)
+unsigned modwerk_machine_paused(struct runtime_span *span, unsigned max, const struct runtime_context *context)
 {
-    uint32_t current = U32(CURRENT_TCB), sp;
+    uint32_t current = U32(CURRENT_TCB);
     unsigned n = 0;
-    __asm__ __volatile__("move.l %%sp,%0" : "=a"(sp));
-    if (!known(current) || !ready_tasks_known() || max < 2u * TASKS) return max + 1u;
+    if (!context || !known(current) || !ready_tasks_known() || max < 2u * TASKS) return max + 1u;
+    span[n++] = (struct runtime_span){(const uint8_t *)context->registers, (const uint8_t *)(context->registers + 16)};
     for (unsigned i = 0; i < TASKS; ++i) {
-        uint32_t top = tasks[i].stack + tasks[i].size, saved = tasks[i].tcb == current ? sp : U32(tasks[i].tcb + 0x48u);
+        uint32_t top = tasks[i].stack + tasks[i].size, saved = tasks[i].tcb == current ? context->registers[15] : U32(tasks[i].tcb + 0x48u);
         if (saved < tasks[i].stack || saved > top) return max + 1u;
         span[n++] = (struct runtime_span){(const uint8_t *)(uintptr_t)saved, (const uint8_t *)(uintptr_t)top};
         if (tasks[i].tcb != current) /* saved d0-d7/a0-a7 */
             span[n++] = (struct runtime_span){(const uint8_t *)(uintptr_t)(tasks[i].tcb + 0x0cu), (const uint8_t *)(uintptr_t)(tasks[i].tcb + 0x4cu)};
     }
     return n;
+}
+/* The running task's measured stack (the table above): 1 and its bounds, 0 when the task is unknown. */
+int modwerk_machine_stack(uintptr_t *lo, uintptr_t *hi)
+{
+    uint32_t current = U32(CURRENT_TCB);
+    for (unsigned i = 0; i < TASKS; ++i)
+        if (tasks[i].tcb == current) { *lo = tasks[i].stack, *hi = tasks[i].stack + tasks[i].size; return 1; }
+    return 0;
 }
 #endif
 

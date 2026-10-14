@@ -35,7 +35,7 @@ export class VolatileUsbTransport {
     if (input.byteLength < VOLATILE_COMMAND_BYTES || input.byteLength > VOLATILE_MAX_FRAME || input.byteLength % 64 === 0)
       throw new Error('Invalid private volatile frame length.')
     const bytes = new Uint8Array(input), view = new DataView(bytes.buffer)
-    if (view.getUint32(0) !== 0x4d575642 || bytes[4] !== 1 || bytes[5] < 1 || bytes[5] > 8 ||
+    if (view.getUint32(0) !== 0x4d575642 || bytes[4] !== 1 || bytes[5] < 1 || bytes[5] > 9 ||
       view.getUint16(6) || !view.getUint32(8) || view.getUint32(20) !== bytes.length - VOLATILE_COMMAND_BYTES ||
       bytes.subarray(88, 96).some(byte => byte)) throw new Error('Invalid private volatile command header.')
     for (const [offset, identity] of [[24, this.observed.base], [56, this.observed.session]] as const) {

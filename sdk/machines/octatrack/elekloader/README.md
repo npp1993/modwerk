@@ -61,7 +61,8 @@ the package ships literally (`--min 8` lists the chance ones below that: effect 
 
 The committed pair is `src/engine/assets/octatrack-base.elemod` and `octatrack-base-fills.json`. Any change
 to what the base's source hash covers (this folder, the logger, upload, loader, DSP transport and startup
-sources) changes the base. `octatrack-base-sources.json` lists those inputs and their hashes, and a test
+sources; their `.c`, `.h`, `.s`, `.asm`, `.py` and `.json` files) changes the base, even a file only `--dev` twins
+compile (`dev.c`) or a test there (`test_recipe.py`). `octatrack-base-sources.json` lists those inputs and their hashes, and a test
 (`octatrack-base.test.ts`, no firmware) fails when one changed or a file joined those folders. Rebuild and
 commit it with
 
@@ -125,6 +126,12 @@ python3 -B sdk/runtime/loader/build.py --octabam tapeecho --stock /private/OCTAT
 python3 -B sdk/runtime/loader/build.py --octabam euclid --stock /private/OCTATRACK_OS1.40C.bin \
   --upstream /private/pinned-elekloader --dsp src/engine/assets/dsp-packages.json:euclid \
   --slots both --cycles 143 --cycles-kind executed --state 64 --pinned -o /private/euclid.mwrm
+# Published (owner decision, 14 Oct 2026): TAPE ECHO, EUCLID and Play Modes with --standalone instead of --stock,
+# from their reviewed module-adapters/standalone-recipes.json; their stock-coinciding runs become copies the base
+# takes from its own running stock. npm run octatrack:module-packages builds them so.
+python3 -B sdk/runtime/loader/build.py --octabam tapeecho --standalone \
+  --upstream ~/.cache/modwerk-upstream/elekloader --dsp src/engine/assets/dsp-packages.json:tapeecho \
+  --slots fx2 --cycles 4 --cycles-kind modeled --state 1 --pinned -o tapeecho.mwrm
 ```
 
 ### Runtime compatibility and the card builder

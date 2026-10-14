@@ -26,7 +26,7 @@ describe('lazy firmware client', () => {
     await flush()
     expect(FakeWorker.created).toHaveLength(1)
     const [worker] = FakeWorker.created
-    expect(worker.posted).toEqual([{ id: 1, type: 'validate', moduleIds: ['miniverb'], keepStockFx2: false }])
+    expect(worker.posted).toEqual([{ id: 1, type: 'validate', moduleIds: ['miniverb'], keepStockFx2: false, startup: 'docking' }])
     worker.reply({ id: 1, type: 'validated', report: { ok: true } } as unknown as EngineResponse)
     expect(await validation).toEqual({ ok: true })
     client.validate(['miniverb'], true).catch(() => {})
@@ -35,21 +35,21 @@ describe('lazy firmware client', () => {
     client.dispose()
     expect(worker.terminated).toBe(true)
   })
-  it('forwards saved USB settings through validation and build to the worker', async () => {
+  it('forwards saved USB and startup settings through validation and build to the worker', async () => {
     const client = createLazyFirmwareClient()
     const usbAudio = { ...usbAudioPreset('outbox'), layout: 'main-cue' as const, outboxPairs: [1, 2, 0, 0] }
     const moduleIds = [USB_AUDIO_MODULE]
     const validation = client.validate(moduleIds, false, usbAudio)
     await flush()
     const [worker] = FakeWorker.created
-    expect(worker.posted[0]).toEqual({ id: 1, type: 'validate', moduleIds, keepStockFx2: false, usbAudio })
+    expect(worker.posted[0]).toEqual({ id: 1, type: 'validate', moduleIds, keepStockFx2: false, usbAudio, startup: 'docking' })
     worker.reply({ id: 1, type: 'validated', report: {} } as unknown as EngineResponse)
     await validation
     const progress = vi.fn()
-    const build = client.build(moduleIds, false, progress, usbAudio)
+    const build = client.build(moduleIds, false, progress, usbAudio, false, 'classic')
     await flush()
     expect(FakeWorker.created).toHaveLength(1)
-    expect(worker.posted[1]).toEqual({ id: 2, type: 'build', moduleIds, keepStockFx2: false, usbAudio })
+    expect(worker.posted[1]).toEqual({ id: 2, type: 'build', moduleIds, keepStockFx2: false, usbAudio, startup: 'classic' })
     worker.reply({ id: 2, type: 'progress', phase: 'packing' })
     expect(progress).toHaveBeenCalledWith('packing')
     const result = { id: 2, type: 'built', report: {}, buffer: new ArrayBuffer(0), sha256: 'test' } as unknown as EngineResponse

@@ -10,17 +10,19 @@ const stats = (extra: Partial<ModuleStatistics> = {}): ModuleStatistics => ({ mo
 
 describe('module stability grade', () => {
   it('starts every module at limited real-world testing and says what moves it up', () => {
-    expect(moduleStability(stats(), {}, now)).toEqual({ level: 'limited', label: 'Limited real-world testing', detail: '0 downloads. No applicable confirmed bugs recorded. Moves to “In regular use” after 100 downloads, 30 days in use and 30 days without a newly confirmed bug.' })
+    expect(moduleStability(stats(), {}, now)).toEqual({ level: 'limited', label: 'Limited real-world testing', detail: '0 downloads. No applicable confirmed bugs recorded. Moves to “In regular use” after 100 downloads, 14 days in use and 14 days without a newly confirmed bug.' })
     expect(moduleStability(undefined, { hardware: 'Tested in the emulator only.' }, now)).toMatchObject({ level: 'limited', detail: 'Usage figures are unavailable right now, so this module is treated as untried. Tested in the emulator only.' })
   })
 
   it('needs downloads, time in use and quiet time together for each grade', () => {
     expect(moduleStability(stats({ downloads: 99, firstDownloadAt: daysAgo(40) }), {}, now).level).toBe('limited')
-    expect(moduleStability(stats({ downloads: 400, firstDownloadAt: daysAgo(29) }), {}, now).level).toBe('limited')
+    expect(moduleStability(stats({ downloads: 400, firstDownloadAt: daysAgo(13) }), {}, now).level).toBe('limited')
     expect(moduleStability(stats({ downloads: 400, firstDownloadAt: daysAgo(40), lastConfirmedIssueAt: daysAgo(10) }), {}, now)).toMatchObject({ level: 'limited', detail: expect.stringContaining('Latest applicable confirmed bug 10 days ago.') })
-    expect(moduleStability(stats({ downloads: 100, firstDownloadAt: daysAgo(30), lastConfirmedIssueAt: daysAgo(31) }), {}, now).level).toBe('in-use')
-    expect(moduleStability(stats({ downloads: 5000, firstDownloadAt: daysAgo(200), lastConfirmedIssueAt: daysAgo(45) }), {}, now).level).toBe('in-use')
-    expect(moduleStability(stats({ downloads: 500, firstDownloadAt: daysAgo(90) }), { hardware: 'A hardware test of this version was reported.' }, now)).toMatchObject({ level: 'proven', label: 'Lots of use, no recent confirmed bugs', detail: expect.stringContaining('A hardware test of this version was reported.') })
+    expect(moduleStability(stats({ downloads: 100, firstDownloadAt: daysAgo(14), lastConfirmedIssueAt: daysAgo(14) }), {}, now).level).toBe('in-use')
+    expect(moduleStability(stats({ downloads: 5000, firstDownloadAt: daysAgo(200), lastConfirmedIssueAt: daysAgo(29) }), {}, now).level).toBe('in-use')
+    expect(moduleStability(stats({ downloads: 299, firstDownloadAt: daysAgo(200) }), {}, now).level).toBe('in-use')
+    expect(moduleStability(stats({ downloads: 5000, firstDownloadAt: daysAgo(44) }), {}, now).level).toBe('in-use')
+    expect(moduleStability(stats({ downloads: 300, firstDownloadAt: daysAgo(45), lastConfirmedIssueAt: daysAgo(30) }), { hardware: 'A hardware test of this version was reported.' }, now)).toMatchObject({ level: 'proven', label: 'Lots of use, no recent confirmed bugs', detail: expect.stringContaining('A hardware test of this version was reported.') })
   })
 
   it('shows applicable confirmed bugs instead of a grade, and a pending build before anything else', () => {

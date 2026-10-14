@@ -20,9 +20,9 @@ export function createLazyFirmwareClient(create: () => FirmwareClient = createFi
   return {
     inspect: file => observe(() => engine().inspect(file), 'octatrack-firmware', () => 'preparing', 'input'),
     validate: (...args) => observe(() => engine().validate(...args), 'octatrack-firmware', () => 'preparing', 'selection'),
-    build: (ids, keepStock, progress, usbAudio, betaAccess) => {
+    build: (ids, keepStock, progress, usbAudio, betaAccess, startup) => {
       let phase: DiagnosticBuildPhase = 'building'
-      return observe(() => engine().build(ids, keepStock, next => { phase = next; progress(next) }, usbAudio, betaAccess), 'octatrack-firmware', () => phase, 'build')
+      return observe(() => engine().build(ids, keepStock, next => { phase = next; progress(next) }, usbAudio, betaAccess, startup), 'octatrack-firmware', () => phase, 'build')
     },
     buildBase: () => observe(() => engine().buildBase(), 'octatrack-base', () => 'building', 'build'),
     cancelBuild: () => { ++cancellation; client?.cancelBuild() },
