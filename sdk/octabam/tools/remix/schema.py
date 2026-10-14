@@ -127,7 +127,7 @@ class Formatter(Enum):
     """
 
     INHERIT = "inherit"   # leave the donor's formatter untouched
-    PLAIN = "plain"       # stock numeric knob: both formatter words zero
+    PLAIN = "plain"       # stock numeric knob: both formatter words zero on a drawn slot
     STEPPED = "stepped"   # enumerated selector (the CHORUS.TAPS renderer)
     WIDE_STEPPED = "wide-stepped"  # labelled select whose >5 values fill the plain dial arc
     BIPOLAR = "bipolar"   # a 0..127 knob DRAWN -64..+63 (SPRING BAL's dial: A = 0x4003c7a0, 0x12a = the signed number; 14 Sep 2026)
@@ -1435,6 +1435,16 @@ class Module:
     def stepped_slots(self) -> tuple[int, ...]:
         return tuple(i for i, p in enumerate(self.params)
                      if p.formatter in (Formatter.STEPPED, Formatter.WIDE_STEPPED))
+
+    @property
+    def plain_slots(self) -> tuple[int, ...]:
+        """Drawn PLAIN knobs: the build zeroes both formatter words
+        (P+0x0ca, P+0x0fa) even in a module with no stepped slot, which would
+        otherwise keep the donor's renderer (DARK REV's dial on slots 7 and
+        11). A switched-off slot (active=False) is never drawn and keeps the
+        donor's words, as every module without a stepped slot was built."""
+        return tuple(i for i, p in enumerate(self.params)
+                     if p.formatter is Formatter.PLAIN and p.active is not False)
 
     @property
     def wide_stepped_slots(self) -> tuple[int, ...]:

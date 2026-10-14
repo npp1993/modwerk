@@ -40,6 +40,8 @@ def main():
             for i in range(12):integer(0xca+i*4,4,0);integer(0xfa+i*4,4,0)
             for i in module.stepped_slots:
                 integer(0xca+i*4,4,0x4003c718);integer(0xfa+i*4,4,0x40047254 if module.params[i].count is not None and module.params[i].count<=5 else 0);integer(0x12a+i*4,4,0)
+        else:
+            for i in module.plain_slots:integer(0xca+i*4,4,0);integer(0xfa+i*4,4,0)
         for i in module.bipolar_slots:
             integer(0xca+i*4,4,0x4003c7a0);integer(0xfa+i*4,4,0);integer(0x12a+i*4,4,0x400328e4)
         for i,param in enumerate(module.params):

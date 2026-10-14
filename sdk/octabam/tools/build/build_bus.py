@@ -228,9 +228,11 @@ for _k, _n in HOST_SLOTS.items():
 PAGE2_COUNTS = {m.key: {i: p.count for i, p in enumerate(m.params)
                         if p.count is not None} for m in _CLONED}
 # Membership here also GATES the display-formatter pass below: a module with
-# no stepped slot keeps its donor's formatters untouched, which is what SEND
-# wants (FILTER's plain-numeric zeros, hardware-confirmed).
+# a stepped slot has all twelve formatter pairs zeroed first; one without
+# keeps its donor's formatters except on its drawn PLAIN slots (PLAIN_SLOTS),
+# which is what SEND wants (FILTER's plain-numeric zeros, hardware-confirmed).
 STEPPED_SLOTS = {m.key: m.stepped_slots for m in _CLONED if m.stepped_slots}
+PLAIN_SLOTS = {m.key: m.plain_slots for m in _CLONED if m.plain_slots}
 BIPOLAR_SLOTS = {m.key: m.bipolar_slots for m in _CLONED if m.bipolar_slots}
 _DEF_ASM = {m.key: m.dsp.asm for m in _CLONED}
 # DSP code reached from STOCK code rather than a chooser row
@@ -842,6 +844,15 @@ def main():
             # slot 7 too, and carries the same 0x400328e4.
             for step_slot in STEPPED_SLOTS[name]:
                 wr32(clone_P + 0x12a + step_slot * 4, 0)
+        else:
+            # PLAIN is "both formatter words zero" (schema.Formatter) with or
+            # without a stepped slot. Without one, the donor's renderer stayed:
+            # DARK REV's balance dial on slot 7 and its slot-11 pair drew a
+            # PLAIN knob as a dial (verify_menu: "is a KNOB, so both
+            # formatters are 0"). Switched-off slots are not in PLAIN_SLOTS.
+            for idx in PLAIN_SLOTS.get(name, ()):
+                wr32(clone_P + 0x0ca + idx * 4, 0)
+                wr32(clone_P + 0x0fa + idx * 4, 0)
         # A BIPOLAR knob (14 Sep 2026: Character's WDTH and TONE, "0 at
         # neutral, negative for mono"): SPRING BAL's exact triple, read from
         # the stock descriptor at donor_desc + 0x38 -- A = 0x4003c7a0 (the
