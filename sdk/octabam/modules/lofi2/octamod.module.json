@@ -108,6 +108,7 @@
     "firmware": "1.40C",
     "effectId": 9,
     "location": "FX2",
+    "uiClaims": [],
     "conflicts": [
       "analog-bassdrum"
     ],
