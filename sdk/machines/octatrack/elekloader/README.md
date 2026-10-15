@@ -185,6 +185,19 @@ packages cannot inherit:
   need loader support. A free effect id or a successful ColdFire link proves
   neither layout.
 
+### Diagnostics log
+
+`diag.c` keeps what the unit did in battery RAM (0x100fc000, below `fxmap.c`'s map), so the power cycle a freeze
+needs keeps it: every five minutes the CPU's and each core's mean and peak and how long it played, and incidents
+(each start; the CPU at 90 % or more for a second, not in the first minute; the UI tick standing still five seconds
+while frames run, seen from `dl_frame` in the frame interrupt, with its length once it moves again; a crash or DSP
+stall since the last start) with each track's machine bytes, the effect each slot runs, transport, tempo, stock's top
+input layer and the last 16 keys. Layout in `diag.h`; a new layout needs a new `DIAG_VERSION`. LOG (0xC1, bRequest 37,
+wValue the page, 244 bytes) reads it; the site uploads it only with diagnostics consent
+(`src/engine/elekloader/device-log.ts`). On development bases `npm run device -- diaglog` prints it and
+`freezetest:N` holds the UI tick N seconds (1-10) to try a freeze. Vendor request numbers 31-36 are taken (saved-set
+export 31-33, volatile journal 34-36, which refuses anything else there): pick a new one above 37 and check `ep0.c`.
+
 ### Status page
 
 `status.c` measures, all the time, the ColdFire's load (main's idle spin, timed on DTIM3, `status.s`), each

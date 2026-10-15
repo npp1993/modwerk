@@ -56,7 +56,7 @@ class ResidentDriver(unittest.TestCase):
         # Substitute only the timer's MMIO read, never the job/packet/ACK logic.
         clock = '*(volatile uint32_t *)0xfc07c00cu'
         self.assertEqual(texts['transfer.c'].count(clock), 1)
-        texts['transfer.c'] = '#include <stdint.h>\nextern volatile uint32_t test_clock;\n' + texts['transfer.c'].replace(clock, 'test_clock')
+        texts['transfer.c'] = '#include <stdint.h>\nextern volatile uint32_t test_clock;\n' + texts['transfer.c'].replace(clock, 'test_clock') + '\nvoid modwerk_diag_frame(void) {}\n'
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp)
             for name, text in texts.items():

@@ -565,6 +565,9 @@ DSP_EDITS = {
     'transfer.c': (('op!=DL_BYPASS && op!=DL_BASE)) return 0;', 'op!=DL_BYPASS && op!=DL_BASE && op!=DL_PEEK)) return 0;'),
                    # A refusal for cycles reads as the DSP being full, not failing (owner, 11 October 2026).
                    ('reason==3 ? "DSP OVERLOAD"', 'reason==3 ? "DSP FULL"'),
+                   # diag.c's freeze watch: each frame, whether the UI tick still moves (15 October 2026).
+                   ('unsigned dl_frame(void) {\n    ++dl_frames;\n',
+                    'void modwerk_diag_frame(void);\nunsigned dl_frame(void) {\n    ++dl_frames;\n    modwerk_diag_frame();\n'),
                    ('opcode==DL_BYPASS || opcode==DL_BASE) {', 'opcode==DL_BYPASS || opcode==DL_BASE || opcode==DL_PEEK || opcode==DL_SUM) {'),
                    # SUM (9, dsp_receiver.asm; dsp.c's self-test): the expected sum's high byte in word 56, as a WRITE's.
                    ('            t[4]=j->id; t[5]=j->init; t[7]=j->proc;\n',
@@ -1371,7 +1374,7 @@ def main():
         if saved_set_wiring:
             (source / 'dsp.c').write_text(saved_set_wiring.dsp((source / 'dsp.c').read_text()))
         shutil.copyfile(HERE / 'dsp_core1.s', source / 'dsp_core1.s')
-        for name in ('dsp_journal.h', 'dsp_journal_manager.h', 'fxmap.h', 'fxpage.h', 'fxmap.c', 'fxmap.s', 'fxpage.c', 'fxpage.s', 'status.c', 'status.s', 'status.h', 'load_wire.h', 'selftest.h'):
+        for name in ('dsp_journal.h', 'dsp_journal_manager.h', 'fxmap.h', 'fxpage.h', 'fxmap.c', 'fxmap.s', 'fxpage.c', 'fxpage.s', 'status.c', 'status.s', 'status.h', 'load_wire.h', 'selftest.h', 'diag.c', 'diag.h'):
             shutil.copyfile(HERE / name, source / name)
         if args.resident_on_demand:
             (source / 'status.c').write_text(resident_engines.status((source / 'status.c').read_text()))
@@ -1677,6 +1680,10 @@ modwerk_retained_end:
                                 dict(event='ev_enc', fn='modwerk_status_enc', order=89),
                                 dict(event='ev_tick', fn='modwerk_status_tick', order=94),
                                 dict(event='ev_draw', fn='modwerk_status_draw', order=94)]
+        # The diagnostics log (diag.c): every key press before the status page may take it, and the meters after
+        # status.c has read them; dl_frame calls its freeze watch (DSP_EDITS).
+        recipe['subscribe'] += [dict(event='ev_key', fn='modwerk_diag_key', order=88),
+                                dict(event='ev_tick', fn='modwerk_diag_tick', order=97)]
         for addr, n, guard, label in DYNLOAD_HOOKS:
             stock = image[addr - device.main_load:addr - device.main_load + n]
             if sha(stock) != guard:

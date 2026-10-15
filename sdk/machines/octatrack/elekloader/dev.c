@@ -82,6 +82,13 @@ uint32_t modwerk_dev_request(const uint8_t *s, const uint8_t **reply, uint8_t *o
         *reply = out;
         return 1;
     }
+    if (s[1] == 28 && want == 1 && s[2] >= 1u && s[2] <= 10u && !s[3]) { /* FREEZE TEST: diag.c holds the UI tick s[2] seconds */
+        extern volatile uint32_t modwerk_diag_test_freeze;
+        modwerk_diag_test_freeze = s[2];
+        out[0] = 1;
+        *reply = out;
+        return 1;
+    }
     if (s[1] == 18 && want == 1 && !s[2] && !s[3]) { /* STALL RECORD TEST: dsp.c's record, reason 0, nothing recovered */
         void modwerk_dsp_stall_record(unsigned reason);
         modwerk_dsp_stall_record(0);

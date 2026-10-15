@@ -42,6 +42,7 @@ import { parseArgs } from 'node:util'
 import { sha } from '../vendor/elekloader/kit/src/bytes.ts'
 import { UploadSession } from '../src/engine/elekloader/upload-session.ts'
 import { findVendorInterface, UsbVendorTransport } from '../src/engine/elekloader/upload-usb.ts'
+import { DEVICE_LOG_PAGE, DEVICE_LOG_PAGES, DEVICE_LOG_REQUEST, parseDeviceLog } from '../src/engine/elekloader/device-log.ts'
 import { diagnostics, removal, runLifecycle } from '../src/dev/octatrack-usb-lifecycle.ts'
 import { Bench, benchEndpoint, device, enumerate, shareBench } from './usb-bench.mjs'
 
@@ -332,6 +333,25 @@ async function run(sequence, until = Infinity) { // serve: past its time limit a
         `(RXDF ${v.getUint16(452) & 1}: a word the ColdFire never took), core 1 as last read 0x${v.getUint16(454).toString(16)}`)
     }
     else if (step === 'crashtest') await devIn(17, 0, 1) // development bases: an illegal instruction on the next tick (crash.c)
+    else if ((m = /^freezetest:(\d+)$/.exec(step))) await devIn(28, Number(m[1]), 1) // development bases: the UI tick stands still N s (diag.c)
+    else if (step === 'diaglog') { // diag.c's log over LOG (any base with it): its incidents and the last loads
+      const data = new Uint8Array(DEVICE_LOG_PAGE * DEVICE_LOG_PAGES)
+      for (let page = 0; page < DEVICE_LOG_PAGES; ++page) {
+        const reply = await unit.controlTransferIn({ requestType: 'vendor', recipient: 'interface', request: DEVICE_LOG_REQUEST, value: page, index }, DEVICE_LOG_PAGE)
+        if (reply.status !== 'ok' || reply.data?.byteLength !== DEVICE_LOG_PAGE) throw new Error(`This base does not answer LOG (diag.c): page ${page} ${reply.status} ${reply.data?.byteLength}`)
+        data.set(new Uint8Array(reply.data.buffer, reply.data.byteOffset, DEVICE_LOG_PAGE), page * DEVICE_LOG_PAGE)
+      }
+      const log = parseDeviceLog(data)
+      if (!log) console.log('diaglog: no log yet')
+      else {
+        console.log(`diaglog boot ${log.boot} seq ${log.seq}: ${log.incidents.length} incidents, ${log.loads.length} loads`)
+        for (const r of log.incidents) console.log(`  #${r.seq} boot ${r.boot} +${r.second}s ${r.kind} a=${r.a} cpu ${r.cpu / 10}% T1-4 ${r.dsp1to4 / 10}% T5-8 ${r.dsp5to8 / 10}% ` +
+          `${r.playing ? 'playing' : 'stopped'} tempo ${(r.tempo24 / 24).toFixed(1)} screen 0x${r.screen.toString(16)} keys ${r.keys.filter(k => k !== 255).map(k => k.toString(16)).join(',')} ` +
+          `fx ${r.fx.map(f => f.toString(16)).join(',')} machines ${r.machines.join(',')}`)
+        for (const r of log.loads.slice(-6)) console.log(`  #${r.seq} boot ${r.boot} min ${r.minute} cpu ${r.cpu.map(v => v / 10).join('/')}% T1-4 ${r.dsp1to4.map(v => v / 10).join('/')}% ` +
+          `T5-8 ${r.dsp5to8.map(v => v / 10).join('/')}% playing ${r.playing}/${r.samples}`)
+      }
+    }
     else if (step === 'crash') { // crash.c's record in battery RAM: what the last error exception was, and where
       const b = await mem(0x100ff800, 116), v = new DataView(b.buffer, b.byteOffset, 116), w = i => v.getUint32(4 * i)
       if (w(0) !== 0x4d574352) console.log('crash: none recorded')

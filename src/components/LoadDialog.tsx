@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { loadStep, sameModules, type Inventory, type InventoryTarget } from '../config/inventory'
 import { lastSuccessfulSync, recordSync, rememberSuccessfulSync } from '../config/octatrack-progress'
 import { LinkBusyError, type OctatrackLink } from '../engine/elekloader/octatrack-link'
-import { BaseUpdateRequired, ModuleSetError, moduleSetReview, USB_MODULE_IDS } from '../engine/elekloader/module-set'
+import { BaseUpdateRequired, baseOutdated, ModuleSetError, moduleSetReview, USB_MODULE_IDS } from '../engine/elekloader/module-set'
 import { useOctatrackLink } from '../hooks/useOctatrackLink'
 import { MODULES } from '../catalog/modules'
 import { isModuleAvailable } from '../catalog/availability'
@@ -43,7 +43,7 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
   useEffect(() => { latestReview.current = reviewKey }, [reviewKey])
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const changes = review?.changes, updates = review?.updates ?? []
-  const problem = preparationError?.review === reviewKey ? preparationError.error : review?.problem
+  const problem = preparationError?.review === reviewKey ? preparationError.error : baseOutdated(state.identity?.base) ? new BaseUpdateRequired() : review?.problem
   const needsBase = problem instanceof BaseUpdateRequired
   const stays = inventory ? set.moduleIds.filter(id => inventory.moduleIds.includes(id) && !updates.includes(id)) : []
   const cardOnly = changes ? changes.add.filter(id => !USB_MODULE_IDS.includes(id)) : []

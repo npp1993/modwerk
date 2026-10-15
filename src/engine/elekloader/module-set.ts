@@ -29,6 +29,10 @@ export interface RuntimePackageManifest {
 export class BaseUpdateRequired extends ModuleSetError {
   constructor() { super('Install the latest Modwerk base from the card to sync this module set. Your selected modules will stay here.') }
 }
+/** The base the site publishes (sdk/machines/octatrack/base-binding.json). While USB sync is a beta every tester runs
+ * it (owner, 15 October 2026): the site syncs nothing to an older base and guides the update instead. */
+export const CURRENT_BASE: string = baseBinding.identity
+export const baseOutdated = (base?: string) => !!base && base !== CURRENT_BASE
 
 /** A module's runtime id (sdk/runtime/loader/build.py module_id): the first four bytes of the SHA-256 of its catalogue
  * id, hex. The inventory names a module the catalogue does not know by this id. */

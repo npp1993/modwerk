@@ -6,6 +6,7 @@ import type { UploadTransport } from './upload-session.ts'
 import { LOAD_BYTES, parseLoadReading, type LoadReading, SAVED_SET_METADATA_BYTES, SAVED_SET_CHUNK_BYTES,
   SAVED_SET_CHUNK_DATA, parseSavedSetMetadata, parseSavedSetChunk, ZERO_DIGEST, type SavedSetMetadata, type SavedSetSnapshot } from './upload-wire.ts'
 import { sha, toHex } from '../../../vendor/elekloader/kit/src/bytes.ts'
+import { DEVICE_LOG_PAGE, DEVICE_LOG_PAGES, DEVICE_LOG_REQUEST, parseDeviceLog, type DeviceLog } from './device-log.ts'
 
 export const VENDOR_CLASS = 0xff
 export const VENDOR_SUBCLASS = 0x4d // 'M'; must match the base's interface descriptor.
@@ -287,6 +288,19 @@ export class UsbVendorTransport implements UploadTransport {
     signal?.throwIfAborted()
     if (reply.status !== 'ok' || !reply.data) throw new VendorTransportError('The device did not answer the result request.')
     return parseVendorResult(new Uint8Array(reply.data.buffer, reply.data.byteOffset, reply.data.byteLength))
+  }
+  /** The unit's diagnostics log (diag.c), read page by page; undefined when the base stalls LOG (one built before it)
+   * or holds no log yet. */
+  async deviceLog(signal?: AbortSignal): Promise<DeviceLog | undefined> {
+    const data = new Uint8Array(DEVICE_LOG_PAGE * DEVICE_LOG_PAGES)
+    for (let page = 0; page < DEVICE_LOG_PAGES; ++page) {
+      signal?.throwIfAborted()
+      const reply = await this.device.controlTransferIn(this.setup(DEVICE_LOG_REQUEST, page), DEVICE_LOG_PAGE)
+      if (reply.status === 'stall' && !page) return undefined
+      if (reply.status !== 'ok' || reply.data?.byteLength !== DEVICE_LOG_PAGE) throw new VendorTransportError('The Octatrack did not answer the diagnostics log request.')
+      data.set(new Uint8Array(reply.data.buffer, reply.data.byteOffset, DEVICE_LOG_PAGE), page * DEVICE_LOG_PAGE)
+    }
+    return parseDeviceLog(data)
   }
   /** The unit's self-test: start it (`start`), or read where it stands. Answered by the USB interrupt; undefined
    * when the base stalls the request (one built before the self-test). */

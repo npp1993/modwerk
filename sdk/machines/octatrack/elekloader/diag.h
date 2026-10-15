@@ -1,0 +1,51 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * The unit's diagnostics log (diag.c): its layout, read byte for byte by the site (src/engine/elekloader/
+ * device-log.ts parses it big-endian, as the ColdFire stores it). A new layout needs a new DIAG_VERSION. */
+#ifndef MODWERK_DIAG_H
+#define MODWERK_DIAG_H
+#include <stdint.h>
+
+#define DIAG_MAGIC 0x4d574447u /* "MWDG" */
+#define DIAG_VERSION 1u
+#define DIAG_LOADS 96u        /* five minutes each: the last eight hours */
+#define DIAG_INCIDENTS 32u
+#define DIAG_PAGE 244u        /* ep0.c's LOG reply: never a whole multiple of 64 bytes (OCTATRACK_HARDWARE_TRAPS.md) */
+#define DIAG_LOG_REQUEST 37u  /* bRequest of LOG (0xC1, wValue the page, wLength DIAG_PAGE); 31-36 are taken */
+
+enum diag_kind { DIAG_START = 1, DIAG_HOT = 2, DIAG_FREEZE = 3, DIAG_CRASH = 4, DIAG_STALL = 5 };
+
+/* Five minutes of the meters (status.c, per mille), sampled twice a second: `samples` of them, `playing` with the
+ * sequencer running. `minute` counts from the start (`boot`). */
+struct diag_load {
+    uint32_t seq, boot, minute;
+    uint16_t cpu_mean, cpu_peak, dsp0_mean, dsp0_peak, dsp1_mean, dsp1_peak, samples, playing;
+};
+/* An incident and what the unit was doing. `a`: START the crash and stall counts seen (crash.c, dsp.c), HOT the
+ * half-seconds at 90 % or more, FREEZE the frames the UI stood still (0: it never came back before a restart),
+ * CRASH the program counter, STALL the stall's reason. `machine`: each track's type byte and machine signature
+ * (machine_registry.c), `fx` what each slot runs (FX1 T1-T8, then FX2), `keys` the last 16 key codes pressed,
+ * oldest first (0xff none), `screen` stock's top input layer, `tempo24` the tempo times 24. */
+struct diag_incident {
+    uint32_t seq, boot, second, a;
+    uint16_t kind, cpu, dsp0, dsp1;
+    uint8_t machine[24], fx[16], keys[16];
+    uint32_t screen, tempo24, playing;
+};
+/* `loads` and `incidents`: written so far; record n is at n % the ring's size. `freeze`: the frame interrupt's one
+ * slot (freeze_state 1 while the UI stands still, 2 once it moved again), which the tick or the next start adds to
+ * the incidents, so only the tick writes the rings. */
+struct diag_log {
+    uint32_t magic, version, nonce, boot, seq, loads, incidents, crash_seen, stall_seen, freeze_state;
+    struct diag_incident freeze;
+    struct diag_load load[DIAG_LOADS];
+    struct diag_incident incident[DIAG_INCIDENTS];
+};
+typedef char diag_load_layout[sizeof(struct diag_load) == 28u ? 1 : -1];
+typedef char diag_incident_layout[sizeof(struct diag_incident) == 92u ? 1 : -1];
+typedef char diag_log_layout[sizeof(struct diag_log) == 40u + 92u + 28u * DIAG_LOADS + 92u * DIAG_INCIDENTS ? 1 : -1];
+
+void modwerk_diag_tick(void);                          /* ev_tick */
+int modwerk_diag_key(int code, int pressed);           /* ev_key: remembers presses, takes none */
+void modwerk_diag_frame(void);                         /* dl_frame, in the frame interrupt */
+unsigned modwerk_diag_read(uint8_t *out, unsigned page); /* ep0.c LOG: DIAG_PAGE bytes of the log */
+#endif

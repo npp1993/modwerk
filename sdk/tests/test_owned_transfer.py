@@ -27,6 +27,7 @@ FIXTURE = r'''
 volatile uint32_t test_clock;
 static unsigned flags[2];
 unsigned modwerk_dsp_flags(unsigned c) { return flags[c]; }
+void modwerk_diag_frame(void) {} /* diag.c: the frame interrupt's freeze watch */
 void dl_selection_tick(void) {}
 void dl_residency_tick(void) {}
 void dl_show_message(const char *s,unsigned n) { (void)s;(void)n; }
