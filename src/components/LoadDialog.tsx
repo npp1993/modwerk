@@ -5,6 +5,7 @@ import { LinkBusyError, type OctatrackLink } from '../engine/elekloader/octatrac
 import { BaseUpdateRequired, ModuleSetError, moduleSetReview, USB_MODULE_IDS } from '../engine/elekloader/module-set'
 import { useOctatrackLink } from '../hooks/useOctatrackLink'
 import { MODULES } from '../catalog/modules'
+import { isModuleAvailable } from '../catalog/availability'
 import { StateChip } from './ModuleGrid'
 import { ModulePreview } from './ModulePreview'
 import { Icon } from './Icon'
@@ -46,6 +47,8 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
   const needsBase = problem instanceof BaseUpdateRequired
   const stays = inventory ? set.moduleIds.filter(id => inventory.moduleIds.includes(id) && !updates.includes(id)) : []
   const cardOnly = changes ? changes.add.filter(id => !USB_MODULE_IDS.includes(id)) : []
+  // Only beta testers reach this dialog. A paused module can still be removed, never added.
+  const paused = changes ? changes.add.filter(id => !isModuleAvailable(id, true)) : []
   useEffect(() => {
     const element = dialog.current, previousFocus = document.activeElement
     element?.showModal()
@@ -122,6 +125,10 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
             <p>{list(cardOnly)} still {cardOnly.length === 1 ? 'needs' : 'need'} the card. Take {cardOnly.length === 1 ? 'it' : 'them'} out of {set.name} to sync the rest now, or install {set.name} from the card.</p>
             <p><button type="button" className="text-button" onClick={onEdit}>Edit {set.name}</button><button type="button" className="text-button" onClick={onCard}>Install from the card</button></p>
           </div>}
+          {paused.length > 0 && <div className="load-blocked" role="note">
+            <p>{list(paused)} {paused.length === 1 ? 'is' : 'are'} paused for now. Take {paused.length === 1 ? 'it' : 'them'} out of {set.name} to sync the rest.</p>
+            <p><button type="button" className="text-button" onClick={onEdit}>Edit {set.name}</button></p>
+          </div>}
         </>}
       {problem && <p className="file-error" role="alert">{problem.message}</p>}
       {error && <p className="file-error" role="alert">{error}</p>}
@@ -137,12 +144,12 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
       {step === 'trial' && (leaving && status === 'trial' ? <p className="file-error" role="alert">Closing now undoes it. Keep it or undo it first.</p> : <p className="link-hint">Unplugging or closing the site also undoes it.</p>)}
     </>}
     <footer className="base-install-footer">
-      {step === 'review' && connected && review?.needsSync && !problem && !cardOnly.length
+      {step === 'review' && connected && review?.needsSync && !problem && !cardOnly.length && !paused.length
         ? <p className="link-hint">Syncing stops playback on the Octatrack.</p> : <span />}
       <div className="base-install-actions">
         {step === 'review' && <><button type="button" className="button button-quiet" onClick={onClose}>Cancel</button>
           {needsBase ? <button type="button" className="button button-primary" onClick={onInstallBase}><Icon name="download" size={16} />Install latest base</button>
-            : <button type="button" className="button button-primary" disabled={!connected || !review?.needsSync || !!problem || cardOnly.length > 0 || !prepareUpdate} onClick={() => void load()}><Icon name="download" size={16} />Sync to Octatrack</button>}</>}
+            : <button type="button" className="button button-primary" disabled={!connected || !review?.needsSync || !!problem || cardOnly.length > 0 || paused.length > 0 || !prepareUpdate} onClick={() => void load()}><Icon name="download" size={16} />Sync to Octatrack</button>}</>}
         {step === 'loading' && !preparing && progress < 1 && <button type="button" className="button button-quiet" onClick={() => link.cancel()}>Cancel</button>}
         {step === 'trial' && <><button type="button" className="button button-quiet load-undo" disabled={status === 'finishing'} onClick={() => { ending.current = 'undone'; void link.undo() }}>Undo → {undoName ?? 'Previous modules'}</button>
           <button type="button" className="button button-primary" disabled={status === 'finishing'} onClick={() => void keep()}><Icon name="check" size={16} />Keep</button></>}

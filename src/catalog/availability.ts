@@ -2,7 +2,8 @@
 // Copyright (c) 2026 Jannik Aßfalg (repeat98)
 import { MODULES, resolveSelection } from './modules.ts'
 
-export const BETA_MODULE_IDS: readonly string[] = ['airwindows-chorus', 'poly8']
+// POLY8 left the beta on 15 October 2026 (testers' freezes, #646) and stays paused for everyone.
+export const BETA_MODULE_IDS: readonly string[] = ['airwindows-chorus']
 export const isBetaModule = (id: string) => BETA_MODULE_IDS.includes(id)
 
 // Temporary frontend suspension. Keep the full source catalog and saved pins intact.

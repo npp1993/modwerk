@@ -21,6 +21,16 @@ export async function betaInvitationRoutes(request: Request, db: Database, path:
     await db.prepare('INSERT OR IGNORE INTO member_beta_discord_invites(user_id) VALUES(?)').bind(member.id).run()
     return response({ ok: true })
   }
+  // A tester can leave on their own; the used invitation cannot admit them again, only an administrator can.
+  if (path === '/api/auth/beta-leave') {
+    const member = needMember(user)
+    if (request.method !== 'POST') throw new HttpError(405, 'Use POST to leave the beta.')
+    await db.batch([
+      db.prepare("INSERT INTO forum_moderation(id,actor_id,target,action,reason) SELECT ?,?,?,'beta-tester:leave','left from the beta tester note' WHERE EXISTS(SELECT 1 FROM users WHERE id=? AND beta_tester=1)").bind(crypto.randomUUID(), member.id, member.id, member.id),
+      db.prepare('UPDATE users SET beta_tester=0 WHERE id=?').bind(member.id),
+    ])
+    return response({ ok: true })
+  }
   const match = /^\/api\/auth\/beta-invitations\/(public|[a-f0-9]{32})$/.exec(path)
   if (!match) return null
   const member = needMember(user), campaign = match[1]

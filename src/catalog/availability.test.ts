@@ -33,13 +33,14 @@ describe('temporary module availability', () => {
     expect(moduleAvailabilityError(restored.moduleIds)).toContain('Remove these modules')
     expect(resolveSelection(['spectrum', 'modulation', 'character', 'airwindows-chorus'])).toHaveLength(4)
   })
-  it('offers and builds only Air Chorus and POLY8 for beta access while retaining other pauses', () => {
+  it('offers and builds only Air Chorus for beta access while retaining other pauses, POLY8 included', () => {
     expect(availableModules(true).map(module => module.id)).toEqual([...MODULES].filter(module => !PAUSED_MODULE_IDS.includes(module.id) || BETA_MODULE_IDS.includes(module.id)).map(module => module.id))
-    expect(BETA_MODULE_IDS).toEqual(['airwindows-chorus', 'poly8'])
+    expect(BETA_MODULE_IDS).toEqual(['airwindows-chorus'])
     expect(isModuleAvailable('poly8')).toBe(false)
     expect(moduleAvailabilityError(['poly8', 'euclid'])).toContain('POLY8')
     for (const id of BETA_MODULE_IDS) expect(isModuleAvailable(id, true)).toBe(true)
-    expect(moduleAvailabilityError(['poly8'], true)).toBe('')
+    expect(isModuleAvailable('poly8', true)).toBe(false)
+    expect(moduleAvailabilityError(['poly8'], true)).toContain('POLY8')
     expect(isModuleAvailable('airwindows-chorus', true)).toBe(true)
     expect(moduleAvailabilityError(['airwindows-chorus'], true)).toBe('')
     expect(moduleAvailabilityError(['spectrum', 'airwindows-chorus'], true)).toContain('Spectrum')

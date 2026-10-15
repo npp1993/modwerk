@@ -17,8 +17,9 @@ export function DiagnosticDetails() {
   </details>
 }
 
-/** One explicit choice, separate from installation and sync. No collection is enabled by opening or dismissing it. */
-export function DiagnosticsInvitation({onClose,preview=false}: {onClose:()=>void;preview?:boolean}) {
+/** One explicit choice, separate from installation and sync. No collection is enabled by opening or dismissing it.
+ * With `onLeave` it is the beta's requirement: the only other way out is leaving the beta. */
+export function DiagnosticsInvitation({onClose,onLeave,preview=false}: {onClose:()=>void;onLeave?:()=>void;preview?:boolean}) {
   const state = useSyncExternalStore(subscribeDiagnosticPreference,diagnosticPreference,diagnosticPreference)
   const dialog = useRef<HTMLDialogElement>(null), live = useRef(true)
   const privacy = browserRequestsPrivacy()
@@ -32,8 +33,8 @@ export function DiagnosticsInvitation({onClose,preview=false}: {onClose:()=>void
     if(preview){onClose();return}
     if(await changeDiagnosticSharing(true) && live.current)onClose()
   }
-  return <dialog ref={dialog} className="diagnostics-invitation" aria-labelledby="diagnostics-title" aria-describedby="diagnostics-intro" onCancel={event=>{event.preventDefault();onClose()}}>
-    <button type="button" className="icon-button diagnostics-close" aria-label="Close diagnostics invitation" onClick={onClose}><Icon name="close"/></button>
+  return <dialog ref={dialog} className="diagnostics-invitation" aria-labelledby="diagnostics-title" aria-describedby="diagnostics-intro" onCancel={event=>{event.preventDefault();if(!onLeave)onClose()}}>
+    {!onLeave && <button type="button" className="icon-button diagnostics-close" aria-label="Close diagnostics invitation" onClick={onClose}><Icon name="close"/></button>}
     <div className="diagnostics-heading-icon" aria-hidden="true"><Icon name="wave" size={24}/></div>
     <h2 id="diagnostics-title" tabIndex={-1}>Help us find bugs</h2>
     {preview && <p className="diagnostics-preview">Preview · no data is shared</p>}
@@ -44,10 +45,10 @@ export function DiagnosticsInvitation({onClose,preview=false}: {onClose:()=>void
     </ul>
     <p className="diagnostics-connected">Trying the Octatrack beta? Keep this page open and your Octatrack connected so we can receive a report if something fails.</p>
     <DiagnosticDetails/>
-    <p className="diagnostics-choice">Optional. Sharing applies to your signed-in sessions for 90 days. You can turn it off and delete reports in Account → Diagnostics anytime. Builds and syncing work either way.</p>
+    <p className="diagnostics-choice">{onLeave ? 'Needed for the beta – the rest of the site works without it.' : 'Optional.'} Sharing applies to your signed-in sessions for 90 days. You can turn it off and delete reports in Account → Diagnostics anytime.{!onLeave && ' Builds and syncing work either way.'}</p>
     {privacy && <p className="diagnostics-choice" role="status">Your browser requests privacy, so automatic diagnostics stay off here.</p>}
     {!preview && state.error && <p className="file-error" role="alert">{state.error}</p>}
-    <footer className="diagnostics-actions"><button type="button" className="button button-quiet" onClick={onClose}>Not now</button><button type="button" className="button button-primary" disabled={privacy || !preview && (!state.ready || state.busy)} onClick={()=>void share()}>{state.busy && !preview ? 'Saving…' : 'Share diagnostics'}</button></footer>
+    <footer className="diagnostics-actions"><button type="button" className="button button-quiet" onClick={onLeave ?? onClose}>{onLeave ? 'Leave beta' : 'Not now'}</button><button type="button" className="button button-primary" disabled={privacy || !preview && (!state.ready || state.busy)} onClick={()=>void share()}>{state.busy && !preview ? 'Saving…' : 'Share diagnostics'}</button></footer>
   </dialog>
 }
 

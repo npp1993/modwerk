@@ -95,3 +95,16 @@ it('admits only one competing member into the final place and caps admin grants 
   expect((await call(path, 'POST', accept, winner.session)).status).toBe(403)
   expect((await call(path, 'POST', accept, remaining.session)).status).toBe(200)
 }, 120000)
+
+it('lets a tester leave the beta on their own and logs it once', async () => {
+  const { db, call, member } = await fixture()
+  const tester = await member('betaleaver'), other = await member('betastayer')
+  db.prepare('UPDATE users SET beta_tester=1 WHERE id IN (?,?)').run(tester.id, other.id)
+  expect((await call('/auth/beta-leave', 'GET', undefined, tester.session)).status).toBe(405)
+  expect((await call('/auth/beta-leave', 'POST', {})).status).toBe(401)
+  expect((await call('/auth/beta-leave', 'POST', {}, tester.session)).status).toBe(200)
+  expect((await call('/auth/beta-leave', 'POST', {}, tester.session)).status).toBe(200)
+  expect(db.prepare('SELECT id,beta_tester FROM users WHERE id IN (?,?) ORDER BY username').all(tester.id, other.id)).toEqual([{ id: tester.id, beta_tester: 0 }, { id: other.id, beta_tester: 1 }])
+  expect(db.prepare("SELECT actor_id,target FROM forum_moderation WHERE action='beta-tester:leave'").all()).toEqual([{ actor_id: tester.id, target: tester.id }])
+  expect((await call('/auth/beta-discord-invite', 'GET', undefined, tester.session)).status).toBe(403)
+})

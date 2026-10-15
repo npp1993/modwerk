@@ -3,7 +3,6 @@ import { act, createElement, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { BetaInvitationPage } from './BetaInvitationPage'
-import { BetaDiscordInvitation } from './BetaDiscordInvitation'
 import { BrandName } from '../components/BrandName'
 import { CommunityContext, emptySession } from './context'
 import { BETA_RISKS_VERSION } from '../config/beta-invitation'
@@ -63,17 +62,10 @@ it('shows a full pool with no join action, including when the last place disappe
   expect(container.textContent).toContain('All 50 beta places are taken')
   expect(container.querySelector('input')).toBeNull()
 })
-it('prompts existing testers for Discord and records their choice, with branding tied to real access', async () => {
-  mocks.api.mockResolvedValue({ show: true })
+it('ties the beta branding to real access', async () => {
   const beta = { ...member, user: { ...member.user!, betaTester: true } }
-  await render(beta, createElement('div', {}, createElement(BrandName, { session: beta }), createElement(BetaDiscordInvitation)))
+  await render(beta, createElement(BrandName, { session: beta }))
   expect(container.querySelector('.brand-beta-badge')?.textContent).toBe('Beta')
-  expect(container.textContent).toContain('Join the beta testers on Discord')
-  mocks.post.mockResolvedValue({ ok: true })
-  await act(() => container.querySelector<HTMLButtonElement>('button')!.click())
-  expect(mocks.post).toHaveBeenCalledWith('/auth/beta-discord-invite', {})
-  expect(container.querySelector('aside')).toBeNull()
-  await render(member, createElement('div', {}, createElement(BrandName, { session: member }), createElement(BetaDiscordInvitation)))
+  await render(member, createElement(BrandName, { session: member }))
   expect(container.querySelector('.brand-beta-badge')).toBeNull()
-  expect(container.querySelector('aside')).toBeNull()
 })

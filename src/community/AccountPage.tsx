@@ -76,7 +76,7 @@ function AccountContent({route}:{route:string}) {
             <button className="button button-quiet" disabled={busy||(devices?.length??0)<2} onClick={()=>void endSessions(true)}>Sign out other sessions</button>
             {message&&<p className="success-note" role="status">{message}</p>}{error&&<p className="file-error" role="alert">{error}</p>}
           </section>
-          <OctatrackDiagnosticsSettings/><AccountExport/><AccountRemovalRequest key={'removal-'+session.user!.id}/><AccountSettings key={'security-'+session.user!.id} section="security"/>
+          <OctatrackDiagnosticsSettings username={session.user!.username}/><AccountExport/><AccountRemovalRequest key={'removal-'+session.user!.id}/><AccountSettings key={'security-'+session.user!.id} section="security"/>
         </>}
         {section==='developer'&&<DeveloperVerification route={route}/>}
       </div>

@@ -52,6 +52,18 @@ describe('runtime package upgrade review', () => {
     expect(prepareUpdate).toHaveBeenCalledWith(set)
     expect(link.update).toHaveBeenCalledTimes(1)
   })
+  it('holds back a paused module but still lets a sync remove it', async () => {
+    review.mockReturnValue({ changes: { ...changes, add: ['poly8'] }, updates: [], needsSync: true, problem: undefined })
+    const { prepareUpdate } = await load()
+    expect(container.querySelector('.load-blocked')?.textContent).toContain('POLY8 is paused for now')
+    expect(button('Sync to Octatrack').disabled).toBe(true)
+    expect(container.textContent).not.toContain('Syncing stops playback')
+    review.mockReturnValue({ changes: { ...changes, remove: ['poly8'] }, updates: [], needsSync: true, problem: undefined })
+    await load(prepareUpdate)
+    expect(container.querySelector('.load-blocked')).toBeNull()
+    await act(async () => button('Sync to Octatrack').click())
+    expect(prepareUpdate).toHaveBeenCalledWith(set)
+  })
   it('reviews against the connected base, as the hub does, so base-bound packages are not taken for an old base', async () => {
     await load()
     const { identity } = link.getState()

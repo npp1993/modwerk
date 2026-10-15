@@ -13,13 +13,17 @@ export function OctatrackDiagnosticsCollector({memberId,link,inventory}: {member
   useEffect(()=>collectOctatrackDiagnostics(memberId,link,()=>latest.current),[memberId,link])
   return null
 }
-export function OctatrackDiagnosticsSettings() {
+/** `username` is the name the owner sees on shared records; testers match it on Discord. */
+export function OctatrackDiagnosticsSettings({username}: {username?: string | null}) {
   const state = useSyncExternalStore(subscribeDiagnosticPreference,diagnosticPreference,diagnosticPreference)
   const [invitation,setInvitation]=useState(false)
   const privacy = browserRequestsPrivacy()
   return <section className="octatrack-diagnostics" aria-label="Diagnostics">
     <h3>Diagnostics</h3>
     <p>{state.enabled ? 'You’re helping me find browser, build and Octatrack sync problems.' : 'Help me find browser, build and Octatrack sync problems by sharing private technical reports.'}</p>
+    {state.enabled && username && <p className="link-hint">They reach me as @{username}. {/^member_[a-z0-9]+$/i.test(username)
+      ? <>That name was made up by the site: <a href="#account">choose your own</a>, ideally your Discord name, so I can match your messages to them.</>
+      : 'Use the same name on Discord, so I can match your messages to them.'}</p>}
     {!state.enabled && <button type="button" className="button button-quiet" aria-haspopup="dialog" onClick={()=>setInvitation(true)}>About sharing diagnostics</button>}
     <DiagnosticDetails/>
     {state.ready && (state.hasChoice || state.error) && <button className="text-button" disabled={state.busy} onClick={()=>void changeDiagnosticSharing(false)}>Stop sharing and delete</button>}

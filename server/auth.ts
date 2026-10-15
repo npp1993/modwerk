@@ -62,7 +62,7 @@ export async function authentication(request:Request,env:Env,path:string):Promis
  if(social)return social
  const profile=await profileRoutes(request,env,db,path)
  if(profile)return profile
- const invitation=await betaInvitationRoutes(request,db,path,(path.startsWith('/api/auth/beta-invitations/')||path==='/api/auth/beta-discord-invite')?await accountUser(request,env,db):null)
+ const invitation=await betaInvitationRoutes(request,db,path,(path.startsWith('/api/auth/beta-invitations/')||path==='/api/auth/beta-discord-invite'||path==='/api/auth/beta-leave')?await accountUser(request,env,db):null)
  if(invitation)return invitation
  if(path==='/api/auth/discord-invite'){
   if(request.method!=='POST')throw new HttpError(405,'Use POST to request the Discord invitation.')
@@ -85,9 +85,9 @@ export async function authentication(request:Request,env:Env,path:string):Promis
   await db.prepare('INSERT OR IGNORE INTO member_base_install_prompts(user_id) VALUES(?)').bind(member.id).run()
   return response({ok:true})
  }
- // Shown until the member closes it, then never again on any browser or device. The dialog that showed it was removed; a new note needs a new id here and a new dialog.
+ // Shown until the member closes it, then never again on any browser or device. A new note needs a new id here and in src/components/OwnerNote.tsx.
  if(path==='/api/auth/owner-note'){
-  const OWNER_NOTE='2026-10-14',member=needMember(await accountUser(request,env,db))
+  const OWNER_NOTE='2026-10-15-beta-2',member=needMember(await accountUser(request,env,db))
   if(request.method==='GET')return response({show:!await db.prepare('SELECT 1 FROM member_owner_notes WHERE user_id=? AND note=?').bind(member.id,OWNER_NOTE).first()})
   if(request.method!=='POST')throw new HttpError(405,'Use GET or POST for the note.')
   await db.prepare('INSERT OR IGNORE INTO member_owner_notes(user_id,note) VALUES(?,?)').bind(member.id,OWNER_NOTE).run()

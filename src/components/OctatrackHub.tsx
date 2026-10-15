@@ -52,8 +52,8 @@ function SetMenu({ set, onAction }: { set: Configuration; onAction: (id: string,
  * (`grid`) and the card route (`card`: base OS file, checks, build) are App's own parts. Every page stays mounted, so
  * local samples and the load history survive moving around. Nothing goes onto the unit without the guided sync.
  */
-export function OctatrackHub({ view, link, inventory, sets, selectedId, needs, onSelect, onSync, onInstall, onNew, onImport, onSetAction, onFill, onSaveUnit, onReport, header, grid, card }: {
-  view: HubView; link: OctatrackLink | null; inventory?: Inventory; sets: Configuration[]; selectedId?: string; needs?: ProjectNeeds
+export function OctatrackHub({ view, link, inventory, sets, selectedId, needs, username, onSelect, onSync, onInstall, onNew, onImport, onSetAction, onFill, onSaveUnit, onReport, header, grid, card }: {
+  view: HubView; link: OctatrackLink | null; inventory?: Inventory; sets: Configuration[]; selectedId?: string; needs?: ProjectNeeds; username?: string | null
   onSelect: (id: string) => void; onSync: (id: string) => void; onInstall: () => void
   onNew: () => void; onImport: () => void; onSetAction: (id: string, action: SetAction) => void
   onFill: (ids: string[]) => void; onSaveUnit: () => void; onReport: (id?: string) => void
@@ -163,7 +163,7 @@ export function OctatrackHub({ view, link, inventory, sets, selectedId, needs, o
             <p className="link-hint">Going back to the original OS works from the card: <a className="text-button" href="#faq">FAQ & flashing guide</a></p>
           </section>
           {card}
-          <OctatrackDiagnosticsSettings />
+          <OctatrackDiagnosticsSettings username={username} />
         </>)}
         {panel('set', selected ? <>
           <header className="hub-editor-head">

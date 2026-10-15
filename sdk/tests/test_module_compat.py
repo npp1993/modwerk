@@ -91,14 +91,16 @@ class GateTests(unittest.TestCase):
     def test_machine_modules_install_in_every_combination_through_events_and_tables(self):
         """POLY8, VECTOR, FM Synth, Scale Quantizer and Analog BD: no exception in compatibility.json, every subset of
         their packages (as their runtime.json or machine port installs them) meets nowhere; their native manifests
-        do meet, so the ports, not the gate, make them independent."""
+        do meet, so the ports, not the gate, make them independent. A paused one is left out, as the gate leaves it."""
         import itertools, json
         relations = json.loads((ROOT / gate.RELATIONS).read_text())['relations']
         self.assertEqual([r for r in relations if r.get('kind') in ('group-owned', 'pending-migration')], [])
         ids, modules, inputs, problems = gate.repository_inputs()
-        five = [m for m in modules if m.name in ('poly8', 'vector', 'synth', 'quantizer', 'analog-bassdrum')]
-        self.assertEqual(len(five), 5)
-        for n in range(1, 6):
+        names = [n for n in ('poly8', 'vector', 'synth', 'quantizer', 'analog-bassdrum') if n in ids]
+        five = [m for m in modules if m.name in names]
+        self.assertEqual(len(five), len(names))
+        self.assertGreaterEqual(len(five), 4)
+        for n in range(1, len(five) + 1):
             for subset in itertools.combinations(five, n):
                 with self.subTest([m.name for m in subset]):
                     self.assertEqual(gate.check(list(subset), **inputs), [])
