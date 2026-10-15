@@ -59,14 +59,14 @@ Assign LOFI2 in FX2 SETUP, shape the modulator on the main page (FREQ, MIX, GAIN
 
   A scratch-only probe with Analog BD's companion list widened (not part of this change, unreviewed) placed Analog BD, Output Matrix, TapeHead, Sidechain Compressor and LOFI2 only with the three reverbs, LO-FI, DJ EQ and CHORUS given up, and then only because giving up DJ EQ lets the build move LOFI2's table into X memory. With DJ EQ or CHORUS kept it is refused. That layout has not run anywhere.
 - **Cost.** SHIFT counts 416 static cycles/sample and executes 430 instructions/sample at its worst in `dsp_host`, about 1.4x stock SPRING REV's worst case (314) and 1.5x stock LO-FI (290). RING is 274, below SPRING REV. SHIFT is still dearer than every stock effect, which needs the owner's acceptance. On his MKII the author ran this source on all eight tracks at once, four per core, in UP, in DOWN and in RING (his octabam build 12, 13 October 2026). His recommendation: **SHIFT on up to four per core, all eight tracks.** The earlier merged revision (654 cycles) overran core 0 with a fourth instance.
-- **USB loading on the Modwerk base is not part of this version.** It waits on upstream loader changes. A trial on an earlier pin is recorded in TESTING.md.
+- **USB loading.** The Modwerk base loads LOFI2 on demand into FX1 or FX2 of any track. It declares 637 cycles a sample, timed on an MKII, against the 726 the base lets one module take: two instances fit on one DSP core when its other slots are free, and a third is refused with DSP FULL. Removing it is refused while a track runs it.
 - **A faint residue in SHIFT after the input stops.** In DOWN and UP, once sound has passed through, the output settles at about -77 to -83 dBFS instead of silence and stays there (measured in a `dsp_host` render; RING and the reduction stages return to silence). The upstream module does the same. Turn MIX to 0 or switch MODE to RING to clear the path when a track must be silent.
 - **High BRR silences quiet signals.** The quantiser rounds to the nearest step, so at BRR 127 anything that peaks below about 0.11 of full scale comes out as silence; stock LO-FI does the same at the same level. On a quiet track, or on the master track after a quiet mix, lower BRR or raise the level going in.
 - **No single-knob bypass.** A passthrough is MIX 0, SRR 0, BRR 0 and LPF 127.
-- **A missing module.** The native build aliases the ID of a module that is not in the image to NONE, so a project that selects LOFI2 on an image without it should play that track dry. Not tested.
+- **A missing module.** The native build aliases the ID of a module that is not in the image to NONE, so a project that selects LOFI2 on an image without it should play that track dry. Not tested on a card image. Over USB, the base shows MODULE MISSING and plays the track dry, and reinstalling LOFI2 restores it with its settings (tested on an MKII).
 - **Aliasing is intended** in SRR and BRR; they have no reconstruction filter. Stock LO-FI follows its hold with a FIR near Nyquist that LOFI2 does not copy.
 - **Parameter locks hold until the track's next trig**, as they do for every stock parameter on this OS (checked against the stock image in the emulator).
-- **Not tested:** eight instances, scenes and project reload on a unit; FX1 on a unit; payload B in the render gate.
+- **Not tested:** eight instances and scenes on a unit; FX1 in a card image on a unit; payload B in the render gate.
 
 ## Tests and measurements
 
@@ -78,7 +78,7 @@ Details, commands and every result are in [TESTING.md](TESTING.md).
 - Static cost 416 cycles/sample; `dsp_host` benchmark 430 instructions/sample (SHIFT) and 274 (RING), against stock SPRING REV 314, LO-FI 290, DARK REV 242 and DJ EQ 331.
 - Stress: eight instances (four per core) behind DJ EQ, LFOs and every slot changing each sixteenth, 32 s under memory guards: no hang, no clobber. `perf:audit` passes with a justification for SHIFT's cost.
 - `fx:audit`: clean at the defaults and with the shelf in; the modulating and reducing settings are recorded as intended; the SHIFT residue above is the one finding.
-- USB loading: not attempted for this version (a trial on an earlier pin is in TESTING.md).
+- USB loading: the published package ran on an MKII on the beta base: trial and Undo, install and Keep, FX1 and FX2 on both cores, two instances on one core, removal, the missing-module fallback and persistence through a Part reload, a project reload and a power cycle.
 - Hardware: a functional MKII report on the exact image (every mode, five SHIFT instances, a parameter lock, Part reload and a power cycle).
 - Upstream hardware evidence (Bryan T's MKII, octabam images 96-99 and builds 11 and 12, October 2026) is quoted in TESTING.md. It is not evidence for this build.
 

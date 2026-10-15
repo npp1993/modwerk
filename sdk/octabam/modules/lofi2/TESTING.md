@@ -288,6 +288,10 @@ The package declares 637 (core 1's dearest, rounded up), the convention the base
 
 Emulator dry run (`ot_emu --dsp`, the twin, the measurement package, `scripts/verify-octatrack-dsp-loader.mjs beside:lofi2`): installed; picked on FX2 of T1 and T5, it kept effect id 9; PLATE REV on T2 and DARK REV on T6; each core holds LOFI2's code word for word in its arena; no refused selection, no loader errors. That proves admission and binding only, not timing or audio.
 
+## USB package on the unit (15 October 2026)
+
+The published package `7ee9277f35109883…` ran on the tester's MKII on the flashed beta base: trial and Undo, install and Keep, FX1 and FX2 on both cores, every mode, two instances on one core admitted and a third refused DSP FULL, removal refused while in use, the missing-module fallback and restore, and Part reload, project reload and power-cycle persistence all passed. Details in [evidence/hardware.md](evidence/hardware.md).
+
 ## Screenshots (here)
 
 `scripts/capture-module-ui.py` with the image above, `ot_emu`, MKII panel, empty scratch card, transport stopped. Five PNGs and `media/capture.json` (plan, image, emulator and PNG hashes). Each image was opened and checked: LOFI2 selected in FX2 SETUP with RNGE, MODE and AMPH; the main page at defaults; FREQ 64 / MIX 127; MODE turned to UP (the name stays MODE, UP shows beneath the knob); the main page in UP with slot 2 renamed FDBK and set to 60. They show the pages and labels, not audio or hardware.
@@ -326,11 +330,11 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 ## Not tested
 
 - On a unit: an MKI, eight instances at once, chip timing, LFO modulation, scenes and the crossfader, and project save and reload as a separate step (evidence/hardware.md lists what was run).
-- FX1 on hardware (emulator checks only, above), and LOFI2 beside any Modwerk module on hardware.
+- FX1 in a card image on hardware (FX1 ran on the unit with the USB package only).
 - `rig_render` on both cores, `verify_set` under the ColdFire port, `make check` as a whole.
 - `stress_project.py` on a real Octatrack project and `pressure.py render`: the stress run above drives the same load straight into `dsp_host`.
 - `npm run module:verify` is not recorded: 3 of 134 selections differ (see Repository checks).
-- On the flashed beta base: install, self-test, Keep and Undo, FX1 and FX2 on both cores, two instances, removal and the missing-module fallback, and persistence of the published USB package (pending on the unit).
+- On the flashed beta base: a worst-case timing pass (no development meters there), LOFI2 beside other DSP modules, eight instances.
 
 ## Packages (here)
 

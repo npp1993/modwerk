@@ -3200,12 +3200,12 @@
             "tester": "npp1993",
             "sourceRevision": "21f6de905df71c2d7e4faba6cc7b5c7f7fb53de7",
             "imageSha256": "3d63406d3254e161b1fc52c9acfbfc14af6130b2c9314a554030e0ac060678e2",
-            "summary": "On an Octatrack MKII the port's contributor flashed the LOFI2-only private image LOFI2T03 (this source) and played for about 5 to 10 minutes: LOFI2 selects on FX2 and passes audio unchanged at its defaults; RING, DOWN and UP work and switch without a click or freeze; SRR, BRR and LPF act; five instances ran in SHIFT at once across both DSP cores; a parameter lock on FREQ works; a Part reload and a power cycle restore the settings; the SHIFT idle residue was not audible.",
+            "summary": "On an Octatrack MKII the port's contributor flashed the LOFI2-only private image LOFI2T03 (this source) and played for about 5 to 10 minutes: LOFI2 selects on FX2 and passes audio unchanged at its defaults; RING, DOWN and UP work and switch without a click or freeze; SRR, BRR and LPF act; five instances ran in SHIFT at once across both DSP cores; a parameter lock on FREQ works; a Part reload and a power cycle restore the settings; the SHIFT idle residue was not audible. On 15 October 2026 the published USB package (SHA-256 7ee9277f35109883…, source c20b7756) ran on the same MKII on the flashed beta base: trial and Undo, install and Keep, FX1 and FX2 on T1 and T5 (both cores), every mode by ear, two instances on one core admitted and a third refused DSP FULL, removal refused while in use and taken once free, MODULE MISSING and restore after reinstall, and Part reload, project reload and a power cycle keeping module and settings (evidence/hardware.md).",
             "limitations": [
               "A short functional report by ear on one unit: no measured chip load, memory check or recording.",
               "Five instances at once, not the eight the cycle and memory records price.",
               "Scenes and the crossfader were not confirmed; project save and reload was not reported separately from the Part reload and the power cycle.",
-              "FX2 only, and LOFI2 alone beside stock effects: no other Modwerk module was in the image.",
+              "Card image: FX2 only, and LOFI2 alone beside stock effects. The USB run covered FX1 and FX2 with APPLY SCENE as the only other module.",
               "The tester is the contributor of the port, not an independent reviewer."
             ],
             "report": "evidence/hardware.md"
