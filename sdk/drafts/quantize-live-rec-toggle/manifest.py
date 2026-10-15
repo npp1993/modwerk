@@ -43,7 +43,8 @@ are carried. patch_qlrec.s is the author's but for the two toast strings: his
 "QUANT LIVE REC ON" / "QUANT LIVE REC OFF" read "LIVE REC: QUANTIZED" /
 "LIVE REC: UNQUANTIZED" here, and after a flip the unit calls the stock routine that
 redraws the open PROJECT menu page (0x40064d7c, a no-op when that menu is closed), so
-an open PERSONALIZE list shows the new value at once. Nothing else changed.
+an open PERSONALIZE list shows the new value at once; the flip writes the battery shadow before the
+word and reaches that call through %a0, so no 12 bytes repeat stock code. Nothing else changed.
 """
 
 import os
@@ -66,15 +67,15 @@ RECREL_HOOK = 0x4004883a
 RETIRED_TICK_HOOK = 0x400522ca
 RETIRED_TICK_GUARD = stock_guard(RETIRED_TICK_HOOK, 6, "1eb782bde4b72ae5bad5fe826898c238315df94d4a4e583f7e7949210e3d02fb")
 
-# patch_qlrec.s, m68k-elf-as -mcpu=5407, linked at 0x400d7400: 186 bytes. The unit is position
+# patch_qlrec.s, m68k-elf-as -mcpu=5407, linked at 0x400d7400: 188 bytes. The unit is position
 # independent (the author verified his 176 bytes at 0x400d7700 and 0x400d7100), so the one reference
 # holds wherever it floats. Modwerk changed the two toast strings and added one call (see the
 # docstring), so these are no longer the author's bytes: his unit is 176 bytes, SHA-256
 # 52c26af67443e470147844a52009d09fa308be5045a1f891c01344dbbaa8670d, and with both changes taken
-# back this source still links to exactly that.
-UNIT_BYTES = 186
-RECREL_OFFSET = 0x7a                     # qlr_recrel within the unit; qlr_play is at 0
-REFERENCE = (0x400d7400, "744a73eb0783e72fb5cbe10930ea9aae109c58f6b7d8e3594c3acb5afa91536c")
+# back this source still links to exactly that (with the stock-free reorder of 15 October 2026 taken back too).
+UNIT_BYTES = 188
+RECREL_OFFSET = 0x7c                     # qlr_recrel within the unit; qlr_play is at 0
+REFERENCE = (0x400d7400, "9ab1d8e56eee486a1844e6d57330888aaf001f532c1d87d0d0e6b95361749518")
 
 MODULE = Module(
     name="quantize-live-rec-toggle",

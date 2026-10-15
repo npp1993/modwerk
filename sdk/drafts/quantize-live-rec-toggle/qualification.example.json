@@ -1,12 +1,12 @@
 {
   "moduleVersion": "0.1.0-experimental",
-  "sourceSha256": "e114dc0d8205f24a7773cf5216afb61d5519cd9e11c6e66fd223277fae955159",
-  "imageSha256": "57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69",
+  "sourceSha256": "3919857a869087c66907941c64c2ef735f44e32849237a876521f8525fc9a8e1",
+  "imageSha256": "eb34c12e9c906107fc6a8285ec757eaacf83a39c8dfb42e7bc390421f4189afd",
   "cycles": [
     {
       "processor": "coldfire",
-      "worstCase": 400,
-      "maxConfiguration": 400,
+      "worstCase": 416,
+      "maxConfiguration": 416,
       "maxInstances": 1,
       "budget": 95778,
       "unit": "cycles/event",
@@ -26,9 +26,9 @@
       {
         "name": "Authored ColdFire code and the two toast strings (linked unit qlr, ROM cave)",
         "space": "cpu-flash",
-        "words": 186,
+        "words": 188,
         "wordBits": 8,
-        "bytes": 186,
+        "bytes": 188,
         "scope": "shared"
       },
       {
@@ -41,10 +41,10 @@
       }
     ],
     "perInstanceBytes": 0,
-    "sharedBytes": 198,
+    "sharedBytes": 200,
     "maxInstances": 1,
-    "totalBytes": 198,
-    "conditions": "From the linked unit (186 bytes at any address; it is position independent) and the two detours. No RAM of its own: it reads and writes the stock setting word and its battery copy, and reads stock key and notification state. No heap; at most 8 bytes of stack beyond the stock key handler (two pushed arguments) before the stock calls.",
+    "totalBytes": 200,
+    "conditions": "From the linked unit (188 bytes at any address; it is position independent) and the two detours. No RAM of its own: it reads and writes the stock setting word and its battery copy, and reads stock key and notification state. No heap; at most 8 bytes of stack beyond the stock key handler (two pushed arguments) before the stock calls.",
     "report": "TESTING.md"
   },
   "hardware": {
@@ -57,6 +57,7 @@
     "imageSha256": "57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69",
     "summary": "QLRTEST02, this module alone at the tested source, flashed from the card on an MKII. Hold [REC] + [PLAY] showed the setting and started live recording; a second tap while the toast was up inverted it, a tap after the toast had run out only showed it, and releasing [REC] closed the toast. Both toasts, LIVE REC: QUANTIZED and LIVE REC: UNQUANTIZED, fit the screen. With PROJECT > SYSTEM > PERSONALIZE open the box followed each flip without an arrow key, and CONTROL > AUDIO was left as it was. A changed setting survived a power cycle. No freeze, screen garbage, crackle or dead controls.",
     "limitations": [
+      "Ran QLRTEST02 (source 50f65395). The current source writes the flip's two words in the other order and reaches the redraw through %a0 (stock-free reorder, 15 October 2026); its image QLRTEST03 needs the same MKII run, and this record binds the tested image until then.",
       "How long the tests ran was not recorded.",
       "No MKI; the redraw beside Output Matrix ran in the emulator only.",
       "Not checked: grid recording, MIDI tracks, the gesture with no project loaded."

@@ -247,14 +247,18 @@ qp_flip:
     move.l  QLR,%d0
     eori.l  #1,%d0
     andi.l  #1,%d0
-    move.l  %d0,QLR
+|   MODWERK: the shadow is written before the word and the redraw below is called through
+|   %a0, so that no 12 bytes of this unit repeat a run of stock code (the strict stock-free
+|   scan of a USB package).  Nothing reads either word before the checksum; same calls, same order.
     move.l  %d0,QLR_SH                   | battery-SRAM shadow
+    move.l  %d0,QLR
     jsr     CKSUM                        | re-checksum the 'ANDY' block
 |   MODWERK: stock redraws a PROJECT menu page only after a key reaches that page, and
 |   [PLAY] does not, so an open PERSONALIZE list kept showing the old box until an arrow
 |   key was pressed (the author's open item from Session 51; seen on an MKII, 13 Oct 2026).
 |   Redraw it here, before the toast is opened over it.  Key-handler context, as stock's.
-    jsr     MENU_REDRAW
+    lea     MENU_REDRAW,%a0
+    jsr     (%a0)
 |   fall through: show the setting we just wrote
 
 |   --- (re)open the toast on the CURRENT setting, and restart its LIVE_DUR (1 s) ---

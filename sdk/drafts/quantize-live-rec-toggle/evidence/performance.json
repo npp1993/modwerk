@@ -5,10 +5,10 @@
   "kind": "coldfire",
   "cycles": {
     "unit": "cycles/event",
-    "static": 400,
-    "measured": 384,
+    "static": 416,
+    "measured": 400,
     "budget": 95778,
-    "method": "Authored instructions only, priced at 16 core cycles each (the conservative ColdFire V4 per-instruction envelope Mute Modes' TESTING.md derives from the MCF54455 manual); not chip timing. Static: the longest path through the [PLAY] entry in patch_qlrec.s, 25 instructions. Measured: ot_emu program-counter watch on every instruction of the unit in the built image, MKII panel; the longest press executed 24 (invert, redraw the open menu page, reopen the toast, then stock's [PLAY] path). The stock routines the unit calls (project gate, checksum, menu redraw, notification open and close) are stock cost and are excluded. Budget: one 362.8 us frame at 264 MHz, used as a generous deadline for a key handler that never runs in the frame path."
+    "method": "Authored instructions only, priced at 16 core cycles each (the conservative ColdFire V4 per-instruction envelope Mute Modes' TESTING.md derives from the MCF54455 manual); not chip timing. Static: the longest path through the [PLAY] entry in patch_qlrec.s, 26 instructions. Measured: ot_emu program-counter watch on every instruction of the unit in the built image, MKII panel; the longest press executed 25 (invert, redraw the open menu page, reopen the toast, then stock's [PLAY] path). The stock routines the unit calls (project gate, checksum, menu redraw, notification open and close) are stock cost and are excluded. Budget: one 362.8 us frame at 264 MHz, used as a generous deadline for a key handler that never runs in the frame path."
   },
   "load": {
     "frameUs": 362.8,
