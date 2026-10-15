@@ -534,7 +534,7 @@ def main():
             # Locally verified on private OS 1.40C: DARK REV descriptor (the
             # donor E-Verb uses) and stock NONE at unused FX2 id 0x09. Never
             # retain stock bytes.
-            descriptor_guards.append(dict(id='lofi2', key='LOFI2', author='Bryan T',
+            descriptor_guards.append(dict(id='lofi2', key='LOFI2', author='bryantysinger',
                 fxId=0x09, donorAddress=0x400d58f0,
                 donorSha256='3b3f9b15f2f6addfea9fc281f5b9fdf054bf305778059b8d43db41d390f0401f',
                 fx2Slot=0x400d6000,
