@@ -4,7 +4,7 @@ Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 - Upstream: sambanks/octabam `6e4aeb76695cbb612e4b424c55fd2207facf73ef`, which takes the module from Zac-Kyoti/octatrack-kyoti-fw `77f132f9a60c6afa98ea4486540f6107398bdad3`.
 - Native source SHA-256 of this folder (`moduleNativeSourceSha256`): `3919857a869087c66907941c64c2ef735f44e32849237a876521f8525fc9a8e1`.
-- Tested image: QLRTEST03, a static native octabam build of this module alone with every stock effect kept, from the original OS 1.40C (remix `qlr-stock`, main `b058d41e`): MAIN OS SHA-256 `eb34c12e9c906107fc6a8285ec757eaacf83a39c8dfb42e7bc390421f4189afd`, card file SHA-256 `14b762c7bd50767104c705eb0ae2b6bb101d927d6ec62b1604be40f17979d0c4`. The gate, the captures and the instruction counts below were run on it. **It has not run on a unit:** the MKII ran QLRTEST02 (MAIN OS `57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69`, source `50f65395`), whose unit wrote the flip's two words in the other order and called the redraw directly (Source identity).
+- Tested image: QLRTEST03, a static native octabam build of this module alone with every stock effect kept, from the original OS 1.40C (remix `qlr-stock`, main `b058d41e`): MAIN OS SHA-256 `eb34c12e9c906107fc6a8285ec757eaacf83a39c8dfb42e7bc390421f4189afd`, card file SHA-256 `14b762c7bd50767104c705eb0ae2b6bb101d927d6ec62b1604be40f17979d0c4`. The gate, the captures and the instruction counts below were run on it. **The card image has not run on a unit;** the same source has, over USB (Hardware report). The MKII ran QLRTEST02 from the card (MAIN OS `57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69`, source `50f65395`), whose unit wrote the flip's two words in the other order and called the redraw directly (Source identity).
 
 ## Not tested
 
@@ -40,6 +40,15 @@ Then, the same day, on QLRTEST02, an image with this module alone at commit `50f
 - A changed setting survived a power cycle.
 - Afterwards, asked about it in review, the user also flipped the setting while a pop-up was open inside the PROJECT menu, and reported it fine.
 - No freeze, screen garbage, crackle or dead controls.
+
+Then, on 15 October 2026, the current source (commit `d7526ad5`, the 188-byte unit) loaded over USB: the package below (SHA-256 `026464deb27c8178d44ad1fd5866b754478b11c114561e73000cdca3b44f86e8`, module `7d0747d4`) on the user's MKII running the flashed beta base `acf91e0a…`, OS 1.40C, driven by another session with `npm run device` through the USB bridge; APPLY SCENE was installed beside it.
+
+- Two trials without Keep (8 s and 3 s): the module ran, then rolled back to the base; the base's refusal counter stayed where it was (4). Undo works.
+- A trial kept (`try --accept`): accepted at generation 5; the inventory listed `Quant Live Rec`, module `7d0747d4`.
+- The user reported, with it kept: hold [REC] and tap [PLAY] shows the toast and starts live recording; a tap within about a second flips the setting; a tap after the toast has gone only shows it; releasing [REC] closes the toast; with PERSONALIZE open the box follows a flip; a changed setting survives a power cycle.
+- After the power cycle the inventory still listed Quant Live Rec beside APPLY SCENE: the kept module came back with the boot. (`npm run device -- status` reads generation 0 after a boot even with kept modules; `npm run device -- do inventory` lists them.)
+- Removal (`remove --accept`): accepted at generation 1; the inventory no longer lists it.
+- Not checked: that [REC] + [PLAY] behaves as on stock after the removal. The module adds no effect row or project data, so there is no missing-module fallback to see.
 
 Not covered by these reports: how long the tests ran; the redraw beside Output Matrix on a unit (QLRTEST02 has no Output Matrix; that pairing ran in the emulator only); an MKI.
 
@@ -136,7 +145,7 @@ Built from this source on main `b058d41e` with `sdk/runtime/loader/build.py --oc
 - Emulator, the beta base built for a RAM boot (`npm run octatrack:base` with the beta options and `--out`, on main `86e0dfb8`; it matches the committed base): `scripts/octatrack-emulator/run-sites.sh` passed (both sites hold the module's jumps while it is live, and their earlier bytes once it is removed), and a trial rolled back without Keep (Undo) left both sites as they were before. The emulator was `scripts/octatrack-emulator/build.py` against upstream Octabam at the pinned `67e5ea3`; the local Octabam checkout's emulator stopped at the base's boot gate (`unrecognised spin`), which the pinned one passes.
 - `sdk/tests/test_runtime_loader.py`: 15 tests pass, one opt-in skip.
 - The catalogue name is longer than a package's 15-character display name, so publication needs a short name.
-- Not tested: the package on a unit, the gesture while it is loaded over USB, Part/project reload and reboot with it installed.
+- On the user's MKII (Hardware report): trials undone, kept, the gesture, persistence across a power cycle and removal. Not tested: Part or project reload with it installed, and stock behaviour after its removal.
 
 ## Captures
 
