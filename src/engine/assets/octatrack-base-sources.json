@@ -122,7 +122,7 @@
   "sdk/machines/octatrack/module-adapters/resident_base_sources.json": "afd1906d59a19ebba2ccc0718cb5edef12624c862350a5f667e0b698a067cfe3",
   "sdk/machines/octatrack/module-adapters/resident_boot.py": "d991d906eed37497dabd265639b36a28cdf334ab720b4a95e46d4e70208bfada",
   "sdk/machines/octatrack/module-adapters/resident_driver.py": "b901d6c4815169a49709357465c1fe1015271a48e32e771968725f6e0ee265a1",
-  "sdk/machines/octatrack/module-adapters/resident_dsp.py": "5b711c1b7b0b2c566111dafdf5ed7ad0d584b9c9de117c9f96ae038a6257d0e5",
+  "sdk/machines/octatrack/module-adapters/resident_dsp.py": "34b6e2ca4a65fa15f634932480fec535651274b376f54588005ea65904419e28",
   "sdk/machines/octatrack/module-adapters/resident_engines.py": "f43b09426cd9cd57b0376ab6d784ddb236c8478c73321f589ba1e18b3ea22841",
   "sdk/machines/octatrack/module-adapters/resident_journal.py": "d26950a698ee5131c0051ea4c7c7136b9116e5817ad66a980b055dda76751d6f",
   "sdk/machines/octatrack/module-adapters/resident_placement.py": "84de7c9d79ae446b18f405096c7c998ab1781f0ecf8009ccec51390c7b972c9d",

@@ -293,6 +293,49 @@ class ResidentEngines(unittest.TestCase):
                         self.assertEqual(tail[:5], ['A 1', 'A 1', 'A 1', 'A 1', 'P %d 0' % hwbase])
 
 
+    @unittest.skipUnless(all(p.is_file() for p in LIBS) and shutil.which('c++'), 'vendored dsp56300 build unavailable')
+    def test_disabling_one_engine_leaves_another_engines_base_word_alone(self):
+        """Two on-demand engines placed and enabled on core A, then one disabled: the other's base word (where its
+        stubs jump) must stay exactly as PLACE wrote it, and the disabled one must need a new RESET before it can be
+        enabled again. The receiver used r3 for both the base-word check and `hookready`, so the CAS that disabled
+        Sidechain cleared bit 0 of Analog BD's base word (its stub then jumped one word short) and left Sidechain's
+        ready bit set."""
+        loader = resident_source.load_loader()
+        work = Path(self.work.name)
+        harness = self.harness()
+        tag, allowed = 'A', resident_dsp.ALLOWED['A']
+        demand = resident_dsp.place_resident(self.ob, tag, 0x2000, str(work), self.packages.assemble, allowed)
+
+        def text(table):
+            return loader.receiver_source(loader.RECEIVER.read_text(), (0x7c8, 0x7c9), table, tag=tag, ids=128,
+                                          hook_control=resident_dsp.receiver_control(demand),
+                                          hook_reset=resident_dsp.receiver_reset(demand))
+        _, labels = self.packages.assemble(text(1200), RECEIVER_ORIGIN, str(work))
+        words, labels = self.packages.assemble(text(demand['origin'] - labels['dltable']), RECEIVER_ORIGIN, str(work))
+        control, ready = labels['hookcontrol'], labels['hookready']
+        sc, ab = resident_dsp.SIDECHAIN, resident_dsp.ANALOG_BD
+        offsets = {sc: 64}
+        offsets[ab] = 64 + len(demand['engines'][sc]['words']) + 8
+        offsets[ab] += (labels['dltable'] + offsets[ab] + 1) % 2  # an odd base: bit 0 set, the bit a Sidechain disable clears
+        steps = ['P %d %d' % (RECEIVER_ORIGIN + i, w) for i, w in enumerate(words)]
+        steps += ['P %d %d' % (demand['origin'] + i, w) for i, w in enumerate(demand['words'])]
+        for feature, offset in offsets.items():
+            base = labels['dltable'] + offset
+            steps += ['P %d %d' % (base + i, w) for i, w in enumerate(resident_dsp.relocate(demand['engines'][feature], base))]
+        steps += ['P %d %d' % (ready, allowed)]                                   # every reset complete
+        steps += ['PKT %d %d %d 1' % (control, f, o) for f, o in offsets.items()]  # PLACE both
+        steps += ['PKT %d 0 %d 0' % (control, sc | ab),                            # enable both
+                  'PKT %d %d %d 0' % (control, sc | ab, ab),                       # disable Sidechain, keep Analog BD
+                  'RP %d' % demand['labels']['hwbase%d' % ab], 'RP %d' % ready,
+                  'PKT %d %d %d 0' % (control, ab, sc | ab)]                       # Sidechain again, with no RESET
+        (work / 'two.txt').write_text('\n'.join(steps) + '\n')
+        result = subprocess.run([str(harness), str(work / 'two.txt')], capture_output=True, text=True, timeout=600)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = [line for line in result.stdout.split('\n') if line.split(' ')[0] in ('A', 'P')]
+        self.assertEqual(out, ['A 1', 'A 1', 'A 1', 'A 1',
+                               'P %d %d' % (demand['labels']['hwbase%d' % ab], labels['dltable'] + offsets[ab]),
+                               'P %d %d' % (ready, allowed & ~sc), 'A 0'])
+
     def sc_run(self, variant, enable, skew, frames, removed=None):
         """One two-core run of `variant`: {(hook, track, n): (frame, source track) or None}."""
         engines = self.sc_engines(variant)

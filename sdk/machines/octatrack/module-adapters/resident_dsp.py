@@ -519,6 +519,9 @@ def receiver_control(bundle):
                       'move #>$%x,r3' % base, 'move p:(r3),a', 'tst a', 'beq badsaved', 'hwchk%d:' % feature]
     # A disable invalidates that feature's initialized state. A complete fixed
     # reset sequence must restore it before the receiver accepts another enable.
+    # r3 points at hookready again: the check above left it on a base word.
+    if on_demand:
+        lines += ['move #>hookready,r3']
     for feature in (SIDECHAIN, MATRIX, ANALOG_BD):
         if not feature & ALLOWED[tag]:
             continue
