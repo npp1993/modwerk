@@ -65,6 +65,12 @@
       "priority": 16
     },
     {
+      "id": "lofi2",
+      "key": "LOFI2",
+      "fxId": 9,
+      "priority": 19
+    },
+    {
       "id": "sidechain-compressor",
       "key": "SIDECHAIN_COMPRESSOR",
       "fxId": 24,
