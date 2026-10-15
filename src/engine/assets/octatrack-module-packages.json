@@ -76,6 +76,13 @@
       "fills": 0
     },
     {
+      "id": "lofi2",
+      "slots": "both",
+      "cycles": 431,
+      "cyclesKind": "executed",
+      "state": 132
+    },
+    {
       "id": "previewvol",
       "octabam": true,
       "abi": 7,
