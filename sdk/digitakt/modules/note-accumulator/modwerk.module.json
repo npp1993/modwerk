@@ -80,7 +80,9 @@
       "1.54"
     ],
     "requires": [],
-    "conflicts": [],
+    "conflicts": [
+      "digipoly"
+    ],
     "limitations": [
       "Audio tracks only; every enabled step has an independent counter.",
       "The first accepted play uses the original note. Retrigs retain that visit’s pitch.",

@@ -120,7 +120,7 @@ A `runtime.json` needs `schema` and at least one subscription or contribution. T
 
 - **Order.** 0-254; equal orders run in module-id order. 255 marks a raise and is never an order. Each entry gives its bands, for example 10-29 for a machine that claims its own tracks.
 - **Replaces.** `replaces` names what your native octabam build patches at that site instead: a detour's symbol, or for a take event or a table a list of detour symbols and `0x` addresses of pokes and references. The runtime package leaves it out, and the gate stops counting it.
-- **Room.** Each take event and table holds a fixed number of subscribers: 8, and 4 for `ot_machines`. The loader refuses a package past it. Before anything is sent, the site also refuses a raise on anything but a raised event and a take or table record that runs past the package's image.
+- **Room.** Each take event and table holds a fixed number of subscribers: 8, and 4 for `ot_machines`. The loader refuses a package past it, and `modules:compat` refuses more active modules on one than its room, counting each module once as the loader does. It also lists the ones that are full: a module that needs a full one proposes more room first. Before anything is sent, the site also refuses a raise on anything but a raised event and a take or table record that runs past the package's image.
 - **Context.** Handlers run where the entry says: short, with no firmware call that can block. Call-event handlers use the C convention and keep every register but d0-d1/a0-a1.
 - **Base.** A subscriber needs a base built with site events (loader capability 128). Before it sends anything, the site asks for a base update when the connected base can't take the package.
 - **Hook indices are an ABI.** Released packages carry them. Add new events and tables at the end of the registry, and never renumber a released one.
@@ -143,6 +143,8 @@ Collisions are caught automatically, so nothing ships incompatible without its a
 
 - **Card builds.** `npm run modules:pairs` runs octabam's ledger on every catalogue module alone and beside every other, in each context POLY8's shared machine list creates, and writes `src/catalog/compatibility-pairs.json`. A pair the ledger refuses that neither module flags fails the check. The configurator refuses every refused or flagged pair by itself, so no rule is written by hand. The table grows with the square of the number of modules, and the same check proves with the full ledger that pairs decide every larger selection.
 - **USB sets.** `npm run modules:compat` still refuses every byte collision, flagged or not: beta sets install whatever is chosen, so subscribe to an event or [propose one](#propose-an-event).
+- **Digitakt and Digitone.** `npm run modules:check` refuses two mods that patch overlapping bytes on a release both support unless one names the other in `compatibility.conflicts`. The website already refused those pairs; the flag makes the author's decision explicit.
+- **Who flags.** The module whose change makes the pair collide flags it in its own manifest: the newer module, or the one being updated, and it fixes the collision instead when that is no big refactor. Nobody edits another author's module to add a flag. A flag names an existing module id of the same machine; the check refuses any other. Changing only `compatibility.conflicts` needs no new module version, but still runs every check and needs a marked note in the module's changelog.
 - **What no gate sees.** A flag can also name a limit the ledger cannot see, such as DSP placement or behaviour. Say why in the README's Compatibility section. `npm run module:doctor -- <id>` lists the collisions the ledger finds, so a flag that no longer applies can go at the next version.
 
 ### Shared sites still to build
@@ -152,7 +154,7 @@ The more of these the base owns, the more modules combine. Each is an event or a
 | Site | Today |
 | --- | --- |
 | Track machine list (SRC SETUP) | Base table `ot_machines`; on the card, POLY8's shared machine list |
-| Effect lists (FX1, FX2) | USB: the base gives each module effect a per-project handle; card: pinned effect ids, 32 in all ([wider ids](../OCTATRACK_MORE_EFFECT_IDS.md)) |
+| Effect lists (FX1, FX2) | USB: the base has 128 effect ids, 109 of them for modules, and gives each installed effect module its own ([wider ids](../OCTATRACK_MORE_EFFECT_IDS.md)); card: stock's 32, 13 of them for modules, pinned |
 | SEQUENCER rows | Base table `ot_sequencer_rows` |
 | MIDI generators on a MIDI track's SRC SETUP | Not built: a base table of MIDI sources, as `ot_machines` is for audio tracks |
 | Stock DSP effects a module hooks (Sidechain Compressor, Output Matrix) | Not built: DSP-side taps, one owner per stock site |

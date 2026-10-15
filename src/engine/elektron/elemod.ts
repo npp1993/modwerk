@@ -5,13 +5,13 @@
 // bytes it expects; "stock" parts are copied from the owner's own, hash-checked image. No firmware is embedded here.
 import { sha256Hex } from './hash.ts'
 import { PCREL, decodeColdFire, readerAt, wholeInstructions } from './coldfire-isa.ts'
-import type { DigiMachine } from './ele3.ts'
+import type { ElemodMachine } from './ele3.ts'
 
 export class ModError extends Error {}
 
 export type LinkRelease = { version: string; syxSha256: string; mainSha256: string; mainLength: number }
 export type LinkDevice = {
-  key: string; machine: DigiMachine; name: string; sysexId: number; mainLoad: number; releases: LinkRelease[]
+  key: string; machine: ElemodMachine; name: string; sysexId: number; mainLoad: number; releases: LinkRelease[]
   areas: Record<string, [number, number]>; ddr: [number, number]; sramCode: [number, number]; fastTable: string; protected: [number, number, string][]
 }
 
@@ -44,6 +44,14 @@ export const LINK_DEVICES: LinkDevice[] = [
     ],
     areas: { ddr: [0x47f00000, 0x47f40000], 'sram-tail': [0x8000f100, 0x80010000], 'sram-block': [0x80006e80, 0x80008000] },
     ddr: [0x47f00000, 0x47f40000], sramCode: [0x8000f100, 0x80010000], fastTable: 'core_fast', protected: [],
+  },
+  {
+    key: 'analog-rytm-mk2', machine: 'analog-rytm-mkii', name: 'Analog Rytm MKII', sysexId: 0x0c, mainLoad: 0x40000400,
+    releases: [
+      { version: '1.73', syxSha256: '8ad671087ec30433d5407c7380d2396e0915ab931c5d3dd18a78bf284d3d1e52', mainSha256: '28d9ef40c895e03f17dfce096543109adaf708947392db72818fc2a412d685d6', mainLength: 3005432 },
+    ],
+    areas: { ddr: [0x47be0000, 0x47c00000] },
+    ddr: [0x47be0000, 0x47c00000], sramCode: [0, 0], fastTable: '', protected: [],
   },
 ]
 

@@ -5,9 +5,9 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { manifestBuildFields } from './module-source.mjs'
 
-const moduleFolder = /^sdk\/(octabam|digitakt|digitone)\/modules\/[^/]+\//
-const manifest = /^sdk\/(octabam|digitakt|digitone)\/modules\/[^/]+\/(octamod|modwerk)\.module\.json$/
-const digiManifest = /^sdk\/(digitakt|digitone)\/modules\/[^/_][^/]*\/modwerk\.module\.json$/
+const moduleFolder = /^sdk\/(octabam|digitakt|digitone|analog-rytm-mkii)\/modules\/[^/]+\//
+const manifest = /^sdk\/(octabam|digitakt|digitone|analog-rytm-mkii)\/modules\/[^/]+\/(octamod|modwerk)\.module\.json$/
+const digiManifest = /^sdk\/(digitakt|digitone|analog-rytm-mkii)\/modules\/[^/_][^/]*\/modwerk\.module\.json$/
 const catalogs = new Set(['src/catalog/module-documents.json'])
 const json = text => text === null ? null : JSON.parse(text)
 const canonical = value => JSON.stringify(value, (_, item) => item && typeof item === 'object' && !Array.isArray(item)
@@ -40,6 +40,16 @@ export function isDocumentationChange({ path, before, after, regular = true }) {
   return false
 }
 
+/** Whether a change needs no new module version. A Digitakt/Digitone manifest edit that changes only documentation or
+ * compatibility.conflicts needs none, as on the Octatrack, whose version rule compares build fields only: flags are
+ * compatibility metadata that a newer module's arrival can change. It still runs every check. */
+export function isVersionNeutralChange(change) {
+  const { path, before, after } = change
+  if (!digiManifest.test(path) || before === null || after === null) return isDocumentationChange(change)
+  const strip = text => { const document = withoutDocumentation(json(text)); return { ...document, compatibility: { ...document.compatibility, conflicts: null } } }
+  return canonical(strip(before)) === canonical(strip(after))
+}
+
 function digiFirmwareFields(text) {
   const document = json(text)
   if (!document) return null
@@ -66,9 +76,9 @@ function nativeChange(change, machine) {
   if (machine === 'octatrack') return common || /^sdk\/octabam\/(modules|platform|tools|dsp|licenses)\//.test(path)
     || path === 'sdk/catalog.json' || /^src\/engine\/assets\/(?!elemod\/)/.test(path)
     || /^scripts\/(build-module-packages\.py|build-utility-packages\.py|build-usb-audio-packages\.py|build-modules-isolated\.sh|import-module-build\.mjs|module-source\.mjs)$/.test(path)
-  return common || /^sdk\/(digitakt|digitone|elemod|machines)\//.test(path) || /^vendor\/elekloader\/(catalog\/|elekloader\.lock\.json$|upstream-catalog\.json$)/.test(path) || /^sdk\/imports\/elekloader-[^/]+\.json$/.test(path)
+  return common || /^sdk\/(digitakt|digitone|analog-rytm-mkii|elemod|machines)\//.test(path) || /^vendor\/elekloader\/(catalog\/|elekloader\.lock\.json$|upstream-catalog\.json$)/.test(path) || /^sdk\/imports\/elekloader-[^/]+\.json$/.test(path)
     || /^sdk\/octabam\/(scripts\/vendor\.sh|tools\/patches\/|tools\/harness\/dsp_host)/.test(path)
-    || /^scripts\/(build-elemod[^/]*|elemod-elf\.mjs|verify-elemod-source-parity\.mjs)$/.test(path)
+    || /^scripts\/(build-elemod[^/]*|elemod-elf\.mjs|verify-elemod-source-parity\.mjs|package-elemod-recipe\.mjs|verify-elemod-release-exports\.mjs)$/.test(path)
     || /^src\/engine\/assets\/elemod\//.test(path)
 }
 function compilerJob(text, name) {

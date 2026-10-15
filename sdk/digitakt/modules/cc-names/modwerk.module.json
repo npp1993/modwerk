@@ -82,7 +82,9 @@
     "requires": [
       "dt-support"
     ],
-    "conflicts": [],
+    "conflicts": [
+      "digimono"
+    ],
     "limitations": [
       "Labels are limited to five characters.",
       "Labels do not change CC numbers or MIDI values.",

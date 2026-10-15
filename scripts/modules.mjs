@@ -11,6 +11,7 @@ import { resolveModuleFile as file } from '../src/catalog/module-folder.ts'
 import { BASELINE_PATH, WAIVERS_PATH, parseQualificationBaseline, parseReleaseWaivers, qualificationReports, requireFolderQualification } from './module-qualification.mjs'
 import { parseRetainedResourceImpacts, requireModuleResourceImpact } from '../src/catalog/resource-impact.ts'
 import { USB_WAIVERS_PATH, parseUsbPackageWaivers } from './retained-evidence.mjs'
+import { requireKnownConflicts } from './conflict-ids.mjs'
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),modules=resolve(root,'sdk/octabam/modules')
 const args=process.argv.slice(2),write=args.includes('--write'),baseIndex=args.indexOf('--base'),base=baseIndex<0?null:args[baseIndex+1]
 if(baseIndex>=0&&!base)throw new Error('--base requires a Git commit/ref')
@@ -48,6 +49,7 @@ for(const entry of await readdir(modules,{withFileTypes:true})){
  document={...document,resources:{...document.resources,impact}}
  documents.set(document.id,document)
 }
+for(const document of documents.values())requireKnownConflicts('octatrack',document,new Set(documents.keys()))
 const catalog=await json(resolve(root,'sdk/catalog.json'))
 if(catalog.schemaVersion!==1||!Array.isArray(catalog.modules)||!/^[a-f0-9]{40}$/.test(catalog.sourceRevision))throw new Error('Invalid SDK catalog pin')
 const selected=[],seen=new Set()

@@ -265,3 +265,29 @@ built-image/stock/catalog/kit/emulator identities, module source pin and
 conditions in `media/capture.json`. Keep firmware, cards, extracted sections,
 raw frames and snapshots in private storage. Credit the capture contribution
 separately from Elektron's underlying interface rights, as for the OT captures.
+
+## Analog Rytm MKII
+
+Rytm modules use the same manifest fields and `media/capture.json` as the
+Digitakt and Digitone. Capture them in
+[rytm-emu](https://github.com/trigcondition/rytm-emu) (MIT) at revision
+`3c4c42c`, built with `cargo build --release --bin dtboot`. Its headless
+`dtboot` runs your own build of stock OS 1.73 with core-ar2 and the module, and
+writes the firmware-rendered 128×64 screen as a PNG at 3× without
+interpolation: `DTBOOT_STEPS=1` with `DTBOOT_PNG_DIR` after each key release,
+`DTBOOT_TURN_PNG` after each encoder turn. The command line is the panel-input
+plan; keep it in `capture.json` with the PNG hashes and the built `.syx` hash.
+
+- Without the unit's analog calibration the OS opens with notices. Clear them
+  with held NO presses before the first real step, for example
+  `--press NO@4500M:80M --press NO@5300M:80M --press NO@6100M:80M --press NO@6900M:80M`
+  (clocks are instruction counts, about 200M a second).
+- Keys use the panel's names (`FLTR`, `AMP`, `TRIG`, `FUNC`, `T1`…`T16`).
+  Encoders are numbered 0 to 7: the top row A–D, then E–H, so FRQ on the
+  FILTER page is `4`.
+- Turns of delta 1 move a parameter one step every five to nine turns. Use a
+  larger delta for coarse moves (`--turn 4:-6@8000Mx37/20M` moved FRQ from
+  127 to 61), then turns of `-1` or `1` 40M apart to land on an exact value.
+- The analog voices are stubbed, so a capture shows the screen, never the
+  sound. Compare the same plan on stock 1.73 to confirm that only the
+  module's pixels changed.

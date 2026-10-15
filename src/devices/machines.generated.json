@@ -510,6 +510,11 @@
         "label": "rytm-emu",
         "url": "https://github.com/trigcondition/rytm-emu",
         "note": "Emulator for the Analog Rytm and Analog Four, MKI and MKII (a fork of rouletrro, MIT). Boots stock Rytm MKII OS 1.73 and builds patched from it headless or in a window, with the analog voices stubbed. No firmware hosted."
+      },
+      {
+        "label": "rytm2_mods",
+        "url": "https://github.com/Iced-Cream/rytm2_mods",
+        "note": "All eleven of rytm-mods-src's OS 1.73 mods ported to elemod for core-ar2, MrScruff's code unchanged and checked label by label against his build; each confirmed on a unit. Release v1.0. No firmware hosted."
       }
     ],
     "sdk": {

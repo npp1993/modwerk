@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// ELE3 containers in Digitakt / Digitone mk1 OS files: read, rebuild with a new main OS, verify.
+// ELE3 containers in Digitakt, Digitone mk1 and Analog Rytm MKII OS files: read, rebuild with a new main OS, verify.
 // The layout follows elektron-firmware-tool (MIT) and digikit / elekloader (GPL-2.0-or-later). A rebuild changes only
 // the main OS section's stored bytes, the 4-character version field and the framing messages' count; everything else
 // is copied from the owner's own stock file. No firmware content is embedded here.
@@ -10,13 +10,17 @@ const COUNT_OFFSET = 0x1c, TABLE_OFFSET = 0x20, ENTRY_SIZE = 16, VERSION_FIELD =
 const OFFSET_BIAS = 767, FAR_OFFSET = 3328
 
 export type DigiMachine = 'digitakt' | 'digitakt-ii' | 'digitone'
+// Machines with a container and linker profile; the app's firmware flow covers DigiMachine only.
+export type ElemodMachine = DigiMachine | 'analog-rytm-mkii'
 export type Ele3Device = { mainSection: number; mainLoad: number; stage: number; flashAt: number; flashLimit: number; sysexId: number; seal?: 'hmac' }
 
 // Facts about each machine's container and loader, from public research (elekloader device profiles).
-export const ELE3_DEVICES: Record<DigiMachine, Ele3Device> = {
+export const ELE3_DEVICES: Record<ElemodMachine, Ele3Device> = {
   digitakt: { mainSection: 3, mainLoad: 0x40000400, stage: 0x40200000, flashAt: 0x80000, flashLimit: 0x380000, sysexId: 0x0a },
   'digitakt-ii': { mainSection: 3, mainLoad: 0x40000400, stage: 0x40400000, flashAt: 0x80000, flashLimit: 0x380000, sysexId: 0x14, seal: 'hmac' },
   digitone: { mainSection: 3, mainLoad: 0x40000400, stage: 0x40200000, flashAt: 0x80000, flashLimit: 0x380000, sysexId: 0x0d },
+  // The Analog Rytm MKII's OS keeps its own store at 0x300000, so the main OS must end below it.
+  'analog-rytm-mkii': { mainSection: 3, mainLoad: 0x40000400, stage: 0x40200000, flashAt: 0x80000, flashLimit: 0x300000, sysexId: 0x0c },
 }
 
 export type Ele3Section = { id: number; offset: number; length: number; destination: number }

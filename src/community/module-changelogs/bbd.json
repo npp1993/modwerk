@@ -1,0 +1,13 @@
+[
+  {
+    "version": "0.1.0-experimental",
+    "date": "2026-10-14",
+    "changes": [
+      "First BBD Delay release: an original bucket-brigade delay for FX2 with a 2:1 compander, anti-alias and reconstruction filters that follow the clock, a clocked bucket line of 1,023 or 4,095 buckets with charge-transfer curve and bucket noise, a resonant feedback tilt (TONE, FREQ), a freeze (FRZ) and a feedback governor (LIM). TIME is the bucket clock and glides, so locks and LFOs bend the pitch of the repeats.",
+      "Main page: TIME, FDBK, FRZ, TONE, FREQ and MIX take locks, LFOs, scenes and MIDI CC. SETUP: STGS (1024 by default, 50-200 ms; 4096 for 200-800 ms), LIM on encoder C and HPF on encoder E, a 12 dB/octave input high-pass from 20 to 400 Hz (0 is off). MIX 0 is exact dry passthrough.",
+      "STOP, STOP, STOP does not cut BBD's tail in this release: the stock tail kill tests the stock reverbs' ids only. BBD's DSP already takes the signal on a hidden slot, and a ColdFire hook that writes it comes in a later version.",
+      "Card builds give up SPRING REV and PLATE REV for BBD's 1,075 DSP words and keep every other stock effect, DARK REV unchanged.",
+      "Mono wet and free-running TIME (not tempo-synced). Dearer than any stock effect: up to 439 executed instructions per sample with trig splits (SPRING REV 314). The author played this build on an MKII: two instances on T1 and T5, Part/project reload and a power cycle, LFOs and trigless locks. MKI, MIDI/USB load and silicon timing are untested. Card builds only for now: BBD is not offered over USB until the USB port."
+    ]
+  }
+]

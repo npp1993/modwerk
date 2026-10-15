@@ -1,0 +1,397 @@
+{
+  "schemaVersion": 2,
+  "id": "bbd",
+  "key": "BBD",
+  "name": "BBD Delay",
+  "version": "0.1.0-experimental",
+  "category": "effects",
+  "author": {
+    "github": "JamCones",
+    "credits": [
+      "JamCones (Cam Jones): design and Octatrack DSP56300 code",
+      "octabam builder: Sam Banks; additional source attribution in SDK THIRD_PARTY.md"
+    ],
+    "name": "Cam Jones"
+  },
+  "nativeManifest": "manifest.py",
+  "presentation": {
+    "label": "BUCKET BRIGADE",
+    "family": "Delay",
+    "summary": "A bucket-brigade delay: compander, clock-tracking filters, bucket noise, a resonant feedback tilt, freeze, a feedback governor and an input high-pass.",
+    "overview": "The mono sum goes through a BBD chain: an optional input high-pass, a tanh into a 2:1 feedback compressor, an 8th-order anti-alias filter at a third of the clock, a bucket line clocked at 5.1 to 20.5 kHz with a charge-transfer polynomial and noise, a 9th-order reconstruction filter and the expander. FDBK returns the wet through a tilt with a sweepable bandpass; LIM governs how loud self-oscillation gets; FRZ holds the line. TIME glides the clock, so moving it bends the pitch of the line. The dry signal is never processed.",
+    "highlights": [
+      "The clock sets the delay: longer repeats are darker and grainier, as on a BBD chip",
+      "TIME glides the clock over 20 ms: locks and LFOs bend the pitch of the repeats",
+      "1,023 or 4,095 buckets: 50 to 200 ms (the default) or 200 to 800 ms",
+      "TONE right of centre: a treble shelf; left: a resonant bandpass that FREQ places at 400 Hz-2 kHz",
+      "FRZ: from longer trails to an endless loop of the line, made for the crossfader",
+      "LIM keeps self-oscillation at a set level; HPF cuts bass into the line, 20 to 400 Hz",
+      "MIX 0 is the exact dry signal"
+    ],
+    "usage": [
+      "Choose BBD DELAY in FX2 SETUP: hold FUNC, press FX2, turn LEVEL to the end of the list and press YES. The SETUP page holds STGS (bucket count) on encoder A, LIM on C and HPF on E.",
+      "On the main page: TIME (A), FDBK (B), FRZ (C), TONE (D), FREQ (E) and MIX (F).",
+      "With TONE towards either end the loop rings on from about FDBK 40; LIM (default 127, strongest) sets how loud it gets, and TIME or FREQ then sweep it.",
+      "The six main-page knobs take parameter locks, LFOs, scenes and MIDI CC like any stock effect's; the SETUP knobs are set per Part."
+    ]
+  },
+  "controls": [
+    {
+      "name": "TIME",
+      "default": 64,
+      "count": 128,
+      "doc": "The bucket clock, 20.5 kHz at 0 to 5.1 kHz at 127, linear in delay time and gliding over 20 ms. The delay is 50-200 ms (STGS 1024) or 200-800 ms (4096). Not tempo-synced.",
+      "labels": null
+    },
+    {
+      "name": "FDBK",
+      "default": 0,
+      "count": 128,
+      "doc": "The wet returned to the input through TONE. With TONE centred the repeats ring longer up to 127 (about 1 dB a second) but never self-oscillate; with TONE at either end the loop rings on from about FDBK 40, at a level LIM sets.",
+      "labels": null
+    },
+    {
+      "name": "FRZ",
+      "default": 0,
+      "count": 128,
+      "doc": "Freeze: rising from 0 the input fades out of the line and FDBK goes towards sustain for the current TONE (never down), so trails lengthen; at 127 the line loops its contents exactly at the level it had, ignoring input and FDBK. Crossfades of any speed into 127 keep the level. TIME changes the frozen loop's speed and pitch; a STGS change clears it.",
+      "labels": null
+    },
+    {
+      "name": "TONE",
+      "default": 64,
+      "count": 128,
+      "doc": "Bipolar, centre flat. The feedback tilt, 9 dB at the ends: right raises treble and cuts bass about 200 Hz; left adds a bandpass peak at FREQ, Q 1.5. Acts only inside the feedback loop.",
+      "labels": null
+    },
+    {
+      "name": "FREQ",
+      "default": 64,
+      "count": 128,
+      "doc": "The centre of TONE's bandpass, 400 Hz to 2 kHz, logarithmic; 64 is about 900 Hz. Heard only with TONE left of centre; right of centre it does nothing.",
+      "labels": null
+    },
+    {
+      "name": "MIX",
+      "default": 40,
+      "count": 128,
+      "doc": "0 is exactly dry. To 64 the wet rises to unity over the whole dry; from 64 to 127 the dry fades out, leaving the wet alone.",
+      "labels": null
+    },
+    {
+      "name": "STGS",
+      "default": 0,
+      "count": 2,
+      "doc": "SETUP page, encoder A. Bucket count, so the delay range: 1024 (default) gives 50-200 ms, 4096 gives 200-800 ms. A change fades the wet out, clears the line (about 6 ms, dry) and fades back in. Not lockable (SETUP page).",
+      "labels": [
+        "1024",
+        "4096"
+      ]
+    },
+    {
+      "name": "LIM",
+      "default": 127,
+      "count": 128,
+      "doc": "SETUP page, encoder C. The feedback governor, 0 off, 127 (default) strongest: above a threshold of the wet's envelope FDBK is scaled by the square of the overshoot, so self-oscillation settles about 30 dB under LIM 0.",
+      "labels": null
+    },
+    {
+      "name": "HPF",
+      "default": 0,
+      "count": 128,
+      "doc": "SETUP page, encoder E. 0 is off. Otherwise a 12 dB/octave Butterworth high-pass on the signal entering the bucket line, 20 Hz at 1 to 400 Hz at 127, logarithmic (64 is about 90 Hz); it glides like FREQ.",
+      "labels": null
+    }
+  ],
+  "compatibility": {
+    "firmware": "1.40C",
+    "location": "FX2",
+    "conflicts": [],
+    "uiClaims": [],
+    "limitations": [
+      "Hardware qualification is the author's own: about ten minutes on an Octatrack MKII with the release image (two instances, Part/project reload and a power cycle). MKI, MIDI/USB load and silicon timing are untested.",
+      "Card builds only: not offered over USB yet. Its worst case (439 executed instructions per sample with trig splits) is charged above the USB loader's current per-module cycle limit; the USB port follows.",
+      "FX2 only: the bucket line needs the 16K-word delay buffer the OS gives FX2 instances.",
+      "With stock DSP code built in, BBD's 1,075 words take the space of SPRING REV and PLATE REV, which leave the FX2 chooser (DARK REV calls a 35-word routine inside SPRING REV's code, so BBD is placed from PLATE REV's start, clear of it); a saved project that uses either on FX2 plays that slot dry. Every other stock effect stays, DARK REV bit-identical to stock. Other modules in the same build can change the choice.",
+      "Free-running TIME: the DSP side has no tempo word, so the delay does not follow tempo, track speed or swing.",
+      "Mono bucket line: the wet is the same on both channels; the dry stays stereo.",
+      "Aliasing is the bucket brigade's own: -44 dBc for a 1.1 kHz tone at the fastest clock, -37 dBc at the slowest.",
+      "Dearer than any stock effect: up to 439 executed instructions per sample with trig splits (SPRING REV 314, CHORUS 293, DJ EQ 331), 405 without splits. Four per core fit the static budget; real-chip headroom is not measured.",
+      "STGS, LIM and HPF are on the SETUP page: the OS does not lock, modulate or scene them.",
+      "STOP, STOP, STOP does not cut BBD's tail yet: the stock tail kill tests the stock reverbs' ids only. BBD's DSP takes the signal on a hidden slot; the ColdFire hook that writes it comes in a later version."
+    ],
+    "effectId": 14
+  },
+  "resources": {
+    "recorded": "2026-10-14",
+    "storage": {
+      "label": "DSP program / buffer",
+      "display": "1,075 words / 4K ring",
+      "value": null,
+      "unit": "see display",
+      "method": "static",
+      "conditions": "1,075 assembled program words on each DSP core in the space of SPRING REV and PLATE REV; a 91-word X state block per instance (r7+$00..$5a); up to 4,095 ring words plus 58 coefficient words of the 16,384 Y words the OS allocates to every FX2 instance.",
+      "source": "TESTING.md"
+    },
+    "processing": {
+      "label": "DSP instruction peak",
+      "display": "439 instructions/sample per instance",
+      "value": null,
+      "unit": "see display",
+      "method": "emulator",
+      "conditions": "benchmark_stock_dsp.py's method (one instance per core, 16-sample blocks, null stub subtracted) with SPRING REV, CHORUS and DJ EQ through the same cases: worst case 439.44 with a trig split, 405.00 unsplit. Static loop count 378 cycles/sample. Executed instructions, not chip cycles.",
+      "source": "TESTING.md"
+    },
+    "impact": {
+      "conditions": "One active instance at its dearest settings with moving controls and trig splits; the 16K buffer is the stock FX2 allocation, reused.",
+      "cpu": {
+        "level": "minimal",
+        "basis": "source-estimate",
+        "rationale": "No ColdFire code: the stock parameter pages publish the knobs, as for any FX2 effect.",
+        "source": "TESTING.md"
+      },
+      "dsp": {
+        "level": "high",
+        "basis": "measured-comparison",
+        "rationale": "439.44 executed instructions/sample worst case with trig splits against SPRING REV 314.19, CHORUS 293.06 and DJ EQ 330.94 (the dearest stock effect) under the same cases; four per core are 1,512 of 3,120 static cycles. Chip timing is unmeasured.",
+        "source": "TESTING.md"
+      },
+      "memory": {
+        "level": "moderate",
+        "basis": "source-estimate",
+        "rationale": "1,075 program words per core in the space of SPRING REV and PLATE REV, a 91-word X block per instance, the 16K-word FX2 delay buffer every delay already gets.",
+        "source": "TESTING.md"
+      }
+    }
+  },
+  "tests": {
+    "report": "TESTING.md",
+    "summary": "Render gates pass on a native image: exact dry at MIX 0, the DSP against its float reference across every control including HPF (-57 to -78 dB residual), trig splits, STGS changes, the stop-kill input, freeze (including a slow crossfade on a ringing loop), idle tails and the LIM level, eight-instance isolation under guard and dirty start, garbage start and no zipper. Static 378 cycles/sample, 439.44 instructions/sample measured against stock under the same cases. The browser builder matches native octabam in all 130 compared selections. The author played the release image on an MKII: DARK REV working, two instances on T1 and T5, Part/project reload and a power cycle, every parameter, LFOs and trigless locks.",
+    "hardwareStatus": "reported",
+    "evidenceRevision": "00541e03f394846de9db316bb591c3ab25f4f6f9",
+    "gates": [
+      "verify.py: init rules, static cycles, native placement, exact dry, reference match (HPF at 1, 64, 127), splits, stages, the stop-kill input, freeze, idle and LIM level, eight-instance isolation (-guard -dirty), garbage start, zipper census",
+      "evidence/performance.json: perf.py bench (stock benchmark under matched cases) and a 32 s eight-instance stress render",
+      "npm run module:verify: 130 selections, 0 mismatches against native octabam",
+      "Hardware: author functional test of the release image on an MKII (about ten minutes)."
+    ],
+    "documentation": {
+      "tutorial": {
+        "title": "Quick tutorial",
+        "steps": [
+          "Select an audio track, hold FUNC and press FX2, turn LEVEL to BBD DELAY at the end of the effect list and press YES. Turn encoder A (STGS) to 4096.",
+          "Press FX2 for the main page. Turn encoder F (MIX) to 48 and encoder B (FDBK) to 70, play a sample and turn encoder A (TIME): repeats between 200 and 800 ms, darker the longer they get. Turn encoder D (TONE) left and sweep encoder E (FREQ) for resonant repeats; turn encoder C (FRZ) to 127 to loop the line.",
+          "Turn FDBK back to 0 and MIX to 0 to hear the exact dry signal, or set FX2 back to DELAY or NONE in FX2 SETUP to remove the effect."
+        ]
+      },
+      "screenshots": [
+        "media/ot-setup.png",
+        "media/ot-main.png",
+        "media/ot-feedback.png"
+      ],
+      "screenshotStyle": "black-and-white"
+    },
+    "qualification": {
+      "moduleVersion": "0.1.0-experimental",
+      "sourceSha256": "ce1a7185b77174177e9c46dd4fd21030a294505a829659a3a84c6d142c44cc26",
+      "imageSha256": "bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba",
+      "cycles": [
+        {
+          "processor": "dsp",
+          "worstCase": 11248,
+          "maxConfiguration": 44992,
+          "maxInstances": 8,
+          "budget": 49920,
+          "unit": "cycles/block",
+          "method": "static",
+          "conditions": {
+            "parameterExtremes": "cycle_count.py prices the per-sample loop with the bucket tick taken and HPF on (378); the per-call bound charges every word outside the loop once, the clear and run paths together, all fixed-loop iterations, the nine-section rotation of a reset, HPF's section and every helper call, so every knob endpoint is covered.",
+            "parameterModulation": "Two calls per 16-frame block cover trigger splits, each charged the full per-call bound. LFOs, locks, scenes and CC reach the same knob words. No contention or silicon wall-clock timing is claimed.",
+            "modeSwitching": "STGS changes (fade, clear, reset), FRZ 127, HPF on and off and the hidden stop-kill input (dry and clear) are inside the union bound.",
+            "maxLoad": "Eight FX2 instances, four per DSP core, at 44.1 kHz and 16 frames per block: 44,992 per core within the SDK 49,920 module allowance; the stock/scheduling reserve stays separate. Arbitrary companion load and real-chip contention are unmeasured.",
+            "inputConditions": "The word-span bound does not depend on sample values; the tick path, saturation, feedback, silence, impulses and full-scale inputs are covered. Render gates and the matched benchmark (at most 439.44 executed instructions/sample) are in TESTING.md."
+          },
+          "report": "evidence/release-bounds.md"
+        }
+      ],
+      "memory": {
+        "regions": [
+          {
+            "name": "Program payload A, P:0x01000..0x01433",
+            "space": "dsp-p",
+            "words": 1075,
+            "wordBits": 24,
+            "bytes": 3225,
+            "scope": "shared"
+          },
+          {
+            "name": "Program payload B, P:0x00dc0..0x011f3",
+            "space": "dsp-p",
+            "words": 1075,
+            "wordBits": 24,
+            "bytes": 3225,
+            "scope": "shared"
+          },
+          {
+            "name": "Used and initialized stock X state, r7+0..0x5a",
+            "space": "dsp-x",
+            "words": 91,
+            "wordBits": 24,
+            "bytes": 273,
+            "scope": "instance"
+          },
+          {
+            "name": "Reserved remainder of 256-word stock X block",
+            "space": "dsp-x",
+            "words": 165,
+            "wordBits": 24,
+            "bytes": 495,
+            "scope": "instance"
+          },
+          {
+            "name": "Reserved stock FX2 Y buffer: ring up to 4,095 words, 58 coefficient words",
+            "space": "dsp-y",
+            "words": 16384,
+            "wordBits": 24,
+            "bytes": 49152,
+            "scope": "instance"
+          },
+          {
+            "name": "System stack, six entries of two words on both cores",
+            "space": "dsp-x",
+            "words": 24,
+            "wordBits": 24,
+            "bytes": 72,
+            "scope": "shared"
+          },
+          {
+            "name": "Cloned FX2 descriptor at 0x400D6B20",
+            "space": "cpu-flash",
+            "words": 416,
+            "wordBits": 8,
+            "bytes": 416,
+            "scope": "shared"
+          },
+          {
+            "name": "STGS label formatter at 0x400D6CC0",
+            "space": "cpu-flash",
+            "words": 54,
+            "wordBits": 8,
+            "bytes": 54,
+            "scope": "shared"
+          }
+        ],
+        "perInstanceBytes": 49920,
+        "sharedBytes": 6992,
+        "maxInstances": 8,
+        "totalBytes": 406352,
+        "conditions": "The stock 256-word X block and 16,384-word Y buffer per FX2 instance, including unused padding; code shared once per core. No authored heap, SDRAM arena, ColdFire executable or callback. The system stack is bounded by the rotation's do, a bsr and its divide's do on each core. Logical 24-bit DSP words; flash descriptors use byte accounting. Guarded eight-instance software evidence does not claim hardware canaries.",
+        "report": "evidence/release-bounds.md"
+      },
+      "hardware": {
+        "kind": "functional",
+        "status": "reported",
+        "model": "MKII",
+        "testedOn": "2026-10-14",
+        "tester": "JamCones",
+        "sourceRevision": "00541e03f394846de9db316bb591c3ab25f4f6f9",
+        "imageSha256": "bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba",
+        "summary": "The author played the release image (BBDMW2) on an MKII for about ten minutes: DARK REV still works on FX2; two BBD instances at once on T1 and T5 (one per DSP core); HPF and STGS working; a Part reload and a project save and reload restore the saved settings after unsaved edits; the saved project comes back after a power cycle; every main-page and SETUP parameter played, with LFOs on every parameter that takes one and trigless locks.",
+        "limitations": [
+          "Attributed author-reported functional results; nobody else observed the unit and no detailed stress qualification is claimed on this image (the 30-minute eight-instance run was on the earlier BBD14).",
+          "MIDI/USB load, recovery, hardware canaries and MKI are not reported; BBD is not offered over USB in this release.",
+          "Cycle values are software bounds and emulator measurements; whole-chip contention and wall-clock timing are not measured."
+        ],
+        "report": "evidence/author-hardware.md"
+      },
+      "documentation": {
+        "tutorial": {
+          "title": "Quick tutorial",
+          "steps": [
+            "Select an audio track, hold FUNC and press FX2, turn LEVEL to BBD DELAY at the end of the effect list and press YES. Turn encoder A (STGS) to 4096.",
+            "Press FX2 for the main page. Turn encoder F (MIX) to 48 and encoder B (FDBK) to 70, play a sample and turn encoder A (TIME): repeats between 200 and 800 ms, darker the longer they get. Turn encoder D (TONE) left and sweep encoder E (FREQ) for resonant repeats; turn encoder C (FRZ) to 127 to loop the line.",
+            "Turn FDBK back to 0 and MIX to 0 to hear the exact dry signal, or set FX2 back to DELAY or NONE in FX2 SETUP to remove the effect."
+          ]
+        },
+        "screenshots": [
+          "media/ot-setup.png",
+          "media/ot-main.png",
+          "media/ot-feedback.png"
+        ],
+        "screenshotStyle": "black-and-white"
+      }
+    }
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "LICENSE",
+    "declaration": "Original DSP56300 code, float reference, gates and documentation by Cam Jones under MIT. The charge-transfer curve follows Raffel's BBD paper (CCRMA, 2010), credited, not copied. No Elektron firmware, extracted routines or tables."
+  },
+  "media": [
+    {
+      "path": "media/ot-setup.png",
+      "captureType": "emulator",
+      "caption": "Hold FUNC and press FX2, turn LEVEL to BBD DELAY at the end of the effect list and press YES. The SETUP knobs beside it: STGS on A sets the bucket count (1024 gives 50-200 ms, 4096 200-800 ms), LIM on C governs self-oscillation, and HPF on E cuts bass going into the line (0 is off).",
+      "alt": "FX2 SETUP with BBD DELAY highlighted at the end of the effect list; STGS and LIM above, HPF below.",
+      "credit": "JamCones (headless capture)",
+      "license": "LicenseRef-OT-UI-Documentation",
+      "source": "original",
+      "otUi": {
+        "page": "FX2 SETUP",
+        "shows": "location-and-controls",
+        "firmware": "1.40C",
+        "moduleVersion": "0.1.0-experimental",
+        "imageSha256": "bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba",
+        "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; 128×64 LCD at integer scale 6."
+      }
+    },
+    {
+      "path": "media/ot-main.png",
+      "captureType": "emulator",
+      "caption": "Press FX2 for the main page: TIME, FDBK and FRZ on encoders A-C, TONE, FREQ and MIX on D-F. Turn TIME to set the clock; MIX 64 adds the wet at unity over the dry.",
+      "alt": "FX2 main page of BBD DELAY with TIME, FDBK and FRZ above TONE, FREQ and MIX, all at their defaults.",
+      "credit": "JamCones (headless capture)",
+      "license": "LicenseRef-OT-UI-Documentation",
+      "source": "original",
+      "otUi": {
+        "page": "FX2 main",
+        "shows": "controls",
+        "firmware": "1.40C",
+        "moduleVersion": "0.1.0-experimental",
+        "imageSha256": "bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba",
+        "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; 128×64 LCD at integer scale 6."
+      }
+    },
+    {
+      "path": "media/ot-feedback.png",
+      "captureType": "emulator",
+      "caption": "Turn encoder B (FDBK) to 70 for repeating echoes, encoder D (TONE) left for resonant repeats and encoder E (FREQ) to place the peak. Turn FDBK and MIX back to 0 for the exact dry signal.",
+      "alt": "FX2 main page of BBD DELAY with FDBK at 70, TONE at -24 and FREQ at 44.",
+      "credit": "JamCones (headless capture)",
+      "license": "LicenseRef-OT-UI-Documentation",
+      "source": "original",
+      "otUi": {
+        "page": "FX2 main",
+        "shows": "controls",
+        "firmware": "1.40C",
+        "moduleVersion": "0.1.0-experimental",
+        "imageSha256": "bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba",
+        "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; 128×64 LCD at integer scale 6."
+      }
+    }
+  ],
+  "access": {
+    "location": "Audio track FX2 SETUP: BBD DELAY at the end of the effect chooser.",
+    "steps": [
+      "Select an audio track with its TRACK key.",
+      "Hold FUNC and press FX2 to open FX2 SETUP.",
+      "Turn LEVEL to BBD DELAY at the end of the list and press YES to assign it; STGS, LIM and HPF appear on the right.",
+      "Press FX2 for the main page: TIME, FDBK and FRZ above TONE, FREQ and MIX."
+    ],
+    "screenshots": [
+      "media/ot-setup.png",
+      "media/ot-main.png",
+      "media/ot-feedback.png"
+    ]
+  }
+}

@@ -73,7 +73,6 @@ import { DIGI_DEVICES, DIGI_MODS, isDigiDevice, type DigiMod } from './devices/d
 import { configurationDevice, type Configuration } from './config/workspace'
 import './devices/devices.css'
 import { SupportButton, SupportDialog } from './components/SupportDialog'
-import { OwnerNoteGate } from './components/OwnerNote'
 import { SUPPORT_URL } from './config/support'
 
 import { useWorkspace } from './hooks/useWorkspace'
@@ -461,7 +460,6 @@ export default function App() {
       {reportingConfiguration && <ConfigurationReportDialog machine={reportingConfiguration.machine} configurationId={reportingConfiguration.id} onClose={() => setReportingConfiguration(null)} />}
       {configDialog && <ConfigurationDialog mode={configDialog} initialName={configDialog === 'create' ? '' : configDialog === 'duplicate' ? (machineActive?.name ?? '') + ' copy' : machineActive?.name ?? ''} onSubmit={submitConfigurationDialog} onClose={() => { setConfigDialog(null); setCreateDevice(null) }} />}
       <PublicAnnouncement next={route} enabled={newsEnabled} />
-      <OwnerNoteGate enabled={newsEnabled} />
       <Suspense fallback={null}>
       {usbLink && !hubRoute && !loadingTarget && <OctatrackActivity link={usbLink}/>}
       {openModule && (() => {

@@ -105,6 +105,7 @@
     ],
     "requires": [],
     "conflicts": [
+      "digimono",
       "digislicer"
     ],
     "limitations": [

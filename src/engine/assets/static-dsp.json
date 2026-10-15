@@ -59,6 +59,12 @@
       "priority": 18
     },
     {
+      "id": "bbd",
+      "key": "BBD",
+      "fxId": 14,
+      "priority": 16
+    },
+    {
       "id": "sidechain-compressor",
       "key": "SIDECHAIN_COMPRESSOR",
       "fxId": 24,

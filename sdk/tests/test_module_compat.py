@@ -148,6 +148,14 @@ class GateTests(unittest.TestCase):
         declared = ui(a=['screen:TEMPO'], b=['screen:TEMPO']); declared['b']['conflicts'] = ['a']
         self.assertEqual(list(gate.ui_clashes(declared)), [])
 
+    def test_more_modules_on_a_take_event_or_table_than_its_room_fails_before_the_unit_refuses(self):
+        modules = [module(n, 0x40001000 + 0x10 * i) for i, n in enumerate('abc')]
+        hooks = {'a': {'ot_x', 'ev_y'}, 'b': {'ot_x'}, 'c': {'ot_x', 'ev_y'}}
+        problems = gate.check(modules, hooks=hooks, rooms={'ot_x': 2, 'ev_y': 2})
+        self.assertEqual(self.routes(problems), [(('a', 'b', 'c'), 'room')])
+        self.assertIn('ot_x, which has room for 2 modules', problems[0]['text'])
+        self.assertEqual(gate.check(modules, hooks=hooks, rooms={'ot_x': 3, 'ev_y': 2}), [])
+
     def test_repository_passes(self):
         ids, modules, inputs, problems = gate.repository_inputs()
         self.assertEqual(problems + gate.check(modules, **inputs), [])

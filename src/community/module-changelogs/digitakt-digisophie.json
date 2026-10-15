@@ -4,7 +4,8 @@
     "date": "2026-10-07",
     "changes": [
       "Media-only: match the saved SVG thumbnail to the library’s existing signal illustration, including its grid, palette and typography; update the illustration alt text.",
-      "Documentation-only: add the model and control guide, including SWEEP, METAL, COLOR, FBK and FOLD, with real page captures. Pinned firmware code is unchanged."
+      "Documentation-only: add the model and control guide, including SWEEP, METAL, COLOR, FBK and FOLD, with real page captures. Pinned firmware code is unchanged.",
+      "Compatibility flag only: marked as incompatible with digineighbor and digislicer, because they patch the same firmware code on OS 1.53. The site already refused the pair for overlapping firmware changes; it now names the conflict too. Pinned firmware code is unchanged."
     ],
     "sourceCommit": "c886095a7931e34c8a0e43268ce5d399f092382c"
   },

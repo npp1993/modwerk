@@ -252,7 +252,7 @@
       "bytes": 1236,
       "sha256": "1a33910e784cd2d629910fc52ae147e6c1b96338f51272282cd837a1c5fe7b8d",
       "path": "octatrack-modules/sidechain-compressor/0.1.2-experimental.mwrm",
-      "requiredBase": "25ccb155ff417afad6028de37da36566544818e960d85f4d7a72d8f82e1e3512"
+      "requiredBase": "93ef23473131fd942adc04def4041ebde9ecc4efc2d9b6dec17269d470a97709"
     },
     {
       "id": "output-matrix",
@@ -268,7 +268,7 @@
       "bytes": 3580,
       "sha256": "7b42cf014ae1aec8fae5c3b047411f29c8988f50a935b912dd1eb048cb5ffdc5",
       "path": "octatrack-modules/output-matrix/0.1.0-experimental.mwrm",
-      "requiredBase": "25ccb155ff417afad6028de37da36566544818e960d85f4d7a72d8f82e1e3512"
+      "requiredBase": "93ef23473131fd942adc04def4041ebde9ecc4efc2d9b6dec17269d470a97709"
     },
     {
       "id": "cc-map",
@@ -284,7 +284,7 @@
       "bytes": 966,
       "sha256": "c7cd39a5f645d69279d3a288c40b8366e6638acdc042cf0fe68dfb9964a68ea2",
       "path": "octatrack-modules/cc-map/0.1.2-experimental.mwrm",
-      "requiredBase": "25ccb155ff417afad6028de37da36566544818e960d85f4d7a72d8f82e1e3512"
+      "requiredBase": "93ef23473131fd942adc04def4041ebde9ecc4efc2d9b6dec17269d470a97709"
     },
     {
       "id": "recorder-loop-fix",
@@ -300,7 +300,7 @@
       "bytes": 1818,
       "sha256": "54d45bd8c9e6142bafea3434f39f4c4143ef8a64ffb6c902ea99acddcf89778a",
       "path": "octatrack-modules/recorder-loop-fix/0.1.0-experimental.mwrm",
-      "requiredBase": "25ccb155ff417afad6028de37da36566544818e960d85f4d7a72d8f82e1e3512"
+      "requiredBase": "93ef23473131fd942adc04def4041ebde9ecc4efc2d9b6dec17269d470a97709"
     },
     {
       "id": "analog-bassdrum",
@@ -316,7 +316,7 @@
       "bytes": 6676,
       "sha256": "49a5e4f0589d5efc4766b2e45f6904af2b8a1b313d1578c3816184a7243e29ae",
       "path": "octatrack-modules/analog-bassdrum/0.1.5-experimental.mwrm",
-      "requiredBase": "25ccb155ff417afad6028de37da36566544818e960d85f4d7a72d8f82e1e3512"
+      "requiredBase": "93ef23473131fd942adc04def4041ebde9ecc4efc2d9b6dec17269d470a97709"
     }
   ]
 }

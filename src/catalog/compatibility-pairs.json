@@ -4,6 +4,7 @@
  "modules": [
   "airwindows-chorus",
   "analog-bassdrum",
+  "bbd",
   "cc-map",
   "character",
   "euclid",

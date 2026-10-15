@@ -50,3 +50,12 @@ test('an export published without resources.core still reproduces, and nothing e
   assert.equal(reproducesExport(old.replace('"names"', '"claims"'), withCore), false)
   assert.equal(reproducesExport(current.replace('"2.1"', '"3.0"'), withCore), false)
 })
+
+test('an export keeps its bytes when the source only adds conflict flags, and nothing else may differ', () => {
+  const flagged = conflicts => ({ ...plan, module: { ...plan.module, conflicts } })
+  const released = exportText(packageRecipe(flagged(['a'])))
+  assert.equal(reproducesExport(released, flagged(['a', 'b'])), true)
+  assert.equal(reproducesExport(released, flagged(['b'])), false, 'a release may not lose a flag the source dropped')
+  assert.equal(reproducesExport(exportText(packageRecipe(flagged(['a', 'b']))), flagged(['a'])), false, 'an export may not gain a flag')
+  assert.equal(reproducesExport(released.replace('"names"', '"claims"'), flagged(['a', 'b'])), false)
+})

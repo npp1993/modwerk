@@ -5,13 +5,14 @@ import { readFile, readdir, mkdir, writeFile, copyFile } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { execFileSync } from 'node:child_process'
-import { isDocumentationChange } from './change-scope.mjs'
+import { isVersionNeutralChange } from './change-scope.mjs'
 import { loadElemodDependencies, dependencyCollections } from './elemod-dependencies.mjs'
 import { requireModwerkDocumentation } from './module-documentation.mjs'
 import { resolveModuleFile as file } from '../src/catalog/module-folder.ts'
 import { parseMachineProfile } from '../src/devices/machine-contract.ts'
 import { parseElemodBuild, parseModwerkModule, requireModwerkPublication } from '../src/catalog/module-contract-v3.ts'
 import { compareModuleVersions } from '../src/catalog/versions.ts'
+import { requireFlaggedOverlaps, requireKnownConflicts } from './conflict-ids.mjs'
 const json=async path=>JSON.parse(await readFile(path,'utf8'))
 async function walk(folder){const paths=[];for(const entry of await readdir(folder,{withFileTypes:true})){if(entry.name==='__pycache__')continue;if(entry.isSymbolicLink())throw new Error('Module symlinks are not allowed: '+entry.name);if(entry.isDirectory())paths.push(...(await walk(resolve(folder,entry.name))).map(p=>entry.name+'/'+p));else paths.push(entry.name)}return paths.sort()}
 export async function machineModules({root,write=false,baseCommit=null,includeDrafts=false}) {
@@ -46,9 +47,10 @@ for(const machine of machineProfiles.filter(profile=>profile.sdk?.platform==='el
    const prefix=dir.slice(root.length+1)+'/'+entry.name+'/',oldPath=prefix+'modwerk.module.json'
    const changedPaths=(git('diff','--name-only',baseCommit,'--',prefix)+git('ls-files','--others','--exclude-standard','--',prefix)).trim().split('\n').filter(Boolean),changed=changedPaths.length>0
    if(changed&&!document.tests.documentation)throw new Error(label+': new and updated modules require complete documentation, tutorial and capture provenance')
-   if(git('ls-tree','--name-only',baseCommit,'--',oldPath).trim()===oldPath){const old=JSON.parse(git('show',baseCommit+':'+oldPath));const codeChanged=changedPaths.some(path=>!isDocumentationChange({path,before:path===oldPath?JSON.stringify(old):'',after:path===oldPath?readFileSync(resolve(folder,'modwerk.module.json'),'utf8'):''}));if(codeChanged&&compareModuleVersions(document.version,old.version)<=0)throw new Error(label+': every code or behaviour update requires a greater module version than '+old.version+'; documentation and media edits do not')}
+   if(git('ls-tree','--name-only',baseCommit,'--',oldPath).trim()===oldPath){const old=JSON.parse(git('show',baseCommit+':'+oldPath));const codeChanged=changedPaths.some(path=>!isVersionNeutralChange({path,before:path===oldPath?JSON.stringify(old):'',after:path===oldPath?readFileSync(resolve(folder,'modwerk.module.json'),'utf8'):''}));if(codeChanged&&compareModuleVersions(document.version,old.version)<=0)throw new Error(label+': every code or behaviour update requires a greater module version than '+old.version+'; documentation, media and compatibility.conflicts edits do not')}
   }
   const build=parseElemodBuild(await json(await file(folder,document.platform.build)),document)
+  requireKnownConflicts(machine.id,document,new Set(dependencies.keys()))
   // Modules may use only what their machine's core interface provides.
   if(core){const events=new Set(core.events.map(event=>event.name)),tables=new Set([...core.tables.map(table=>table.name),...dependencyCollections(document,build,dependencies)])
    for(const entry of build.subscribe)if(!events.has(entry.event)&&!tables.has(entry.event))throw new Error(label+': '+entry.event+' is not an event of the '+machine.name+' core interface '+core.interface)
@@ -64,6 +66,8 @@ for(const machine of machineProfiles.filter(profile=>profile.sdk?.platform==='el
   machineDocuments.push({...document,patchSites});machineModules++
  }
 }
+// Two mods that patch overlapping bytes on a release both support never link together: one must flag the other.
+if(!includeDrafts)requireFlaggedOverlaps(machineDocuments)
 // The website lists every machine's modules from the same validated folders.
 machineDocuments.sort((a,b)=>a.machine.localeCompare(b.machine)||a.id.localeCompare(b.id))
 const machineTarget=resolve(root,'src/catalog/machine-modules.json'),machineGenerated=JSON.stringify({schemaVersion:3,modules:machineDocuments},null,2)+'\n'

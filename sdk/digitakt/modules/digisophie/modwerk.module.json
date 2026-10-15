@@ -107,7 +107,10 @@
       "1.53"
     ],
     "requires": [],
-    "conflicts": [],
+    "conflicts": [
+      "digineighbor",
+      "digislicer"
+    ],
     "limitations": [
       "One instance runs without FAST AUDIO; the author found two practical with FAST AUDIO on. Eight tracks are not claimed.",
       "Built for OS 1.53 only."

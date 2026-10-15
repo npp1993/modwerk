@@ -67,15 +67,15 @@ await mkdir(output, { recursive: true })
 if ((await readdir(output)).length) throw new Error('The output directory must be empty: ' + output)
 for (const machine of machines.filter(item => item.sdk?.platform === 'elemod')) {
   const folderRoot = resolve(root, machine.sdk.modules)
-  const entries = (await readdir(folderRoot, { withFileTypes: true })).filter(entry => entry.isDirectory() && !entry.name.startsWith('_')).sort((a, b) => a.name.localeCompare(b.name))
-  // A machine whose SDK has no module yet needs no linker profile; its first module brings one.
-  if (!entries.length) continue
+  const roots = [folderRoot, ...(includeDrafts ? [resolve(folderRoot, '_submissions')] : [])]
+  const listing = async moduleRoot => readdir(moduleRoot, { withFileTypes: true }).catch(error => { if (error.code === 'ENOENT' && moduleRoot !== folderRoot) return []; throw error })
+  // A machine whose SDK has no module yet needs no linker profile; its first module, or with --drafts its first submission, brings one.
+  if (!(await Promise.all(roots.map(listing))).flat().some(entry => entry.isDirectory() && !entry.name.startsWith('_'))) continue
   const device = LINK_DEVICES.find(item => item.machine === machine.id)
   if (!device) throw new Error('No linker profile for ' + machine.id)
   const dependencies = await loadElemodDependencies(root, machine)
   const inputs = [...dependencies.values()]
-  const roots = [folderRoot, ...(includeDrafts ? [resolve(folderRoot, '_submissions')] : [])]
-  for (const moduleRoot of roots) for (const entry of (await readdir(moduleRoot, { withFileTypes: true }).catch(error => { if (error.code === 'ENOENT' && moduleRoot !== folderRoot) return []; throw error })).sort((a, b) => a.name.localeCompare(b.name))) {
+  for (const moduleRoot of roots) for (const entry of (await listing(moduleRoot)).sort((a, b) => a.name.localeCompare(b.name))) {
     if (!entry.isDirectory() || entry.name.startsWith('_')) continue
     if (inputs.some(input => input.document.id === entry.name)) throw new Error('Module duplicates a dependency: ' + entry.name)
     const folder = resolve(moduleRoot, entry.name)

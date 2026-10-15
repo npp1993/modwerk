@@ -35,6 +35,7 @@ EVENTS = 'sdk/machines/octatrack/events.json'
 PLANNED_EVENTS = [dict(event='ev_play_increment', site='0x40004100', length=8),
                   dict(event='ev_voice_bind', site='0x40006820', length=8)]
 PORTS = 'sdk/machines/octatrack/module-adapters/machine_ports.py'
+PORTS_JSON = 'sdk/machines/octatrack/module-adapters/machine-ports.json'
 RECIPES = ('sdk/machines/octatrack/module-adapters/standalone-recipes.json',
            'sdk/machines/octatrack/module-adapters/candidate-recipes.json',
            'sdk/machines/octatrack/module-adapters/machine-recipes.json')
@@ -61,6 +62,9 @@ ROUTES = {
     'other': ('claim a resource nobody else uses, or request a base-owned region or event for shared state',
               '#cross-compatibility'),
     'relation': (f'correct {RELATIONS}; every entry needs owner review', '#cross-compatibility'),
+    'room': ('the base has room for fewer modules on this take event or table than subscribe to it, so the unit refuses '
+             'the last one to install: propose more room (an owner-reviewed change to events.json and the base)',
+             '#events'),
 }
 # octabam ledger findings this gate already compares by exact byte range (with relations), not by message.
 SPAN_FINDINGS = ('ColdFire cave', 'hook site', 'poke site', 'kept bytes', 'grown table')
@@ -174,8 +178,18 @@ def ledger_findings(selected, platform):
     return [p for p in problems if p.split(':', 1)[0] not in SPAN_FINDINGS]
 
 
+def room_problems(hooks, rooms):
+    """(event, room, modules) for each take event or table more modules use than it has room for. hooks: {module:
+    events and tables it subscribes or contributes to}; rooms: {event: room}. A module counts once per event, as the
+    loader's roomless() counts it (sdk/runtime/loader/loader.c)."""
+    for event, room in sorted(rooms.items()):
+        users = sorted(m for m, used in hooks.items() if event in used)
+        if len(users) > room:
+            yield event, room, users
+
+
 def check(modules, base_sites=(), events=(), copies=None, relations=(), base_owns=(), platform=None, natives=None,
-          subscriptions=None, manifests=None):
+          subscriptions=None, manifests=None, hooks=None, rooms=None):
     """Problems for these active modules: [{'modules': [...], 'text': str, 'route': str}].
 
     modules: octabam Module objects (all active); base_sites: (start, length, kind) the base patches;
@@ -252,6 +266,9 @@ def check(modules, base_sites=(), events=(), copies=None, relations=(), base_own
         if key not in used:
             problem(key[0], f'relation {"+".join(entry["modules"])}: nothing meets at 0x{key[1]:08x} any more; '
                             f'remove the site', 'relation')
+    for event, room, users in room_problems(hooks or {}, rooms or {}):
+        problem(users, f'{", ".join(users)} use {event}, which has room for {room} module{"s" * (room != 1)}: '
+                       f'{len(users)} cannot install together', 'room')
     for a, x, b, y in ui_clashes(manifests or {}):
         problem((a, b), f'{a} ({x}) and {b} ({y}) take the same {"key gesture" if x.startswith("key:") else "screen"}', 'ui')
     native = [(natives or {}).get(m.name, m) for m in modules]
@@ -268,14 +285,14 @@ def check(modules, base_sites=(), events=(), copies=None, relations=(), base_own
 
 def active_ids():
     """Catalogue modules the library offers (beta included), as src/catalog/availability.ts decides."""
-    source = (APP / 'src/catalog/availability.ts').read_text()
+    source = (APP / 'src/catalog/availability.ts').read_text(encoding='utf-8')
     lists = {}
     for name in ('BETA_MODULE_IDS', 'PAUSED_MODULE_IDS'):
         found = re.search(rf'export const {name}: readonly string\[\] = \[([^\]]*)\]', source)
         if not found:
             raise SystemExit(f'src/catalog/availability.ts: cannot read {name}; update scripts/module-compat.py')
         lists[name] = set(re.findall(r"'([^']+)'", found.group(1)))
-    catalog = json.loads((APP / 'sdk/catalog.json').read_text())['modules']
+    catalog = json.loads((APP / 'sdk/catalog.json').read_text(encoding='utf-8'))['modules']
     return [row['id'] for row in catalog
             if row['id'] not in lists['PAUSED_MODULE_IDS'] or row['id'] in lists['BETA_MODULE_IDS']]
 
@@ -286,7 +303,7 @@ def read_events():
     if not (APP / EVENTS).exists():
         return PLANNED_EVENTS
     out = []
-    for e in json.loads((APP / EVENTS).read_text())['events']:
+    for e in json.loads((APP / EVENTS).read_text(encoding='utf-8'))['events']:
         if e.get('kind') == 'table':
             out += [dict(event=e['event'], site=s['site'], length=s['length'], table=True) for s in e.get('sites', [])]
         elif e.get('site') is not None:
@@ -296,6 +313,13 @@ def read_events():
         raise SystemExit(f'{EVENTS}: every event needs event (its name), site (0x… stock address) and length; '
                          f'update read_events() in scripts/module-compat.py if the registry changed shape')
     return out
+
+
+def read_rooms():
+    """{event: room} for every take event and table, resolved as the base's generator resolves it (events.py)."""
+    spec = importlib.util.spec_from_file_location('modwerk_events', APP / 'sdk/machines/octatrack/events.py')
+    registry = importlib.util.module_from_spec(spec); spec.loader.exec_module(registry)
+    return {e['event']: e['room'] for e in registry.load()['events'] if e.get('room') is not None}
 
 
 def ported(modules):
@@ -331,28 +355,34 @@ def repository_inputs():
         if i not in by_name:
             load.append(dict(modules=[i], text=f'{i} is in the catalogue but has no sdk/octabam/modules/{i}/manifest.py',
                              route='other'))
-    base = json.loads((APP / 'src/engine/assets/octatrack-base.elemod').read_text())
+    base = json.loads((APP / 'src/engine/assets/octatrack-base.elemod').read_text(encoding='utf-8'))
     copies = {}
     for path in RECIPES:  # the loader integration's runtime ports; absent on branches without them
         if (APP / path).exists():
-            for name, recipe in json.loads((APP / path).read_text())['ports'].items():
+            for name, recipe in json.loads((APP / path).read_text(encoding='utf-8'))['ports'].items():
                 rows = recipe.get('copies', []) + [c for t in recipe.get('tables', []) for c in t.get('copies', [])]
                 copies.setdefault(name, []).extend((c['address'], c['length'], f'{Path(path).name} copy') for c in rows)
-    for layout in json.loads((APP / 'src/engine/assets/usb-audio-packages.json').read_text())['layouts']:
+    for layout in json.loads((APP / 'src/engine/assets/usb-audio-packages.json').read_text(encoding='utf-8'))['layouts']:
         copies.setdefault('usb-audio-out-' + layout['id'], []).extend(
             (c['source'], c['bytes'], f'{o["label"]}:{c["section"]}') for o in layout['objects'] for c in o.get('stockCopies', []))
-    owns = next(node.value for node in ast.parse((APP / 'sdk/machines/octatrack/elekloader/build_core.py').read_text()).body
+    owns = next(node.value for node in ast.parse((APP / 'sdk/machines/octatrack/elekloader/build_core.py').read_text(encoding='utf-8')).body
                 if isinstance(node, ast.Assign) and any(getattr(t, 'id', '') == 'BASE_OWNS' for t in node.targets))
-    subscriptions = {}
+    subscriptions, hooks = {}, {}
     for i in ids:
         path = APP / 'sdk/octabam/modules' / i / 'runtime.json'
         if path.is_file():
-            subscriptions[i] = json.loads(path.read_text()).get('subscribe', [])
+            runtime = json.loads(path.read_text(encoding='utf-8'))
+            subscriptions[i] = runtime.get('subscribe', [])
+            hooks[i] = {e['event'] for e in subscriptions[i]} | {c['to'] for c in runtime.get('contribute', [])}
+    for name, port in json.loads((APP / PORTS_JSON).read_text(encoding='utf-8'))['ports'].items():
+        if name in ids:
+            hooks.setdefault(name, set()).update({e['event'] for e in port.get('subscribe', [])}
+                                                 | {c['to'] for c in port.get('contribute', [])})
     inputs = dict(base_sites=[(int(s['addr'], 16), s['len'], s['kind']) for s in base['sites']], events=read_events(),
-                  subscriptions=subscriptions,
-                  copies=copies, relations=json.loads((APP / RELATIONS).read_text())['relations'],
+                  subscriptions=subscriptions, hooks=hooks, rooms=read_rooms(),
+                  copies=copies, relations=json.loads((APP / RELATIONS).read_text(encoding='utf-8'))['relations'],
                   base_owns=ast.literal_eval(owns), platform=platform,
-                  manifests={i: {'uiClaims': LISTED_UI_CLAIMS.get(i, []), **json.loads(p.read_text())['compatibility']}
+                  manifests={i: {'uiClaims': LISTED_UI_CLAIMS.get(i, []), **json.loads(p.read_text(encoding='utf-8'))['compatibility']}
                              for i in ids if (p := APP / 'sdk/octabam/modules' / i / 'octamod.module.json').is_file()})
     natives = [by_name[i] for i in ids if i in by_name]
     modules, mismatched = ported(natives)
@@ -362,6 +392,7 @@ def repository_inputs():
 
 def main(argv):
     started = time.perf_counter()
+    sys.stdout.reconfigure(encoding='utf-8')  # the report prints '✗'; a Windows pipe defaults to the ANSI code page
     as_json, only = '--json' in argv, [a for a in argv if not a.startswith('--')]
     ids, modules, inputs, problems = repository_inputs()
     if modules:
@@ -374,6 +405,8 @@ def main(argv):
     summary = dict(active=len(ids), pairs=len(ids) * (len(ids) - 1) // 2, relations=len(inputs.get('relations', [])),
                    events=len(inputs.get('events', [])), problems=len(problems),
                    seconds=round(time.perf_counter() - started, 2), notActive=[i for i in only if i not in ids],
+                   full=[dict(event=e, room=r, modules=u) for e, r in sorted(inputs.get('rooms', {}).items())
+                         if len(u := sorted(m for m, used in inputs.get('hooks', {}).items() if e in used)) == r],
                    pending=[dict(modules=r['modules'], event=r['event'], until=r['until'])
                             for r in inputs.get('relations', []) if r.get('kind') == 'pending-migration'])
     if as_json:
@@ -382,6 +415,9 @@ def main(argv):
         for p in problems:
             print('✗ ' + p['text'])
             print('    fix: ' + p['fix'] + ' (' + p['guide'] + ')')
+        for f in summary['full']:
+            print(f"· {f['event']} is full: room for {f['room']} ({', '.join(f['modules'])}); another module that uses it "
+                  f"needs more room first ({GUIDE.split('#')[0]}#events)")
         for i in summary['notActive']:
             print(f'· {i} is not an active catalogue module (paused or unlisted), so it is not compared')
         print(f"Cross-compatibility: {summary['active']} active Octatrack modules, {summary['pairs']} pairs and the "

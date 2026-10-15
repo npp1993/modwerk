@@ -1,0 +1,44 @@
+{
+ "schemaVersion": 1,
+ "recorded": "2026-10-14",
+ "decision": "First Analog Rytm MKII module: rytm2_mods' elemod port of MrScruff's rytm-mods 0008-filter-hz, imported under GPL-2.0-only with attribution. rytm-mods-src is published with MrScruff's permission.",
+ "modules": [
+  {
+   "module": "analog-rytm-mkii/filter-hz",
+   "version": "1.0.0",
+   "repository": "https://github.com/Iced-Cream/rytm2_mods",
+   "tag": "v1.0",
+   "revision": "698b859cc48d990fc0833d3638a5fea4fa07a873",
+   "license": "GPL-2.0-only",
+   "files": [
+    {
+     "from": "filter-hz/filter-hz.s",
+     "to": "src/filter-hz.s",
+     "sha256": "7de4714b1be17ba96d30cb90eac8bb6fbe9a000b9e7db1eb3c9ae52d2cae7a8d"
+    },
+    {
+     "from": "include/ar2-1.73.inc",
+     "to": "include/ar2-1.73.inc",
+     "sha256": "c0f1e25ca0e1d0462b517f6c75056b57229fe59e54593462910bf2d538b816ce"
+    },
+    {
+     "from": "LICENSE",
+     "to": "LICENSE",
+     "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643"
+    },
+    {
+     "from": "filter-hz/README.md",
+     "to": "upstream/README.md",
+     "sha256": "0f8888310b4c326e607e1bc7331910994ed39ce77f3bdb448e0e405b7b27e90f"
+    }
+   ],
+   "excluded": [
+    "filter-hz/mod.json"
+   ],
+   "transformations": [
+    "The site in mod.json (0x400a8648, 8 stock bytes, jmp filter_hz_gate) became an address, length and SHA-256 guard in build.json.",
+    "include/ar2-1.73.inc keeps its path relative to the source, so the .include line in src/filter-hz.s is unchanged."
+   ]
+  }
+ ]
+}

@@ -1450,3 +1450,48 @@ SPRING REV executes 314.0 instructions/sample and Mini Verb 0.2.2 362.75
 executed instructions, not chip cycles. The only chip timing is 0.2.0's 665
 cycles/sample on the owner's MKII. Native/browser parity, the isolated package
 build, owner approval, hardware and chip timing of 0.2.2 are still required.
+
+## BBD Delay 0.1.0-experimental — 14 October 2026
+
+BBD Delay enters the FX2 catalogue as a new module by JamCones under MIT: a
+bucket-brigade delay in 1,075 DSP56300 words with a compander, clock-tracking
+anti-alias and reconstruction filters, a clocked bucket line, a resonant
+feedback tilt, an exact-loop freeze, a feedback governor and a 20-400 Hz input
+high-pass (HPF). FX id 14.
+
+`module:verify` compared the browser builder with native octabam on the
+author's own 1.40C file: of BBD's 130 selections, 53 module-owned images match
+(22 identical outright, 31 outside the platform writes) and 77 refusals agree,
+with no mismatches (`sdk/native-comparisons/bbd.json`). The pair ledger finds no
+clash between BBD and any other module, so BBD declares no conflicts. Analog
+BD's native verifier passes against the build with BBD in it. BBD needs an entry in `src/engine/assets/static-dsp.json` (FX id 14, priority
+16), like E-Verb, before the browser places its code.
+
+Beside the stock effects the site gives up SPRING REV and PLATE REV: BBD would
+fit in SPRING REV's space, but DARK REV calls a 35-word routine at SPRING
+REV+820. BBD is placed from PLATE REV's base and ends before that routine; a
+render gate runs DARK REV on both cores with fixed and moving controls and
+finds it bit-identical to the stock OS. The browser's default BBD build equals
+the author-tested MAIN `bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba`
+byte for byte.
+
+All 51 native-image render gates pass, including the DSP against its float
+reference (HPF at 1, 64 and 127: −67.8 to −71.7 dB), eight-instance isolation
+under guard and dirty start, and the stop-kill input. A matched benchmark
+measures at most 439.44 executed instructions per sample with a trig split
+(SPRING REV 314.19, CHORUS 293.06, DJ EQ 330.94 under the same cases), and a
+32-second, eight-instance stress run finds no clobber or hang. The static
+block bound is 11,248 modeled cycles per instance, 44,992 for four per core
+against the 49,920 module allowance.
+
+STOP, STOP, STOP does not cut BBD's tail in this release: the stock tail kill
+tests the stock reverbs' ids only. BBD's DSP takes the signal on a hidden slot
+(11); the ColdFire hook that writes it is left for the USB port, by the
+owner's choice.
+
+BBD is not offered over USB in this release. Its USB package (ABI 6, 5,014 bytes, stock-free under the publisher's scans) is refused by the loader's development-base cycle admission (`sdk/machines/octatrack/elekloader/dsp.c`): a module's executed figure is charged at 7/4 and one instance must fit beside seven stock slots, so the limit is 3,120 - 7 x 342 = 726 and BBD's 440 is charged 770. In `ot_emu` on a `--dsp-loader --dev` base with the author's project, `verify-octatrack-dsp-loader.mjs pick` installed E-Verb and ran it on T1 and T5, and refused BBD at VERIFY. The package is left out until the USB port settles the figure (a release base admits hardware-timed figures).
+
+The author reports the release image on an MKII for about ten minutes: DARK
+REV working, two instances on T1 and T5, Part and project save and reload, a
+power cycle, every parameter with LFOs and trigless locks. MKI, MIDI/USB load,
+silicon timing and the USB path on hardware are not reported.

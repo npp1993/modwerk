@@ -689,6 +689,31 @@
           "sha256": "ba4ba6ad69779d2df8e9a1c0cc8293c0b5698a75d0fa43798eb1dbb32f7b370a"
         }
       ]
+    },
+    {
+      "id": "bbd",
+      "key": "BBD",
+      "author": "JamCones",
+      "slot": 6,
+      "name": "STGS",
+      "labels": [
+        "1024",
+        "4096"
+      ],
+      "renames": {},
+      "wideMaximum": null,
+      "proofs": [
+        {
+          "namesAddress": 1074621238,
+          "bytes": 54,
+          "sha256": "eb676fe52d63e37e3646f249ce8932f827bfead29843cb69d684a635adcafb4b"
+        },
+        {
+          "namesAddress": 1074623350,
+          "bytes": 54,
+          "sha256": "eb676fe52d63e37e3646f249ce8932f827bfead29843cb69d684a635adcafb4b"
+        }
+      ]
     }
   ],
   "repitchPatches": [
@@ -1271,7 +1296,7 @@
       "caveLimit": 1074625596
     }
   ],
-  "sourceCommit": "8a24b082cc550bf105dc5766cf4706c32fdf4a19",
+  "sourceCommit": "00541e03f394846de9db316bb591c3ab25f4f6f9",
   "moduleVersions": {
     "spectrum": "0.1.1-experimental",
     "modulation": "0.1.1-experimental",
@@ -1283,6 +1308,7 @@
     "tapehead": "0.1.2-experimental",
     "airwindows-chorus": "0.1.2-experimental",
     "everb": "0.1.1-experimental",
+    "bbd": "0.1.0-experimental",
     "analog-bassdrum": "0.1.5-experimental",
     "midi-scenes": "0.2.5-experimental",
     "usb-audio-out-tracks-main-cue": "0.2.0-experimental",

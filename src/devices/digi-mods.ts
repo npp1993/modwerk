@@ -28,6 +28,8 @@ export type DigiMod = {
   summary: string
   ramBytes: number
   claims: string[]
+  // Mods its author marked as unable to run beside it; either side's flag refuses the pair.
+  conflicts: string[]
   releases: string[]
   patchSites: Partial<Record<string, { addr: string; len: number }[]>>
   hardware?: string
@@ -48,7 +50,7 @@ export const DIGI_MODS: DigiMod[] = (MACHINE_MODULES.modules as (ModwerkModule &
   author: displayName(module.author.github, module.author.name), repository: module.source?.repository ?? 'https://github.com/' + module.author.github,
   contributors: module.author.contributors,
   license: module.license.spdx, category: module.presentation.family, libraryCategory: module.category, summary: module.presentation.summary,
-  ramBytes: module.resources.memoryBytes ?? 0, claims: module.platform.claims, exclusive: module.exclusive,
+  ramBytes: module.resources.memoryBytes ?? 0, claims: module.platform.claims, conflicts: module.compatibility.conflicts, exclusive: module.exclusive,
   releases: module.compatibility.releases, patchSites: module.patchSites,
   hardware: module.evidence.hardware ? module.evidence.hardware.summary : undefined,
 }))
@@ -62,6 +64,10 @@ export function estimateCombination(device: DigiMod['device'], ids: string[], re
   for (const mod of mods) for (const claim of mod.claims) owners.set(claim, [...(owners.get(claim) ?? []), mod.title])
   const usedBytes = mods.reduce((sum, mod) => sum + mod.ramBytes, mods.some(mod => mod.exclusive) ? 0 : core.ramBytes)
   const clashes = [...owners].filter(([, names]) => names.length > 1).map(([claim, names]) => ({ claim, mods: names }))
+  for (let i = 0; i < mods.length; i++) for (let j = i + 1; j < mods.length; j++) {
+    const a = mods[i], b = mods[j]
+    if (a.conflicts.includes(b.id) || b.conflicts.includes(a.id)) clashes.push({ claim: 'marked as incompatible by their authors', mods: [a.title, b.title] })
+  }
   const standalone = mods.find(mod => mod.exclusive)
   if (standalone && mods.length > 1) clashes.push({ claim: 'the whole OS (standalone firmware)', mods: mods.map(mod => mod.title) })
   const releases = (MACHINES as MachineProfile[]).find(machine => machine.id === device)!.firmware!.releases

@@ -43,7 +43,10 @@ describe('digi combination estimate', () => {
     const estimate = estimateCombination('digitakt', ['digineighbor', 'digisophie'])
     expect(estimate.fits).toBe(true)
     expect(estimate.compatibleReleases).toEqual([])
-    expect(estimate.clashes).toEqual([{ claim: 'overlapping firmware changes in OS 1.53', mods: ['NEIGHBOR', 'SOPHIE'] }])
+    expect(estimate.clashes).toEqual([
+      { claim: 'marked as incompatible by their authors', mods: ['NEIGHBOR', 'SOPHIE'] },
+      { claim: 'overlapping firmware changes in OS 1.53', mods: ['NEIGHBOR', 'SOPHIE'] },
+    ])
   })
 
   it('generates every patch range from the validated build specs, including local derivation sites', () => {
@@ -57,7 +60,7 @@ describe('digi combination estimate', () => {
 
   it('checks partial overlaps per release, allows touching ranges and keeps machine ids apart', () => {
     const original = DIGI_MODS.slice()
-    const base = { ...DIGI_MODS[0], claims: [] }
+    const base = { ...DIGI_MODS[0], claims: [], conflicts: [] }
     DIGI_MODS.push(
       { ...base, id: 'range-a', title: 'A', releases: ['1.53', '1.54'], patchSites: { '1.53': [{ addr: '0x40001000', len: 8 }], '1.54': [{ addr: '0x40001000', len: 8 }] } },
       { ...base, id: 'range-b', title: 'B', releases: ['1.53', '1.54'], patchSites: { '1.53': [{ addr: '0x40001006', len: 8 }], '1.54': [{ addr: '0x40001008', len: 8 }] } },
@@ -69,6 +72,17 @@ describe('digi combination estimate', () => {
       expect(estimateCombination('digitakt', ['digihealth']).usedBytes).toBe(5672 + 4096)
       expect(estimateCombination('digitone', ['digihealth']).usedBytes).toBe(4500 + 4096)
       expect(estimateCombination('digitakt', ['range-a'], '1.44').clashes[0].claim).toBe('no shared supported OS release')
+    } finally { DIGI_MODS.splice(0, DIGI_MODS.length, ...original) }
+  })
+
+  it('refuses a pair one author flagged, even when their firmware changes do not overlap', () => {
+    const original = DIGI_MODS.slice()
+    const base = { ...DIGI_MODS[0], claims: [], conflicts: [], releases: ['1.53', '1.54'], patchSites: {} }
+    DIGI_MODS.push({ ...base, id: 'flag-a', title: 'A', conflicts: ['flag-b'] }, { ...base, id: 'flag-b', title: 'B' }, { ...base, id: 'flag-c', title: 'C' })
+    try {
+      expect(estimateCombination('digitakt', ['flag-b', 'flag-a']).clashes).toEqual([{ claim: 'marked as incompatible by their authors', mods: ['A', 'B'] }])
+      expect(estimateCombination('digitakt', ['flag-b', 'flag-a']).compatibleReleases).toEqual([])
+      expect(estimateCombination('digitakt', ['flag-a', 'flag-c']).clashes).toEqual([])
     } finally { DIGI_MODS.splice(0, DIGI_MODS.length, ...original) }
   })
 })
