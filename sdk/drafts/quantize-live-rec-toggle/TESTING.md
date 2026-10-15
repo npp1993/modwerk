@@ -128,6 +128,16 @@ What listing still needs:
 5. The `module:verify` step also adds this module to `src/engine/assets/chooser-metadata.json`, which the Octatrack base hashes as a build input, so the committed base would have to be rebuilt. The module builds to the same bytes without that entry.
 6. Then: move the folder to `sdk/octabam/modules/`, add the catalogue entry, the licence component and the changelog entry, build and import the packages, and run `module:verify`.
 
+## USB package (private, 15 October 2026)
+
+Built from this source on main `86e0dfb8` with `sdk/runtime/loader/build.py --octabam quantize-live-rec-toggle --name "Quant Live Rec"` from a scratch tree with this folder placed under `sdk/octabam/modules/` (nothing committed): ABI 7, module id `7d0747d4`, 188 bytes of code and data, no relocations, hooks or stock copies, and two stock-code sites, the `jmp` detours at `0x40061778` and `0x4004883a` with the manifest's guard hashes; `0x400522ca` is not touched. The same build with `--stock` (the guards checked against the original OS 1.40C) gives the same bytes. Neither site meets one of the beta base's sites or a site of `sdk/machines/octatrack/events.json`. The package stays private, outside Git.
+
+- Emulator, the beta base built from this commit for a RAM boot (`npm run octatrack:base` with the beta options and `--out`; it matches the committed base): `scripts/octatrack-emulator/run-sites.sh` passed (both sites hold the module's jumps while it is live, and their earlier bytes once it is removed), and a trial rolled back without Keep (Undo) left both sites as they were before. The emulator was `scripts/octatrack-emulator/build.py` against upstream Octabam at the pinned `67e5ea3`; the local Octabam checkout's emulator stopped at the base's boot gate (`unrecognised spin`), which the pinned one passes.
+- `sdk/tests/test_runtime_loader.py`: 15 tests pass, one opt-in skip.
+- **The strict stock-free scan publication uses (`module_packages.py`) refuses it:** two 12-byte runs of the unit coincide with stock code, which is the limit. One is the setting's store followed by its battery copy, as the stock setter writes them (also in the author's original); the other is the checksum call followed by the redraw call. Changing the instruction order would avoid both but changes the bytes the MKII report covers.
+- The catalogue name is longer than a package's 15-character display name, so publication needs a short name.
+- Not tested: the package on a unit, the gesture while it is loaded over USB, Part/project reload and reboot with it installed.
+
 ## Captures
 
 `media/capture.json` records the plan, the image and emulator hashes and each PNG's hash. Made with `scripts/capture-module-ui.py --key-ms 100` on the tested image, after the wording change. Every picture was opened and checked: the two toasts over the main screen, and PERSONALIZE with QUANTIZE LIVE REC selected and its box empty after the switch to UNQUANTIZED.
