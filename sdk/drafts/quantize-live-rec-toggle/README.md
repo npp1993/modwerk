@@ -1,10 +1,10 @@
-# Quantize Live Rec Toggle
+# Quant Live Rec
 
 ## Overview
 
 QUANTIZE LIVE REC decides whether live-recorded trigs snap to the steps. Stock keeps it in PROJECT > SYSTEM > PERSONALIZE. This module shows it on the gesture that starts live recording and lets a second tap switch it, without leaving the page you are on.
 
-Version `0.1.0-experimental`, for OS 1.40C card builds. **This is a staged draft under `sdk/drafts/`: it is not in the catalogue and the site does not offer it.** [TESTING.md](TESTING.md) says what listing still needs. Ported from Zac-Kyoti's octabam module `quantize-live-rec-toggle`; the ColdFire source is his; Modwerk changed the wording of the two toasts and added one call that redraws an open PERSONALIZE list after a flip.
+Version `0.1.0-experimental`, for OS 1.40C card builds. **This is a staged draft under `sdk/drafts/`: it is not in the catalogue and the site does not offer it.** [TESTING.md](TESTING.md) says what listing still needs. Ported from Zac-Kyoti's octabam module `quantize-live-rec-toggle`, which he named Quantize Live Rec Toggle; Modwerk lists it as Quant Live Rec, the 15-character name a USB package can carry; the ColdFire source is his; Modwerk changed the wording of the two toasts and added one call that redraws an open PERSONALIZE list after a flip.
 
 **Hardware status: tested by the user on an MKII.** On an MKII (13 October 2026), with this module alone at the current source, the user reported the gesture working, both toasts fitting the screen, an open PERSONALIZE list following each flip and a changed setting surviving a power cycle; earlier combined test builds with other modules gave the same results for the gesture, wording and power cycle. The author tested his own build on an MKI. The current source re-encodes two stores and one call of the flip for the USB package's stock-free scan; loaded over USB on the user's MKII (15 October 2026) it passed the same gesture, PERSONALIZE and power-cycle checks, and trial, Keep and removal worked. See [TESTING.md](TESTING.md).
 

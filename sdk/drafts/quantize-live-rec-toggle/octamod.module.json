@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "id": "quantize-live-rec-toggle",
   "key": "QUANTIZE_LIVE_REC_TOGGLE",
-  "name": "Quantize Live Rec Toggle",
+  "name": "Quant Live Rec",
   "version": "0.1.0-experimental",
   "category": "system",
   "source": {
@@ -12,7 +12,7 @@
   },
   "build": {
     "status": "pending",
-    "reason": "Staged draft. On current main the module builds and matches native octabam in a full listing dry run (0 mismatches of 130), and it ran on an MKII over USB. Listing waits for a hardware record the listing contract accepts for the current source, an owner decision on the two unmeasured performance rows, a display name of at most 15 characters for its USB package, and the Octatrack base rebuilt with its chooser entry."
+    "reason": "Staged draft. On current main the module builds and matches native octabam in a full listing dry run (0 mismatches of 130), and it ran on an MKII over USB. Listing waits for a hardware record the listing contract accepts for the current source, an owner decision on the two unmeasured performance rows, and the Octatrack base rebuilt with its chooser entry."
   },
   "author": {
     "github": "Zac-Kyoti",

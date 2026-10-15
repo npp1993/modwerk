@@ -1,4 +1,4 @@
-# Quantize Live Rec Toggle: tests and measurements
+# Quant Live Rec: tests and measurements
 
 Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
@@ -130,9 +130,8 @@ What listing still needs:
 
 1. A hardware record that the listing contract accepts for the current source: its MKII report is over USB (package `026464de…`), but the record binds a card image, and the card image QLRTEST03 has not run on a unit. Either a card run of QLRTEST03 or the owner's word on how a USB report binds.
 2. The owner's decision on the two performance rows that were not measured (Performance, above).
-3. A display name of at most 15 characters for the USB package (`Quant Live Rec` in the private build): the catalogue name is longer.
-4. The committed Octatrack base rebuilt with this module's chooser-metadata entry, by the owner (this computer does not reproduce main's committed base).
-5. Then: move the folder to `sdk/octabam/modules/`, add the catalogue entry, the licence component and the changelog file, apply the shared-code changes above, build and import the packages, and run `module:verify`.
+3. The committed Octatrack base rebuilt with this module's chooser-metadata entry, once repeat98/modwerk#657 restores the beta base's flags on main (its committed base did not reproduce here before it).
+4. Then: move the folder to `sdk/octabam/modules/`, add the catalogue entry, the licence component and the changelog file, apply the shared-code changes above, build and import the packages, and run `module:verify`.
 
 ## USB package (private, 15 October 2026)
 
@@ -141,7 +140,7 @@ Built from this source on main `b058d41e` with `sdk/runtime/loader/build.py --oc
 - Both strict stock-free scans pass: `module_packages.runs` finds no run of 12 seed bytes shared with stock (it refused the 186-byte unit's package on two 12-byte runs: the setting's store followed by its battery copy, and the checksum call followed by the redraw call), and `check_stock_free.stock_runs` (16 bytes) finds none.
 - Emulator, the beta base built for a RAM boot (`npm run octatrack:base` with the beta options and `--out`, on main `86e0dfb8`; it matches the committed base): `scripts/octatrack-emulator/run-sites.sh` passed (both sites hold the module's jumps while it is live, and their earlier bytes once it is removed), and a trial rolled back without Keep (Undo) left both sites as they were before. The emulator was `scripts/octatrack-emulator/build.py` against upstream Octabam at the pinned `67e5ea3`; the local Octabam checkout's emulator stopped at the base's boot gate (`unrecognised spin`), which the pinned one passes.
 - `sdk/tests/test_runtime_loader.py`: 15 tests pass, one opt-in skip.
-- The catalogue name is longer than a package's 15-character display name, so publication needs a short name.
+- The module is named Quant Live Rec (15 October 2026, the user's choice), the name the package carries, so the published package can take it from the catalogue.
 - On the user's MKII (Hardware report): trials undone, kept, the gesture, persistence across a power cycle and removal. Not tested: Part or project reload with it installed, and stock behaviour after its removal.
 
 ## Captures
