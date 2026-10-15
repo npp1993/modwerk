@@ -20,7 +20,7 @@ export async function createStaticColdFireRuntime(ids: readonly string[], origin
       if (!original) throw new Error('USB Audio needs verified local firmware.')
       units.push(...await readUsbAudioObjects(usbAudio, original)); continue
     }
-    if (module.id === 'tapeecho' || module.id === 'euclid') units.push(await readColdFirePackage(module.id))
+    if (['tapeecho', 'euclid', 'bbd'].includes(module.id)) units.push(await readColdFirePackage(module.id))
     for (const pkg of requestedFacts.objects.filter(pkg => pkg.moduleId === module.id && requestedObjectDram(pkg, ids) && requestedObjectSelected(pkg, ids) && selected.some(g => g.moduleId === pkg.moduleId))) units.push(await readRequestedObject(pkg.label, original, ids))
   }
   if (usbAudio && !ids.includes(USB_AUDIO_MODULE)) throw new Error('USB Audio settings require the USB Audio module.')
@@ -53,7 +53,7 @@ export async function createColdFireRuntime(cores: readonly StockDspCore[], ids:
   const selection = resolveSelection(ids), catalog = await createDynamicRuntimeCatalog(cores, ids, 0)
   const units = []
   // with_platform appends the loader after the remix's declared modules.
-  for (const module of selection) if (module.id === 'tapeecho' || module.id === 'euclid') units.push(await readColdFirePackage(module.id))
+  for (const module of selection) if (['tapeecho', 'euclid', 'bbd'].includes(module.id)) units.push(await readColdFirePackage(module.id))
   for (const label of PLATFORM_UNITS) units.push(await readColdFirePackage(label))
   units.push({ label: 'dlcatalog', object: runtimeCatalogObject(catalog, units[0].object.flags) })
   const reserveBytes = 1707 * 6144 + LOGGER_RESERVE_BYTES

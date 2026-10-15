@@ -17,16 +17,19 @@ State lives in r7 + $00..$5a. bbd_ref.py is the float model the DSP is
 proven against (verify.py).
 
 Hidden slot 11 is 127; 0 there cuts BBD to dry and clears its line. It is the input
-for the stop kill (STOP, STOP, STOP): a ColdFire hook that zeroes it, as stock zeroes
-the reverbs' slots, comes in a later version; nothing writes it yet."""
+for the stop kill (STOP, STOP, STOP): stock's frame-record builder zeroes the reverbs'
+slot 11 while a track is held (0x40004d0c), and stopkill.s does the same for BBD's id,
+as a detour on card builds and as the base's ev_tail_kill subscriber over USB
+(runtime.json)."""
 
-from remix.schema import (Gate, Category, Proof, BusRole, Claims, DspSection, Formatter, Harness,
-                          Kind, MenuEntry, Module, Param, YBase)
+from remix.schema import (Gate, Category, Proof, BusRole, Claims, Detour, DspSection, Formatter, Harness,
+                          Kind, Linked, MenuEntry, Module, Param, YBase)
+from remix.stock_guard import stock_guard
 
 FX2_ID = 0x0e
 
 MODULE = Module(
-    name="bbd", key="BBD", kind=Kind.DSP_EFFECT,
+    name="bbd", key="BBD", kind=Kind.HYBRID,
     category=Category.TRACK, author="JamCones", author_url="https://github.com/JamCones",
     proof=Proof.RENDER, proof_note="`modules/bbd/verify.py` against bbd_ref.py, 51 gates; earlier builds played on an MKII (BBD01-BBD14)",
     doc="Clocked BBD delay: compander, clock/3 filters, bucket noise, freeze, governor; FX2.",
@@ -54,12 +57,17 @@ MODULE = Module(
         Param(b"", 0),
         Param(b"HPF", 0, active=True, formatter=Formatter.PLAIN,
               doc="0 off, else a 12 dB/oct HPF on the signal entering the line, 20..400 Hz log"),
-        Param(b"", 127),                     # hidden: the stop kill's input, 0 cuts to dry (no writer yet)
+        Param(b"", 127),                     # hidden: the stop kill's input, 0 cuts to dry (stopkill.s)
     ),
     dsp=DspSection(asm="modules/bbd/bbd.asm", priority=16,
                    bus_role=BusRole.NONE, ybase=YBase.NEVER,
                    r7_latch_slot=None, gate_label=None),
     claims=Claims(stock_instance_buffer=True, buffer_words=16384),
+    linked=(Linked("bbd", "modules/bbd/stopkill.s", cpu="5475", dram=True),),
+    detours=(
+        Detour(0x40004d0c, stock_guard(0x40004d0c, 10, "3b007d2a1b16afbbff30a9df6d28c030691b4f5b3c32626a87be0a7b712408eb"), "bbd",
+               "bbd_kill_hook", "STOP, STOP, STOP: zero BBD's slot 11, as stock does its reverbs'", pad_to=10),
+    ),
     harness=Harness(layout_char=None, is_server=False),
     gates=(Gate("modules/bbd/verify.py", remix_arg=False),),
     dear={"TIME": 0, "FDBK": 127, "TONE": 0, "FREQ": 127, "MIX": 64, "STGS": 1, "HPF": 64},

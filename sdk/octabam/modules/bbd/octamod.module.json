@@ -3,7 +3,7 @@
   "id": "bbd",
   "key": "BBD",
   "name": "BBD Delay",
-  "version": "0.1.0-experimental",
+  "version": "0.1.1-experimental",
   "category": "effects",
   "author": {
     "github": "JamCones",
@@ -109,37 +109,37 @@
     "conflicts": [],
     "uiClaims": [],
     "limitations": [
-      "Hardware qualification is the author's own: about ten minutes on an Octatrack MKII with the release image (two instances, Part/project reload and a power cycle). MKI, MIDI/USB load and silicon timing are untested.",
-      "Card builds only: not offered over USB yet. Its worst case (439 executed instructions per sample with trig splits) is charged above the USB loader's current per-module cycle limit; the USB port follows.",
+      "Hardware: on the owner's MKII over USB (15 October 2026): install, both cores, two instances on core 1, Part switches, removal and reinstall, the stop kill and its release, chip load. MKI, MIDI load, project save and reload and a power cycle on this version, and the card build's stop-kill hook on hardware are untested.",
+      "On today's beta base a DSP core holds BBD's 1,112 words beside what the bank's Parts keep loaded there: core 0 (T5-T8) has 2,361 words, so a bank whose Parts keep DARK REV on T5-T8 refuses BBD there (DSP MEMORY FULL); core 1 (T1-T4) has 3,234. One instance a core fits the DSP budget beside seven stock effects; a second fits on core 1 only.",
+      "Over USB it needs the Modwerk beta base with the ev_tail_kill event (ba89721d or later) and keeps its card effect id, 14: a set where another module holds id 14 is refused.",
       "FX2 only: the bucket line needs the 16K-word delay buffer the OS gives FX2 instances.",
-      "With stock DSP code built in, BBD's 1,075 words take the space of SPRING REV and PLATE REV, which leave the FX2 chooser (DARK REV calls a 35-word routine inside SPRING REV's code, so BBD is placed from PLATE REV's start, clear of it); a saved project that uses either on FX2 plays that slot dry. Every other stock effect stays, DARK REV bit-identical to stock. Other modules in the same build can change the choice.",
+      "With stock DSP code built in, BBD's 1,112 words take the space of SPRING REV and PLATE REV, which leave the FX2 chooser (DARK REV calls a 35-word routine inside SPRING REV's code, so BBD is placed from PLATE REV's start, clear of it); a saved project that uses either on FX2 plays that slot dry. Every other stock effect stays, DARK REV bit-identical to stock. Other modules in the same build can change the choice.",
       "Free-running TIME: the DSP side has no tempo word, so the delay does not follow tempo, track speed or swing.",
       "Mono bucket line: the wet is the same on both channels; the dry stays stereo.",
       "Aliasing is the bucket brigade's own: -44 dBc for a 1.1 kHz tone at the fastest clock, -37 dBc at the slowest.",
-      "Dearer than any stock effect: up to 439 executed instructions per sample with trig splits (SPRING REV 314, CHORUS 293, DJ EQ 331), 405 without splits. Four per core fit the static budget; real-chip headroom is not measured.",
-      "STGS, LIM and HPF are on the SETUP page: the OS does not lock, modulate or scene them.",
-      "STOP, STOP, STOP does not cut BBD's tail yet: the stock tail kill tests the stock reverbs' ids only. BBD's DSP takes the signal on a hidden slot; the ColdFire hook that writes it comes in a later version."
+      "Dearer than any stock effect: up to 400 executed instructions per sample with trig splits (SPRING REV 314, CHORUS 293, DJ EQ 331), 363 without splits. Four per core fit the static budget; real-chip headroom is not measured.",
+      "STGS, LIM and HPF are on the SETUP page: the OS does not lock, modulate or scene them."
     ],
     "effectId": 14
   },
   "resources": {
-    "recorded": "2026-10-14",
+    "recorded": "2026-10-15",
     "storage": {
       "label": "DSP program / buffer",
-      "display": "1,075 words / 4K ring",
+      "display": "1,112 words / 4K ring",
       "value": null,
       "unit": "see display",
       "method": "static",
-      "conditions": "1,075 assembled program words on each DSP core in the space of SPRING REV and PLATE REV; a 91-word X state block per instance (r7+$00..$5a); up to 4,095 ring words plus 58 coefficient words of the 16,384 Y words the OS allocates to every FX2 instance.",
+      "conditions": "1,112 assembled program words on each DSP core in the space of SPRING REV and PLATE REV; a 91-word X state block per instance (r7+$00..$5a); up to 4,095 ring words plus 58 coefficient words of the 16,384 Y words the OS allocates to every FX2 instance.",
       "source": "TESTING.md"
     },
     "processing": {
       "label": "DSP instruction peak",
-      "display": "439 instructions/sample per instance",
+      "display": "400 instructions/sample per instance",
       "value": null,
       "unit": "see display",
       "method": "emulator",
-      "conditions": "benchmark_stock_dsp.py's method (one instance per core, 16-sample blocks, null stub subtracted) with SPRING REV, CHORUS and DJ EQ through the same cases: worst case 439.44 with a trig split, 405.00 unsplit. Static loop count 378 cycles/sample. Executed instructions, not chip cycles.",
+      "conditions": "benchmark_stock_dsp.py's method (one instance per core, 16-sample blocks, null stub subtracted) with SPRING REV, CHORUS and DJ EQ through the same cases: worst case 399.31 with a trig split, 363.06 unsplit. Static loop count 378 cycles/sample. Executed instructions, not chip cycles.",
       "source": "TESTING.md"
     },
     "impact": {
@@ -147,33 +147,33 @@
       "cpu": {
         "level": "minimal",
         "basis": "source-estimate",
-        "rationale": "No ColdFire code: the stock parameter pages publish the knobs, as for any FX2 effect.",
+        "rationale": "A few ColdFire instructions run only while STOP, STOP, STOP holds a track (a hook on card builds, the base's ev_tail_kill over USB); the stock parameter pages publish the knobs, as for any FX2 effect.",
         "source": "TESTING.md"
       },
       "dsp": {
         "level": "high",
         "basis": "measured-comparison",
-        "rationale": "439.44 executed instructions/sample worst case with trig splits against SPRING REV 314.19, CHORUS 293.06 and DJ EQ 330.94 (the dearest stock effect) under the same cases; four per core are 1,512 of 3,120 static cycles. Chip timing is unmeasured.",
+        "rationale": "399.31 executed instructions/sample worst case with trig splits against SPRING REV 314.19, CHORUS 293.06 and DJ EQ 330.94 (the dearest stock effect) under the same cases; four per core are 1,512 of 3,120 static cycles. Chip timing is unmeasured.",
         "source": "TESTING.md"
       },
       "memory": {
         "level": "moderate",
         "basis": "source-estimate",
-        "rationale": "1,075 program words per core in the space of SPRING REV and PLATE REV, a 91-word X block per instance, the 16K-word FX2 delay buffer every delay already gets.",
+        "rationale": "1,112 program words per core in the space of SPRING REV and PLATE REV, a 91-word X block per instance, the 16K-word FX2 delay buffer every delay already gets.",
         "source": "TESTING.md"
       }
     }
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "Render gates pass on a native image: exact dry at MIX 0, the DSP against its float reference across every control including HPF (-57 to -78 dB residual), trig splits, STGS changes, the stop-kill input, freeze (including a slow crossfade on a ringing loop), idle tails and the LIM level, eight-instance isolation under guard and dirty start, garbage start and no zipper. Static 378 cycles/sample, 439.44 instructions/sample measured against stock under the same cases. The browser builder matches native octabam in all 130 compared selections. The author played the release image on an MKII: DARK REV working, two instances on T1 and T5, Part/project reload and a power cycle, every parameter, LFOs and trigless locks.",
+    "summary": "Render gates pass on a native image (52): exact dry at MIX 0, the DSP against its float reference across every control including HPF, trig splits, STGS changes with TIME still and moving, the stop-kill input, freeze, idle tails and the LIM level, eight-instance isolation under guard and dirty start, garbage start and no zipper. Matched benchmark: 399.31 executed instructions/sample with trig splits (0.1.0: 439.44), 363.06 unsplit; output bit-identical to 0.1.0 in all 45 benchmark cases. On the owner's MKII over USB: installed, picked on T1, T2 and T5, Part switches, removal and reinstall, self-test, the stop kill cutting the tail to -132 dBFS and its release; 453-527 chip cycles a sample measured.",
     "hardwareStatus": "reported",
-    "evidenceRevision": "00541e03f394846de9db316bb591c3ab25f4f6f9",
+    "evidenceRevision": "ef7e1aa362af829a2479385769d6987390f55ccd",
     "gates": [
-      "verify.py: init rules, static cycles, native placement, exact dry, reference match (HPF at 1, 64, 127), splits, stages, the stop-kill input, freeze, idle and LIM level, eight-instance isolation (-guard -dirty), garbage start, zipper census",
+      "verify.py: init rules, static cycles, native placement, exact dry, reference match (HPF at 1, 64, 127), splits, stages (TIME still and moving), the stop-kill input, freeze, idle and LIM level, eight-instance isolation (-guard -dirty), garbage start, zipper census",
       "evidence/performance.json: perf.py bench (stock benchmark under matched cases) and a 32 s eight-instance stress render",
-      "npm run module:verify: 130 selections, 0 mismatches against native octabam",
-      "Hardware: author functional test of the release image on an MKII (about ten minutes)."
+      "npm run module:verify: browser builder against native octabam",
+      "Hardware: the USB package on the owner's MKII (evidence/usb-hardware.md)."
     ],
     "documentation": {
       "tutorial": {
@@ -192,9 +192,9 @@
       "screenshotStyle": "black-and-white"
     },
     "qualification": {
-      "moduleVersion": "0.1.0-experimental",
-      "sourceSha256": "ce1a7185b77174177e9c46dd4fd21030a294505a829659a3a84c6d142c44cc26",
-      "imageSha256": "bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba",
+      "moduleVersion": "0.1.1-experimental",
+      "sourceSha256": "6ba6aacfebb93bcf851f73d575ef24a7e7881eea57e42d773c3be1d38dbb53bb",
+      "imageSha256": "bf2ab8a545421109740dbd28553ae04fad4724c87bd22ccd063bbe381b34b591",
       "cycles": [
         {
           "processor": "dsp",
@@ -205,11 +205,11 @@
           "unit": "cycles/block",
           "method": "static",
           "conditions": {
-            "parameterExtremes": "cycle_count.py prices the per-sample loop with the bucket tick taken and HPF on (378); the per-call bound charges every word outside the loop once, the clear and run paths together, all fixed-loop iterations, the nine-section rotation of a reset, HPF's section and every helper call, so every knob endpoint is covered.",
+            "parameterExtremes": "cycle_count.py prices the per-sample loop with the bucket tick taken and HPF on (378); the per-call bound charges every word outside the loop once, the clear and run paths together, all fixed-loop iterations, the nine-section rotation of a reset (in the clear call before it since 0.1.1), HPF's section and every helper call, so every knob endpoint is covered.",
             "parameterModulation": "Two calls per 16-frame block cover trigger splits, each charged the full per-call bound. LFOs, locks, scenes and CC reach the same knob words. No contention or silicon wall-clock timing is claimed.",
             "modeSwitching": "STGS changes (fade, clear, reset), FRZ 127, HPF on and off and the hidden stop-kill input (dry and clear) are inside the union bound.",
-            "maxLoad": "Eight FX2 instances, four per DSP core, at 44.1 kHz and 16 frames per block: 44,992 per core within the SDK 49,920 module allowance; the stock/scheduling reserve stays separate. Arbitrary companion load and real-chip contention are unmeasured.",
-            "inputConditions": "The word-span bound does not depend on sample values; the tick path, saturation, feedback, silence, impulses and full-scale inputs are covered. Render gates and the matched benchmark (at most 439.44 executed instructions/sample) are in TESTING.md."
+            "maxLoad": "Eight FX2 instances, four per DSP core, at 44.1 kHz and 16 frames per block: 44,992 per core within the SDK 49,920 module allowance; the stock/scheduling reserve stays separate. Arbitrary companion load and real-chip contention are unmeasured. On the owner's MKII one instance measured 453-527 chip cycles a sample (evidence/usb-hardware.md).",
+            "inputConditions": "The word-span bound does not depend on sample values; the tick path, saturation, feedback, silence, impulses and full-scale inputs are covered. Render gates and the matched benchmark (at most 399.31 executed instructions/sample) are in TESTING.md."
           },
           "report": "evidence/release-bounds.md"
         }
@@ -217,19 +217,19 @@
       "memory": {
         "regions": [
           {
-            "name": "Program payload A, P:0x01000..0x01433",
+            "name": "Program payload A, P:0x01000..0x01458",
             "space": "dsp-p",
-            "words": 1075,
+            "words": 1112,
             "wordBits": 24,
-            "bytes": 3225,
+            "bytes": 3336,
             "scope": "shared"
           },
           {
-            "name": "Program payload B, P:0x00dc0..0x011f3",
+            "name": "Program payload B, P:0x00dc0..0x01218",
             "space": "dsp-p",
-            "words": 1075,
+            "words": 1112,
             "wordBits": 24,
-            "bytes": 3225,
+            "bytes": 3336,
             "scope": "shared"
           },
           {
@@ -279,30 +279,38 @@
             "wordBits": 8,
             "bytes": 54,
             "scope": "shared"
+          },
+          {
+            "name": "Stop-kill ColdFire code (card hook 32 bytes; USB handler 22 bytes)",
+            "space": "sdram",
+            "words": 32,
+            "wordBits": 8,
+            "bytes": 32,
+            "scope": "shared"
           }
         ],
         "perInstanceBytes": 49920,
-        "sharedBytes": 6992,
+        "sharedBytes": 7246,
         "maxInstances": 8,
-        "totalBytes": 406352,
-        "conditions": "The stock 256-word X block and 16,384-word Y buffer per FX2 instance, including unused padding; code shared once per core. No authored heap, SDRAM arena, ColdFire executable or callback. The system stack is bounded by the rotation's do, a bsr and its divide's do on each core. Logical 24-bit DSP words; flash descriptors use byte accounting. Guarded eight-instance software evidence does not claim hardware canaries.",
+        "totalBytes": 406606,
+        "conditions": "The stock 256-word X block and 16,384-word Y buffer per FX2 instance, including unused padding; code shared once per core. No authored heap or SDRAM arena; the stop kill's ColdFire code is a straight-line hook or event handler with no stack of its own. The system stack is bounded by the rotation's do, a bsr and its divide's do on each core. Logical 24-bit DSP words; flash descriptors use byte accounting. Guarded eight-instance software evidence does not claim hardware canaries.",
         "report": "evidence/release-bounds.md"
       },
       "hardware": {
         "kind": "functional",
         "status": "reported",
         "model": "MKII",
-        "testedOn": "2026-10-14",
-        "tester": "JamCones",
-        "sourceRevision": "00541e03f394846de9db316bb591c3ab25f4f6f9",
-        "imageSha256": "bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba",
-        "summary": "The author played the release image (BBDMW2) on an MKII for about ten minutes: DARK REV still works on FX2; two BBD instances at once on T1 and T5 (one per DSP core); HPF and STGS working; a Part reload and a project save and reload restore the saved settings after unsaved edits; the saved project comes back after a power cycle; every main-page and SETUP parameter played, with LFOs on every parameter that takes one and trigless locks.",
+        "testedOn": "2026-10-15",
+        "tester": "repeat98's unit, driven over USB by Claude Code",
+        "sourceRevision": "ef7e1aa362af829a2479385769d6987390f55ccd",
+        "imageSha256": "bf2ab8a545421109740dbd28553ae04fad4724c87bd22ccd063bbe381b34b591",
+        "summary": "The USB package (614bf23b...) on a RAM-booted development twin of the beta base with ev_tail_kill (e429b787..., MAIN bf2ab8a5...), on the owner's MKII: installed (stage, trial, keep); picked on T1 and T2 (core 1) and T5 (core 0); a second instance on core 0 refused by the DSP budget as designed; a Part switch away and back keeps every knob; removal refused while in use, taken when not, the Part then plays dry with BBD listed missing, and a reinstall restores it; the base's self-test passed; STOP, STOP, STOP zeroed BBD's slot 11 in the track's frame record and cut a ringing tail to -132 dBFS, released by the track's next trig; one instance cost 453-469 chip cycles a sample at the defaults and 527 at the dearest settings.",
         "limitations": [
-          "Attributed author-reported functional results; nobody else observed the unit and no detailed stress qualification is claimed on this image (the 30-minute eight-instance run was on the earlier BBD14).",
-          "MIDI/USB load, recovery, hardware canaries and MKI are not reported; BBD is not offered over USB in this release.",
-          "Cycle values are software bounds and emulator measurements; whole-chip contention and wall-clock timing are not measured."
+          "Driven by an agent with the owner's permission; the owner was not asked to listen. Audio was checked from USB recordings.",
+          "No project save and reload or power cycle on this version (RAM-booted base, owner's project not saved); MKI, MIDI load and the card build's stop-kill hook on hardware are untested.",
+          "Chip cycles come from the base's idle counters at steady settings with the transport stopped; a trig split's worst block was not measured on the chip."
         ],
-        "report": "evidence/author-hardware.md"
+        "report": "evidence/usb-hardware.md"
       },
       "documentation": {
         "tutorial": {
@@ -340,8 +348,8 @@
         "page": "FX2 SETUP",
         "shows": "location-and-controls",
         "firmware": "1.40C",
-        "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba",
+        "moduleVersion": "0.1.1-experimental",
+        "imageSha256": "e648cee078b70174f250ae61830f644a151ab07f3d553578ae6577c5a1ffa1b9",
         "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; 128×64 LCD at integer scale 6."
       }
     },
@@ -357,8 +365,8 @@
         "page": "FX2 main",
         "shows": "controls",
         "firmware": "1.40C",
-        "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba",
+        "moduleVersion": "0.1.1-experimental",
+        "imageSha256": "e648cee078b70174f250ae61830f644a151ab07f3d553578ae6577c5a1ffa1b9",
         "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; 128×64 LCD at integer scale 6."
       }
     },
@@ -374,8 +382,8 @@
         "page": "FX2 main",
         "shows": "controls",
         "firmware": "1.40C",
-        "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba",
+        "moduleVersion": "0.1.1-experimental",
+        "imageSha256": "e648cee078b70174f250ae61830f644a151ab07f3d553578ae6577c5a1ffa1b9",
         "setup": "Headless ot_emu; MKII panel; stopped transport; empty scratch card; 128×64 LCD at integer scale 6."
       }
     }

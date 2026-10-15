@@ -1,6 +1,6 @@
 import type { Database, User } from './platform'
-import { needMember, throttle } from './auth'
-import { boundedBody, HttpError, response } from './security'
+import { needMember, sameDigest, throttle } from './auth'
+import { boundedBody, digest, HttpError, response } from './security'
 import { MODULES } from '../src/catalog/modules'
 import { DIAGNOSTIC_CONSENT_DAYS, DIAGNOSTIC_BUILD_ERRORS, DIAGNOSTIC_BUILD_KINDS, DIAGNOSTIC_BUILD_PHASES, DIAGNOSTIC_ERRORS, DIAGNOSTIC_EVENTS, DIAGNOSTIC_PHASES, DIAGNOSTIC_RESULTS, DIAGNOSTIC_RETENTION_DAYS, DIAGNOSTIC_USB_ERRORS, DIAGNOSTIC_USB_PHASES, OCTATRACK_DIAGNOSTICS_VERSION, type DiagnosticConsent, type OctatrackDiagnostic } from '../src/community/octatrack-diagnostics-contract'
 
@@ -47,12 +47,21 @@ export async function cleanupOctatrackDiagnostics(db: Database, now = new Date()
     db.prepare('DELETE FROM octatrack_beta_daily WHERE day<=?').bind(since(now, DIAGNOSTIC_RETENTION_DAYS).slice(0,10)),
   ])
 }
-export async function octatrackDiagnosticRoutes(request: Request, db: Database, user: User | null, admin: boolean): Promise<Response | null> {
-  const path = new URL(request.url).pathname, now = new Date(), cutoff = since(now, DIAGNOSTIC_RETENTION_DAYS)
+/** The owner's agents read diagnostics with this key (`npm run diagnostics:pull`); it opens no other route. */
+async function diagnosticsReader(request: Request, configured = '') {
+  const key = request.headers.get('X-Modwerk-Diagnostics') ?? '', hash = configured.trim().toLowerCase()
+  return /^[a-f0-9]{64}$/.test(hash) && /^[a-f0-9]{64}$/.test(key) && sameDigest(await digest(key), hash)
+}
+export async function octatrackDiagnosticRoutes(request: Request, db: Database, user: User | null, admin: boolean, readKey?: string): Promise<Response | null> {
+  const url = new URL(request.url), path = url.pathname, now = new Date(), cutoff = since(now, DIAGNOSTIC_RETENTION_DAYS)
   if (path === '/api/admin/octatrack/diagnostics') {
-    if (!admin) throw new HttpError(403, 'Administrator access required.')
+    if (!admin && !await diagnosticsReader(request, readKey)) throw new HttpError(403, 'Administrator access required.')
     if (request.method !== 'GET') throw new HttpError(405, 'Use GET.')
-    const rows = (await db.prepare('SELECT e.event_id AS eventId,e.created_at AS createdAt,e.data_json,u.username FROM octatrack_diagnostic_events e JOIN users u ON u.id=e.user_id JOIN octatrack_diagnostic_consent c ON c.user_id=e.user_id WHERE e.created_at>=? AND c.enabled=1 AND c.version=? AND c.changed_at>? AND c.changed_at<=? AND u.suspended=0 AND u.email_verified=1 ORDER BY e.created_at DESC,e.rowid DESC LIMIT 100').bind(cutoff,OCTATRACK_DIAGNOSTICS_VERSION,since(now,DIAGNOSTIC_CONSENT_DAYS),now.toISOString()).all<{ data_json: string }>()).results
+    // Without `since`, the newest 100 for the admin page; with it, up to 500 from that time on, oldest first, to page through all of them.
+    const after = url.searchParams.get('since')
+    if (after !== null && (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/.test(after) || Number.isNaN(Date.parse(after)))) throw new HttpError(400, 'Give since as an ISO time.')
+    const order = after === null ? 'DESC,e.rowid DESC LIMIT 100' : 'ASC,e.rowid ASC LIMIT 500'
+    const rows = (await db.prepare('SELECT e.event_id AS eventId,e.created_at AS createdAt,e.data_json,u.username FROM octatrack_diagnostic_events e JOIN users u ON u.id=e.user_id JOIN octatrack_diagnostic_consent c ON c.user_id=e.user_id WHERE e.created_at>=? AND e.created_at>=? AND c.enabled=1 AND c.version=? AND c.changed_at>? AND c.changed_at<=? AND u.suspended=0 AND u.email_verified=1 ORDER BY e.created_at '+order).bind(cutoff,after??cutoff,OCTATRACK_DIAGNOSTICS_VERSION,since(now,DIAGNOSTIC_CONSENT_DAYS),now.toISOString()).all<{ data_json: string }>()).results
     const counts = (await db.prepare('SELECT day,event,count FROM octatrack_beta_daily WHERE day>? ORDER BY day DESC,event').bind(cutoff.slice(0,10)).all()).results
     return response({ events: rows.map(({data_json,...row}) => ({...row,data:JSON.parse(data_json)})), counts })
   }

@@ -35,6 +35,31 @@ modwerk_site_40004100:
         move.l %d0,36(%a3) | the track state's increment, read by the source fetch and the DSP voice command
         jmp 0x40004108
 
+| ---- 0x40004d0c: ev_tail_kill
+        .globl  modwerk_site_40004d0c
+modwerk_site_40004d0c:
+        lea     -20(%sp),%sp
+        movem.l %d0-%d1/%a0-%a2,(%sp)
+| ev_tail_kill: void f(uint8_t *record, unsigned track)
+        movea.l modwerk_runtime_event_row+104,%a2
+.L40004d0c_ev_tail_kill:
+        move.l  (%a2)+,%d0
+        beq     .L40004d0c_ev_tail_kill_end
+        move.l  %d4,-(%sp)
+        move.l  20(%sp),-(%sp)
+        movea.l %d0,%a0
+        jsr     (%a0)
+        lea     8(%sp),%sp
+        bra     .L40004d0c_ev_tail_kill
+.L40004d0c_ev_tail_kill_end:
+.L40004d0c_tail:
+        movem.l (%sp),%d0-%d1/%a0-%a2
+        lea     20(%sp),%sp
+        .globl  modwerk_stock_40004d0c_10
+modwerk_stock_40004d0c_10:
+        .space  10 | the site's own stock bytes
+        jmp 0x40004d16
+
 | ---- 0x40006820: ev_voice_bind, ev_voice_bind_run
         .globl  modwerk_site_40006820
 modwerk_site_40006820:

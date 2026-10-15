@@ -208,6 +208,27 @@
       "path": "octatrack-modules/euclid/0.1.4-experimental.mwrm"
     },
     {
+      "id": "bbd",
+      "slots": "fx2",
+      "cycles": 400,
+      "cyclesKind": "executed",
+      "state": 91,
+      "buffer": 16384,
+      "octabam": true,
+      "pinned": true,
+      "abi": 8,
+      "features": 128,
+      "sites": 0,
+      "copies": 0,
+      "fills": 0,
+      "version": "0.1.1-experimental",
+      "name": "BBD Delay",
+      "module": "16332a40",
+      "bytes": 5322,
+      "sha256": "614bf23b7d8e6811d096d1d3f5934ace9829cef7a2c1026b1bcbccbe59b6a5c9",
+      "path": "octatrack-modules/bbd/0.1.1-experimental.mwrm"
+    },
+    {
       "id": "playmodes",
       "octabam": true,
       "standalone": true,
@@ -250,9 +271,9 @@
       "name": "SIDECHAIN COMP",
       "module": "95cff696",
       "bytes": 1236,
-      "sha256": "fdfddb9d93a28c2c8d8c83a9c430dab1a09f0df2e416a24a4b37c7e23d6f5227",
+      "sha256": "ce706b0400ae318656bedfd592a8fc32431f267ee7f106052162cfaa133d2c1f",
       "path": "octatrack-modules/sidechain-compressor/0.1.2-experimental.mwrm",
-      "requiredBase": "acf91e0a350e182d3252fa5d0b0ce5b81f0ee31eb6de853fe3eacc38aa42ec10"
+      "requiredBase": "ba89721dab8f28f46be557c9410286589dac001d23a2946dc1a76ce37384d9ac"
     },
     {
       "id": "output-matrix",
@@ -266,9 +287,9 @@
       "name": "OUTPUT MATRIX",
       "module": "caf158b5",
       "bytes": 3580,
-      "sha256": "4589b10b10842bda55b34607460257f9a2f9c317f75a253b2d5c3e6c9191ebad",
+      "sha256": "90e4c9dd6ec32206ae850c7558c40dc38d8464571e7802ed7f679d27b2621937",
       "path": "octatrack-modules/output-matrix/0.1.0-experimental.mwrm",
-      "requiredBase": "acf91e0a350e182d3252fa5d0b0ce5b81f0ee31eb6de853fe3eacc38aa42ec10"
+      "requiredBase": "ba89721dab8f28f46be557c9410286589dac001d23a2946dc1a76ce37384d9ac"
     },
     {
       "id": "cc-map",
@@ -284,7 +305,7 @@
       "bytes": 966,
       "sha256": "c7cd39a5f645d69279d3a288c40b8366e6638acdc042cf0fe68dfb9964a68ea2",
       "path": "octatrack-modules/cc-map/0.1.2-experimental.mwrm",
-      "requiredBase": "acf91e0a350e182d3252fa5d0b0ce5b81f0ee31eb6de853fe3eacc38aa42ec10"
+      "requiredBase": "ba89721dab8f28f46be557c9410286589dac001d23a2946dc1a76ce37384d9ac"
     },
     {
       "id": "recorder-loop-fix",
@@ -298,9 +319,9 @@
       "name": "Recorder Loop",
       "module": "823e0f45",
       "bytes": 1818,
-      "sha256": "318f83777b195fc90b99cebe1e183063bb3031584ca3c5b149738466a57fe221",
+      "sha256": "4fb47befcf6df5dc3583db2472389fd49a9830728a4454e6be42d9d86c96d598",
       "path": "octatrack-modules/recorder-loop-fix/0.1.0-experimental.mwrm",
-      "requiredBase": "acf91e0a350e182d3252fa5d0b0ce5b81f0ee31eb6de853fe3eacc38aa42ec10"
+      "requiredBase": "ba89721dab8f28f46be557c9410286589dac001d23a2946dc1a76ce37384d9ac"
     },
     {
       "id": "analog-bassdrum",
@@ -314,9 +335,9 @@
       "name": "Analog BD",
       "module": "abdb1445",
       "bytes": 6676,
-      "sha256": "20211430d3c9eafd3253a50ebf936357ae6847420ac41717b8bcea28eec9f1ac",
+      "sha256": "1ca2d4da41214b8b0f14e4c84d4ddf1f5cf704768e129a0cbff6339399c34744",
       "path": "octatrack-modules/analog-bassdrum/0.1.5-experimental.mwrm",
-      "requiredBase": "acf91e0a350e182d3252fa5d0b0ce5b81f0ee31eb6de853fe3eacc38aa42ec10"
+      "requiredBase": "ba89721dab8f28f46be557c9410286589dac001d23a2946dc1a76ce37384d9ac"
     }
   ]
 }

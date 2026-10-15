@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.1.1-experimental",
+    "date": "2026-10-15",
+    "changes": [
+      "Over USB for beta testers: BBD Delay loads onto an Octatrack running the Modwerk beta base, in a module set like the other effects. It needs the base with the new `ev_tail_kill` event; Sync to Octatrack updates the base first. Card builds keep BBD for everyone.",
+      "Cheaper worst case, same sound: after a reset (a STGS change, the stop kill or the first call) BBD rebuilt all nine of its clock filter sections in the first call that plays audio, and a trig split put a second full call in the same block. They are now built one call earlier, in the last silent clear call, so the worst case with trig splits drops from 439 to 400 executed instructions per sample (405 to 363 without splits). The output is bit-identical to 0.1.0 except when TIME moves in the two calls around a reset, where the filters start from TIME's value one block earlier and catch up within nine calls; in the gate's worst render the largest difference is 520 LSB (-84 dBFS).",
+      "STOP, STOP, STOP now cuts BBD's tail, as it cuts the stock reverbs': while the kill holds, BBD plays the input exactly and clears its line. On card builds a ColdFire hook does this at the stock tail kill; over USB it is the base's new `ev_tail_kill` event.",
+      "Code size 1,075 to 1,112 DSP words; card builds still give up SPRING REV and PLATE REV and keep DARK REV unchanged.",
+      "On today's beta base, T5-T8 share a smaller DSP memory: a bank whose Parts keep DARK REV on T5-T8 has no room for BBD there (DSP MEMORY FULL). One BBD per DSP core fits beside seven stock effects; a second fits on T1-T4 only.",
+      "Verification: the render gates (52, one new for resets while TIME moves), the browser builder against native octabam (53 images match, 77 refusals agree, 0 mismatches), and the owner's MKII over USB on a development build of the new base: installed, BBD on T1, T2 and T5, Part switches, removal and reinstall, the self-test, STOP, STOP, STOP cutting a ringing tail to silence and the next trig releasing it; one instance cost 453-527 chip cycles a sample. Not tested on hardware: the card build's stop-kill hook, project save and reload and a power cycle on this version, and an MKI. The eight-instance stress render ran 2 s (0.1.0: 32 s)."
+    ]
+  },
+  {
     "version": "0.1.0-experimental",
     "date": "2026-10-14",
     "changes": [

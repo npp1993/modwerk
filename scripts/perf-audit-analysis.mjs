@@ -13,7 +13,7 @@ export const LIMITS = {
   loadFail: 0.1,
   idleNote: 5,           // percentage points of idle time the module takes under the same flood
   idleFail: 10,
-  dspSeconds: 30,        // stress render length
+  dspSeconds: 2,         // stress render length: about a minute or two in dsp_host (owner, 15 October 2026; was 30)
   midiSeconds: 60,       // MIDI flood length
   midiRate: 1000,        // messages per second: a 3-byte message takes 960 us at 31.25 kbaud, so ~1040 is the wire's limit
   lfos: 3,               // stress_project.py: three active LFOs per track

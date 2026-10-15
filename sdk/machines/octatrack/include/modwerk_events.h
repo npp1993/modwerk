@@ -134,4 +134,8 @@ struct modwerk_sequencer_row {
 };
 struct modwerk_sequencer_rows { uint32_t count; struct modwerk_sequencer_row row[]; };
 
+/* ev_tail_kill (0x40004d0c): STOP's tail kill (STOP, STOP, STOP) holds a track: each frame, for each held track, before stock tests the track's FX2 against its three reverbs and clears theirs. The frame interrupt: short, no firmware call that can block. A notification: every handler runs, then stock's own test. record is the track's 64-byte frame record its DSP instances read (32 halfwords): the halfword at +56 is the FX2 id stock tests, the byte at +53 FX2 SETUP's slot 11, which stock zeroes for its reverbs while the kill holds. A handler may zero its own effect's bytes there the same way (check +56 first). d2-d7/a2-a6 are the builder's and must be kept. */
+#define MODWERK_EV_TAIL_KILL 30
+typedef void modwerk_ev_tail_kill(uint8_t *record, unsigned track);
+
 #endif

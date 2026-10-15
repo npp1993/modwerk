@@ -95,7 +95,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     if(announcements)return announcements
     // Private history rows name the administrator account that acted; the key falls back to the fixed administrator row.
     const adminId = await adminActor(request,env,db), admin = !!adminId
-    const diagnostics = await octatrackDiagnosticRoutes(request,db,user,admin)
+    const diagnostics = await octatrackDiagnosticRoutes(request,db,user,admin,env.DIAGNOSTICS_READ_KEY_SHA256)
     if (diagnostics) return diagnostics
     const push = await pushRoutes(request,env,db,user,admin)
     if(push)return push

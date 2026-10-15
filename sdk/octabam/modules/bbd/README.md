@@ -1,6 +1,6 @@
 # BBD Delay
 
-Version: 0.1.0-experimental · author: @JamCones (Cam Jones)
+Version: 0.1.1-experimental · author: @JamCones (Cam Jones)
 
 A bucket-brigade delay for FX2: a compander, clock-tracking anti-alias and
 reconstruction filters at a third of the clock, a clocked bucket line with a
@@ -47,12 +47,13 @@ clock is slower. The dry signal is never processed: MIX 0 is the exact input.
 FDBK, TONE, FREQ and HPF glide over about 6 ms (one step a 16-frame block,
 then smoothed). MIX glides per sample, and TIME glides with the clock.
 
-**STOP, STOP, STOP does not cut BBD's tail yet.** The stock reverbs' tail kill
-is a ColdFire pass (`0x40004d0c`) that zeroes their slots while a track is
-marked; it tests their FX ids only. BBD's DSP already takes the signal: its
-hidden SETUP slot 11 is 127, and 0 there makes BBD output the input exactly and
-clear its line and state. A later version adds the ColdFire hook that zeroes
-it, once the USB loader can carry it; nothing writes slot 11 in this release.
+**STOP, STOP, STOP cuts BBD's tail**, as it cuts the stock reverbs'. Stock's
+tail kill is a ColdFire pass (`0x40004d0c`) that zeroes the reverbs' hidden
+SETUP slot 11 while a track is held; it tests their FX ids only. BBD reads its
+own slot 11 the same way (127 normally; 0 makes it output the input exactly and
+clear its line and state), and `stopkill.s` zeroes it when the held track's FX2
+is BBD: a hook at the stock pass on card builds, the base's `ev_tail_kill` event
+over USB (`runtime.json`).
 
 ## Usage
 
@@ -79,7 +80,7 @@ Put it on a track that plays something with transients or a melody, then:
 
 - Octatrack OS 1.40C, FX2 only: the line needs the 16,384-word delay buffer
   the OS gives every FX2 instance. An FX1 slot (3,072 words) is too small.
-- With the stock DSP code built in, BBD's 1,075 words take the space of SPRING
+- With the stock DSP code built in, BBD's 1,112 words take the space of SPRING
   REV and PLATE REV, which leave the FX2 chooser. SPRING REV alone would hold
   BBD, but DARK REV calls a 35-word routine inside SPRING REV's code, so BBD is
   placed from PLATE REV's start, clear of it; DARK REV stays and renders
@@ -103,11 +104,13 @@ Put it on a track that plays something with transients or a melody, then:
 - **Headroom.** The wet passes a soft output stage: linear to half scale, then
   rounding to exactly full scale. Heavy feedback and a boosted TONE can push
   the wet there; LIM keeps self-oscillation well below it by default.
-- **Cost.** Up to 439 executed instructions per sample with trig splits (405
+- **Cost.** Up to 400 executed instructions per sample with trig splits (363
   unsplit): dearer than every stock DSP effect (SPRING REV 314, CHORUS 293,
   DJ EQ 331 under the same cases). Four per core fit the static budget
   (4 × 378 of 3,120 cycles). Real-chip headroom is not measured.
-- **No stop kill yet.** STOP, STOP, STOP leaves BBD's tail ringing (above).
+- **Over USB** it needs the Modwerk beta base with the `ev_tail_kill` event
+  (`ba89721d…` or later) and keeps its card effect id, 14: a module set where
+  another module holds id 14 refuses it.
 - **Older projects.** A project saved with a private BBD build that had no
   hidden slot 11 holds 0 there, which BBD reads as the kill: BBD plays dry in
   it until it is chosen again from the FX2 chooser, which loads its defaults.
@@ -123,7 +126,13 @@ Put it on a track that plays something with transients or a melody, then:
 - The 8th- and 7th-order filters run as cascaded biquads with 24-bit state.
   At the slowest clock, state noise sits about 56 dB under the signal.
 - One of the nine filter sections follows the clock each 16-frame call, so
-  all nine refresh in 144 samples; after a reset all nine are computed at once.
+  all nine refresh in 144 samples. After a reset all nine are computed at once,
+  in the clear call before it (dry, with no sample loop), for TIME's clock then;
+  the first call that plays audio updates only the last one, so the rotation
+  goes on from the first. 0.1.0 built them in that first call, which a trig
+  split could pair with a second full call in one block (439 instructions per
+  sample, now 400). The output is the same unless TIME moves across the reset,
+  when the sections start one block behind and catch up within nine calls.
 - The feedback tilt uses a 200 Hz split with cubic gain fits (±9 dB) and a
   unity-peak bandpass whose coefficients are polynomial fits over FREQ
   (within 6e-5 of the exact design). ±9 dB is deliberate: at ±15 dB a full
@@ -147,8 +156,8 @@ Put it on a track that plays something with transients or a melody, then:
   feeds its truncation back into the next sample: at 20 Hz its poles sit so
   close to DC that plain rounding noise rises about 40 dB (−42.6 dB against
   the model without the feedback, −67.8 dB with it).
-- Hidden slot 11 (127; 0 cuts to dry and clears) is the stop kill's input for
-  the later ColdFire hook; the `kill` gates render it.
+- Hidden slot 11 (127; 0 cuts to dry and clears) is the stop kill's input,
+  written by `stopkill.s`; the `kill` gates render it.
 
 ## Tests and measurements
 
@@ -165,7 +174,7 @@ site's own build) on an Octatrack MKII for about ten minutes. DARK REV still
 works on FX2; two instances ran at once on T1 and T5 (one per DSP core); HPF
 and STGS work; a Part reload, a project save and reload and a power cycle all
 restore the saved settings; every main-page and SETUP parameter was played,
-with LFOs and trigless locks. BBD is not offered over USB yet (TESTING.md).
+with LFOs and trigless locks. That was 0.1.0; 0.1.1's hardware results are in TESTING.md.
 Earlier private images (BBD01–BBD14) are in `evidence/author-hardware.md`:
 early ones crackled on T1 and lost tracks 1–4 after STGS changes, caused by
 `rep` divides holding interrupts off (`REP_DIVIDES.md`); every `rep` is now a

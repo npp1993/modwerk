@@ -324,6 +324,20 @@
     "jmp 0x400888b2"
    ],
    "done": null
+  },
+  {
+   "site": "0x40004d0c",
+   "length": 10,
+   "guard": "3b007d2a1b16afbbff30a9df6d28c030691b4f5b3c32626a87be0a7b712408eb",
+   "routine": "the frame's track-record builder 0x40004bd4 (frame interrupt): for each track d4 (0-7) whose bit is set in STOP's tail-kill mask (0x8000184b, at 50(sp)), a2 the track's 64-byte record (0x80000110 + 512 x buffer + 64 x track), it tests the record's FX2 id (+56) against the three stock reverbs (0x14-0x16) and clears +24, +34 and +53 (FX2 SETUP slot 11) for them",
+   "head": [],
+   "tail": [
+    {
+     "stock": 10
+    },
+    "jmp 0x40004d16"
+   ],
+   "done": null
   }
  ],
  "events": [
@@ -1498,6 +1512,32 @@
      "what": "SEQUENCER setters"
     }
    ]
+  },
+  {
+   "event": "ev_tail_kill",
+   "index": 30,
+   "site": "0x40004d0c",
+   "length": 10,
+   "prototype": "void f(uint8_t *record, unsigned track)",
+   "args": [
+    "a2",
+    "d4"
+   ],
+   "results": "notify",
+   "when": "STOP's tail kill (STOP, STOP, STOP) holds a track: each frame, for each held track, before stock tests the track's FX2 against its three reverbs and clears theirs",
+   "context": "the frame interrupt: short, no firmware call that can block",
+   "contract": "A notification: every handler runs, then stock's own test. record is the track's 64-byte frame record its DSP instances read (32 halfwords): the halfword at +56 is the FX2 id stock tests, the byte at +53 FX2 SETUP's slot 11, which stock zeroes for its reverbs while the kill holds. A handler may zero its own effect's bytes there the same way (check +56 first). d2-d7/a2-a6 are the builder's and must be kept.",
+   "order": "lower first, then module id; 10-90.",
+   "subscribers": [
+    {
+     "module": "bbd",
+     "fn": "bbd_tail_kill",
+     "order": 50,
+     "does": "while the kill holds a track whose FX2 is BBD (id 0x0e), zeroes its slot 11 (+53): BBD plays the input exactly and clears its line until the track's next trig",
+     "evidence": "sdk/octabam/modules/bbd/stopkill.s bbd_kill_hook (the card build's detour at the same site); on the owner's MKII 15 Oct 2026 (dev twin e429b787): slot 11 0 while held, 127 after T1's next trig, the tail cut to -132 dBFS"
+    }
+   ],
+   "orderEvidence": "Every handler acts only on a track whose FX2 runs its own effect id, so no order is needed between them."
   }
  ]
 }

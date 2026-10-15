@@ -109,8 +109,8 @@ def load(path=REGISTRY):
         if any(v == 'done' for v in (e['results'].values() if e['results'] != 'notify' else ())) and not sites[at]['done']:
             raise ValueError('events.json: %s drops calls at a site with no done code' % name)
         for a in e['args']:
-            if a != '&d0' and not re.fullmatch(r'site\+\d+', a):
-                raise ValueError('events.json: %s argument %s is &d0 or site+N' % (name, a))
+            if a != '&d0' and a not in REGISTERS and not re.fullmatch(r'site\+\d+|d[2-7]|a[3-6]', a):
+                raise ValueError('events.json: %s argument %s is &d0, site+N or a register at the site' % (name, a))
         events.append(dict(e, kind=kind, site=at, room=room))
     spans = sorted([(at, s['length']) for at, s in sites.items()] + [(s['site'], s['length']) for s in owned])
     if any(a + n > b for (a, n), (b, _) in zip(spans, spans[1:])):
@@ -162,6 +162,10 @@ def _call(out, name, e, k):
     for a in reversed(e['args']):
         if a == '&d0':
             out.append('        pea     %d(%%sp)\n' % pushed)
+        elif a in REGISTERS:  # the site's d0-d1/a0-a2, in the dispatch's saved frame
+            out.append('        move.l  %d(%%sp),-(%%sp)\n' % (REGISTERS[a] + pushed))
+        elif a[0] in 'da':  # d2-d7/a3-a6: the dispatch and every handler keep them
+            out.append('        move.l  %%%s,-(%%sp)\n' % a)
         else:
             out.append('        move.l  %d(%%sp),-(%%sp)\n' % (SAVED + int(a[5:]) + pushed))
         pushed += 4

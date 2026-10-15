@@ -438,7 +438,7 @@ def main():
         print('Compiled resident Character and four stock-free receiver templates.', flush=True)
 
         compiled_cf = []
-        for key in ['DSP DYNLOAD STOCK', 'EUCLID', 'TAPE ECHO']:
+        for key in ['DSP DYNLOAD STOCK', 'EUCLID', 'TAPE ECHO', 'BBD']:
             module = known[key]
             manifest = f'platform/{module.name}/manifest.py' if module.name in registry.PLATFORM_NAMES else f'modules/{module.name}/manifest.py'
             for unit in module.linked:
@@ -574,6 +574,8 @@ def main():
             descriptors.append(dict(old, sourceSha256=sources[f'modules/{module.name}/manifest.py'], integers=integers, strings=strings, **extra))
         products['descriptor-recipes.json'] = dict(baseline['descriptor-recipes.json'], **provenance, recipes=descriptors)
         groups = []
+        if not any(row['moduleId'] == 'bbd' for row in baseline['platform-writes.json']['groups']):
+            baseline['platform-writes.json']['groups'].append(dict(moduleId='bbd', key='BBD', author='JamCones'))  # its stop kill (0.1.1)
         for old in baseline['platform-writes.json']['groups']:
             module = known[old['key']]; rows = []
             for detour in module.detours:

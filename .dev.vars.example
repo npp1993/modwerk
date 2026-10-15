@@ -7,6 +7,9 @@ PRIVACY_READY=false
 # Separate administrator access. Generate with `npm run admin:key`; store only the SHA-256 here or as a Worker secret.
 # Leave blank to keep the admin workspace closed.
 ADMIN_KEY_SHA256=
+# Read-only key for the private diagnostics endpoint alone, used by `npm run diagnostics:pull`. Its `--init` prints this SHA-256.
+# Leave blank to turn the key off.
+DIAGNOSTICS_READ_KEY_SHA256=
 # Email accounts: generate at least 32 random bytes; never put secrets in VITE_* variables.
 # Example generator: node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 AUTH_SECRET=

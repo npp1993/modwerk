@@ -14,7 +14,7 @@ import { discordInvitationClaim } from './discord-invitations'
 export const ADMIN_ACTOR='administrator'
 const ADMIN_SECONDS=8*60*60
 function configuredKey(env:Env){const value=env.ADMIN_KEY_SHA256?.trim().toLowerCase()??'';return /^[a-f0-9]{64}$/.test(value)?value:''}
-function sameDigest(a:string,b:string){if(a.length!==b.length)return false;let difference=0;for(let index=0;index<a.length;index++)difference|=a.charCodeAt(index)^b.charCodeAt(index);return difference===0}
+export function sameDigest(a:string,b:string){if(a.length!==b.length)return false;let difference=0;for(let index=0;index<a.length;index++)difference|=a.charCodeAt(index)^b.charCodeAt(index);return difference===0}
 /** Administration is separate from guest sessions and fails closed until the backend owner configures a key. Rotating the key revokes every administrator session. */
 export async function isAdmin(request:Request,env:Env,db:Database){return !!await adminActor(request,env,db)}
 /**

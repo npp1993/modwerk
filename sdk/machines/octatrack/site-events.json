@@ -154,6 +154,11 @@
    "kind": "table",
    "room": 8,
    "record": 4
+  },
+  {
+   "index": 30,
+   "event": "ev_tail_kill",
+   "kind": "call"
   }
  ]
 }

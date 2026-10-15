@@ -1,9 +1,11 @@
-# BBD Delay 0.1.0-experimental release resource bounds
+# BBD Delay 0.1.1-experimental release resource bounds
 
-Native source: the released folder (`bbd.asm`, `manifest.py`, `bbd_ref.py`).
-MAIN OS SHA-256: `bc53d1b3e96a4c22d5efb426c880d08e26d4f0288dccbe8ffaf43e25a18fb3ba`
-(BBDMW2), the native build of BBD beside the stock effects, as the site places
-it; `sdk/native-comparisons/bbd.json` records the browser's match.
+Native source: the released folder (`bbd.asm`, `stopkill.s`, `manifest.py`,
+`runtime.json`, `bbd_ref.py`). MAIN OS SHA-256 of the native card build of BBD
+beside the stock effects, as the site places it:
+`e648cee078b70174f250ae61830f644a151ab07f3d553578ae6577c5a1ffa1b9`;
+`sdk/native-comparisons/bbd.json` records the browser's match. The USB package
+is `public/octatrack-modules/bbd/0.1.1-experimental.mwrm` (`614bf23b…`).
 
 ## Software cycle upper bound
 
@@ -14,16 +16,16 @@ Basis: 44.1 kHz, 16 frames/block, eight FX2 instances, four per core.
 charged as inlined, plus the call pair). A block holds at most 16 samples,
 split or not: `16 * 378 = 6,048`.
 
-**Per-call work**, a union bound over the assembled program (1,075 words):
+**Per-call work**, a union bound over the assembled program (1,112 words):
 
 | part | modeled cycles |
 | --- | ---: |
-| every word outside the sample loop and the helpers, once: init (51), the per-call prologue with both the clear path and the run path (545), the tail (8) | 604 |
+| every word outside the sample loop and the helpers, once: init (51), the per-call prologue with both the clear path and the run path (582: 0.1.0's 545, the clear call that builds the nine sections, 21, and the snap and return checks, 16), the tail (8) | 641 |
 | extra iterations of the fixed loops: init zeroing (90), the clear's three loops (255 + 56 + 10), the three per-call 24-step divides (3 x 23) | 480 |
-| the coefficient rotation, up to nine passes after a reset: 8 extra x 45 words | 360 |
+| the coefficient rotation, up to nine passes in the clear call before a reset: 8 extra x 45 words | 360 |
 | helper bodies: ten `bbsect` calls, nine for the rotation and one for HPF's section (46 words + 23 extra divide steps each; `bbpole` is smaller), and two `bbexp2` (23 each: LIM and HPF) | 736 |
-| control overheads beyond the word count: 19 `do` x 4, 13 `bsr`/`rts` pairs x 6, 34 branches x 4 (each rotation pass's two counted) | 290 |
-| **total** | **2,470** |
+| control overheads beyond the word count: 19 `do` x 4, 13 `bsr`/`rts` pairs x 6, 39 branches x 4 (each rotation pass's two counted) | 310 |
+| **total** | **2,527** |
 
 Rounded up to **2,600 modeled cycles/call**. Charging the clear path and the
 run path together, and the reset's nine-section rotation on every call, keeps
@@ -37,7 +39,12 @@ conservative code-word model, not a whole-instrument contention or wall-clock
 guarantee; companion custom effects must fit the remaining budget separately.
 
 For comparison, the matched emulator benchmark (TESTING.md) measures at most
-439.44 executed instructions per sample with a trig split at every position.
+399.31 executed instructions per sample with a trig split at every position
+(0.1.0: 439.44). The nine-section rotation no longer meets the sample loop in
+one call: it runs in a dry clear call. On the owner's MKII (15 October 2026,
+`evidence/usb-hardware.md`) one instance cost 453-469 chip cycles a sample at
+the default settings and 527 at the dearest, 1.44-1.46 cycles an executed
+instruction; at that ratio the split worst case is about 583.
 
 Commands: `python3 modules/bbd/verify.py` (including the no-op loop marker
 proof), `dsp_asm -sym` for the label addresses and `dsp56kDisassemble` for the
@@ -52,11 +59,13 @@ BBD uses X state `r7+$00..$5a` (91 words) of the 256-word X block, and of the
 `base+$2000..$2039` (nine clock-filter sections, HPF's section, FREQ's
 bandpass); the rest is reserved, unused padding.
 
-Shared: two 1,075-word P programs (6,450 bytes; `P:0x01000..0x01433` and
-`P:0x00dc0..0x011f3`, in the space of SPRING REV and PLATE REV), the system
+Shared: two 1,112-word P programs (6,672 bytes; `P:0x01000..0x01458` and
+`P:0x00dc0..0x01218`, in the space of SPRING REV and PLATE REV), the system
 stack on both cores (72 bytes, below), the cloned 416-byte FX2 descriptor at
-`0x400D6B20` and the 54-byte STGS label formatter at `0x400D6CC0`:
-**6,992 bytes**. Eight instances total **406,352 bytes**.
+`0x400D6B20`, the 54-byte STGS label formatter at `0x400D6CC0` and the stop
+kill's ColdFire code (32 bytes in the runtime arena on card builds; 22 bytes in
+the base's module pool over USB, counted at 32): **7,246 bytes**. Eight
+instances total **406,606 bytes**.
 
 Stack: the deepest nesting is the dispatcher's call, the rotation's `do`, a
 `bsr bbsect` and its divide's `do`: six system-stack entries (two 24-bit words
@@ -64,7 +73,10 @@ each) per core. The sample loop nests less (call, `do`, `bsr bbhsec`).
 
 DSP numbers are logical 24-bit words; descriptor and formatter counts use byte
 accounting. BBD reuses the stock instance buffers and dispatcher stack. There
-is no authored heap, SDRAM allocation, ColdFire executable or callback. Its
+is no authored heap or SDRAM allocation. The ColdFire stop kill is a
+straight-line hook (card builds: a detour at `0x40004d0c`, no stack) or an
+event handler the base calls with two arguments (no stack of its own); neither
+calls anything. Its
 constants are inline program immediates. `init` leaves r1/n1/m1 unchanged. The
 eight-instance guard and dirty-start gates cover software isolation; they do
 not claim hardware canaries.

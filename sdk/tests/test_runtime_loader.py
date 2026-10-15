@@ -209,6 +209,15 @@ class SiteEventTests(unittest.TestCase):
         self.assertTrue({('repitch', 'rate_hook'), ('mute-modes', 'fresh_bind'), ('poly8', 'mr_rate_hook'), ('poly8', 'mr_stop_voice'),
                          ('poly8', 'mr_note_on'), ('synth', 'po_mon'), ('quantizer', 'qz_boot'), ('synth', 'qz_boot')} <= met)
 
+    def test_call_events_pass_registers_at_the_site(self):
+        # ev_tail_kill(record, track): the site's a2 from the dispatch's saved frame, d4 as it stands
+        self.assertIn('        move.l  %d4,-(%sp)\n        move.l  20(%sp),-(%sp)\n', events.asm(events.load()))
+        doc = json.loads((EVENTS_DIR / 'events.json').read_text())
+        for args in (['a7'], ['d8'], ['sp'], ['d2x']):
+            bad = json.loads(json.dumps(doc)); next(e for e in bad['events'] if e['event'] == 'ev_tail_kill')['args'] = args
+            with tempfile.TemporaryDirectory() as temp, self.subTest(args), self.assertRaises(ValueError):
+                Path(temp, 'events.json').write_text(json.dumps(bad)); events.load(Path(temp, 'events.json'))
+
     def test_raised_events_have_a_base_entry_and_no_site(self):
         reg = events.load()
         raised = events.raised(reg)
