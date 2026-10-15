@@ -12,7 +12,7 @@
   },
   "build": {
     "status": "pending",
-    "reason": "Staged draft. The module builds and matches native octabam in a full listing dry run, but listing waits for an owner decision on the two unmeasured performance rows, and room in the declaration-check record, which this module would grow past GitHub's file-size limit."
+    "reason": "Staged draft. On current main the module builds and matches native octabam in a full listing dry run (0 mismatches of 130), and it ran on an MKII over USB. Listing waits for a hardware record the listing contract accepts for the current source, an owner decision on the two unmeasured performance rows, a display name of at most 15 characters for its USB package, and the Octatrack base rebuilt with its chooser entry."
   },
   "author": {
     "github": "Zac-Kyoti",

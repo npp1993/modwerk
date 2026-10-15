@@ -118,24 +118,21 @@ Counted on QLRTEST03's MAIN OS; each invert executes one instruction more than i
 
 ## Native comparison and listing dry run
 
-**Not repeated for the current 188-byte unit.** A re-run on main `8eabba1c` (13 October 2026, after repeat98/modwerk#562 let other modules' package rows pass the Tape Echo browser-preservation binding) built and imported the packages in the isolated container, then stopped at catalogue generation. This module's package rows now pass the binding; what it still refuses is the shared code listing changes: `src/engine/requested-modules.ts` (late ROM placement, the Recorder Loop Fix cave rule), `src/engine/compose-os.ts` and `scripts/build-module-packages.py` (the hard-coded lists of requested modules), which the binding pins, and the `compilerSha256` in `module-build.json` that the last one changes. So no comparison runs. The record below is from the 176-byte unit and may not hold for 186 bytes.
+Re-run on 15 October 2026 for the current 188-byte unit, on a scratch commit of main `d3ad0bdf` with the module listed (catalogue entry, licence component, changelog file, `tests.qualification`, packages built in the isolated toolchain container and imported, `npm run module:verify -- quantize-live-rec-toggle --os <OS 1.40C update file>`). None of it is committed; the comparison record and the diff it makes are kept outside the repository.
 
-Done on 12 October 2026, with the author's toast wording (176 bytes), on a scratch copy of the Elekloader migration branch (since merged as repeat98/modwerk#464) with the module listed (catalogue entry, packages built in the isolated toolchain container and imported, `npm run module:verify -- quantize-live-rec-toggle --os <OS 1.40C update file>`). None of it is committed; the shared-code patch, the comparison record and the logs are kept outside the repository with the session notes.
-
-- **130 selections: 56 built and identical to native octabam (20 outright, 36 outside the platform writes), 74 matching refusals, 0 mismatches.** The module alone is identical outright.
-- Getting there needed two changes to the shared browser composer (`src/engine/requested-modules.ts`): place this module's ROM unit after the utility and replacing modules, as native does for a module this late in the catalogue (14 mismatches before), and refuse a Recorder Loop Fix cave that does not fit at the cave cursor, as native does, where the browser moved it to the overflow run (one nine-module selection). Every other module's committed comparison record shows the same mismatch count with and without them; those records were already stale on this base.
-- `module:verify` needed the one-line Node fix from repeat98/modwerk#482 applied locally: on this base `src/engine/protocol.ts` reads Vite's environment, which stops the tool in Node.
-- `npm run check -- --base 0659ebc1` in that state, with a clearly marked temporary hardware placeholder so the tools would run: 1,889 of 1,890 tests passed. The one failure is `module:doctor --all`, on the two unmeasured performance rows below. Without the placeholder `modules:check` stops first, at the missing hardware report.
-- `npm run module:doctor -- quantize-live-rec-toggle`: every line green except those two performance rows.
+- **130 selections: 46 built and identical to native octabam (20 outright, 26 outside the platform writes), 84 matching refusals, 0 mismatches.** Native pair checks: 25 modules, 300 pairs in 3 contexts, 4 refused.
+- It still needs the shared-code changes of 12 October: this module in the hard-coded lists of `scripts/build-module-packages.py` and `src/engine/compose-os.ts`, and its ROM unit placed after the utility and replacing modules in `src/engine/requested-modules.ts`, with the Recorder Loop Fix cave refused where native refuses it; plus this module in the two release-scope tests.
+- `npm run modules:generate` passes, including Tape Echo's retained evidence (since repeat98/modwerk#592 it compares only Tape Echo's own files and package rows), so that binding no longer stands in the way. `src/catalog/native-metadata.json` is 15 KB on this main, so the 142 MB it once reached is no longer a limit.
+- For that run the record's top-level image was set to the hardware report's (QLRTEST02), because the listing contract requires the two to match; the current card image QLRTEST03 has not run on a unit (see What listing still needs).
+- `module:verify` adds this module to `src/engine/assets/chooser-metadata.json`, which the Octatrack base hashes as a build input, so `octatrack-base.test.ts` fails until the committed base is rebuilt. On 12 October the module built to the same bytes without that entry.
 
 What listing still needs:
 
-1. Move `qualification.example.json`, which now holds the user's MKII report on QLRTEST02, into `tests.qualification`. In the 13 October re-run it passed the listing contract's hardware rule (report image = qualified image, report source = `tests.evidenceRevision`).
+1. A hardware record that the listing contract accepts for the current source: its MKII report is over USB (package `026464de…`), but the record binds a card image, and the card image QLRTEST03 has not run on a unit. Either a card run of QLRTEST03 or the owner's word on how a USB report binds.
 2. The owner's decision on the two performance rows that were not measured (Performance, above).
-3. Room for the declaration checks: listing records 493,056 more selections and takes `src/catalog/native-metadata.json` from 70 MB to 142 MB, over GitHub's 100 MB file limit. That needs a change to how the record is kept.
-4. A route past the Tape Echo browser-preservation binding for the shared code changes this module needs (see the start of this section): the owner rebinding it, or the module lists and ROM order read from data instead of code. Then the comparison above, re-run for the 188-byte unit.
-5. The `module:verify` step also adds this module to `src/engine/assets/chooser-metadata.json`, which the Octatrack base hashes as a build input, so the committed base would have to be rebuilt. The module builds to the same bytes without that entry.
-6. Then: move the folder to `sdk/octabam/modules/`, add the catalogue entry, the licence component and the changelog entry, build and import the packages, and run `module:verify`.
+3. A display name of at most 15 characters for the USB package (`Quant Live Rec` in the private build): the catalogue name is longer.
+4. The committed Octatrack base rebuilt with this module's chooser-metadata entry, by the owner (this computer does not reproduce main's committed base).
+5. Then: move the folder to `sdk/octabam/modules/`, add the catalogue entry, the licence component and the changelog file, apply the shared-code changes above, build and import the packages, and run `module:verify`.
 
 ## USB package (private, 15 October 2026)
 
