@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import { MODULES } from '../catalog/modules'
 import { lastInventory, sameModules, type Inventory } from '../config/inventory'
 import { lastSuccessfulSync } from '../config/octatrack-progress'
-import { BaseUpdateRequired, moduleSetReview } from '../engine/elekloader/module-set'
+import { BaseUpdateRequired, baseOutdated, moduleSetReview } from '../engine/elekloader/module-set'
 import type { Configuration } from '../config/workspace'
 import { DeviceImage } from '../devices/DeviceImage'
 import { DEVICES_BY_ID } from '../devices/registry'
@@ -84,7 +84,7 @@ export function OctatrackHub({ view, link, inventory, sets, selectedId, needs, u
   const same = (set: Configuration) => set.moduleIds.length > 0 && !!unitIds && sameModules(set.moduleIds, unitIds)
   const review = connected && inventory && selected ? moduleSetReview(selected, inventory, identity?.capabilities, identity?.base) : undefined
   const changes = review?.changes, updates = review?.updates ?? []
-  const needsBase = review?.problem instanceof BaseUpdateRequired
+  const needsBase = review?.problem instanceof BaseUpdateRequired || connected && baseOutdated(identity?.base)
   const model = identity?.model ? identity.model.replace('OCTATRACK', 'Octatrack') : 'Octatrack'
   const led = connected ? 'on' : busy ? 'load' : 'off'
   const health = useOctatrackHealth(link)
@@ -101,6 +101,7 @@ export function OctatrackHub({ view, link, inventory, sets, selectedId, needs, u
     : [<>Not connected{last ? <> · Last seen: {lastName ? <b>{lastName}</b> : modules(last.moduleIds.length)} · {when(last.at)}</> : null}</>, <button key="connect" className="button button-quiet" onClick={() => void link?.connect()}>Connect</button>]
   const panel = (name: HubView, content: ReactNode) => <section key={name} className={'hub-view hub-view-' + name} hidden={view !== name} aria-label={name === 'set' ? selected?.name ?? 'Module set' : UNIT_VIEWS.find(item => item.view === name)!.title}>{content}</section>
   const syncLine: ReactNode = !usb ? <>This browser can’t use USB. <a href="#octatrack/setup">Install it from the card</a> instead.</>
+    : needsBase ? <span role="alert">{(review?.problem ?? new BaseUpdateRequired()).message}</span>
     : review?.problem ? <span role="alert">{review.problem.message}</span>
     : changes ? review?.needsSync ? <>Adds {changes.add.length} · Removes {changes.remove.length}{updates.length > 0 && <> · Updates {updates.length}</>}{!!(changes.stockOff.length + changes.stockOn.length) && <> · Stock effects change</>}</>
       : selected?.moduleIds.length ? <span className="hub-insync"><span className="unit-led is-on" aria-hidden="true" />Already on your Octatrack</span> : 'No modules in this set.'

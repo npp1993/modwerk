@@ -1,4 +1,4 @@
-import { DIAGNOSTIC_BUILD_ERRORS, DIAGNOSTIC_BUILD_KINDS, DIAGNOSTIC_BUILD_PHASES, type SiteDiagnosticEvent } from './octatrack-diagnostics-contract'
+import { DIAGNOSTIC_BUILD_ERRORS, DIAGNOSTIC_BUILD_KINDS, DIAGNOSTIC_BUILD_PHASES, DIAGNOSTIC_ERROR_KINDS, DIAGNOSTIC_SITE_AREAS, type DiagnosticErrorKind, type DiagnosticSiteArea, type SiteDiagnosticEvent } from './octatrack-diagnostics-contract'
 
 const brand = Symbol('consented diagnostic collection')
 export type SiteDiagnosticContext = { readonly [brand]: true }
@@ -18,7 +18,8 @@ export function captureSiteDiagnosticContext() { return collection?.eligible() ?
 export function emitSiteDiagnosticEvent(event: SiteDiagnosticEvent, context: SiteDiagnosticContext | undefined) {
   if (!context || collection?.context !== context || !collection.eligible()) return
   let safe: SiteDiagnosticEvent
-  if (event.event === 'browser_error' || event.event === 'unhandled_rejection') safe = { event: event.event, phase: 'browser' }
+  if (event.event === 'browser_error' || event.event === 'unhandled_rejection')
+    safe = { event: event.event, phase: 'browser', area: DIAGNOSTIC_SITE_AREAS.includes(event.area) ? event.area : 'other', kind: DIAGNOSTIC_ERROR_KINDS.includes(event.kind) ? event.kind : 'OtherError' }
   else if (event.event === 'build_failed' && DIAGNOSTIC_BUILD_KINDS.includes(event.buildKind) && DIAGNOSTIC_BUILD_PHASES.includes(event.phase) && DIAGNOSTIC_BUILD_ERRORS.includes(event.error))
     safe = { event: 'build_failed', phase: event.phase, buildKind: event.buildKind, error: event.error }
   else return
@@ -47,19 +48,36 @@ export function observeSiteDiagnosticOperation<T>(operation: () => Promise<T>, f
   return observed
 }
 
+/** The part of the site, by the route's first word mapped to a fixed name; the address itself is never kept. */
+export function diagnosticArea(hash = typeof location === 'undefined' ? '' : location.hash): DiagnosticSiteArea {
+  const route = hash.replace(/^#\/?/, '').split(/[/?]/)[0]
+  if (route === '' || route === 'library') return 'library'
+  if (route.startsWith('configuration')) return 'configuration'
+  if (route === 'octatrack' || route === 'your-octatrack') return 'octatrack'
+  if (route === 'module' || route === 'community-module') return 'module'
+  return (['forum', 'account', 'admin'] as const).find(area => area === route) ?? 'other'
+}
+/** A standard error type's name, else OtherError; never the message. */
+export function diagnosticErrorKind(error: unknown): DiagnosticErrorKind {
+  let name = ''
+  try { if (error instanceof Error || typeof DOMException !== 'undefined' && error instanceof DOMException) name = error.name } catch { /* a hostile getter */ }
+  return name !== 'OtherError' && (DIAGNOSTIC_ERROR_KINDS as readonly string[]).includes(name) ? name as DiagnosticErrorKind : 'OtherError'
+}
+
 /** The consent collector owns installation and cleanup. Never inspect messages, stacks, URLs or filenames. */
 export function collectBrowserDiagnosticEvents(given?: EventTarget) {
   const context = captureSiteDiagnosticContext()
   const target = given ?? (typeof window === 'undefined' ? undefined : window)
   if (!context || !target) return () => {}
   const error = (event: Event) => {
-    if (!isExpectedDiagnosticCancellation((event as ErrorEvent).error)) emitSiteDiagnosticEvent({ event: 'browser_error', phase: 'browser' }, context)
+    const thrown = (event as ErrorEvent).error
+    if (!isExpectedDiagnosticCancellation(thrown)) emitSiteDiagnosticEvent({ event: 'browser_error', phase: 'browser', area: diagnosticArea(), kind: diagnosticErrorKind(thrown) }, context)
   }
   const rejection = (event: Event) => {
     const rejected = event as PromiseRejectionEvent
     const stamp = rejected.promise && promises.get(rejected.promise)
     if (stamp && (stamp.context !== context || !stamp.valid())) return
-    if (!isExpectedDiagnosticCancellation(rejected.reason)) emitSiteDiagnosticEvent({ event: 'unhandled_rejection', phase: 'browser' }, context)
+    if (!isExpectedDiagnosticCancellation(rejected.reason)) emitSiteDiagnosticEvent({ event: 'unhandled_rejection', phase: 'browser', area: diagnosticArea(), kind: diagnosticErrorKind(rejected.reason) }, context)
   }
   target.addEventListener('error', error); target.addEventListener('unhandledrejection', rejection)
   return () => { target.removeEventListener('error', error); target.removeEventListener('unhandledrejection', rejection) }

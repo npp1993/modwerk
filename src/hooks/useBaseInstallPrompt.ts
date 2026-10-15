@@ -1,17 +1,20 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { api, post } from '../community/api'
 import type { LinkState, OctatrackLink } from '../engine/elekloader/octatrack-link'
+import baseBinding from '../../sdk/machines/octatrack/base-binding.json' with { type: 'json' }
 
 const noSubscription = () => () => {}
-/** What the prompt needs to know of the unit: it runs a Modwerk base already, it is still being read, or neither. */
+/** What the prompt needs to know of the unit: it runs the current Modwerk base, it is still being read, or neither (an
+ * older base counts as neither: every beta tester updates, owner 15 October 2026). */
 export function unitForPrompt(state?: LinkState): 'base' | 'connecting' | 'other' {
-  return state?.identity || state?.status === 'ready' ? 'base' : state?.status === 'connecting' ? 'connecting' : 'other'
+  if (state?.identity) return state.identity.base === baseBinding.identity ? 'base' : 'other'
+  return state?.status === 'ready' ? 'base' : state?.status === 'connecting' ? 'connecting' : 'other'
 }
 
 /**
- * The one-time base install prompt for a verified member: due until they close it,
- * on any device, and opened once the page is visible and no other dialog is open.
- * A connected unit that already runs a Modwerk base keeps it from opening and records it as done: installing one is all it asks.
+ * The base install prompt for a verified member with USB access: due until their unit runs the current base, on any
+ * device, and opened once the page is visible and no other dialog is open. Only a connected unit that runs the current
+ * base records it as done; closing it or Later hides it for this visit, and a connected older base opens it.
  * A failed read keeps it quiet; a failed record lets it show again next visit.
  */
 export function useBaseInstallPrompt(memberId: string | null, enabled: boolean, link: OctatrackLink | null = null) {
@@ -32,8 +35,8 @@ export function useBaseInstallPrompt(memberId: string | null, enabled: boolean, 
   }, [due, open, enabled, unit])
   return {
     open: open && !!memberId,
-    close() { setDue(false); setOpen(false); void post('/auth/base-install-prompt', {}).catch(() => {}) },
-    /** Gone for this visit only, so it returns on the next one. */
+    /** Both are gone for this visit only, so the prompt returns on the next one until the unit runs the current base. */
+    close() { setDue(false); setOpen(false) },
     later() { setDue(false); setOpen(false) },
   }
 }

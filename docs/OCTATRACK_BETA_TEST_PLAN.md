@@ -179,7 +179,7 @@ and the pretend unit.
 | 1.36 | Backups | Both saved files export with verified hashes; a base without the export says so | S (`device_saved_backup`) | done once on the private 59ba5f8b base; open on the final image |
 | 1.37 | MISSING | A project naming a module the set lacks: the hub lists the names and offers Add to set; names the library does not know are shown as such; the list clears when the module arrives | S, U | built; open in a browser with the unit |
 | 1.38 | Report a problem | After a failed sync and from the hub. The report carries the base identity, the set's hashes, the loader report, the self-test, the crash record and no project data. The GitHub mirror and the reporter's bell | S (API, a disposable Worker database) | open |
-| 1.39 | The diagnostics invitation | After the account's first compatible connection, once any dialog has closed. Consent version 2026-10-12.2; dismissing collects nothing; a visitor never sees it | S, B | open |
+| 1.39 | The diagnostics invitation | After the account's first compatible connection, once any dialog has closed. Consent version 2026-10-15.1; dismissing collects nothing; a visitor never sees it | S, B | open |
 
 ### The live site after the merge
 

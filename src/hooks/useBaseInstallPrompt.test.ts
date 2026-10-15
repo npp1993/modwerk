@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { useBaseInstallPrompt } from './useBaseInstallPrompt'
 import type { LinkState, OctatrackLink } from '../engine/elekloader/octatrack-link'
+import baseBinding from '../../sdk/machines/octatrack/base-binding.json' with { type: 'json' }
 
 const mocked = vi.hoisted(() => ({ api: vi.fn(), post: vi.fn() }))
 vi.mock('../community/api', () => ({ api: mocked.api, post: mocked.post }))
@@ -31,13 +32,20 @@ it('opens for a unit on the original OS', async () => {
   await act(() => vi.advanceTimersByTimeAsync(1500))
   expect(prompt.open).toBe(true); expect(mocked.post).not.toHaveBeenCalled()
 })
-it('waits while the unit is read, then records itself as done once a Modwerk base answers', async () => {
+it('waits while the unit is read, then records itself as done once the current base answers', async () => {
   const device = unit({ status: 'connecting' })
   await render(device.link)
   await act(() => vi.advanceTimersByTimeAsync(6000)); expect(prompt.open).toBe(false)
-  await act(async () => device.update({ status: 'ready', identity: { base: 'a'.repeat(64), canSubmit: true, model: 'OT' } }))
+  await act(async () => device.update({ status: 'ready', identity: { base: baseBinding.identity, canSubmit: true, model: 'OT' } }))
   await act(() => vi.advanceTimersByTimeAsync(6000))
   expect(prompt.open).toBe(false); expect(mocked.post).toHaveBeenCalledWith('/auth/base-install-prompt', {})
+})
+it('opens for an older Modwerk base and never records it, closed or not', async () => {
+  await render(unit({ status: 'ready', identity: { base: 'a'.repeat(64), canSubmit: true, model: 'OT' } }).link)
+  await act(() => vi.advanceTimersByTimeAsync(1500))
+  expect(prompt.open).toBe(true)
+  await act(async () => prompt.close())
+  expect(prompt.open).toBe(false); expect(mocked.post).not.toHaveBeenCalled()
 })
 it('counts an older base this page cannot talk to as installed', async () => {
   await render(unit({ status: 'ready' }).link)

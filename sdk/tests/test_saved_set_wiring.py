@@ -114,6 +114,7 @@ volatile uint32_t test_clock;
 static int exporting=1;
 int modwerk_saved_set_busy(void) { return exporting; }
 unsigned modwerk_dsp_flags(unsigned core) { (void)core; return 0; }
+void modwerk_diag_frame(void) {} /* diag.c: the frame interrupt's freeze watch */
 void dl_selection_tick(void) { assert(!exporting); }
 void dl_residency_tick(void) { assert(!exporting); }
 void dl_show_message(const char *p,unsigned n) { (void)p; (void)n; }

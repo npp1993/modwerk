@@ -85,6 +85,18 @@ extern void mw_stock_pool_open(void), mw_stock_list_draw(void);
 
 static unsigned valid_bank(void) { uint32_t b = U32(BANK); return b >= 0x40000000u && b < 0x47f00000u; }
 static Part *current_part(void) { return AT(U32(BANK) + PART_OFF + (U8(0x100b14cfu) & 3u) * PART_STRIDE); }
+/* diag.c: each track's machine type byte and machine signature (two bytes), as they stand. Unlocked, as the frame
+ * interrupt reads it too: a snapshot. 0xff and 0, 0 without a bank. */
+void modwerk_track_machines(volatile uint8_t *out);
+void modwerk_track_machines(volatile uint8_t *out)
+{
+    const Part *part = valid_bank() ? current_part() : 0;
+    for (unsigned t = 0; t < 8u; ++t) {
+        out[3u * t] = part ? part[0x22 + t] : 0xffu;
+        out[3u * t + 1u] = part ? part[SIG + 30u * t] : 0u;
+        out[3u * t + 2u] = part ? part[SIG + 30u * t + 1u] : 0u;
+    }
+}
 /* Track t's machine: its row (5 on) and descriptor, or 0 for a stock track or an absent machine's signature. */
 static unsigned owner(const Machine *const *m, unsigned n, const Part *part, unsigned t, const Machine **who)
 {

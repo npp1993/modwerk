@@ -377,6 +377,8 @@ export class OctatrackLink {
   health(signal?: AbortSignal, allowed: () => boolean = () => true) { return this.read('diagnostic status', transport => transport.selftest(false), signal, allowed).then(record => record ? diagnosticReading(record) : undefined) }
   /** The existing meter windows, without running a self-test or starting DSP work. */
   liveLoad(signal?: AbortSignal, allowed: () => boolean = () => true) { return this.read('load', transport => transport.load(signal), signal, allowed) }
+  /** The unit's own diagnostics log (diag.c); background diagnostics call this only after explicit consent. */
+  deviceLog(signal?: AbortSignal, allowed: () => boolean = () => true) { return this.read('diagnostics log', transport => transport.deviceLog(signal), signal, allowed) }
   /** Private recovery export: holds one link lock for both fixed saved files, with no card writes. */
   savedBackup(signal?: AbortSignal) { return this.read('saved module files', transport => transport.savedBackup(signal), signal) }
   /** The modules the unit's project names that are not installed, while it is idle ([] from a base without MISSING);

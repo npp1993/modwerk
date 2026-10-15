@@ -8,12 +8,14 @@ import { OctatrackLink, type LinkDevice, type LinkSession, type LinkUsb } from '
 import { UploadDeviceError } from '../engine/elekloader/upload-session.ts'
 import { SELFTEST_BYTES, VENDOR_CLASS, VENDOR_PROTOCOL, VENDOR_SUBCLASS } from '../engine/elekloader/upload-usb.ts'
 import type { UploadPhaseName, UploadResultName, UploadStatus } from '../engine/elekloader/upload-wire.ts'
+import baseBinding from '../../sdk/machines/octatrack/base-binding.json' with { type: 'json' }
 
-export const FAKE_BASE = '5b'.repeat(32)
+/** The published base, so the pretend unit is a tester who is up to date (older bases are told to update). */
+export const FAKE_BASE: string = baseBinding.identity
 const ascii = (text: string) => Array.from(text, char => char.charCodeAt(0))
 /** IDENTIFY as sdk/runtime/upload/vendor.c sends it: version 1, can submit, limits, base, model. */
 const identity = Uint8Array.from([...ascii('MWUI'), 1, 1, 0, 1, 0x10, 0x34, 0, 0x98, 0, 0, 0, 0,
-  ...Array.from({ length: 32 }, () => 0x5b), ...ascii('OCTATRACK MKII'), 0, 0, ...new Array(8).fill(0)])
+  ...Array.from({ length: 32 }, (_, i) => parseInt(FAKE_BASE.slice(2 * i, 2 * i + 2), 16)), ...ascii('OCTATRACK MKII'), 0, 0, ...new Array(8).fill(0)])
 
 type Listener = (event: { device: LinkDevice }) => void
 export interface FakeUnit {

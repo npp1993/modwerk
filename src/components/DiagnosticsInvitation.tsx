@@ -9,9 +9,10 @@ import './diagnostics.css'
 
 export function DiagnosticDetails() {
   return <details className="diagnostics-details"><summary>What gets shared</summary>
-    <p>Browser failures are recorded only as error categories. Build failures include the type of build and the stage that failed. No error messages, stack traces, file names or page addresses are sent.</p>
-    <p>When you use Octatrack USB sync, reports can also include base and running-set hashes, package hashes and sizes, module IDs with this site’s catalogue versions, connection and sync events, self-test results, load peaks and refusal codes. An older installed module may have a different version. Status is read at most every 30 seconds while the connection is idle.</p>
-    <p>No firmware, samples, audio, project contents, set names, device serial numbers, raw memory or crash dumps. Reports use Modwerk’s Cloudflare service and aren’t posted to GitHub or shared with module authors.</p>
+    <p>Browser failures are recorded as the type of error and the part of the site that was open. Build failures include the type of build and the stage that failed. No error messages, stack traces, file names or page addresses are sent.</p>
+    <p>When you use Octatrack USB sync, reports can also include base and running-set hashes, package hashes and sizes, module IDs with this site’s catalogue versions, connection and sync events, self-test results, load readings and refusal codes. An older installed module may have a different version. While your Octatrack is connected, its CPU and DSP load are read every 30 seconds and sent every 5 minutes, at once when the CPU goes above 90 %, and when the Octatrack stops answering.</p>
+    <p>The Octatrack also keeps a small log of its own, also while this site is closed: its load and whether it was playing, overloads, freezes and crashes, and at such a moment each track’s machine type and effects, playing or stopped, the tempo, the screen that was open and the last 16 keys pressed. The site sends that log the next time you connect.</p>
+    <p>No firmware, samples, audio, project, sample or set names, device serial numbers, raw memory or crash dumps. Reports use Modwerk’s Cloudflare service and aren’t posted to GitHub or shared with module authors. I may have an AI assistant (Anthropic’s Claude) help me read them; for that, they are sent to Anthropic.</p>
     <p>Consent is optional under GDPR Article 6(1)(a). You can stop sharing and delete reports in Account → Diagnostics. Your account data download includes them. Reports are hidden after 30 days and deleted by hourly cleanup, with at most 1,000 entries per account. <a href="#privacy" target="_blank" rel="noreferrer">Privacy and your rights</a>.</p>
     <p>Separate daily sync-action counts contain no account, device, module or session identifier. They last 30 days and follow your usage-count preference and browser privacy signals.</p>
   </details>
@@ -40,7 +41,7 @@ export function DiagnosticsInvitation({onClose,onLeave,preview=false}: {onClose:
     {preview && <p className="diagnostics-preview">Preview · no data is shared</p>}
     <p id="diagnostics-intro" className="diagnostics-intro">If a build or sync fails, a technical report helps us see where it went wrong and fix the problem.</p>
     <ul className="diagnostics-facts">
-      <li><Icon name="search" size={19}/><div><strong>What went wrong</strong><p>Browser and build failure categories, plus sync results and performance readings when you connect your Octatrack.</p></div></li>
+      <li><Icon name="search" size={19}/><div><strong>What went wrong</strong><p>Browser and build failure categories, plus sync results, load, freezes and what your Octatrack was doing at the time.</p></div></li>
       <li><Icon name="lock" size={19}/><div><strong>Private, for 30 days</strong><p>Reports are linked to your account and visible only to you and site administrators.</p></div></li>
     </ul>
     <p className="diagnostics-connected">Trying the Octatrack beta? Keep this page open and your Octatrack connected so we can receive a report if something fails.</p>

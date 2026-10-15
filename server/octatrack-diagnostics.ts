@@ -2,7 +2,7 @@ import type { Database, User } from './platform'
 import { needMember, sameDigest, throttle } from './auth'
 import { boundedBody, digest, HttpError, response } from './security'
 import { MODULES } from '../src/catalog/modules'
-import { DIAGNOSTIC_CONSENT_DAYS, DIAGNOSTIC_BUILD_ERRORS, DIAGNOSTIC_BUILD_KINDS, DIAGNOSTIC_BUILD_PHASES, DIAGNOSTIC_ERRORS, DIAGNOSTIC_EVENTS, DIAGNOSTIC_PHASES, DIAGNOSTIC_RESULTS, DIAGNOSTIC_RETENTION_DAYS, DIAGNOSTIC_USB_ERRORS, DIAGNOSTIC_USB_PHASES, OCTATRACK_DIAGNOSTICS_VERSION, type DiagnosticConsent, type OctatrackDiagnostic } from '../src/community/octatrack-diagnostics-contract'
+import { DEVICE_INCIDENTS, DEVICE_LOG_INCIDENTS, DEVICE_LOG_LOADS, DIAGNOSTIC_CONSENT_DAYS, DIAGNOSTIC_BUILD_ERRORS, DIAGNOSTIC_BUILD_KINDS, DIAGNOSTIC_BUILD_PHASES, DIAGNOSTIC_ERROR_KINDS, DIAGNOSTIC_ERRORS, DIAGNOSTIC_EVENTS, DIAGNOSTIC_PHASES, DIAGNOSTIC_RESULTS, DIAGNOSTIC_RETENTION_DAYS, DIAGNOSTIC_SITE_AREAS, DIAGNOSTIC_UNRESPONSIVE, DIAGNOSTIC_USB_ERRORS, DIAGNOSTIC_USB_PHASES, OCTATRACK_DIAGNOSTICS_VERSION, type DiagnosticConsent, type OctatrackDiagnostic } from '../src/community/octatrack-diagnostics-contract'
 
 const since = (now: Date, days: number) => new Date(now.getTime() - days * 86400000).toISOString()
 const hash = (v: unknown) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v)
@@ -14,9 +14,37 @@ async function bodyOf(request: Request) {
   try { return JSON.parse(new TextDecoder().decode(await boundedBody(request, 8192))) as unknown }
   catch (error) { if (error instanceof HttpError) throw error; throw new HttpError(400, 'Invalid diagnostics.') }
 }
+const upTo = (v: unknown, most: number) => uint(v) && (v as number) <= most
+const pair = (v: unknown, most: number) => Array.isArray(v) && v.length === 2 && v.every(n => upTo(n, most))
+const bytes = (v: unknown, n: number) => Array.isArray(v) && v.length === n && v.every(b => upTo(b, 255))
+const exactly = (v: Record<string, unknown>, names: string) => Object.keys(v).sort().join(',') === names
+function live(v: unknown) {
+  return object(v) && fields(v, ['samples','cpu','dsp1to4','dsp5to8']) && upTo(v.samples, 10000) && ['cpu','dsp1to4','dsp5to8'].every(k => !(k in v) || pair(v[k], 1000))
+}
+function deviceLoad(v: unknown) {
+  return object(v) && exactly(v, 'boot,cpu,dsp1to4,dsp5to8,minute,playing,samples,seq') && uint(v.seq) && uint(v.boot) && uint(v.minute)
+    && ['cpu','dsp1to4','dsp5to8'].every(k => pair(v[k], 0xffff)) && upTo(v.samples, 0xffff) && upTo(v.playing, 0xffff)
+}
+function deviceIncident(v: unknown) {
+  return object(v) && exactly(v, 'a,boot,cpu,dsp1to4,dsp5to8,fx,keys,kind,machines,playing,screen,second,seq,tempo24')
+    && DEVICE_INCIDENTS.some(kind => kind === v.kind) && ['seq','boot','second','a','screen','tempo24'].every(k => uint(v[k]))
+    && ['cpu','dsp1to4','dsp5to8'].every(k => upTo(v[k], 0xffff)) && bytes(v.machines, 24) && bytes(v.fx, 16) && bytes(v.keys, 16) && typeof v.playing === 'boolean'
+}
+function deviceLog(v: unknown) {
+  return object(v) && exactly(v, 'incidents,loads') && Array.isArray(v.loads) && Array.isArray(v.incidents) && v.loads.length + v.incidents.length > 0
+    && v.loads.length <= DEVICE_LOG_LOADS && v.loads.every(deviceLoad) && v.incidents.length <= DEVICE_LOG_INCIDENTS && v.incidents.every(deviceIncident)
+}
+/** Which of the newer fields each USB event may carry; any other USB event carries none of them. */
+const USB_EXTRAS: Record<string, { allowed: string[]; required: string[] }> = {
+  load: { allowed: ['live'], required: ['live'] },
+  unresponsive: { allowed: ['live', 'reason'], required: ['reason'] },
+  device_log: { allowed: ['log'], required: ['log'] },
+}
 export function validateDiagnostic(value: unknown): OctatrackDiagnostic {
   const readingKeys = ['state','failed','modules','dsp','intact','ran','cpu','tracks1to4','tracks5to8','frameGap','saved','savedCount','live','culprit','refusal']
-  const valid = object(value) && fields(value, ['id','event','phase','base','active','error','result','refusal','reading','modules','packages','buildKind'])
+  const valid = object(value) && fields(value, ['id','event','phase','base','active','error','result','refusal','reading','modules','packages','buildKind','live','reason','log','area','kind'])
+    && (!('live' in value) || live(value.live)) && (!('reason' in value) || DIAGNOSTIC_UNRESPONSIVE.some(reason => reason === value.reason))
+    && (!('log' in value) || deviceLog(value.log))
     && typeof value.id === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(value.id)
     && DIAGNOSTIC_EVENTS.some(event => event === value.event) && DIAGNOSTIC_PHASES.some(phase => phase === value.phase)
     && (!('base' in value) || hash(value.base)) && (!('active' in value) || hash(value.active))
@@ -26,12 +54,17 @@ export function validateDiagnostic(value: unknown): OctatrackDiagnostic {
     && (!('modules' in value) || Array.isArray(value.modules) && value.modules.length <= 64 && value.modules.every(module => object(module) && Object.keys(module).sort().join(',') === 'catalogVersion,id'
       && MODULES.some(known => known.id === module.id) && typeof module.catalogVersion === 'string' && /^[0-9][0-9A-Za-z.+-]{0,63}$/.test(module.catalogVersion)) && new Set(value.modules.map(module => module.id)).size === value.modules.length)
     && (!('packages' in value) || Array.isArray(value.packages) && value.packages.length <= 64 && value.packages.every(pack => object(pack) && Object.keys(pack).sort().join(',') === 'bytes,sha256' && hash(pack.sha256) && uint(pack.bytes)))
+  const extras = valid ? USB_EXTRAS[value.event as string] ?? { allowed: [], required: [] } : undefined
   const eventFields = valid && (value.event === 'browser_error' || value.event === 'unhandled_rejection'
-    ? Object.keys(value).sort().join(',') === 'event,id,phase' && value.phase === 'browser'
+    ? Object.keys(value).sort().join(',') === 'area,event,id,kind,phase' && value.phase === 'browser'
+      && DIAGNOSTIC_SITE_AREAS.some(area => area === value.area) && DIAGNOSTIC_ERROR_KINDS.some(kind => kind === value.kind)
     : value.event === 'build_failed'
       ? Object.keys(value).sort().join(',') === 'buildKind,error,event,id,phase' && DIAGNOSTIC_BUILD_KINDS.some(kind => kind === value.buildKind)
         && DIAGNOSTIC_BUILD_PHASES.some(phase => phase === value.phase) && DIAGNOSTIC_BUILD_ERRORS.some(error => error === value.error)
-      : !('buildKind' in value) && DIAGNOSTIC_USB_PHASES.some(phase => phase === value.phase) && (!('error' in value) || DIAGNOSTIC_USB_ERRORS.some(error => error === value.error)))
+      : !('buildKind' in value) && !('area' in value) && !('kind' in value) && DIAGNOSTIC_USB_PHASES.some(phase => phase === value.phase)
+        && (!('error' in value) || DIAGNOSTIC_USB_ERRORS.some(error => error === value.error))
+        && ['live','reason','log'].every(key => !(key in value) || extras!.allowed.includes(key)) && extras!.required.every(key => key in value)
+        && (value.event !== 'device_log' || !('modules' in value) && !('reading' in value) && !('packages' in value)))
   if (!eventFields) throw new HttpError(400, 'Invalid diagnostics. Only documented technical fields are accepted.')
   return value as unknown as OctatrackDiagnostic
 }

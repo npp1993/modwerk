@@ -10,12 +10,13 @@ import type { DiagnosticReading } from '../community/octatrack-diagnostics-contr
 import { OctatrackHub, type HubView } from './OctatrackHub'
 import { OctatrackActivity } from './OctatrackStatus'
 import { recordLoad } from '../hooks/useOctatrackLoad'
+import baseBinding from '../../sdk/machines/octatrack/base-binding.json' with { type: 'json' }
 
 vi.mock('./OctatrackDiagnostics', () => ({ OctatrackDiagnosticsSettings: () => null }))
 vi.mock('../engine/elekloader/module-set', async original => ({ ...await original<typeof import('../engine/elekloader/module-set')>(), moduleSetReview: vi.fn() }))
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); sessionStorage.clear(); localStorage.clear() })
 
-const ready: LinkState = { status: 'ready', identity: { canSubmit: true, base: '5b'.repeat(32), model: 'OCTATRACK MKII' } }
+const ready: LinkState = { status: 'ready', identity: { canSubmit: true, base: baseBinding.identity, model: 'OCTATRACK MKII' } }
 const reading: DiagnosticReading = { state: 3, failed: 4, modules: 2, dsp: 1, intact: 2, ran: 1, cpu: 412, tracks1to4: 238, tracks5to8: 655, frameGap: 47900, saved: 7, savedCount: 2, live: 2, culprit: 0, refusal: 0 }
 function unit(state: LinkState = ready) {
   return { getState: () => state, subscribe: () => () => {}, start: () => () => {}, update: vi.fn(), health: vi.fn(async () => reading), liveLoad: vi.fn(async () => undefined), savedBackup: vi.fn(async () => undefined), test: vi.fn(async () => 'the Octatrack couldn’t start it; stop playback and try again') } as unknown as OctatrackLink & { health: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }
@@ -54,6 +55,15 @@ describe('the Octatrack page', () => {
     expect(props.onSync).toHaveBeenCalledExactlyOnceWith(second.id); expect(link.update).not.toHaveBeenCalled()
   })
 
+  it('asks a unit on an older base to install the current one before anything syncs', async () => {
+    const set = newConfiguration('Live', ['miniverb']), props = callbacks(), inventory = { moduleIds: [], removedStockFx: [] }
+    const link = unit({ status: 'ready', identity: { canSubmit: true, base: 'a'.repeat(64), model: 'OCTATRACK MKII' } })
+    vi.mocked(moduleSetReview).mockReturnValue({ changes: { add: ['miniverb'], remove: [], stockOff: [], stockOn: [] }, updates: [], needsSync: true, problem: undefined })
+    await act(() => root.render(createElement(OctatrackHub, { ...props, view: 'set', link, inventory, sets: [set], selectedId: set.id, header: null, grid: null, card: null })))
+    expect(open().querySelector('.hub-sync')?.textContent).toContain('Install the latest Modwerk base')
+    await act(() => button('Install latest base').click())
+    expect(props.onInstall).toHaveBeenCalledOnce(); expect(link.update).not.toHaveBeenCalled()
+  })
   it('acts on one set from its row menu and starts an empty set from what is on the unit', async () => {
     const live = newConfiguration('Live', ['miniverb']), empty = newConfiguration('Empty', [])
     const props = callbacks(), inventory = { moduleIds: ['miniverb', 'synth'], removedStockFx: [] }

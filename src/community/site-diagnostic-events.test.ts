@@ -60,7 +60,7 @@ describe('consent-bound fixed site diagnostics', () => {
     const error = new Error('PRIVATE'), event = new ErrorEvent('error', { error, filename: 'PRIVATE', message: 'PRIVATE', cancelable: true })
     target.dispatchEvent(event)
     const unhandled = rejection(target, Promise.resolve(), error)
-    expect(receive.mock.calls).toEqual([[{ event: 'browser_error', phase: 'browser' }], [{ event: 'unhandled_rejection', phase: 'browser' }]])
+    expect(receive.mock.calls).toEqual([[{ event: 'browser_error', phase: 'browser', area: 'library', kind: 'OtherError' }], [{ event: 'unhandled_rejection', phase: 'browser', area: 'library', kind: 'OtherError' }]])
     expect(event.defaultPrevented).toBe(false); expect(unhandled.defaultPrevented).toBe(false)
   })
   it('omits expected aborts and cancelled builds, including their unhandled fallback', async () => {

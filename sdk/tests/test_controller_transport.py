@@ -29,6 +29,7 @@ volatile uint32_t test_clock;
 static unsigned sr,masked,interleave,flags[2],masks[2],writes,source_ok=1,resource_ok=1,owner_ok=1;
 static unsigned policy_calls;
 unsigned modwerk_dsp_flags(unsigned c) { return flags[c]; }
+void modwerk_diag_frame(void) {} /* diag.c: the frame interrupt's freeze watch */
 unsigned mw_controller_transport_test_sr(void) { return sr; }
 uint32_t modwerk_machine_lock(void) { unsigned old=sr;if(sr<0x400u) sr=0x400u;return old; }
 void modwerk_machine_unlock(uint32_t old) { assert(sr==0x400u);sr=old; }
