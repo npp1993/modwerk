@@ -325,6 +325,20 @@ int main(int argc,char **argv) {
         progress.phase=RJ_TRIAL;assert(!mw_manager_journal_accept(9,&r,1) && !journal_accepted && journal_count==1);
         progress.phase=RJ_IDLE;assert(mw_manager_journal_release(9)==0 && journal_generation==9); /* rebound: only its reverse releases */
         journal_quarantined=1;progress.phase=RJ_TRIAL;assert(mw_manager_journal_accept(9,&r,1)==-1); /* unknown */
+    } else if(mode==11 || mode==12) { /* a move's BIND (11) or upload (12) refused: the rollback rebinds the old copy, which
+                                       * keeps its generation */
+        allocator.live[1][40].present=0;binding_generation=99; /* whatever a bind before left there */
+        assert(dl_move(0,40,300)==1);
+        for(unsigned n=0;n<400 && phase;++n) {
+            dl_residency_tick();dl_frame();observe();
+            refuse[0]=mode==11 ? find(0,DL_BIND,0) && !find(0,DL_BIND,1) : !find(0,DL_BIND,0); /* the way back is not */
+            answer();
+        }
+        const struct packet *to=mode==11 ? find(0,DL_BIND,0) : 0,*back=find(0,DL_BIND,mode==11);
+        assert(!phase && back && back->init==64+1 && back->proc==64+2 && !count(0,DL_BYPASS) && count(0,DL_BIND)==2u-(mode==12));
+        assert(mode==12 ? count(0,DL_WRITE)==1 : to->init==64+300+1);
+        assert(allocator.live[0][40].offset==0 && bound_generation[0][40]==5 && !fx_in(stubbed[0],40));
+        assert(mw_manager_journal_freeze(7)==1 && mw_manager_journal_stage(7,&r,0)==1); /* still its bound predecessor */
     } else assert(0);
     return 0;
 }
@@ -379,7 +393,7 @@ class ResidentJournal(unittest.TestCase):
             result = subprocess.run(['cc', *flags, *includes, *map(str, sources), '-o', str(executable)],
                                     capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
-            for mode in range(11):
+            for mode in range(13):
                 with self.subTest(mode=mode):
                     result = subprocess.run([str(executable), str(mode)], capture_output=True, text=True)
                     self.assertEqual(result.returncode, 0, result.stderr)

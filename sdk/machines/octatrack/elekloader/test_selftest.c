@@ -9,6 +9,7 @@
 #define MODWERK_HOST_SELFTEST
 #include "sha256.c"
 #include "dsp.c"
+volatile uint32_t dl_residency_words[2]; /* manager.c: each core's resident code words (dsp.c's budget box) */
 #include "fxmap.c"
 #include <stdio.h>
 #include <string.h>

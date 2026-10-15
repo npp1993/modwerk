@@ -1,0 +1,29 @@
+You’re invited to the Modwerk beta
+
+Hey guys,
+
+the past week I’ve been working on a big Octatrack update, and I’d love for you to try it before it’s out for everyone.
+
+- Flash modules over USB
+  Install the Modwerk base once from the card, then connect directly via USB – no card, no reboot.
+- All modules work together
+  All 19 can be on your Octatrack at the same time, including the beta-only POLY8 and Air Chorus.
+- Smarter DSP use
+  FX get loaded onto the DSP chip only when a track uses them, and tracks on the same core share one copy of the code.
+- A status page for your Octatrack
+  What’s on it, its CPU and DSP load, and the last self-test.
+
+You’ll need an Octatrack MKII, your OS 1.40C file, a USB cable and Chrome or Edge on a computer. The beta is limited to 50 people.
+
+Join the beta (https://modwerk.app/#beta/join/00000000000000000000000000000000)
+
+It’s still a beta and not safe to use in a live setting (yet) – you’ll find the details and risks on the site. Let me know what you think in the development Discord!
+
+Thank you,
+Jannik
+
+You’re receiving this because you opted in to Modwerk news. You can turn news emails off in your account settings at any time.
+https://modwerk.app/#account/notifications
+
+Modwerk · https://modwerk.app/
+Need help? support@modwerk.app

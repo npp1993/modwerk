@@ -10,6 +10,7 @@
 #define MW_REVIEWED_JOURNAL_ASSOCIATIONS {{0}, 0, {0}},
 #include "sha256.c"
 #include "dsp.c"
+volatile uint32_t dl_residency_words[2]; /* manager.c: each core's resident code words (dsp.c's budget box) */
 #include "fxmap.c"
 #include "fxpage.c"
 #include "journal_board.c"

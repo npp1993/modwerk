@@ -450,6 +450,25 @@ describe('loading a module set', () => {
   })
 })
 
+describe('the self-test from Status', () => {
+  afterEach(() => { vi.restoreAllMocks() })
+  const record = (state: number, failed = 0) => ({ state, failed, modules: 1, dsp: 1, intact: 1, ran: 1, peaks: { cpu: 0, tracks1to4: 0, tracks5to8: 0 }, done: 1, total: 2, frameGap: 0, saved: 0, savedCount: 0, live: 1, culprit: 0, culpritName: '', refusal: 0 })
+  it('runs on its own while idle, shows progress, and leaves the result to the base’s record', async () => {
+    const { link } = await linked(), seen: string[] = []
+    const stop = link.subscribe(() => seen.push(link.getState().status))
+    vi.spyOn(UsbVendorTransport.prototype, 'selftest').mockResolvedValueOnce(record(1)).mockResolvedValueOnce(record(3, 4))
+    expect(await link.test()).toBeNull()
+    expect(seen).toContain('testing'); expect(link.getState().status).toBe('ready')
+    stop()
+  })
+  it('says why when the base won’t start it', async () => {
+    const { link } = await linked()
+    vi.spyOn(UsbVendorTransport.prototype, 'selftest').mockResolvedValue(record(0))
+    expect(await link.test()).toBe('the Octatrack couldn’t start it; stop playback and try again')
+    expect(link.getState().status).toBe('ready')
+  })
+})
+
 describe('several tabs of the site', () => {
   const data = (n: number) => new Uint8Array(4000).fill(n)
   async function tabs() {

@@ -148,6 +148,9 @@ class ToolSyntax(unittest.TestCase):
             with self.subTest(source=str(source.relative_to(ROOT))):
                 ast.parse(source.read_text(encoding='utf-8'), str(source))
 
+# Builder extensions after the Poly8 record, oldest first. Each proves its own exact before/after transition.
+EXTENSIONS = ['air-chorus-split-builder.json', 'plain-formatter-builder.json']
+
 class SelectiveImport(unittest.TestCase):
     def assert_current_builder_identity(self, path, historical):
         import hashlib, json
@@ -158,12 +161,23 @@ class SelectiveImport(unittest.TestCase):
         current = adaptation['after'] if adaptation else historical
         # Keep the earlier import and Poly8 records historical. Each later
         # opt-in extension proves its own exact before/after transition.
-        extension = json.loads((ROOT.parent / 'infrastructure-verification/air-chorus-split-builder.json').read_text())
-        adaptation = extension['builderAdaptations'].get(path)
-        if adaptation:
-            self.assertEqual(adaptation['before'], current)
-            current = adaptation['after']
+        for name in EXTENSIONS:
+            extension = json.loads((ROOT.parent / 'infrastructure-verification' / name).read_text())
+            adaptation = extension['builderAdaptations'].get(path)
+            if adaptation:
+                self.assertEqual(adaptation['before'], current)
+                current = adaptation['after']
         self.assertEqual(hashlib.sha256((ROOT / path).read_bytes()).hexdigest(), current)
+
+    def assert_extension_holds(self, name, path, after):
+        """An extension's result is the current file, or the next extension's starting point."""
+        import hashlib, json
+        for later in EXTENSIONS[EXTENSIONS.index(name) + 1:]:
+            adaptation = json.loads((ROOT.parent / 'infrastructure-verification' / later).read_text())['builderAdaptations'].get(path)
+            if adaptation:
+                self.assertEqual(adaptation['before'], after)
+                return
+        self.assertEqual(hashlib.sha256((ROOT / path).read_bytes()).hexdigest(), after)
 
     def test_air_chorus_extension_preserves_existing_native_builds(self):
         import hashlib, json
@@ -172,9 +186,21 @@ class SelectiveImport(unittest.TestCase):
         self.assertEqual(set(record['builderAdaptations']), {'tools/build/build_bus.py', 'tools/build/ab_image.py', 'tools/remix/schema.py'})
         self.assertEqual(len(record['selections']), 38)
         for path, change in record['builderAdaptations'].items():
-            self.assertEqual(hashlib.sha256((ROOT / path).read_bytes()).hexdigest(), change['after'])
+            self.assert_extension_holds('air-chorus-split-builder.json', path, change['after'])
         for row in record['selections']:
             self.assertNotIn('airwindows-chorus', row['moduleIds'])
+            self.assertEqual(row['before'], row['after'])
+
+    def test_plain_formatter_fix_preserves_native_builds(self):
+        import json
+        record = json.loads((ROOT.parent / 'infrastructure-verification/plain-formatter-builder.json').read_text())
+        self.assertEqual(record['kind'], 'plain-formatter-builder-regression')
+        self.assertEqual(set(record['builderAdaptations']), {'tools/build/build_bus.py'})
+        self.assertGreaterEqual(len(record['selections']), 38)
+        self.assertTrue(any('airwindows-chorus' in row['moduleIds'] for row in record['selections']))
+        for path, change in record['builderAdaptations'].items():
+            self.assert_extension_holds('plain-formatter-builder.json', path, change['after'])
+        for row in record['selections']:
             self.assertEqual(row['before'], row['after'])
 
     def test_poly8_builder_preserves_current_main_without_poly8(self):

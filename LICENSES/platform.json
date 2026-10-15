@@ -40,6 +40,7 @@
     "src/community/report-closure.ts",
     "src/community/usage-contract.ts",
     "src/community/usage-pages.ts",
+    "src/config/beta-invitation.ts",
     "src/config/development-discord.ts",
     "src/config/support.ts",
     "src/config/usb-audio.ts",
@@ -50,6 +51,7 @@
   ],
   "dataFiles": [
     ".github/module-authors.json",
+    "docs/news/008-beta-invitation.draft.json",
     "sdk/catalog.json",
     "src/catalog/machine-modules.json",
     "src/catalog/module-documents.json",

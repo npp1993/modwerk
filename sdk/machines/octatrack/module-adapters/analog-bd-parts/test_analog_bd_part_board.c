@@ -30,6 +30,10 @@ int main(void)
     const uint32_t outside[]={BANK0,BANK0+0x8ed80u-1u,BANK0+0x8ed80u+4u*STRIDE,BANK0+16u*BANK_STRIDE+0x8ed80u,0x40000400u,0x47000000u,0x100a4eceu-4u,0xfffffffeu};
     for(unsigned i=0;i<sizeof outside/sizeof outside[0];++i){assert(!mw_ab_part_board_access(outside[i],2,0) && !mw_ab_part_board_access(outside[i],2,1));++cases;}
     assert(!mw_ab_part_board_access(BANK0+0x8ed80u,0,0) && !mw_ab_part_board_access(BANK0+0x8ed80u,5,1));cases+=2;
+    /* Stock's bind state is the frame builder's alone: the renderer and type tables, both renderer slots of every
+     * track and the per-ping machine types. The conversion keeps each track FLEX, so stock's own bind stays exact. */
+    const uint32_t bind[]={0x400d6434u,0x400d6438u,0x400d6454u,0x400d61d0u,0x400d61dcu,0x400d61f0u,0x400d61fcu,0x400d620cu,0x80000eb4u,0x80000ebcu};
+    for(unsigned i=0;i<sizeof bind/sizeof bind[0];++i){assert(!mw_ab_part_board_access(bind[i],1,1) && !mw_ab_part_board_access(bind[i],4,1));cases+=2;}
     printf("PASS AB board access window: %u cases; writes only inside the 138 Part records\n",cases);
     return 0;
 }

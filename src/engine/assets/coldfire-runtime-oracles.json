@@ -576,7 +576,7 @@
       },
       "expected": {
         "bytes": 143628,
-        "sha256": "210ea37715929a3aec750200a88272c51f8d176cb5898053438023da3cc03aee",
+        "sha256": "92794b4e97d8d7ad9612d7d0bc16a3d61bac27d05ca9a3a63de0a65d9c2c5f05",
         "exports": {
           "dl_accepted": 1084973180,
           "dl_allocator_ack": 1084845684,
@@ -597,13 +597,13 @@
           "dl_buffers_retire": 1084854422,
           "dl_buffers_written": 1084854402,
           "dl_bypass_unbound": 1084981860,
-          "dl_catalog": 1084868920,
+          "dl_catalog": 1084868852,
           "dl_chain_deferred": 1084980624,
           "dl_chain_dropped": 1084980616,
           "dl_chain_restarted": 1084980620,
           "dl_chain_stop": 1084851190,
           "dl_chain_stop_guard": 1084847838,
-          "dl_codes": 1084869304,
+          "dl_codes": 1084869236,
           "dl_command_start": 1084840288,
           "dl_errors": 1084973168,
           "dl_frame": 1084840620,
@@ -621,7 +621,7 @@
           "dl_pattern_post": 1084851154,
           "dl_pattern_post_body": 1084851176,
           "dl_pattern_request_guard": 1084847618,
-          "dl_pmap16": 1084868916,
+          "dl_pmap16": 1084868848,
           "dl_pool_base": 1084973124,
           "dl_pool_words": 1084973116,
           "dl_project_admitted": 1084980032,
@@ -674,7 +674,7 @@
           "dl_selection_requested": 1084980018,
           "dl_selection_tick": 1084844066,
           "dl_state7": 1084841796,
-          "dl_stub_at_boot": 1084868912,
+          "dl_stub_at_boot": 1084868844,
           "dl_tick": 1084842174,
           "dl_tick2": 1084842214,
           "dl_tx": 1084973320,
@@ -686,7 +686,7 @@
           "te_cpu_reset": 1084864252,
           "te_filter_block": 1084865968,
           "te_process": 1084862308,
-          "te_read_linear": 1084867600,
+          "te_read_linear": 1084867532,
           "te_states": 1084864368,
           "te_tape_block": 1084866200,
           "te_target": 1084862176
@@ -695,11 +695,11 @@
           {
             "name": ".text",
             "address": 1084839392,
-            "size": 29382
+            "size": 29314
           },
           {
             "name": ".rodata",
-            "address": 1084868776,
+            "address": 1084868708,
             "size": 102972
           },
           {
@@ -838,7 +838,7 @@
       },
       "expected": {
         "bytes": 155884,
-        "sha256": "6ca4ae86fba544324a4f9df9ebf190694413e9d4501168c1ac528d5b3df99fee",
+        "sha256": "242fadaa17f1c65e124e295c7e49501ce9f23833e567a088984b8427bc37537e",
         "exports": {
           "dl_accepted": 150140,
           "dl_allocator_ack": 10388,
@@ -859,13 +859,13 @@
           "dl_buffers_retire": 19126,
           "dl_buffers_written": 19106,
           "dl_bypass_unbound": 158820,
-          "dl_catalog": 38940,
+          "dl_catalog": 38872,
           "dl_chain_deferred": 157584,
           "dl_chain_dropped": 157576,
           "dl_chain_restarted": 157580,
           "dl_chain_stop": 15894,
           "dl_chain_stop_guard": 12542,
-          "dl_codes": 39324,
+          "dl_codes": 39256,
           "dl_command_start": 4992,
           "dl_errors": 150128,
           "dl_frame": 5324,
@@ -883,7 +883,7 @@
           "dl_pattern_post": 15858,
           "dl_pattern_post_body": 15880,
           "dl_pattern_request_guard": 12322,
-          "dl_pmap16": 38936,
+          "dl_pmap16": 38868,
           "dl_pool_base": 150084,
           "dl_pool_words": 150076,
           "dl_project_admitted": 156992,
@@ -936,7 +936,7 @@
           "dl_selection_requested": 156978,
           "dl_selection_tick": 8770,
           "dl_state7": 6500,
-          "dl_stub_at_boot": 38932,
+          "dl_stub_at_boot": 38864,
           "dl_tick": 6878,
           "dl_tick2": 6918,
           "dl_tx": 150280,
@@ -960,7 +960,7 @@
           "te_cpu_reset": 34272,
           "te_filter_block": 35988,
           "te_process": 32328,
-          "te_read_linear": 37620,
+          "te_read_linear": 37552,
           "te_states": 34388,
           "te_tape_block": 36220,
           "te_target": 32196
@@ -969,11 +969,11 @@
           {
             "name": ".text",
             "address": 4096,
-            "size": 34698
+            "size": 34630
           },
           {
             "name": ".rodata",
-            "address": 38796,
+            "address": 38728,
             "size": 103020
           },
           {
@@ -1112,7 +1112,7 @@
       },
       "expected": {
         "bytes": 155916,
-        "sha256": "5730c06b87b6cfcb10babfd684daad929ee0a450abe06c4ac25a7ee06c07720c",
+        "sha256": "e61e67ddb645044ffcf674966121347cdcd1cc9496fbef2ae55397a5535c6f07",
         "exports": {
           "dl_accepted": 1084985468,
           "dl_allocator_ack": 1084845684,
@@ -1133,13 +1133,13 @@
           "dl_buffers_retire": 1084854422,
           "dl_buffers_written": 1084854402,
           "dl_bypass_unbound": 1084994148,
-          "dl_catalog": 1084874236,
+          "dl_catalog": 1084874168,
           "dl_chain_deferred": 1084992912,
           "dl_chain_dropped": 1084992904,
           "dl_chain_restarted": 1084992908,
           "dl_chain_stop": 1084851190,
           "dl_chain_stop_guard": 1084847838,
-          "dl_codes": 1084874620,
+          "dl_codes": 1084874552,
           "dl_command_start": 1084840288,
           "dl_errors": 1084985456,
           "dl_frame": 1084840620,
@@ -1157,7 +1157,7 @@
           "dl_pattern_post": 1084851154,
           "dl_pattern_post_body": 1084851176,
           "dl_pattern_request_guard": 1084847618,
-          "dl_pmap16": 1084874232,
+          "dl_pmap16": 1084874164,
           "dl_pool_base": 1084985412,
           "dl_pool_words": 1084985404,
           "dl_project_admitted": 1084992320,
@@ -1210,7 +1210,7 @@
           "dl_selection_requested": 1084992306,
           "dl_selection_tick": 1084844066,
           "dl_state7": 1084841796,
-          "dl_stub_at_boot": 1084874228,
+          "dl_stub_at_boot": 1084874160,
           "dl_tick": 1084842174,
           "dl_tick2": 1084842214,
           "dl_tx": 1084985608,
@@ -1234,7 +1234,7 @@
           "te_cpu_reset": 1084869568,
           "te_filter_block": 1084871284,
           "te_process": 1084867624,
-          "te_read_linear": 1084872916,
+          "te_read_linear": 1084872848,
           "te_states": 1084869684,
           "te_tape_block": 1084871516,
           "te_target": 1084867492
@@ -1243,11 +1243,11 @@
           {
             "name": ".text",
             "address": 1084839392,
-            "size": 34698
+            "size": 34630
           },
           {
             "name": ".rodata",
-            "address": 1084874092,
+            "address": 1084874024,
             "size": 103020
           },
           {

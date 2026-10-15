@@ -475,6 +475,25 @@ unsigned modwerk_dsp_module_loads(struct modwerk_module_load *out)
     return n;
 }
 
+/* The budget box (status.c) for slot (FX1 T1-T8, then FX2): its core's ledger and code memory, the effect's time. */
+extern volatile uint32_t dl_residency_words[2];
+int modwerk_dsp_budget(unsigned slot, struct modwerk_dsp_budget *out)
+{
+    unsigned id = slot < 16u ? LIVE_FX[slot] : 0u, c = source_core(slot & 7u);
+    if (slot >= 16u || id >= MODWERK_FX_IDS || !owner[id]) return 0;
+    out->core = (uint8_t)c, out->allowance = c ? MODWERK_DSP_ALLOWANCE1 : MODWERK_DSP_ALLOWANCE0;
+    out->charge = slot_charge(c) + modwerk_dsp_source_charge(c), out->effect_cycles = dl_slot_cycles(slot);
+    out->words = dl_residency_words[c], out->arena = modwerk_dsp_arena[c];
+    for (unsigned i = 0; i < 16u; ++i) out->name[i] = owner_name[id][i];
+    return 1;
+}
+
+uint32_t modwerk_dsp_booked(unsigned core)
+{
+    uint32_t allowance = core ? MODWERK_DSP_ALLOWANCE1 : MODWERK_DSP_ALLOWANCE0, charge = slot_charge(core & 1u) + modwerk_dsp_source_charge(core);
+    return charge >= allowance ? 1000u : charge * 1000u / allowance;
+}
+
 /* Development only: a chooser pick or Part change replayed as the panel makes
  * it, for scripted hardware runs (a USB test command calls modwerk_dsp_pick
  * from the engine task; the sys task's tick runs it, with the selectors'

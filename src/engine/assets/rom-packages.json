@@ -155,7 +155,7 @@
           "externals": {}
         }
       ],
-      "version": "0.1.4-experimental"
+      "version": "0.1.5-experimental"
     },
     {
       "label": "wide-dial",
@@ -399,13 +399,13 @@
       "sha256": "fdba0ffd31b7932ceb1ded3bde9a976b6f148ae96fc73a4efc4fedf6fb692341"
     }
   ],
-  "sourceCommit": "00541e03f394846de9db316bb591c3ab25f4f6f9",
+  "sourceCommit": "5966c005b130fcf977572c4c13078bdd7d9b521b",
   "moduleVersions": {
     "spectrum": "0.1.1-experimental",
     "modulation": "0.1.1-experimental",
     "character": "0.1.1-experimental",
     "miniverb": "0.2.2-experimental",
-    "tapeecho": "0.1.4-experimental",
+    "tapeecho": "0.1.5-experimental",
     "euclid": "0.1.4-experimental",
     "repitch": "0.2.0-experimental",
     "tapehead": "0.1.2-experimental",

@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.1.5-experimental",
+    "date": "2026-10-15",
+    "changes": [
+      "Rollback of 0.1.4: Tape Echo runs the 0.1.3-experimental code again, unchanged. MIX is the plain dry/wet crossfade once more, so at the default MIX 90 the dry signal is at 29% (-10.7 dB). The level problem reported in [#607](https://github.com/repeat98/modwerk/issues/607) is back and not fixed.",
+      "Saved projects that were set up with 0.1.4 sound different at the same settings: the dry signal is up to 10.7 dB quieter at MIX 90. Raise the track volume or lower MIX to taste.",
+      "Verification: the runtime and its package rows are the reviewed 0.1.2/0.1.3 ones (retained evidence), rebuilt from source. No new hardware run, chip timing or listening test, and the hardware freeze at seven instances remains open."
+    ]
+  },
+  {
     "version": "0.1.4-experimental",
     "date": "2026-10-14",
     "changes": [
@@ -7,7 +16,8 @@
       "Unchanged on purpose: echo level, feedback law, tone and self-oscillation headroom. Raising the echo level to match the input was tried and rejected, because the highest feedback settings then clip the output at full wet (25% of samples at FDBK 102, 68% at FDBK 127, against none before).",
       "Saved projects sound different at the same settings: the dry signal is up to 10.7 dB louder at MIX 90 and the echoes sit lower against it. Lower MIX or the track volume to taste.",
       "Stereo, asked for in the same report, is not planned: a tape echo has one tape and one playback head, so the echo stays mono (the dry signal stays stereo), and a second channel would double its per-track CPU cost while the freeze at seven instances is still open.",
-      "Verification is software only: the changed mixer kernel matches the native arithmetic bit for bit on the ColdFire emulator (1,024 blocks across dry, full wet, mixed and ramping MIX), the host voicing gate gained dry-level checks, the browser builder matches native octabam on all 126 Tape Echo selections (54 images, 72 refusals, 0 mismatches) and on the 162 Analog BD compositions, and the USB package was rebuilt (host tests only, no run on a real base). No hardware run, chip timing or listening test exists for this version, and the earlier hardware freeze at seven instances remains open."
+      "Verification is software only: the changed mixer kernel matches the native arithmetic bit for bit on the ColdFire emulator (1,024 blocks across dry, full wet, mixed and ramping MIX), the host voicing gate gained dry-level checks, the browser builder matches native octabam on all 126 Tape Echo selections (54 images, 72 refusals, 0 mismatches) and on the 162 Analog BD compositions, and the USB package was rebuilt (host tests only, no run on a real base). No hardware run, chip timing or listening test exists for this version, and the earlier hardware freeze at seven instances remains open.",
+      "Beta base fix (beta test run 2, 14 Oct 2026; the package is unchanged): picking it showed DSP MEMORY FULL whenever the modules the bank's Parts name did not fit on a DSP core together, even with room for it, and a pick on T1-T4 could be refused for T5-T8's Parts. The base keeps the bank's modules loaded for instant Part changes only while they fit; on a core where they never fitted it now loads what the Part runs, so the pick goes through. Where they fit and the pick does not, DSP MEMORY FULL stays. Seen on a development twin with all 19 modules and bank A: Tape Echo and Mini Verb on T1 and T5 were refused before and are taken now; with the bank's modules held, Mini Verb is still refused on both cores and Tape Echo taken. The tester base itself has not run on the unit."
     ]
   },
   {

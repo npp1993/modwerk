@@ -377,6 +377,34 @@ with `-fno-late-combine-instructions`. `sdk/runtime/m68k_codegen.py`
 refuses any C object, in the base and elemod builds, where an instruction
 steps an address register in its source and reuses it in its destination.
 
+**Stock copies a table entry; restoring the table is not enough.** A track
+bind (`0x4000bff0`, in the frame builder, on a trig that asks for it) copies
+its machine type's renderer (`0x400d6434[type]`) into the track's
+next-renderer slot (`0x400d61f0`); every frame copies that into the
+current-renderer slot (`0x400d61d0`) and calls both (`0x4000d43c`). Start
+routines are called from their table (`0x400d6454[type]`) and never copied. A machine package patches the type table, so
+after it played, removing it put the table back but left the slots on its
+freed code: the unit kept running the removed module until the next install
+was copied over it, then crashed (vector 4 in pool code, beta run 2,
+finding 30, twin `025b3559`). The loader now calls
+`modwerk_machine_site_restored` whenever a site goes back to stock, and the
+Octatrack runtime puts slots that hold the removed entry back to the stock
+one. Any new site whose stock data is copied elsewhere needs the same
+follow-up; fill freed memory with illegal instructions on a dev twin to see
+such a leftover call at once instead of on a later install.
+
+**The boot validates the bank before any module is back.** At power-up and
+RAM boot stock restores the current bank from its battery-backed Part copies
+(`0x40025770`) and runs the Part validator on each first; the saved module set
+reinstalls modules only about 3 s later. One value the validator has to fix
+refuses the whole restore: the bank is never copied in or applied, every Part
+reads STATIC with stock defaults, no track is ever bound (renderer slots stay
+`0x400047f0`) and the unit is silent, while the fix is already written into
+the battery copy. A module whose Part bytes stock would reject must be kept
+from the validator by the base itself, before the module is installed (beta
+finding 24: Analog BD; reproduced on `ot_emu` with `--cs1-in --no-post`, twin
+`43fe3fc4`).
+
 ## The emulator and the tools
 
 What `ot_emu` does not show:
@@ -427,3 +455,10 @@ Tools that work on this Mac:
    and USB audio; the loader's own counter freezes once it is switched off.
 4. Keep the owner's projects out of it: a blank project avoids loads
    triggered by modules a project already uses.
+5. Which admission refused a pick: every cause (code arena, transition,
+   Y buffers, cycles) shows DSP MEMORY FULL. Read the manager's
+   `allocator` (`core:allocator` in the twin's `symbols.json`) right after
+   the refusal: with 128 effect ids a placement is 6 bytes (offset, words,
+   present), `live[2][128]` at +24 and `target[2][128]` at +1560; a failed
+   plan leaves its partial target, so the last id placed shows where it
+   ran out. `capacity[2]` at +4, `keep[2]` (the Parts' union) at +3132.

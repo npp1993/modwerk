@@ -151,7 +151,9 @@ char modwerk_menu_label[] = "MODWERK", modwerk_load_label[] = "LOAD", modwerk_mo
      modwerk_missing_label[] = "MISSING", modwerk_test_label[] = "SELF TEST";
 static unsigned missing_top, modules_top;
 static int missing_asked; /* MISSING opened from the menu: it stays open with nothing missing */
-void modwerk_load_menu(int unused) { (void)unused; if (menu_open()) open = SHOWN, close_menu = 1; }
+/* Opened from the menu, the page says for two seconds how to open it in one gesture (owner, 15 October 2026). */
+static uint32_t tip_until;
+void modwerk_load_menu(int unused) { (void)unused; if (menu_open()) open = SHOWN, close_menu = 1, tip_until = ticks + 120u; }
 void modwerk_modules_menu(int unused) { (void)unused; if (menu_open()) open = MODULE_LOAD, modules_top = 0, close_menu = 1; }
 void modwerk_missing_menu(int unused) { (void)unused; if (menu_open()) open = MISSING, missing_top = 0, missing_asked = 1, close_menu = 1; }
 /* SELF TEST (dsp.c's self-test): its page shows at once, the test starting if it can. */
@@ -199,27 +201,42 @@ extern uint8_t modwerk_test_live_fx[16];
 #endif
 extern volatile uint32_t dl_selection_completed, modwerk_boot_accepted;
 static unsigned memory_left; /* ticks the box still shows */
+static int budget_slot = -1; /* the slot the pick put a module on; -1: an accept over USB (memory only) */
+/* Each core's code words before the pick: what it took is the change, so a second instance on the core or a module
+ * another Part already holds takes +0% (one copy of the code per core), and a swap for a smaller one shows minus.
+ * shortcut: a second pick within the box's 1.5 s counts from before the first, until the box closes. */
+static uint32_t words_before[2];
 static void memory_tick(void)
 {
     static uint32_t completed, accepted;
     static uint8_t before[16];
-    int loaded = modwerk_boot_accepted != accepted;
+    int over_usb = modwerk_boot_accepted != accepted, picked = 0;
     if (dl_selection_completed != completed) { /* a pick changes one slot; a Part change, usually many: no box then */
-        unsigned changed = 0, module = 0;
-        for (unsigned i = 0; i < 16u; ++i) if (LIVE[i] != before[i]) ++changed, module |= (unsigned)fx_in(modwerk_fx_modules, LIVE[i]);
-        loaded |= changed == 1u && module;
+        unsigned changed = 0, module = 0, at = 0;
+        for (unsigned i = 0; i < 16u; ++i) if (LIVE[i] != before[i]) ++changed, at = i, module |= (unsigned)fx_in(modwerk_fx_modules, LIVE[i]);
+        if (changed == 1u && module) picked = 1, budget_slot = (int)at;
     }
-    if (dl_selection_completed != completed || loaded) for (unsigned i = 0; i < 16u; ++i) before[i] = LIVE[i];
+    if (over_usb && !picked) budget_slot = -1;
+    if (dl_selection_completed != completed || over_usb) for (unsigned i = 0; i < 16u; ++i) before[i] = LIVE[i];
     completed = dl_selection_completed, accepted = modwerk_boot_accepted;
-    if (loaded && (open == CLOSED || open == MEMORY)) open = MEMORY, memory_left = 90u;
+    if ((picked || over_usb) && (open == CLOSED || open == MEMORY)) open = MEMORY, memory_left = 90u;
     if (open == MEMORY && memory_left && !--memory_left) open = CLOSED;
+    if (open != MEMORY) words_before[0] = dl_residency_words[0], words_before[1] = dl_residency_words[1];
 }
 /* MODULE LOAD (owner, 12 October 2026: "load per module"): each installed module effect, with what its instances
- * cost on each core as a share of the frame, as the LOAD page's bars count. The cores' meters see only their sum, so
- * this is each module's figure times the slots running it: a hardware figure, or 7/4 of an emulator claim (~). */
+ * cost on each core as a share of that core's DSP budget, as the box and the STATUS page's DSP rows count (owner,
+ * 14 October 2026: one denominator). The cores' meters see only their sum, so this is each module's figure times the
+ * slots running it: a hardware figure, or 7/4 of an emulator claim (~). */
 static struct modwerk_module_load modules[MODWERK_FX_IDS];
 static unsigned modules_count(void) { return modwerk_dsp_module_loads(modules); }
 volatile uint32_t modwerk_status_key_at; /* modwerk_runtime_ticks at the last key or knob: dsp.c's compaction waits for quiet */
+/* The pages never hold the Octatrack's controls (owner, 15 October 2026: the page ate PLAY and STOP): PLAY, STOP and
+ * REC always reach stock and the page stays, so the load can be watched while playing. NO (and YES on the read-only
+ * pages) closes a page, CUE + PROJ toggles the status page, UP and DOWN scroll the lists; any other key or knob closes
+ * the page and goes on to stock, so nothing changes unseen behind it. Only a running self-test keeps the panel. */
+#define STOP 0x27
+#define PLAY 0x28
+#define REC 0x29
 int modwerk_status_key(int code, int pressed)
 {
     static int cue;
@@ -229,29 +246,39 @@ int modwerk_status_key(int code, int pressed)
         return 0;
     }
     if (code == CUE) cue = pressed;
-    if (open == MEMORY && pressed) open = CLOSED; /* a popup: the key goes on to stock */
-    if (pressed && (open == MISSING || open == MODULE_LOAD) && code != CUE && !(code == PROJ && cue)) { /* lists */
+    if (!pressed) { /* a release goes where its press went */
+        if (code != taken) return 0;
+        taken = -1;
+        return 1;
+    }
+    if (code == PROJ && cue) { open = open == SHOWN ? CLOSED : SHOWN; taken = code; return 1; }
+    if (open == CLOSED || code == CUE || code == PLAY || code == STOP || code == REC) return 0;
+    if (open == TEST) {
+        if (code == NO) modwerk_selftest_abort(), open = CLOSED;
+        taken = code;
+        return 1;
+    }
+    int list = open == MISSING || open == MODULE_LOAD;
+    if (list && (code == UP || code == DOWN)) {
         unsigned *top = open == MISSING ? &missing_top : &modules_top, n = open == MISSING ? missing[3] : modules_count();
         if (code == UP && *top) --*top;
         if (code == DOWN && *top + ROWS < n) ++*top;
-        if (code == NO || code == YES) open = CLOSED;
         taken = code;
         return 1;
     }
-    if (pressed && open == TEST && code == NO) { modwerk_selftest_abort(); open = CLOSED; taken = code; return 1; }
-    if (pressed && ((code == PROJ && cue) || (open && code == NO))) {
-        open = code == NO || (code == PROJ && open == SHOWN) ? CLOSED : SHOWN;
-        taken = code;
-        return 1;
-    }
-    if (!pressed && code == taken) { taken = -1; return 1; }
-    return open && open != MEMORY && code != CUE; /* CUE's own release reaches stock, as it would without the dialog */
+    int closes = code == NO || code == YES; /* the popup after a pick: YES only closes it (owner, 14 October 2026) */
+    open = CLOSED;
+    if (!closes) return 0; /* any other key closes the page and goes on to stock */
+    taken = code;
+    return 1;
 }
 int modwerk_status_enc(int encoder, int delta)
 {
     (void)encoder, (void)delta;
     modwerk_status_key_at = modwerk_runtime_ticks; /* turning a knob counts as activity too (dsp.c's compaction) */
-    return open != CLOSED;
+    if (open == TEST) return 1;
+    open = CLOSED; /* a knob closes the page and goes on to stock */
+    return 0;
 }
 
 /* Drawing: the frame is a quarter turn round, a row of 8 bytes per x, MSB first, pixel (x, y) at bit 63 - y. */
@@ -449,7 +476,7 @@ static void modules_page(unsigned char *frame)
             if (!slots) *e++ = '-';
             else {
                 if (!m->measured) *e++ = '~';
-                e = number(e, (share(m->cycles * slots, FRAME_CYCLES / 16u) + 5u) / 10u);
+                e = number(e, (share(m->cycles * slots, core ? MODWERK_DSP_ALLOWANCE0 : MODWERK_DSP_ALLOWANCE1) + 5u) / 10u);
                 *e++ = '%';
             }
             *e = 0;
@@ -461,6 +488,20 @@ static void modules_page(unsigned char *frame)
     if (estimate) label(X0 + 4u, Y1 - 8u, "~ ESTIMATE");
     button(frame, X1 - 26u, Y1 - 10u, "YES");
 }
+/* A bar whose last `part` of `permille` is dotted: what one effect adds to what its core already holds. */
+static void share_bar(unsigned char *frame, unsigned x, unsigned y, unsigned w, unsigned h, uint32_t permille, uint32_t part)
+{
+    bar(frame, x, y, w, h, permille, 0);
+    uint32_t n = (w - 2u) * (permille < 1000u ? permille : 1000u) / 1000u, k = (w - 2u) * (part < permille ? part : permille) / 1000u;
+    for (unsigned px = x + 1u + n - k; px < x + 1u + n; ++px)
+        for (unsigned py = y + 1u; py + 2u <= y + h; ++py) if ((px + py) & 1u) fill(frame, px, py, px, py, 0);
+}
+static void plus(unsigned x, unsigned top, uint32_t permille, int minus)
+{
+    char t[8], *s = t;
+    *s++ = minus ? '-' : '+', s = number(s, (permille + 5u) / 10u), *s++ = '%', *s = 0;
+    label(x, top, t);
+}
 static void memory_box(unsigned char *frame)
 {
     static const char *const names[3] = {"T1-4", "T5-8", "POOL"};
@@ -471,6 +512,21 @@ static void memory_box(unsigned char *frame)
     surface[3] = (uint32_t)(uintptr_t)frame;
     fill(frame, 18u, 12u, 109u, 50u, 0);
     outline(frame, 18u, 12u, 109u, 50u);
+    struct modwerk_dsp_budget b;
+    if (budget_slot >= 0 && modwerk_dsp_budget((unsigned)budget_slot, &b)) { /* its core's DSP time and code memory */
+        char where[8] = {'T', (char)('1' + (budget_slot & 7)), ' ', 'F', 'X', (char)(budget_slot < 8 ? '1' : '2'), 0};
+        b.name[15] = 0;
+        for (char *c = b.name; *c; ++c) if (*c >= 'a' && *c <= 'z') *c = (char)(*c - 32); /* as MISSING names them */
+        label(23u, 15u, b.name), label((unsigned)(105 - TEXT_WIDTH(FONT, -1, where)), 15u, where);
+        fill(frame, 18u, 22u, 109u, 22u, 1);
+        const uint32_t dsp = share(b.charge, b.allowance), dsp_part = share(b.effect_cycles, b.allowance),
+                       mem = share(b.words, b.arena), before = share(words_before[b.core], b.arena);
+        label(23u, 26u, "DSP"), share_bar(frame, 45u, 26u, 40, 6, dsp, dsp_part), plus(89u, 26u, dsp_part, 0);
+        label(23u, 34u, "MEM"), share_bar(frame, 45u, 34u, 40, 6, mem, mem > before ? mem - before : 0);
+        plus(89u, 34u, mem > before ? mem - before : before - mem, mem < before);
+        label(23u, 42u, "POOL"), bar(frame, 45u, 42u, 40, 6, used[2], 0), percent(89u, 42u, used[2]);
+        return;
+    }
     label((unsigned)(64 - TEXT_WIDTH(FONT, -1, "MEMORY USED") / 2), 15u, "MEMORY USED");
     fill(frame, 18u, 22u, 109u, 22u, 1);
     for (unsigned i = 0; i < 3u; ++i) {
@@ -490,24 +546,27 @@ void modwerk_status_draw(unsigned char *frame)
     dialog(frame, "MODWERK STATUS");
     uint32_t cpu_peak = 0;
     for (unsigned i = 0; i < 8u; ++i) cpu_peak = cpu_recent[i] > cpu_peak ? cpu_recent[i] : cpu_peak;
-    static const char *const names[3] = {"CPU", "T1-4", "T5-8"};
-    const uint32_t load[3] = {modwerk_status[CPU], modwerk_status[DSP1_MEAN], modwerk_status[DSP0_MEAN]},
-                   peak[3] = {cpu_peak, modwerk_status[DSP1_PEAK], modwerk_status[DSP0_PEAK]};
-    for (unsigned i = 0; i < 3u; ++i) {
-        unsigned y = Y0 + 14u + 8u * i;
-        label(X0 + 4u, y, names[i]);
-        bar(frame, X0 + 30u, y, 58, 6, load[i], peak[i]);
-        percent(X0 + 92u, y, load[i]);
+    /* Two questions a player asks (owner, 15 October 2026): how hard it works now, and how much DSP space is left.
+     * Now: the main CPU and each DSP chip by its tracks (measured, with the recent peak's tick). DSP space used: the
+     * fuller of what admission books and the chip's code memory, whichever says DSP MEMORY FULL first (effects and
+     * machines both take it). Tracks 1-4 run on core 1, tracks 5-8 on core 0. */
+    /* each core's arena spelled out: the on-demand build rewrites these reads (resident_engines.py status()) */
+    const uint32_t code[2] = {share(dl_residency_words[0], modwerk_dsp_arena[0]), share(dl_residency_words[1], modwerk_dsp_arena[1])};
+    uint32_t used[2];
+    for (unsigned core = 0; core < 2u; ++core) used[core] = modwerk_dsp_booked(core) > code[core] ? modwerk_dsp_booked(core) : code[core];
+    static const char *const names[7] = {"WORKING NOW", "CPU", "TRACKS 1-4", "TRACKS 5-8", "DSP SPACE USED", "TRACKS 1-4", "TRACKS 5-8"};
+    const uint32_t value[7] = {0, modwerk_status[CPU], modwerk_status[DSP1_MEAN], modwerk_status[DSP0_MEAN], 0, used[1], used[0]},
+                   peak[7] = {0, cpu_peak, modwerk_status[DSP1_PEAK], modwerk_status[DSP0_PEAK], 0, 0, 0};
+    for (unsigned i = 0; i < 7u; ++i) {
+        unsigned y = Y0 + 14u + 7u * i;
+        label(X0 + 4u, y - 1u, names[i]);
+        if (i == 0 || i == 4) continue; /* a heading */
+        bar(frame, X0 + 48u, y, 40, 4, value[i], peak[i]);
+        percent(X0 + 92u, y - 1u, value[i]);
     }
-    for (unsigned x = X0 + 4u; x < X1 - 3u; x += 2) fill(frame, x, Y0 + 38u, x, Y0 + 38u, 1);
-    uint32_t largest, pool = RUNTIME_POOL_BYTES - modwerk_runtime_free(&largest);
-    static const char *const memory[3] = {"P T1-4", "P T5-8", "POOL"};
-    const uint32_t used[3] = {share(dl_residency_words[1], modwerk_dsp_arena[1]), share(dl_residency_words[0], modwerk_dsp_arena[0]),
-                              share(pool, RUNTIME_POOL_BYTES)};
-    for (unsigned i = 0; i < 3u; ++i) {
-        unsigned y = Y0 + 42u + 6u * i;
-        label(X0 + 4u, y - 1u, memory[i]);
-        bar(frame, X0 + 30u, y, 58, 4, used[i], 0);
-        percent(X0 + 92u, y - 1u, used[i]);
+    if ((int32_t)(tip_until - ticks) > 0) { /* over the last rows, a box as stock draws them */
+        fill(frame, X0 + 6u, Y1 - 15u, X1 - 6u, Y1 - 3u, 0);
+        outline(frame, X0 + 6u, Y1 - 15u, X1 - 6u, Y1 - 3u);
+        label((unsigned)(64 - TEXT_WIDTH(FONT, -1, "CUE + PROJ OPENS THIS") / 2), Y1 - 11u, "CUE + PROJ OPENS THIS");
     }
 }

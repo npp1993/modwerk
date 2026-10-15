@@ -33,7 +33,7 @@ from dsp_modmap import BASE, IMG, PAYLOADS, modules  # noqa: E402
 from remix import registry as remix_registry  # noqa: E402
 from remix.registry import modules as remix_modules  # noqa: E402
 from remix.schema import (DEFAULT_HARVEST, NO_FALLBACK, BusRole,  # noqa: E402
-                          YBase)
+                          Formatter, YBase)
 from remix.state import fx1_hazard  # noqa: E402
 from remix import stock as stock_mod  # noqa: E402
 import label_fmt  # noqa: E402
@@ -228,9 +228,24 @@ for _k, _n in HOST_SLOTS.items():
 PAGE2_COUNTS = {m.key: {i: p.count for i, p in enumerate(m.params)
                         if p.count is not None} for m in _CLONED}
 # Membership here also GATES the display-formatter pass below: a module with
-# no stepped slot keeps its donor's formatters untouched, which is what SEND
-# wants (FILTER's plain-numeric zeros, hardware-confirmed).
+# a stepped slot has all twelve formatter pairs zeroed first; one without
+# keeps its donor's formatters except on its drawn PLAIN slots (PLAIN_SLOTS),
+# which is what SEND wants (FILTER's plain-numeric zeros, hardware-confirmed).
 STEPPED_SLOTS = {m.key: m.stepped_slots for m in _CLONED if m.stepped_slots}
+
+
+def plain_slots(m) -> tuple[int, ...]:
+    """Drawn PLAIN knobs: the build zeroes both formatter words (P+0x0ca,
+    P+0x0fa) even in a module with no stepped slot, which would otherwise keep
+    the donor's renderer (DARK REV's dial on slots 7 and 11). A switched-off
+    slot (active=False) is never drawn and keeps the donor's words, as every
+    module without a stepped slot was built. The recipe exporters
+    (scripts/build-module-packages.py, export-resident-dsp.py) call this too."""
+    return tuple(i for i, p in enumerate(m.params)
+                 if p.formatter is Formatter.PLAIN and p.active is not False)
+
+
+PLAIN_SLOTS = {m.key: plain_slots(m) for m in _CLONED if plain_slots(m)}
 BIPOLAR_SLOTS = {m.key: m.bipolar_slots for m in _CLONED if m.bipolar_slots}
 _DEF_ASM = {m.key: m.dsp.asm for m in _CLONED}
 # DSP code reached from STOCK code rather than a chooser row
@@ -842,6 +857,15 @@ def main():
             # slot 7 too, and carries the same 0x400328e4.
             for step_slot in STEPPED_SLOTS[name]:
                 wr32(clone_P + 0x12a + step_slot * 4, 0)
+        else:
+            # PLAIN is "both formatter words zero" (schema.Formatter) with or
+            # without a stepped slot. Without one, the donor's renderer stayed:
+            # DARK REV's balance dial on slot 7 and its slot-11 pair drew a
+            # PLAIN knob as a dial (verify_menu: "is a KNOB, so both
+            # formatters are 0"). Switched-off slots are not in PLAIN_SLOTS.
+            for idx in PLAIN_SLOTS.get(name, ()):
+                wr32(clone_P + 0x0ca + idx * 4, 0)
+                wr32(clone_P + 0x0fa + idx * 4, 0)
         # A BIPOLAR knob (14 Sep 2026: Character's WDTH and TONE, "0 at
         # neutral, negative for mono"): SPRING BAL's exact triple, read from
         # the stock descriptor at donor_desc + 0x38 -- A = 0x4003c7a0 (the

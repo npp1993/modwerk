@@ -122,6 +122,7 @@ const uint16_t modwerk_dsp_arena[2] = {2320, 2300};
 static int idle = 1;
 int dl_publication_idle(void) { return idle; }
 static uint32_t slot_cycles[16]; /* manager.c: no slot holds anything dearer than the stock reserve */
+volatile uint32_t dl_residency_words[2]; /* manager.c: each core's resident code words */
 uint32_t dl_slot_cycles(unsigned i) { return slot_cycles[i]; }
 /* The source stage: per-voice and per-engine prices before the FX slots, any module, fail closed. */
 static void sources(void)
@@ -218,6 +219,15 @@ int main(void)
     struct modwerk_module_load loads[MODWERK_FX_IDS];
     CHECK(modwerk_dsp_module_loads(loads) == 1 && loads[0].id == 26 && loads[0].cycles == (244 * 7 + 3) / 4 &&
           !loads[0].measured && loads[0].slots[0] == 1 && !loads[0].slots[1]);
+    /* The box after a pick (status.c): T6 FX2 is core 0's; its other seven slots at least the stock reserve. */
+    struct modwerk_dsp_budget budget;
+    slot_cycles[13] = 427; dl_residency_words[0] = 1200;
+    CHECK(modwerk_dsp_budget(13, &budget) && budget.core == 0 && budget.allowance == 3120 && budget.effect_cycles == 427 &&
+          budget.charge == 7u * MODWERK_DSP_RESERVE + 427u + modwerk_dsp_source_charge(0) && budget.words == 1200 &&
+          budget.arena == 2320 && !memcmp(budget.name, loads[0].name, 16));
+    CHECK(!modwerk_dsp_budget(5, &budget) && !modwerk_dsp_budget(16, &budget)); /* a slot with no module; past the slots */
+    CHECK(modwerk_dsp_booked(0) == budget.charge * 1000u / budget.allowance); /* the STATUS page: the same sum */
+    slot_cycles[13] = 0; dl_residency_words[0] = 0;
     modwerk_test_live_fx[13] = 4; idle = 0;
     CHECK(modwerk_machine_dsp_admit(&fx, &none) == RUNTIME_BUSY && modwerk_machine_dsp_admit(&fx, &fx) == RUNTIME_BUSY);
     third = fx; third.module = 73;

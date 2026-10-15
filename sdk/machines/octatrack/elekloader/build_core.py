@@ -336,6 +336,33 @@ DSP_EDITS = {
                    '    return 1;\n'
                    '}\n'
                    'void dl_selection_commit(uint32_t token) {'),
+                  # A move's rollback (phase 7) sends the moved id back to its old copy with one BIND: that copy still
+                  # runs (dl_allocator_move placed the new one clear of every live copy) and stays held until the
+                  # cancel. Sending it to the dry stub, as for code that never ran, would silence a running effect.
+                  # Only an old copy a new copy of this transaction may have overwritten goes to the stub.
+                  ('static void rollback(void) { cancelling=1; }\n',
+                   'static void rollback(void) { cancelling=1; }\n'
+                   '/* Modwerk: 1 when a rollback rebinds p on core c to its live copy (moved, and that copy provably\n'
+                   ' * intact: no span this transaction uploads meets it); sent_back: the job in flight is such a BIND. */\n'
+                   'static unsigned sent_back;\n'
+                   'static unsigned moved_back(unsigned c,unsigned p) {\n'
+                   '    const struct dl_placement *old=&allocator.live[c][p];\n'
+                   '    if(!old->present || !allocator.target[c][p].present || allocator.target[c][p].offset==old->offset) return 0;\n'
+                   '    for(unsigned q=0;q<sizeof allocator.target[c]/sizeof allocator.target[c][0];++q) {\n'
+                   '        const struct dl_placement *t=&allocator.target[c][q];\n'
+                   '        if(!t->present || (allocator.live[c][q].present && allocator.live[c][q].offset==t->offset)) continue;\n'
+                   '        if(t->offset<(unsigned)old->offset+old->words && (unsigned)t->offset+t->words>old->offset) return 0;\n'
+                   '    }\n'
+                   '    return 1;\n'
+                   '}\n'),
+                  ('        unsigned offset=DL_CODE_START+allocator.target[c][p].offset;\n',
+                   '        unsigned back=mode==7 && moved_back(c,p);\n'
+                   '        sent_back=back;\n'
+                   '        unsigned offset=DL_CODE_START+(back ? allocator.live[c][p].offset : allocator.target[c][p].offset);\n'),
+                  ('        } else waiting=dl_command_start(c,mode==3 ? DL_BIND :',
+                   '        } else waiting=dl_command_start(c,mode==3 || back ? DL_BIND :'),
+                  ('                if(phase==4 || dl_bypass_unbound) stubbed[c]|=bit; else stubbed[c]&=~bit;',
+                   '                if(phase==4 || (dl_bypass_unbound && !sent_back)) stubbed[c]|=bit; else stubbed[c]&=~bit;'),
                   # A core's channel held by another job (status.c's meter reads, dsp.c's probes) is a wait, not a
                   # refusal: the next tick tries again. Only a start the transfer layer refused outright refuses.
                   ('        if(!waiting) { report(DL_SELECT_UNAVAILABLE); if(phase==8) { cancelling=1; phase=7; cursor=0; } }',
@@ -423,9 +450,18 @@ DSP_EDITS = {
                    '        (n==4 ? named : keep)[(i&7)<4 ? 1:0]|=1u<<p;\n'
                    '    }\n'
                    '}\n'
+                   '/* Core c lets go of its Parts\' union for this target when the target adds no module to it, or when\n'
+                   ' * the union is not held now (a bank that never fitted: a Part change there loads either way). */\n'
+                   'static unsigned loose(const uint32_t named[2],unsigned c) {\n'
+                   '    if(!(named[c]&~allocator.keep[c])) return 1;\n'
+                   '    for(unsigned p=0;p<32;++p) if((allocator.keep[c]>>p&1u) && !allocator.live[c][p].present) return 1;\n'
+                   '    return 0;\n'
+                   '}\n'
                    'static unsigned needed(unsigned index,unsigned mode) {'),
-                  # A target naming a module no Part holds yet must fit beside all of them; anything else that does
-                  # not (a bank that never fitted) falls back to loading what it runs.
+                  # A target naming a module no Part holds yet must fit beside all of them on its core, while they are
+                  # held; anything else that does not (a bank that never fitted) falls back to loading what it runs, per
+                  # core (beta run 2: bank A's union was over on both cores, so even Tape Echo's 5 words were refused,
+                  # and a pick on T1 was refused for core 0's union).
                   ('        int r=dl_allocator_prepare(&allocator,desired,current);\n',
                    '        uint32_t named[2],soft[2];\n'
                    '        parts(desired,allocator.keep,named,soft);\n'
@@ -437,8 +473,8 @@ DSP_EDITS = {
                    '            r=dl_allocator_prepare(&allocator,desired,current);\n'
                    '        }\n'
                    '        if((r==DL_ALLOC_MEMORY || r==DL_ALLOC_TRANSITION) && (allocator.keep[0]|allocator.keep[1]) &&\n'
-                   '           (automatic || !((named[0]&~allocator.keep[0])|(named[1]&~allocator.keep[1])))) {\n'
-                   '            allocator.keep[0]=allocator.keep[1]=0;\n'
+                   '           (automatic || loose(named,0) || loose(named,1))) {\n'
+                   '            for(unsigned c=0;c<2;++c) if(automatic || loose(named,c)) allocator.keep[c]=0;\n'
                    '            r=dl_allocator_prepare(&allocator,desired,current);\n'
                    '        }\n'),
                   ('    for(unsigned i=0;i<16;++i) if(ids[i]!=observed[i]) changed=1;\n    if(!changed) return;',
@@ -712,20 +748,26 @@ WIDTH_EDITS = {
         ('(r==DL_ALLOC_MEMORY || r==DL_ALLOC_TRANSITION) && (soft[0]|soft[1])) {',
          '(r==DL_ALLOC_MEMORY || r==DL_ALLOC_TRANSITION) && (fx_any(soft[0]) || fx_any(soft[1]))) {'),
         ('(r==DL_ALLOC_MEMORY || r==DL_ALLOC_TRANSITION) && (allocator.keep[0]|allocator.keep[1]) &&\n'
-         '           (automatic || !((named[0]&~allocator.keep[0])|(named[1]&~allocator.keep[1])))) {\n'
-         '            allocator.keep[0]=allocator.keep[1]=0;',
+         '           (automatic || loose(named,0) || loose(named,1))) {\n'
+         '            for(unsigned c=0;c<2;++c) if(automatic || loose(named,c)) allocator.keep[c]=0;',
          '(r==DL_ALLOC_MEMORY || r==DL_ALLOC_TRANSITION) && (fx_any(allocator.keep[0]) || fx_any(allocator.keep[1])) &&\n'
-         '           (automatic || !(fx_any(fx_less(named[0],allocator.keep[0])) || fx_any(fx_less(named[1],allocator.keep[1]))))) {\n'
-         '            allocator.keep[0]=allocator.keep[1]=(fx_set){{0}};'),
+         '           (automatic || loose(named,0) || loose(named,1))) {\n'
+         '            for(unsigned c=0;c<2;++c) if(automatic || loose(named,c)) allocator.keep[c]=(fx_set){{0}};'),
+        ('static unsigned loose(const uint32_t named[2],unsigned c) {\n'
+         '    if(!(named[c]&~allocator.keep[c])) return 1;\n'
+         '    for(unsigned p=0;p<32;++p) if((allocator.keep[c]>>p&1u) && !allocator.live[c][p].present) return 1;',
+         'static unsigned loose(const fx_set named[2],unsigned c) {\n'
+         '    if(!fx_any(fx_less(named[c],allocator.keep[c]))) return 1;\n'
+         '    for(unsigned p=0;p<DL_PACKAGES;++p) if(fx_in(allocator.keep[c],p) && !allocator.live[c][p].present) return 1;'),
         ('            uint8_t reads[32], now[16];\n            for(unsigned p=0;p<32;++p) reads[p]=dl_catalog[p].buffer;',
          '            uint8_t reads[DL_PACKAGES], now[16];\n            for(unsigned p=0;p<DL_PACKAGES;++p) reads[p]=dl_catalog[p].buffer;'),
         ('        unsigned c=cursor/32;\n        int s=dl_job_status(c);', '        unsigned c=cursor/DL_PACKAGES;\n        int s=dl_job_status(c);'),
         ('            unsigned bit=1u<<(cursor%32);\n            if(phase==3) stubbed[c]&=~bit;\n'
          '            else if(phase==4 || phase==6 || phase==7) {\n'
-         '                if(phase==4 || dl_bypass_unbound) stubbed[c]|=bit; else stubbed[c]&=~bit;',
+         '                if(phase==4 || (dl_bypass_unbound && !sent_back)) stubbed[c]|=bit; else stubbed[c]&=~bit;',
          '            unsigned id=cursor%DL_PACKAGES;\n            if(phase==3) stubbed[c]=fx_without(stubbed[c],id);\n'
          '            else if(phase==4 || phase==6 || phase==7) {\n'
-         '                stubbed[c]=phase==4 || dl_bypass_unbound ? fx_with(stubbed[c],id) : fx_without(stubbed[c],id);'),
+         '                stubbed[c]=phase==4 || (dl_bypass_unbound && !sent_back) ? fx_with(stubbed[c],id) : fx_without(stubbed[c],id);'),
         ('    while(cursor<64 && !needed(cursor,mode)) ++cursor;\n    if(cursor<64) {\n        unsigned c=cursor/32,p=cursor%32;',
          '    while(cursor<2u*DL_PACKAGES && !needed(cursor,mode)) ++cursor;\n    if(cursor<2u*DL_PACKAGES) {\n'
          '        unsigned c=cursor/DL_PACKAGES,p=cursor%DL_PACKAGES;'),
@@ -1094,6 +1136,10 @@ def main():
                              'table-owner storage, so it admits those exact packages')
     parser.add_argument('--resident-stock-hooks', action='store_true',
                         help='Private dormant resident SC/Matrix/Analog BD packing. Does not admit their runtime controllers.')
+    parser.add_argument('--resident-on-demand', action='store_true',
+                        help='With --resident-stock-hooks: leave the SC/Matrix/Analog BD engines out of the permanent block, as '
+                             'relocatable units placed in the arena while a controller holds them '
+                             '(docs/OCTATRACK_RESIDENT_ENGINES_ON_DEMAND.md). Private development: not yet run on hardware.')
     parser.add_argument('--controller-policies', type=Path,
                         help='Private: reviewed controller trust rows (stock_hook_controllers.py) for this exact base link. '
                              'Needs --resident-stock-hooks and --controller-layout.')
@@ -1111,6 +1157,8 @@ def main():
         parser.error('Private saved-set export requires the ordinary DSP loader without probes/burn.')
     if args.resident_stock_hooks and (not args.dsp_loader or args.dsp_probe or args.dsp_burn):
         parser.error('Private resident stock hooks require the ordinary DSP loader, without probes/burn.')
+    if args.resident_on_demand and not args.resident_stock_hooks:
+        parser.error('--resident-on-demand needs --resident-stock-hooks.')
     if bool(args.controller_policies) != bool(args.controller_layout) or (args.controller_policies and not args.resident_stock_hooks):
         parser.error('Controller trust rows need --resident-stock-hooks and the layout their packages were encoded against.')
     global FX_IDS, FX_WORDS
@@ -1217,6 +1265,10 @@ def main():
     for name in ('ep0.c', 'fxids.h', 'runtime.c', 'runtime.h', 'boot.c', 'boot.h', 'boot.s', 'modset.c', 'boot_anim.c', 'boot_anim.s', 'crash.c', 'crash.s', 'run_unpack.s') + (('dev.c',) if args.dev else ()) + (
             ('runtime_events.h', 'runtime_events.s', 'machine_registry.c', 'machine_registry.s') if args.site_events else ()):
         shutil.copyfile(HERE / name, source / name)
+    if args.dev and args.resident_on_demand:  # dev MEM reaches the engines' diagnostics (resident_engines.dev)
+        sys.path.insert(0, str(APP / 'sdk/machines/octatrack/module-adapters'))
+        import resident_engines as dev_engines
+        (source / 'dev.c').write_text(dev_engines.dev((source / 'dev.c').read_text()))
     if args.site_events:  # the tables' records (struct modwerk_machine, struct modwerk_sequencer_rows)
         shutil.copyfile(APP / 'sdk/machines/octatrack/include/modwerk_events.h', source / 'modwerk_events.h')
     # The startup (boot_anim.c) draws the art the shared startup sources describe, with this base's version.
@@ -1237,8 +1289,15 @@ def main():
         import dsp_packages
         from elekloader.sdk.octabam import Octabam
         resident_ob = Octabam(str(APP / 'sdk/octabam'))
-        resident_factory = lambda tag, hi: resident_dsp.place_resident(
-            resident_ob, tag, hi, str(source), dsp_packages.assemble)
+        resident_bundles = {}  # each core's placed block, its on-demand engine units included
+
+        def resident_factory(tag, hi):
+            resident_bundles[tag] = resident_dsp.place_resident(
+                resident_ob, tag, hi, str(source), dsp_packages.assemble,
+                resident_dsp.ALLOWED[tag] if args.resident_on_demand else 0)
+            return resident_bundles[tag]
+        if args.resident_on_demand:  # the ColdFire side (docs/OCTATRACK_RESIDENT_ENGINES_ON_DEMAND.md)
+            import resident_engines
     if args.dsp_loader:
         spec = importlib.util.spec_from_file_location('modwerk_dsp_loader', HERE/'dsp_loader.py')
         loader_dsp = importlib.util.module_from_spec(spec); spec.loader.exec_module(loader_dsp)
@@ -1265,8 +1324,12 @@ def main():
                 text = resident_placement.buffers(text)
             elif args.resident_stock_hooks and name == 'manager.c':
                 text = resident_journal.manager(resident_placement.manager(text))
+                if args.resident_on_demand:
+                    text = resident_engines.manager(text)
             if args.resident_stock_hooks and name == 'transfer.c':
                 text = resident_driver.transport(text)
+                if args.resident_on_demand:
+                    text = resident_engines.transport(text)
             if args.resident_stock_hooks and name == 'transfer.h':
                 text = resident_driver.transport_header(text)
             if saved_set_wiring and name == 'transfer.c':
@@ -1301,6 +1364,8 @@ def main():
             (source/'controller_registry.c').write_text('#include "controller_association.h"\n'
                 'struct mw_controller_registry modwerk_controller_registry __attribute__((used,aligned(16)));\n')
             (source / 'dsp.c').write_text(resident_source.sources(APP)['dsp.c'])
+            if args.resident_on_demand:
+                (source / 'dsp.c').write_text(resident_engines.dsp((source / 'dsp.c').read_text()))
         else:
             shutil.copyfile(HERE / 'dsp.c', source / 'dsp.c')
         if saved_set_wiring:
@@ -1308,6 +1373,8 @@ def main():
         shutil.copyfile(HERE / 'dsp_core1.s', source / 'dsp_core1.s')
         for name in ('dsp_journal.h', 'dsp_journal_manager.h', 'fxmap.h', 'fxpage.h', 'fxmap.c', 'fxmap.s', 'fxpage.c', 'fxpage.s', 'status.c', 'status.s', 'status.h', 'load_wire.h', 'selftest.h'):
             shutil.copyfile(HERE / name, source / name)
+        if args.resident_on_demand:
+            (source / 'status.c').write_text(resident_engines.status((source / 'status.c').read_text()))
         for lea, stock_list in ((0x40052496, 0x400d6090), (0x40052706, 0x400d6060)):
             if int.from_bytes(image[lea - device.main_load:lea - device.main_load + 4], 'big') != stock_list:
                 raise ValueError('An FX selector no longer reads its chooser list at %#x.' % lea)
@@ -1324,6 +1391,10 @@ def main():
             (source / 'core-ot.s').write_text(bootstrap.replace(seam, '        jsr     mw_resident_dsp_boot\n' + seam))
             (source / 'resident-dsp-driver.c').write_text(resident_driver.controller_c(resident_boot_prepared))
             dsp_sites += resident_boot_prepared['sites']
+        if args.resident_on_demand:
+            (source / 'resident-engines-data.c').write_text(resident_engines.data_c(resident_bundles))
+            for name in ('resident_engines.c', 'resident_engines.h'):
+                shutil.copyfile(resident_source.RUNTIME / name, source / name)
         chooser_sites, chooser_lists = loader_dsp.choosers(image, FX_IDS)
         # The Part validator (0x40002318; bank load, battery restore) clears an id that reads negative and clamps one
         # above 31 to 31: four `moveq #31` (docs/OCTATRACK_MORE_EFFECT_IDS.md). Past 32 ids they clamp to the last.
@@ -1383,6 +1454,10 @@ def main():
         for name in ('stock_hooks.c', 'stock_hooks.h', 'stock_hook_driver.c', 'stock_hook_driver.h', 'stock_hook_resources.c', 'stock_hook_resources.h', 'cue_cfg.s'):
             p = resident_source.RUNTIME / name
             inputs[str(p.relative_to(APP))] = sha(p.read_bytes())
+    if args.resident_on_demand:
+        for p in (APP / 'sdk/machines/octatrack/module-adapters/resident_engines.py',
+                  resident_source.RUNTIME / 'resident_engines.c', resident_source.RUNTIME / 'resident_engines.h'):
+            inputs[str(p.relative_to(APP))] = sha(p.read_bytes())
     if args.resident_stock_hooks:
         for name in CONTROLLER_POLICY_SOURCES:
             p = APP / 'sdk/machines/octatrack/module-adapters/controller-policy' / name
@@ -1420,7 +1495,8 @@ def main():
             configuration['dev'] = ['key', 'panel', 'state', 'screen']
     if resident_boot_prepared:
         configuration['dsp']['residentStockHooks'] = dict(schema=1, dormant=True, controllersAdmitted=bool(args.controller_policies),
-            receiptSha256=sha(json.dumps(resident_boot_prepared['receipt'], sort_keys=True, separators=(',', ':')).encode()))
+            receiptSha256=sha(json.dumps(resident_boot_prepared['receipt'], sort_keys=True, separators=(',', ':')).encode()),
+            **({'onDemand': True} if args.resident_on_demand else {}))
     identity = sha(json.dumps(configuration, separators=(',', ':')).encode())
     values = dict(build=identity[:16], os='1.40C', modules='', configuration=identity,
                   source=source_hash, fx1=';'.join(configuration['fx1']),
@@ -1521,6 +1597,8 @@ modwerk_retained_end:
         recipe['cflags'].append('-DMODWERK_SAVED_SET_EXPORT')
     if args.resident_stock_hooks:
         recipe['cflags'].append('-DMODWERK_RESIDENT_STOCK_HOOKS')
+    if args.resident_on_demand:
+        recipe['cflags'].append('-DMODWERK_RESIDENT_ON_DEMAND')
     if args.site_events:  # the base owns these stock sites; packages subscribe (sdk/machines/octatrack/EVENTS.md)
         recipe['cflags'].append('-DMODWERK_RUNTIME_EVENTS')
         recipe['sources'] += ['runtime_events.s', 'machine_registry.s']

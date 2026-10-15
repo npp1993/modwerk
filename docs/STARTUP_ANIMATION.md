@@ -220,12 +220,12 @@ from far beyond the screen and lands, as in the stock logo's flight, while the l
 dark. The empty corner, the socket, blinks, and a light far off at trig 1 answers. The module
 runs along the trig row, turns up through the keys under the screen and docks with a
 shudder of the screen's rows. Its wave bends the screen as it passes (a lens: up to
-3 px outwards within 7 px of the ring, with a solid ring and a dotted echo on top),
-reveals MODWERK, **NEW** and the version (`0.3.1`, from `VERSION` in
-`build_core.py`) and rolls on across the panel. It takes 3.5 s, 0.7 s longer than
+3 px outwards within 7 px of the ring, without an outline since 15 October 2026, as on
+card builds), reveals MODWERK, **NEW** and **BETA** (beta testers only: card builds leave
+them out) and rolls on across the panel. It takes 3.5 s, 0.7 s longer than
 stock. The base draws its own compact art from `base.json`, with room between the
-elements: the mark at 29 px (5 px tiles), MODWERK at 11 px tall, and NEW and the
-version in the panel's small 7 px type. Public builds are unchanged.
+elements: the mark at 29 px (5 px tiles), MODWERK at 11 px tall, and NEW and BETA
+in the panel's small 7 px type.
 
 ![MKII LCD capture of the base startup, from the real base image in the emulator](media/startup/base-startup.gif)
 

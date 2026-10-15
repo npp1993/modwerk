@@ -43,7 +43,7 @@ MODULE = Module(
               labels=("FREE", "BEAT"),
               doc="FREE uses milliseconds; BEAT quantises TIME from stock tempo"),
         Param(b"MIX", 90, active=True, formatter=_PLAIN,
-              doc="echo level; the dry signal stays at full level through 95, then fades to full wet at 127; 0 is exact passthrough"),
+              doc="dry/wet crossfade; 0 is exact passthrough"),
         # ---- detail/setup page (stock effect page 2) ---------------------
         Param(),  # former DRIVE: fixed at zero, including previously saved parts
         Param(),  # AGE moved to page 1; old page-2 values are ignored

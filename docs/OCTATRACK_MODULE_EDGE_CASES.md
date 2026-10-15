@@ -76,7 +76,9 @@ brought back the baseline exactly. Not yet: another project and back, a real pow
 - **Holes now close by moving code (S51).** A block moves into a hole the way a copying collector moves an object:
   its new copy is uploaded while the old one runs, the dispatch entry is bound to it at a frame, and the old copy
   is freed (`dl_move` in manager.c and `dl_allocator_move`, build_core.py's edits; the planner in dsp.c). A slot's
-  state lives in X and Y and stock reruns init only when the id changes, so the effect never goes dry. One move at
+  state lives in X and Y and stock reruns init only when the id changes, so the effect never goes dry. A move whose
+  upload or BIND fails rebinds the entry to the old copy, which is still held (since 15 October 2026; before, the
+  rollback sent the running effect to the dry stub until its id changed). One move at
   a time, when the manager is idle and two seconds after the last key, playing or not. On the unit: a 532-word hole
   closed in 4 moves and 507 ms (about 125 ms a move); playing, a 422-word hole closed by itself within 5 s with
   Euclid running on T3 throughout; frame gaps 408-415 us, no errors, stalls or rollbacks. MAIN through a moving

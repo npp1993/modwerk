@@ -95,6 +95,21 @@ static unsigned owner(const Machine *const *m, unsigned n, const Part *part, uns
         if (s[0] == m[k]->sig[0] && s[1] == m[k]->sig[1] && s[2] >= m[k]->sig_lo && s[2] <= m[k]->sig_hi) { *who = m[k]; return 5u + k; }
     return 0;
 }
+/* The PROTECT machines this base knows by signature (module-adapters/machine-ports.json; sdk/tests checks the list).
+ * Their tracks keep their 12 bytes from stock's validator while the machine is absent too: the boot's battery
+ * restore (0x40025770) validates the battery-backed Part copies seconds before the saved set reinstalls the machines
+ * (modset.c), and refuses the whole restore at the first value it has to fix. The bank is then never filled nor
+ * applied (0x40009094): every Part reads STATIC with stock defaults, no track is ever bound and the unit is silent
+ * (beta finding 24). An absent machine's track renders stock's silent source, never stock FLEX reading its bytes. */
+static const struct { uint8_t sig[2], lo, hi; } known[] = {{{'A', 'B'}, 1, 1}, {{'F', 'M'}, 1, 1}};
+static unsigned orphan(const Part *part, unsigned t)
+{
+    if (t >= 8 || part[0x22 + t] > 1) return 0;
+    const Part *s = part + SIG + 30 * t;
+    for (unsigned k = 0; k < sizeof known / sizeof *known; ++k)
+        if (s[0] == known[k].sig[0] && s[1] == known[k].sig[1] && s[2] >= known[k].lo && s[2] <= known[k].hi) return 1;
+    return 0;
+}
 static unsigned current(const Machine *const *m, unsigned n, const Machine **who)
 {
     *who = 0;
@@ -199,14 +214,17 @@ unsigned mw_chooser_type(unsigned type, const Part *ptr)
 }
 /* A track leaves `old`: its own leave, stock's FLEX defaults back in both Part copies for a PROTECT machine that
  * signs its tracks through the registry (the 12 bytes held its parameters), and its DSP charge released. */
+static void flex_defaults(Part *part, Part *mirror, unsigned track)
+{
+    for (unsigned k = 0; k < 12; ++k) {
+        unsigned at = (k < 6 ? 0x2a : 0x1da) + 30 * track + 6 + k % 6;
+        part[at] = mirror[at] = U8(0x400d320cu + k);
+    }
+}
 static void leave(Part *part, Part *mirror, unsigned track, const Machine *old)
 {
     if (old->leave) old->leave(track);
-    if (!old->assign && old->flags & MODWERK_MACHINE_PROTECT)
-        for (unsigned k = 0; k < 12; ++k) {
-            unsigned at = (k < 6 ? 0x2a : 0x1da) + 30 * track + 6 + k % 6;
-            part[at] = mirror[at] = U8(0x400d320cu + k);
-        }
+    if (!old->assign && old->flags & MODWERK_MACHINE_PROTECT) flex_defaults(part, mirror, track);
     if (charged[track] == old) release(track); /* a priced machine that took the track was charged in its place */
 }
 /* Tracks that became a priced machine without an assignment (a project load, a Part change, a paste) are charged
@@ -231,10 +249,14 @@ unsigned mw_assign(Part *part, unsigned track, unsigned row)
     if (row >= 5 && row < 5 + n) next = m[row - 5];
     owner(m, n, part, track, &old);
     Part *mirror = AT(SRAM_PART + offset);
+    /* A track of a known PROTECT machine that is absent leaves it as it would leave it present: stock's FLEX
+     * defaults back in both copies before another machine or signature takes the track. */
+    unsigned absent = !old && orphan(part, track);
     if (next) {
         if (next->admit_track && !next->admit_track(part, track)) return (unsigned)-1;
         if (next->source_kind && old != next && !claim(track, next)) return (unsigned)-1;
         if (old && old != next) leave(part, mirror, track, old);
+        if (absent) flex_defaults(part, mirror, track);
         if (next->assign) return next->assign(part, track, 1);
         if (old != next && next->defaults)
             for (unsigned k = 0; k < 12; ++k) {
@@ -251,8 +273,9 @@ unsigned mw_assign(Part *part, unsigned track, unsigned row)
         const Machine *still; owner(m, n, part, track, &still);
         if (still == old) return pool;
         leave(part, mirror, track, old);
-    } else if (old) {
-        leave(part, mirror, track, old);
+    } else if (old || absent) {
+        if (old) leave(part, mirror, track, old);
+        else flex_defaults(part, mirror, track);
         unsigned sig = SIG + 30 * track; for (unsigned k = 0; k < 3; ++k) part[sig + k] = mirror[sig + k] = 0;
     }
     return row < 5 ? row : 1;
@@ -276,7 +299,8 @@ uint32_t mw_page(const Part *ptr)
     if (t < 8) owner(m, n, current_part(), (unsigned)t, &who); else who = 0;
     return who && who->track_page ? who->track_page(ptr) : 0;
 }
-/* The stock validator never sees a PROTECT machine's 12 FLEX bytes; machines' validate wrap it in row order. */
+/* The stock validator never sees a PROTECT machine's 12 FLEX bytes, nor a known absent one's (the boot's battery
+ * restore, above); machines' validate wrap it in row order. */
 static const Machine *wrapping[ROWS - 5u];
 static unsigned wraps, depth;
 static int next_validator(uint8_t *part)
@@ -291,7 +315,7 @@ int mw_validate(Part *part)
     const Part *stock = AT(0x400d320cu);
     for (unsigned t = 0; t < 8; ++t) {
         owner(m, n, part, t, &who);
-        if (who && who->flags & MODWERK_MACHINE_PROTECT) {
+        if (who ? who->flags & MODWERK_MACHINE_PROTECT : orphan(part, t)) {
             mask |= 1u << t;
             for (unsigned k = 0; k < 12; ++k) { unsigned at = (k < 6 ? 0x2a : 0x1da) + 30 * t + 6 + k % 6; saved[t][k] = part[at]; part[at] = stock[k]; }
         }
@@ -363,7 +387,9 @@ int mw_source_render_impl(unsigned track, unsigned ping, unsigned start, unsigne
         if (who->source_kind && charged[track] != who) /* uncharged: stock's silent source, never an unpaid voice */
             return STOCK(int (*)(unsigned, unsigned, unsigned, unsigned), 0x400047f0u)(track, ping, start, end);
         if (who->render) return who->render(track, ping, start, end);
-    } else
+    } else if (valid_bank() && orphan(current_part(), track)) /* its bytes are the absent machine's, not FLEX's */
+        return STOCK(int (*)(unsigned, unsigned, unsigned, unsigned), 0x400047f0u)(track, ping, start, end);
+    else
         for (unsigned k = 0; k < n; ++k)
             if (m[k]->flags & MODWERK_MACHINE_RENDER_FLEX && m[k]->render) return m[k]->render(track, ping, start, end);
     return STOCK(int (*)(unsigned, unsigned, unsigned, unsigned), 0x40004008u)(track, ping, start, end);

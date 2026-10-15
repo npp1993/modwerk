@@ -92,11 +92,12 @@ export function OctatrackHub({ view, link, inventory, sets, selectedId, needs, o
   const lastName = onUnit?.name ?? (last && lastSync && sameModules(last.moduleIds, lastSync.moduleIds) ? lastSync.name : undefined)
   // The hero: the unit's state in one line and the one action it needs, on every page.
   const [line, action]: [ReactNode, ReactNode] = !usb ? ['This browser can’t use USB. Open this page in Chrome or Edge on a computer, or install from the card in Setup.', null]
-    : busy ? ['Syncing…', null]
+    : busy ? [state.module || status !== 'testing' ? 'Syncing…' : 'Self-test running…', null]
     : connected ? [<>Connected · {inventory ? modules(inventory.moduleIds.length) + ' on it' : 'reading what’s on it…'}{onUnit && <> · same as <b>{onUnit.name}</b></>}</>, null]
     : status === 'connecting' ? ['Looking for your Octatrack…', null]
     : status === 'busy' ? ['Another tab or app is using your Octatrack.', <button key="retry" className="button button-quiet" onClick={() => void link?.retry()}>Try again</button>]
     : status === 'stock' || status === 'ready' ? [status === 'stock' ? 'Connected · original OS' : 'Connected · a Modwerk base this site can’t talk to', <button key="install" className="button button-primary" onClick={onInstall}>Install the base</button>]
+    : state.notice?.tone === 'error' ? [state.notice.text, <button key="connect" className="button button-quiet" onClick={() => void link?.connect()}>Connect</button>]
     : [<>Not connected{last ? <> · Last seen: {lastName ? <b>{lastName}</b> : modules(last.moduleIds.length)} · {when(last.at)}</> : null}</>, <button key="connect" className="button button-quiet" onClick={() => void link?.connect()}>Connect</button>]
   const panel = (name: HubView, content: ReactNode) => <section key={name} className={'hub-view hub-view-' + name} hidden={view !== name} aria-label={name === 'set' ? selected?.name ?? 'Module set' : UNIT_VIEWS.find(item => item.view === name)!.title}>{content}</section>
   const syncLine: ReactNode = !usb ? <>This browser can’t use USB. <a href="#octatrack/setup">Install it from the card</a> instead.</>

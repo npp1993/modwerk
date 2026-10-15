@@ -3,14 +3,15 @@ import { act, createElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { OctatrackLoad } from './OctatrackLoad'
+import { recordLoad } from '../hooks/useOctatrackLoad'
 import { loadPath } from '../config/octatrack-load'
 import type { LinkState, OctatrackLink } from '../engine/elekloader/octatrack-link'
 import type { LoadReading } from '../engine/elekloader/upload-wire'
 
 const reading = (ticks = 120): LoadReading => ({ ticks, frames: ticks * 50, cpu: 123, tracks1to4: 234, tracks5to8: 345, peak1to4: 456, peak5to8: 567 })
-let container: HTMLDivElement, root: ReturnType<typeof createRoot>, hidden = false
-beforeEach(() => { vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true); vi.useFakeTimers(); vi.setSystemTime(0); hidden = false; vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden); container = document.createElement('div'); document.body.append(container); root = createRoot(container) })
-afterEach(async () => { await act(() => root.unmount()); container.remove(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
+let container: HTMLDivElement, root: ReturnType<typeof createRoot>, stops: (() => void)[] = []
+beforeEach(() => { vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true); vi.useFakeTimers(); vi.setSystemTime(0); stops = []; container = document.createElement('div'); document.body.append(container); root = createRoot(container) })
+afterEach(async () => { stops.forEach(stop => stop()); await act(() => root.unmount()); container.remove(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 function device(implementation: () => Promise<LoadReading | undefined> = async () => reading()) {
   const load = vi.fn(implementation)
   let state: LinkState = { status: 'ready', identity: { base: 'a'.repeat(64), canSubmit: true, model: 'OT' } }
@@ -18,31 +19,31 @@ function device(implementation: () => Promise<LoadReading | undefined> = async (
   const link = { liveLoad: load, start: () => () => {}, getState: () => state, subscribe: (fn: () => void) => { listeners.add(fn); return () => listeners.delete(fn) } } as unknown as OctatrackLink
   return { link, load, update(next: LinkState) { state = next; for (const listener of listeners) listener() } }
 }
-const render = (link: OctatrackLink | null, active = true) => act(() => root.render(createElement(OctatrackLoad, { link, active })))
+const record = (link: OctatrackLink) => act(() => { stops.push(recordLoad(link)) })
+const render = async (link: OctatrackLink | null, active = true) => { if (link && !stops.length) await record(link); await act(() => root.render(createElement(OctatrackLoad, { link, active }))) }
 it('shows current and historical readings, with separate peaks and an accessible table', async () => {
   const unit = device(); await render(unit.link)
   expect(container.textContent).toContain('12.3%'); expect(container.textContent).toContain('Recent device peak 45.6%')
   expect(container.querySelector('[role="img"]')?.getAttribute('aria-label')).toContain('Missing readings')
   expect(container.querySelectorAll('tbody tr')).toHaveLength(1)
-  expect(container.querySelector('.load-highest')?.textContent).toContain('Highest 34.5% · Tracks 5–8')
+  expect(container.querySelector('.load-highest')?.textContent).toContain('Highest 34.5% · DSP tracks 5–8')
   await act(() => container.querySelector<HTMLButtonElement>('button')!.click())
   expect(container.querySelectorAll('tbody tr')).toHaveLength(0)
 })
-it('does no polling outside the active visible tab, during sync or after unmount', async () => {
-  const unit = device(); await render(unit.link, false); expect(unit.load).not.toHaveBeenCalled()
-  await render(unit.link); expect(unit.load).toHaveBeenCalledTimes(1)
-  hidden = true; await act(() => document.dispatchEvent(new Event('visibilitychange')))
-  await act(() => vi.advanceTimersByTimeAsync(10000)); expect(unit.load).toHaveBeenCalledTimes(1)
-  hidden = false; await act(() => document.dispatchEvent(new Event('visibilitychange'))); expect(unit.load).toHaveBeenCalledTimes(2)
+it('records before Status opens, pauses during a sync and keeps the history, and stops with the recorder', async () => {
+  const unit = device(); await record(unit.link); expect(unit.load).toHaveBeenCalledTimes(1)
+  await act(() => vi.advanceTimersByTimeAsync(4000)); expect(unit.load).toHaveBeenCalledTimes(3)
   await act(() => unit.update({ status: 'testing', identity: unit.link.getState().identity }))
-  await act(() => vi.advanceTimersByTimeAsync(10000)); expect(unit.load).toHaveBeenCalledTimes(2)
-  await render(unit.link, false); await act(() => vi.advanceTimersByTimeAsync(10000)); expect(unit.load).toHaveBeenCalledTimes(2)
+  await act(() => vi.advanceTimersByTimeAsync(10000)); expect(unit.load).toHaveBeenCalledTimes(3)
+  await act(() => unit.update({ status: 'ready', identity: unit.link.getState().identity })); expect(unit.load).toHaveBeenCalledTimes(4)
+  await render(unit.link); expect(container.querySelectorAll('tbody tr')).toHaveLength(4)
+  stops.pop()!(); await act(() => vi.advanceTimersByTimeAsync(10000)); expect(unit.load).toHaveBeenCalledTimes(4)
 })
-it('never overlaps requests or appends a late reply after leaving the tab', async () => {
+it('never overlaps requests or appends a late reply after the recorder stops', async () => {
   let complete: (value: LoadReading) => void = () => {}
   const load = vi.fn(() => new Promise<LoadReading>(resolve => { complete = resolve })), unit = device(load)
   await render(unit.link); await act(() => vi.advanceTimersByTimeAsync(10000)); expect(load).toHaveBeenCalledTimes(1)
-  await render(unit.link, false); await act(() => complete(reading()))
+  stops.pop()!(); await act(() => complete(reading()))
   expect(container.querySelectorAll('tbody tr')).toHaveLength(0)
 })
 it('limits history to 150 samples and treats transport failures or frozen counters as gaps', async () => {

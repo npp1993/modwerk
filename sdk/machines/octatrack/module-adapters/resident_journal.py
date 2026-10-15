@@ -257,16 +257,34 @@ def manager(text):
     change('#include "stock_hook_resources.h"\n', '#include "stock_hook_resources.h"\n#include "dsp_journal_manager.h"\n')
     change('static int result=0;\n', 'static int result=0;\n' + DECLARATIONS.lstrip('\n'))
     # A legacy bind records the generation it binds, read where it starts; an acknowledged unbind/bypass clears it.
-    change('        } else waiting=dl_command_start(c,mode==3 ? DL_BIND : mode==4 || dl_bypass_unbound ? DL_BYPASS:DL_UNBIND,\n'
+    # A rollback's BIND back to a moved id's old copy (build_core's dl_move edit, `back`) binds that same code.
+    change('        } else waiting=dl_command_start(c,mode==3 || back ? DL_BIND : mode==4 || dl_bypass_unbound ? DL_BYPASS:DL_UNBIND,\n'
            '                                         p,offset+code->init,offset+code->proc);\n',
            '        } else {\n'
-           '            if(mode==3) binding_generation=journal_source(code->words);\n'
-           '            waiting=dl_command_start(c,mode==3 ? DL_BIND : mode==4 || dl_bypass_unbound ? DL_BYPASS:DL_UNBIND,\n'
+           '            if(mode==3 || back) binding_generation=journal_source(code->words);\n'
+           '            waiting=dl_command_start(c,mode==3 || back ? DL_BIND : mode==4 || dl_bypass_unbound ? DL_BYPASS:DL_UNBIND,\n'
            '                                     p,offset+code->init,offset+code->proc);\n'
            '        }\n')
     change('            if(phase==3) stubbed[c]=fx_without(stubbed[c],id);\n',
-           '            if(phase!=2) bound_generation[c][id]=phase==3 ? binding_generation : 0;\n'
+           '            if(phase!=2) bound_generation[c][id]=phase==3 || sent_back ? binding_generation : 0;\n'
            '            if(phase==3) stubbed[c]=fx_without(stubbed[c],id);\n')
+    # An owned job (the board's RESET or CAS, an engine's WRITE or PLACE) holds its core: a legacy start refuses and
+    # dl_job_status answers -2 for that core, as for a start refused outright. That is a wait, as for a legacy job of
+    # someone else: the next tick starts again, so a Part switch needing an upload completes after the owned job. At
+    # most 600 refused starts per owned job (the evacuation's patience); then it refuses as before.
+    change('static void tables(void) {\n',
+           'static uint32_t owned_seen;\nstatic unsigned owned_patience;\n'
+           'static unsigned owned_wait(unsigned c) {\n'
+           '    uint32_t ticket=dl_owned_holder(c);\n'
+           '    if(!ticket) return 0;\n'
+           '    if(ticket!=owned_seen) { owned_seen=ticket; owned_patience=0; }\n'
+           '    return ++owned_patience<=600u;\n'
+           '}\n'
+           'static void tables(void) {\n')
+    change('        if(!waiting && dl_job_status((unsigned)i/8)==-2) {',
+           '        if(!waiting && dl_job_status((unsigned)i/8)==-2 && !owned_wait((unsigned)i/8)) {')
+    change('        if(!waiting && dl_job_status(c)==-2) {',
+           '        if(!waiting && dl_job_status(c)==-2 && !owned_wait(c)) {')
     for entry in ('int dl_selection_prepare(const struct dl_selection *s,uint32_t token) {',
                   'int dl_move(unsigned c,unsigned p,unsigned offset) {',
                   'int dl_publication_prepare(const uint8_t ids[16],const uint8_t sources[8],uint32_t token) {'):

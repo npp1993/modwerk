@@ -18,6 +18,22 @@ static void host_tick(struct modwerk_runtime_api *api) { api->value = (uint32_t)
 int main(void)
 {
     unsigned char frame[1024] = {0};
+    /* A machine's renderer entry back to stock: the per-track slots (8 current, then 8 next renderers) still holding
+     * its routine take stock's (beta run 2, finding 30); other slots, and sites outside the renderer table, stay. */
+    uint32_t slots[16] = {0x40004008u, 0x48c45ad0u, 0x48c45ad0u, 0x400047f0u, [9] = 0x48c45ad0u, [10] = 0x400047d0u};
+    const uint8_t fm[8] = {0x48, 0xc4, 0x5a, 0xd0, 0x48, 0xc4, 0xa4, 0x0c}, stock[8] = {0x40, 0x00, 0x40, 0x08, 0x40, 0x00, 0x47, 0xf0};
+    modwerk_machine_types_restored(slots, 0x400d6400u, 4, fm, stock);
+    CHECK(slots[1] == 0x48c45ad0u);                                   /* not a type entry: nothing changes */
+    modwerk_machine_types_restored(slots, 0x400d6434u, 4, fm, stock);
+    CHECK(slots[0] == 0x40004008u && slots[1] == 0x40004008u && slots[2] == 0x40004008u && slots[3] == 0x400047f0u &&
+          slots[9] == 0x40004008u && slots[10] == 0x400047d0u);
+    modwerk_machine_types_restored(slots, 0x400d6452u, 8, fm, stock); /* straddles the renderer table's end */
+    CHECK(slots[10] == 0x400047d0u);                                  /* only whole entries inside it count */
+    /* A start entry (0x400d6454 on) is called from its table, never copied into a slot: its restore moves no slot, even
+     * one that holds the same word as a renderer (stock's start 0x400047d0 here). */
+    const uint8_t start_gone[4] = {0x40, 0x00, 0x47, 0xd0}, start_now[4] = {0x40, 0x00, 0xf4, 0x50};
+    modwerk_machine_types_restored(slots, 0x400d6454u + 24u, 4, start_gone, start_now);
+    CHECK(slots[10] == 0x400047d0u);
     /* Nothing loaded: every event goes on to the firmware. */
     CHECK(modwerk_runtime_key(0x31, 1) == 0 && modwerk_runtime_enc(3, -2) == 0);
     modwerk_runtime_draw(frame); modwerk_runtime_tick();

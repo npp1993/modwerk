@@ -97,6 +97,9 @@ void dl_owned_fail_closed(unsigned core);
  * generation proceed. Release needs the same generation and an idle transport. */
 int dl_owned_lease_acquire(uint32_t generation);
 int dl_owned_lease_release(uint32_t generation);
+/* The ticket of the owned job holding core c (reserved, submitted or not yet released), 0 none. While one holds it,
+ * a legacy start refuses and dl_job_status answers -2: the manager waits for it (resident_journal.py). */
+uint32_t dl_owned_holder(unsigned core);
 #endif
 '''
 
@@ -282,6 +285,7 @@ void dl_owned_fail_closed(unsigned c) { if(c<2) owned_close(c,OWNED_WHY_BOARD); 
 static int owned_idle(void) {
     return !jobs[0].state && !jobs[1].state && !pending[0] && !pending[1] && !owned_jobs[0].ticket && !owned_jobs[1].ticket;
 }
+uint32_t dl_owned_holder(unsigned c) { return c<2 ? owned_jobs[c].ticket : 0u; }
 int dl_owned_lease_acquire(uint32_t generation) {
     if(DL_OWNED_DISABLED || !generation) return 0;
     uint16_t saved=owned_mask();

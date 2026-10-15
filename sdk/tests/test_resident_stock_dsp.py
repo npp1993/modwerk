@@ -47,6 +47,31 @@ class ResidentStockDsp(unittest.TestCase):
         self.assertFalse(resident.buffer_fits('B', 2, 0x38000, 1, resident.MATRIX))
         self.assertFalse(resident.buffer_fits('A', 2, 0x30001, 4, 0))
 
+    def test_reviewed_resident_changes_fail_closed(self):
+        # The Sidechain key phase change (resident_dsp.REVIEWED): exact old text once, the exact reviewed result.
+        name, asm = 'sidechain-compressor', 'modules/sidechain-compressor/upstream/tools/patch_sc_dsp3.asm'
+        text = (ROOT / 'sdk/octabam' / asm).read_text()
+        pinned, changes, result, markers = resident.REVIEWED[name]
+        self.assertEqual(pinned, resident.SOURCES[asm])
+        for tag, values in markers.items():
+            changed = resident.reviewed_source(name, text, tag)
+            self.assertFalse(any(marker in changed for marker in values))
+            self.assertTrue(all(value in changed for value in values.values()))
+            self.assertIn('kph2:', changed)
+        self.assertEqual(resident.reviewed_source('output-matrix', 'unchanged', 'A'), 'unchanged')
+        with self.assertRaisesRegex(ValueError, 'review the resident change again'):
+            resident.reviewed_source(name, text + '\n', 'A')
+        saved = resident.REVIEWED
+        try:
+            resident.REVIEWED = {name: (pinned, changes + (('        rts\n', '        rts\n'),), result, markers)}
+            with self.assertRaisesRegex(ValueError, 'exactly once'):
+                resident.reviewed_source(name, text, 'A')
+            resident.REVIEWED = {name: (pinned, changes, hashlib.sha256(b'other').hexdigest(), markers)}
+            with self.assertRaisesRegex(ValueError, 'differs from the reviewed text'):
+                resident.reviewed_source(name, text, 'B')
+        finally:
+            resident.REVIEWED = saved
+
     @unittest.skipUnless(shutil.which('cc'), 'Host C compiler unavailable')
     def test_real_c_lease_ack_timeout_version_and_ui_root_fences(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1182,7 +1182,8 @@ card, another unit) and change version, and old projects must keep loading:
     - CUE + PROJ opens it as a dialog over the screen, stock's style (frame, title, rule; NO or CUE + PROJ
       closes it, and while it shows it takes every key and encoder, so the screen behind is as it was):
       bars for the ColdFire and each DSP core with a peak tick (the core's window, the CPU's last four
-      seconds), then each core's code arena and the module pool. FUNC + NO was the first pick: stock's disarm-all (owner). CUE held while PROJ
+      seconds), then each core's DSP budget as admission books it (since 14 October 2026: DSP FULL comes from it,
+      not from the measured load), each core's code arena and the module pool. FUNC + NO was the first pick: stock's disarm-all (owner). CUE held while PROJ
       is pressed otherwise just opens PROJECT. `npm run device -- stats` reads the same figures from the
       report (version 11, 78 words) whether or not the page is open.
     - PROJ > SYSTEM > MODWERK (owner: a menu entry that also teaches the shortcut) opens a short dialog
@@ -1197,7 +1198,7 @@ card, another unit) and change version, and old projects must keep loading:
       MODWERK (its icon, one long per column with the stock categories' shared second plane, and a list
       descriptor shipped initialised to seven visible rows) and sets the root count to 5 (Octabam's MAINMENU.md
       sections 1-5). Its rows: LOAD (the status page), MODULE LOAD (new: each installed module, what its instances
-      cost on each core as a share of the frame, from its own cycle figure, `~` when that is 7/4 of an emulator
+      cost on each core as a share of that core's DSP budget (of the frame until 14 October 2026), from its own cycle figure, `~` when that is 7/4 of an emulator
       claim; the cores' meters see only their sum), MISSING (the missing-modules page, also when nothing is
       missing) and SELF TEST. Drawn and driven in `ot_emu --mkii` on S55 (12 October 2026: the category, its
       icon, the list, LOAD, MODULE LOAD with no modules, MISSING, SELF TEST); not yet on the unit, and MODULE
@@ -2361,6 +2362,7 @@ explicit trial-acceptance rules still apply.
 | Tape Echo 0.1.2 | ~0 (ColdFire) | 4 (modeled) | – |
 
 DJ EQUALIZER's 331 executed instructions (emulator) run as 342 cycles: stock's code runs at about one cycle per instruction. Ours runs at 1.4–1.7.
+Not the loader's doing: on 14 October 2026 (dev twin of base `362fb24d`, `octatrack-measure.py`), SPRING REV and FILTER, now loaded on demand into the same arena and relocated like a module, measured 298 / 288 and 285 / 275 (dearest), as in the table. The extra cycles are in the modules' own DSP code (instruction mix, memory access or pipeline stalls the emulator does not count); not yet traced.
 
 **The ledger since S19 (owner's choice: a 90% frame ceiling)**, all in chip cycles:
 - **Allowances.** Core 0 3,120 and core 1 3,565, each 90% of the frame less stock's own work.

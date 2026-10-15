@@ -2024,3 +2024,24 @@ button.signal-tile[aria-pressed="true"] > svg { fill: currentColor; }
   .app-shell.has-library-dock .phone-footer { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
 }
 @media (prefers-reduced-motion: reduce) { .library-dock { animation: none; } }
+
+.brand-name { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.app-brand .brand-beta-badge, .toolbar-brand .brand-beta-badge { display: inline-flex; align-items: center; padding: 2px 5px; border: 1px solid var(--accent-line); border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-size: 9px; font-weight: 650; letter-spacing: .3px; line-height: 13px; }
+
+.beta-invitation-page { max-width: 680px; margin: 16px auto; display: grid; gap: 22px; line-height: 1.65; }
+.beta-invitation-page > .pill { justify-self: start; }
+.beta-invitation-page p { color: var(--text-secondary); }
+.beta-invitation-risks, .beta-invitation-discord { display: grid; gap: 12px; padding: 22px; background: var(--surface); border-radius: 10px; }
+.beta-invitation-discord .button { justify-self: start; }
+.beta-invitation-accept { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
+.beta-invitation-accept input { flex: none; width: 20px; height: 20px; margin-top: 3px; accent-color: var(--accent); }
+.beta-discord-invitation { display: flex; align-items: center; gap: 16px; padding: 20px; margin-bottom: 24px; background: var(--accent-soft); border-radius: 10px; }
+.beta-discord-invitation > div { min-width: 0; }
+.beta-discord-invitation p { margin-top: 6px; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+.beta-discord-actions { display: flex; align-items: center; gap: 16px; margin-left: auto; flex-shrink: 0; }
+@media (max-width: 600px) {
+  .beta-discord-invitation { flex-wrap: wrap; gap: 12px; padding: 16px; }
+  .beta-discord-invitation > div:not(.beta-discord-actions) { flex: 1; }
+  .beta-discord-actions { width: 100%; margin-left: 0; }
+  .beta-invitation-page .dialog-actions { flex-wrap: wrap; }
+}

@@ -15,4 +15,8 @@ int modwerk_runtime_enc(int encoder, int delta);
 int modwerk_dsp_pick(unsigned slot, unsigned track, unsigned row);
 int modwerk_dsp_probe(unsigned core); /* one PROBE packet: 1 sent, 0 busy */
 unsigned modwerk_dsp_report(uint32_t *out);
+/* runtime.c: the per-track renderer slots follow a renderer-table site that went back to stock (finding 30). */
+void modwerk_machine_retarget(volatile uint32_t *slot, unsigned n, uint32_t gone, uint32_t now);
+void modwerk_machine_types_restored(volatile uint32_t *slots, uint32_t address, uint32_t length, const uint8_t *patched,
+                                    const uint8_t *stock);
 #endif

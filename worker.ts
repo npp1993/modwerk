@@ -36,6 +36,7 @@ export default {
     if (!env.DB) return
     if (event.cron === '* * * * *') {
       startPush(env, context)
+      context.waitUntil(sendNewsMail(env, env.DB)) // a queued campaign goes out in minutes, 20 a run (owner, 15 Oct 2026)
       return
     }
     if (event.cron === '*/5 * * * *') {
@@ -47,7 +48,7 @@ export default {
     context.waitUntil(runHourly({
       'Octatrack diagnostics cleanup': () => cleanupOctatrackDiagnostics(db),
       'push cleanup': () => cleanupPush(db), 'usage cleanup': () => cleanupUsage(db), 'presence cleanup': () => cleanupPresence(db), 'account cleanup': () => cleanupAccounts(db),
-      'developer auth cleanup': () => cleanupDeveloperAuth(db), 'module threads': () => ensureModuleThreads(db), 'activity digests': activity, 'news mail': () => sendNewsMail(env, db), 'forum media cleanup': () => cleanupForumMedia(env), 'audio preview cleanup': () => cleanupAudioPreviews(env),
+      'developer auth cleanup': () => cleanupDeveloperAuth(db), 'module threads': () => ensureModuleThreads(db), 'activity digests': activity, 'forum media cleanup': () => cleanupForumMedia(env), 'audio preview cleanup': () => cleanupAudioPreviews(env),
     }))
   },
 }

@@ -5,6 +5,7 @@ import { emailReady } from './email'
 import { socialProviders } from './social-config'
 import { socialRoutes } from './social'
 import { profileRoutes } from './profile'
+import { betaInvitationRoutes } from './beta-invitations'
 import { memberBetaAccess } from './beta-testers'
 import { moduleAvailabilityError } from '../src/catalog/availability'
 import { DISCORD_INVITE_CAMPAIGN } from '../src/config/development-discord'
@@ -61,6 +62,8 @@ export async function authentication(request:Request,env:Env,path:string):Promis
  if(social)return social
  const profile=await profileRoutes(request,env,db,path)
  if(profile)return profile
+ const invitation=await betaInvitationRoutes(request,db,path,(path.startsWith('/api/auth/beta-invitations/')||path==='/api/auth/beta-discord-invite')?await accountUser(request,env,db):null)
+ if(invitation)return invitation
  if(path==='/api/auth/discord-invite'){
   if(request.method!=='POST')throw new HttpError(405,'Use POST to request the Discord invitation.')
   const member=needMember(await accountUser(request,env,db))

@@ -1,12 +1,13 @@
 """Synthetic contracts only; never load firmware or execute native code."""
 from pathlib import Path
-import sys,unittest
+import json,sys,unittest
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'octabam/tools'))
 import toolpath
-from remix.schema import Module,Kind,Poke,Detour,CavePatch,Keep,DramRegion,Linked
-from remix import ledger,keep,detour_guard,platform_build
+from remix.schema import Module,Kind,Poke,Detour,CavePatch,Keep,DramRegion,Linked,Formatter
+from remix import ledger,keep,detour_guard,platform_build,registry
 BASE=0x40000400
+RECIPES=Path(__file__).resolve().parents[2]/'src/engine/assets/descriptor-recipes.json'
 def mod(name,**kwargs):return Module(name=name,key=name,kind=Kind.CF_PATCH,doc='Synthetic fixture',**kwargs)
 class BuilderContracts(unittest.TestCase):
     def test_offset_tail_overlap_and_adjacency(self):
@@ -52,3 +53,13 @@ class BuilderContracts(unittest.TestCase):
         for dst in (0x3000,0xe010,0x48003000,0x10000):
             with self.assertRaises(ValueError):platform_build.preboot_layout(layout,[entry(dst)])
         self.assertEqual(len(platform_build.preboot_layout(layout,[entry(0x6000)])),2)
+    def test_plain_knobs_zero_both_formatter_words(self):
+        # Formatter.PLAIN means both words zero, with or without a stepped slot
+        # (#626: AIR CHORUS has none and kept DARK REV's words on drawn knobs).
+        mods={m.key:m for m in registry.modules().values()}
+        for recipe in json.loads(RECIPES.read_text())['recipes']:
+            last={w['offset']:w['value'] for w in recipe['integers']}
+            drawn=[i for i,p in enumerate(mods[recipe['key']].params) if p.formatter is Formatter.PLAIN and p.active is not False]
+            for slot in drawn:
+                for word in (0xca,0xfa):
+                    self.assertEqual(last.get(word+slot*4),0,f"{recipe['id']} slot {slot} word {word:#x}")

@@ -16,7 +16,7 @@ const STEPS = ['Sync', 'Self-test', 'Try it']
 const list = (ids: string[]) => new Intl.ListFormat('en', { type: 'conjunction' }).format(ids.map(id => MODULES.find(item => item.id === id)?.name ?? id))
 
 /**
- * The one way to sync a module set to the Octatrack: review what changes, confirm playback is stopped, sync,
+ * The one way to sync a module set to the Octatrack: review what changes, sync (the base stops playback itself),
  * self-test, then try it and keep it or undo. While the trial runs it can't be dismissed; closing would undo it.
  * Runtime package changes are reviewed even when the visible member IDs stay the same. A base upgrade or
  * unavailable package stops preparation here; the installer preserves this set. A failed sync offers `onReport`.
@@ -28,7 +28,7 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
 }) {
   const dialog = useRef<HTMLDialogElement>(null), title = useRef<HTMLHeadingElement>(null)
   const state = useOctatrackLink(link), { status, progress = 0, tested, notice } = state
-  const [stoppedFor, setStoppedFor] = useState<string>(), [started, setStarted] = useState(false), [preparing, setPreparing] = useState(false)
+  const [started, setStarted] = useState(false), [preparing, setPreparing] = useState(false)
   const [error, setError] = useState(''), [leaving, setLeaving] = useState(false)
   const [preparationError, setPreparationError] = useState<{ review: string; error: ModuleSetError }>()
   const [undoName, setUndoName] = useState<string>()
@@ -36,12 +36,11 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
   const ending = useRef<'kept' | 'undone'>(undefined), logged = useRef(false)
   const step = loadStep(status, started, preparing)
   const connected = !!state.identity?.canSubmit && status === 'ready'
-  const review = inventory && moduleSetReview(set, inventory, state.identity?.capabilities)
+  const review = inventory && moduleSetReview(set, inventory, state.identity?.capabilities, state.identity?.base)
   const reviewKey = JSON.stringify([set, inventory, state.identity?.base, state.identity?.capabilities])
   const latestReview = useRef(reviewKey), mounted = useRef(false)
   useEffect(() => { latestReview.current = reviewKey }, [reviewKey])
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
-  const stopped = stoppedFor === reviewKey
   const changes = review?.changes, updates = review?.updates ?? []
   const problem = preparationError?.review === reviewKey ? preparationError.error : review?.problem
   const needsBase = problem instanceof BaseUpdateRequired
@@ -71,7 +70,7 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
     const stale = () => {
       if (!mounted.current) return true
       if (latestReview.current === reviewKey && link.getState() === preparedFor) return false
-      setPreparing(false); setStoppedFor(undefined)
+      setPreparing(false)
       setError('Review the sync again; nothing was sent because the module set or Octatrack connection changed.')
       return true
     }
@@ -139,11 +138,11 @@ export function LoadDialog({ link, set, inventory, previousName, prepareUpdate, 
     </>}
     <footer className="base-install-footer">
       {step === 'review' && connected && review?.needsSync && !problem && !cardOnly.length
-        ? <label className="load-check"><input type="checkbox" checked={stopped} onChange={event => setStoppedFor(event.target.checked ? reviewKey : undefined)} />Playback is stopped</label> : <span />}
+        ? <p className="link-hint">Syncing stops playback on the Octatrack.</p> : <span />}
       <div className="base-install-actions">
         {step === 'review' && <><button type="button" className="button button-quiet" onClick={onClose}>Cancel</button>
           {needsBase ? <button type="button" className="button button-primary" onClick={onInstallBase}><Icon name="download" size={16} />Install latest base</button>
-            : <button type="button" className="button button-primary" disabled={!connected || !review?.needsSync || !!problem || cardOnly.length > 0 || !stopped || !prepareUpdate} onClick={() => void load()}><Icon name="download" size={16} />Sync to Octatrack</button>}</>}
+            : <button type="button" className="button button-primary" disabled={!connected || !review?.needsSync || !!problem || cardOnly.length > 0 || !prepareUpdate} onClick={() => void load()}><Icon name="download" size={16} />Sync to Octatrack</button>}</>}
         {step === 'loading' && !preparing && progress < 1 && <button type="button" className="button button-quiet" onClick={() => link.cancel()}>Cancel</button>}
         {step === 'trial' && <><button type="button" className="button button-quiet load-undo" disabled={status === 'finishing'} onClick={() => { ending.current = 'undone'; void link.undo() }}>Undo → {undoName ?? 'Previous modules'}</button>
           <button type="button" className="button button-primary" disabled={status === 'finishing'} onClick={() => void keep()}><Icon name="check" size={16} />Keep</button></>}

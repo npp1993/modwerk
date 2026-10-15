@@ -14,7 +14,7 @@ export function OctatrackSidebarStatus({ link, onInstall }: { link: OctatrackLin
   const active = ACTIVE.includes(status), connected = status === 'ready' && !!identity?.canSubmit
   const install = status === 'stock' || status === 'ready' && !connected || status === 'unsupported'
   const title = active ? activity(state) : connected ? 'Octatrack connected' : install ? 'Install the base' : status === 'connecting' ? 'Connecting…' : status === 'busy' ? 'Try connecting again' : 'Connect Octatrack'
-  const hint = active ? 'Open your module set to follow the sync.' : connected ? 'Choose a module set to sync.' : status === 'stock' ? 'Original OS detected. Install once from the card.' : install ? 'Install from the card to get started.' : status === 'busy' ? 'Close the other tab or app using it.' : 'Plug in USB, then choose your Octatrack.'
+  const hint = active ? (state.module ? 'Open your module set to follow the sync.' : 'Started from Status.') : connected ? 'Choose a module set to sync.' : status === 'stock' ? 'Original OS detected. Install once from the card.' : install ? 'Install from the card to get started.' : status === 'busy' ? 'Close the other tab or app using it.' : 'Plug in USB, then choose your Octatrack.'
   const content = <><span className={'status-dot' + (connected ? ' verified' : active ? ' is-live' : '')} /><span className="sidebar-build-copy"><strong>{title}</strong><small>{hint}</small></span><Icon name="arrow" size={14} /></>
   return connected || active ? <a className="sidebar-build" href="#configuration">{content}</a>
     : <button type="button" className="sidebar-build is-connection" disabled={status === 'connecting'} onClick={() => { if (install) onInstall(); else void (status === 'busy' ? link.retry() : link.connect()) }}>{content}</button>
@@ -25,13 +25,14 @@ export function OctatrackStatus({ link }: { link: OctatrackLink }) {
   const state = useOctatrackLink(link), { status, identity } = state
   if (status === 'unsupported' || status === 'idle' || status === 'connecting') return null
   const busy = ACTIVE.includes(status)
-  return <span className="octatrack-status-bar"><span className={'status-dot' + (busy ? ' is-live' : identity?.canSubmit ? ' verified' : '')} />{busy ? 'Syncing to Octatrack · ' + activity(state) : status === 'busy' ? 'Octatrack in use' : 'Octatrack connected'}</span>
+  return <span className="octatrack-status-bar"><span className={'status-dot' + (busy ? ' is-live' : identity?.canSubmit ? ' verified' : '')} />{busy ? (state.module ? 'Syncing to Octatrack · ' : 'Octatrack · ') + activity(state) : status === 'busy' ? 'Octatrack in use' : 'Octatrack connected'}</span>
 }
 
 /** A pill while an update runs or waits for Keep or Undo, and for its result, on every page but the configuration page. */
 export function OctatrackActivity({ link }: { link: OctatrackLink }) {
   const state = useOctatrackLink(link), { status, module, notice } = state
-  const [dismissed, setDismissed] = useState<LinkState['notice']>()
+  // A result already there when the pill appears was shown where it happened (the sync dialog, the Octatrack page).
+  const [dismissed, setDismissed] = useState<LinkState['notice']>(() => ACTIVE.includes(link.getState().status) ? undefined : link.getState().notice)
   const result = notice && notice !== dismissed && !ACTIVE.includes(status) ? notice : undefined
   if (!ACTIVE.includes(status) && !result) return null
   return <aside className={'octatrack-activity' + (result?.tone === 'error' ? ' is-error' : '')} aria-label="Octatrack update" role="status">

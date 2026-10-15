@@ -40,6 +40,18 @@ class MachineEventTests(unittest.TestCase):
         result = host(self, OT / 'elekloader/test_machine_registry.c')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_registry_knows_every_protect_port_signature(self):
+        # The validator keeps a known PROTECT machine's 12 bytes while it is absent (the boot's battery restore runs
+        # before the saved set reinstalls it: beta finding 24). The list must be exactly the PROTECT ports.
+        text = (OT / 'elekloader/machine_registry.c').read_text()
+        listed = re.search(r'\} known\[\] = \{(.*?)\};', text).group(1)
+        known = {(a + b, int(lo), int(hi)) for a, b, lo, hi in re.findall(r"\{\{'(.)', '(.)'\}, (\d+), (\d+)\}", listed)}
+        ports = json.loads((ADAPTERS / 'machine-ports.json').read_text())['ports']
+        protect = {(p['machine']['sig'], p['machine']['lo'], p['machine']['hi']) for p in ports.values()
+                   if 'PROTECT' in p.get('machine', {}).get('flags', [])}
+        self.assertEqual(known, protect)
+        self.assertIn(('AB', 1, 1), known)
+
     def test_contributor_admission_on_the_host(self):
         result = host(self, ADAPTERS / 'test_machine_contributors.c', ADAPTERS / 'machine_lifetime.c', ADAPTERS / 'machine_parts.c')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

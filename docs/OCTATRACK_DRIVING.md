@@ -76,7 +76,7 @@ error and moves on. macOS `nc -U` hangs up before the reply, so use the script.
 | `+KEY`, `-KEY` | hold, let go |
 | `encA+3`, `encLEVEL-2`, `fader128` | encoders A-F, LEVEL, the crossfader |
 | `w300` | wait 300 ms (rarely needed: the steps below wait for their own result) |
-| `pick:T1:FX2:SPRING_REV` | pick an effect by name (spaces as `_`), FX1 or FX2: the chooser opens, LEVEL scrolls the exact rows, YES; done once the track runs it (about 120 ms after YES); fails at once if the loader refuses |
+| `pick:T1:FX2:SPRING_REV` | pick an effect by name (spaces as `_`), FX1 or FX2: the chooser opens, LEVEL scrolls the exact rows, YES; done once the track runs it (about 120 ms after YES); fails at once if the loader refuses. A notice on screen eats its first keys and it times out after 5 s: after removing a module the bank names (MISSING MODULES) send `YES` first |
 | `part1`-`part4` | switch Parts (PART + an arrow), done once the Part changed |
 | `ui` | each track's FX1/FX2 as they run, the current track, Part, transport |
 | `stats` | CPU, each core's mean/peak per mille, idle passes |

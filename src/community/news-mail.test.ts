@@ -97,10 +97,10 @@ describe('news mail campaigns', () => {
     expect(message.text).toContain('https://octamod.test/#account/notifications')
     expect((await overview()).campaigns[0]).toMatchObject({ status: 'sent', recipient_count: 4, sent: 2, skipped: 2, failed: 0, queued: 0 })
     expect(db.prepare("SELECT accepted,failed,limited FROM account_mail_daily WHERE purpose='news'").get()).toEqual({ accepted: 2, failed: 0, limited: 0 })
-    // A second run, including the hourly trigger, never mails the campaign again.
+    // A second run, including the minute trigger, never mails the campaign again.
     expect(await run()).toEqual({ sent: 0, queued: 0 })
     const jobs: Promise<unknown>[] = []
-    worker.scheduled({ cron: '17 * * * *' }, env, { waitUntil: job => { jobs.push(job) } })
+    worker.scheduled({ cron: '* * * * *' }, env, { waitUntil: job => { jobs.push(job) } })
     await Promise.all(jobs)
     expect(messages).toHaveLength(0)
   }, 15000)

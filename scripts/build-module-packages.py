@@ -546,6 +546,9 @@ def main():
             if module.stepped_slots:
                 for slot in range(12):
                     integer(0xca + slot * 4, 4, 0); integer(0xfa + slot * 4, 4, 0)
+            else:
+                for slot in native.plain_slots(module):
+                    integer(0xca + slot * 4, 4, 0); integer(0xfa + slot * 4, 4, 0)
             for slot in module.stepped_slots:
                 integer(0xca + slot * 4, 4, 0x4003c718); integer(0xfa + slot * 4, 4, 0x40047254 if module.params[slot].count is not None and module.params[slot].count <= 5 else 0); integer(0x12a + slot * 4, 4, 0)
             for slot in module.bipolar_slots:

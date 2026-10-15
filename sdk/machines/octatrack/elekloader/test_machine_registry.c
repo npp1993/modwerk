@@ -162,12 +162,14 @@ int main(void)
     int result = mw_validate(part0());
     CHECK(result == 12 && v_wraps == 1 && stock_validations == 1 && seen[0] == 0x40 && seen[11] == 0x40 && part0()[0x2a + 90 + 6] == before);
 
-    /* A leaves: its tracks read as stock (their bytes kept), its row goes, F takes unowned and A's tracks' renders. */
+    /* A leaves: its tracks read as stock (their bytes kept), its row goes, F takes unowned tracks' renders. A's track
+     * holds A's bytes, not FLEX's: a known PROTECT signature without its machine renders stock's silent source. */
     const void *vf[] = {&V, &F};
     rows(vf, 2, 0, 0);
     CHECK(counts_now() == (7u << 24 | 7u << 16 | 6u << 8 | 3u) && part0()[60 + 60] == 'A');
     CHECK(mw_type(1, slot(2)) == 1 && !strcmp(mw_name(5), "VECTOR") && (uintptr_t)mw_name(7) == 0x1001u);
-    CHECK(mw_source_render_impl(2, 0, 0, 1) == 103 && a_renders == 1);
+    CHECK(mw_source_render_impl(2, 0, 0, 1) == -9 && silent_renders == 1 && a_renders == 1);
+    CHECK(mw_source_render_impl(4, 0, 0, 1) > 100);
     /* A back, in another install order: the same rows (order, module id), the same mapping. */
     rows(avf, 3, 0, 0);
     CHECK(mw_type(1, slot(2)) == 5 && mw_type(1, slot(3)) == 7);
@@ -188,7 +190,7 @@ int main(void)
     CHECK(mw_assign(part0(), 4, 5) == 1 && voices == 1u << 4 && part0()[60 + 120] == 'D');
     CHECK(mw_assign(part0(), 5, 5) == (unsigned)-1 && part0()[60 + 150] == 0 && voices == 1u << 4);
     part0()[60 + 150] = 'D'; part0()[61 + 150] = 'V'; part0()[62 + 150] = 1; /* a project load signs track 5 */
-    CHECK(mw_source_render_impl(5, 0, 0, 1) == -9 && silent_renders == 1);
+    CHECK(mw_source_render_impl(5, 0, 0, 1) == -9 && silent_renders == 2);
     mw_ui_tick();
     CHECK(mw_source_render_impl(5, 0, 0, 1) == -9 && mw_source_render_impl(4, 0, 0, 1) == 2);
     room = 2; mw_ui_tick();
@@ -217,6 +219,47 @@ int main(void)
     CHECK(!voices && releases == 4 && engine_offs == 5 && last_off == key(&E));
     part0()[60 + 120] = part0()[61 + 120] = part0()[62 + 120] = 0; mw_ui_tick();
     CHECK(!voices && releases == 4);
+
+    /* Beta finding 24: the boot's battery restore validates the battery-backed Parts before the saved set brings the
+     * machines back. With no machine installed, a known PROTECT signature (Analog BD's) still keeps its 12 bytes from
+     * stock's validator, and gets them back; an unknown signature does not (stock judges its bytes, as before). */
+    rows(0, 0, 0, 0);
+    for (unsigned k = 0; k < 12; ++k) part0()[(k < 6 ? 0x2a : 0x1da) + 90 + 6 + k % 6] = (uint8_t)(0x70 + k);
+    part0()[0x22 + 3] = 1; part0()[60 + 90] = 'A'; part0()[61 + 90] = 'B'; part0()[62 + 90] = 1;
+    int validations = stock_validations;
+    CHECK(mw_validate(part0()) == 11 && stock_validations == validations + 1 && seen[0] == 0x40 && seen[11] == 0x40);
+    CHECK(part0()[0x2a + 90 + 6] == 0x70 && part0()[0x1da + 90 + 11] == 0x7b && part0()[60 + 90] == 'A');
+    part0()[0x22 + 3] = 0;                                                   /* STATIC with the signature: the same */
+    CHECK(mw_validate(part0()) == 11 && seen[0] == 0x40 && part0()[0x2a + 90 + 6] == 0x70);
+    part0()[0x22 + 3] = 2;                                                   /* THRU: not a machine track */
+    CHECK(mw_validate(part0()) == 11 && seen[0] == 0x70);
+    part0()[0x22 + 3] = 1; part0()[62 + 90] = 2;                             /* another revision: unknown */
+    CHECK(mw_validate(part0()) == 11 && seen[0] == 0x70 && seen[11] == 0x7b);
+    part0()[60 + 90] = 'D'; part0()[61 + 90] = 'V'; part0()[62 + 90] = 1;   /* a signature this base does not know */
+    CHECK(mw_validate(part0()) == 11 && seen[0] == 0x70);
+    /* Its track renders stock's silent source, an unsigned FLEX track stock's FLEX. */
+    part0()[60 + 90] = 'A'; part0()[61 + 90] = 'B'; part0()[62 + 90] = 1;
+    silent = silent_renders; int flex = stock_renders;
+    CHECK(mw_source_render_impl(3, 0, 0, 1) == -9 && silent_renders == silent + 1);
+    CHECK(mw_source_render_impl(6, 0, 0, 1) == -7 && stock_renders == flex + 1);
+    CHECK(mw_type(1, slot(3)) == 1 && mw_page(slot(3)) == 0);                /* reads as stock FLEX */
+    /* Choosing a stock machine leaves it as a present PROTECT machine is left: stock's FLEX defaults in both copies,
+     * then no signature; the track is then an ordinary stock track. */
+    for (unsigned k = 0; k < 6; ++k) sram[0x2a + 90 + 6 + k] = part0()[0x2a + 90 + 6 + k];
+    sram[60 + 90] = 'A';
+    CHECK(mw_assign(part0(), 3, 1) == 1 && part0()[0x2a + 90 + 6] == 0x40 && sram[0x2a + 90 + 6] == 0x40);
+    CHECK(part0()[0x1da + 90 + 11] == 0x40 && part0()[60 + 90] == 0 && sram[60 + 90] == 0 && part0()[62 + 90] == 0);
+    CHECK(mw_source_render_impl(3, 0, 0, 1) == -7);
+    /* So does a machine taking it: its own defaults and signature, never the absent machine's bytes. */
+    for (unsigned k = 0; k < 12; ++k) part0()[(k < 6 ? 0x2a : 0x1da) + 90 + 6 + k % 6] = (uint8_t)(0x70 + k);
+    part0()[60 + 90] = 'A'; part0()[61 + 90] = 'B'; part0()[62 + 90] = 1;
+    const void *v_only[] = {&V};
+    rows(v_only, 1, 0, 0);
+    CHECK(mw_assign(part0(), 3, 5) == 1 && part0()[60 + 90] == 'S' && part0()[0x2a + 90 + 6] == 0x40 && part0()[0x1da + 90 + 11] == 0x40);
+    CHECK(mw_assign(part0(), 3, 1) == 1 && part0()[60 + 90] == 0);
+    /* The type byte is stock's to change (the commit stores the returned row): the registry never writes it. */
+    CHECK(part0()[0x22 + 3] == 1);
+    rows(0, 0, 0, 0);
 
     /* SEQUENCER: FM's quantizer rows, then Scale Quantizer's with the same labels: one set, FM's; QZ alone: QZ's. */
     const void *both[] = {&FMQ, &QZ, &MORE};

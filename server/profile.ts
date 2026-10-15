@@ -51,6 +51,8 @@ export async function profileRoutes(request: Request, env: Env, db: Database, pa
   const tables = [['messages','user_id'],['conversation_members','user_id'],['message_blocks','user_id'],['message_blocks','blocked_id'],['message_reports','user_id'],['account_tokens','user_id'],['auth_verifications','value'],['sessions','user_id'],['configurations','user_id'],['developer_sessions','user_id'],['developer_auth_codes','user_id'],['module_creator_support','user_id'],['module_maintainers','user_id'],['issue_replies','user_id'],['developer_events','actor_id'],['issue_triage_events','actor'],['issues','reporter_id'],['ratings','user_id'],['likes','user_id'],['forum_reactions','user_id'],['forum_follows','user_id'],['forum_bookmarks','user_id'],['push_subscriptions','user_id'],['signup_events','user_id'],['notifications','user_id'],['notification_preferences','user_id'],['forum_reports','user_id'],['forum_shout_reports','user_id'],['forum_shouts','user_id'],['account_removal_requests','user_id'],['account_policy_acceptances','user_id'],['member_presence','user_id'],['site_presence','user_id'],['site_presence','signed_out_user_id'],['forum_thread_reads','member_id'],['forum_visits','member_id']] as const
   const picture = await db.prepare('SELECT avatar_id FROM users WHERE id=?').bind(owner.id).first<{avatar_id: string | null}>()
   await db.batch([
+    db.prepare('DELETE FROM member_beta_invitations WHERE user_id=?').bind(owner.id),
+    db.prepare('DELETE FROM member_beta_discord_invites WHERE user_id=?').bind(owner.id),
     db.prepare('DELETE FROM octatrack_diagnostic_events WHERE user_id=?').bind(owner.id),
     db.prepare('DELETE FROM octatrack_diagnostic_consent WHERE user_id=?').bind(owner.id),
     db.prepare('DELETE FROM module_working_reports WHERE user_id=?').bind(owner.id),
@@ -64,7 +66,7 @@ export async function profileRoutes(request: Request, env: Env, db: Database, pa
     // Posted text stays as anonymous discussion; images and sound clips are removed (the hourly job purges the files).
     db.prepare('UPDATE forum_media SET removed=1 WHERE user_id=?').bind(owner.id),
     db.prepare('UPDATE module_audio_previews SET removed=1 WHERE user_id=?').bind(owner.id),
-    db.prepare("UPDATE users SET username=NULL,display_name='Deleted member',profile_bio='',instagram_url='',soundcloud_url='',bandcamp_url='',avatar_id=NULL,avatar_mime=NULL,email_verified=0,suspended=1,github_id=NULL,github_login=NULL WHERE id=?").bind(owner.id),
+    db.prepare("UPDATE users SET username=NULL,display_name='Deleted member',profile_bio='',instagram_url='',soundcloud_url='',bandcamp_url='',avatar_id=NULL,avatar_mime=NULL,email_verified=0,suspended=1,beta_tester=0,github_id=NULL,github_login=NULL WHERE id=?").bind(owner.id),
   ])
   if (picture?.avatar_id && env.MEDIA) await env.MEDIA.delete(avatarKey(picture.avatar_id))
   const out = response({ ok: true }); out.headers.set('X-Octamod-Session', '')

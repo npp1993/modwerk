@@ -55,6 +55,8 @@ __attribute__((weak)) int modwerk_machine_journal_association(uint32_t module,co
 { (void)module;(void)digest;(void)participants;(void)count;return 0; }
 __attribute__((weak)) int modwerk_machine_journal_trial(int running) { (void)running;return 0; }
 #endif
+__attribute__((weak)) void modwerk_machine_site_restored(uint32_t a, uint32_t n, const uint8_t *patched, const uint8_t *stock)
+{ (void)a; (void)n; (void)patched; (void)stock; }
 int modwerk_runtime_volatile_busy(void) { return journal.progress.phase != RJ_IDLE; }
 
 
@@ -431,6 +433,7 @@ static void put(const struct runtime_module *m, int patched)
         volatile uint8_t *to = modwerk_machine_code(s->address);
         modwerk_machine_flush_data(s->address, s->length);
         for (uint32_t j = 0; j < s->length; ++j) to[j] = (patched ? s->code : s->stock)[j];
+        if (!patched) modwerk_machine_site_restored(s->address, s->length, s->code, s->stock);
     }
 }
 static const struct runtime_dsp no_dsp;

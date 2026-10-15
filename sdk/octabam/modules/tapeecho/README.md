@@ -45,7 +45,7 @@ controls, including AGE, are on that same page; the detail page is disabled.
 | 1 | WOW | 0.8 Hz wow plus randomized flutter; 0 is static. 44/127 gives about 7.7 cents RMS. |
 | 1 | AGE | Repeat bandwidth, flutter and hiss; fresh at 0, worn at 127. Former HEADS slot. |
 | 1 | SYNC | `FREE` continuous time, or `BEAT` tempo-quantised time. |
-| 1 | MIX | Echo level. The dry signal stays at full level through 95 and fades out above it; 127 is full wet, 0 is exact dry. |
+| 1 | MIX | Dry/wet crossfade; 0 is exact dry. |
 | Detail | — | Former DRIVE slot: disabled; the engine always uses DRIVE=0, including on saved parts. |
 | Detail | — | Former AGE slot: disabled; AGE now lives on page 1. |
 
@@ -230,23 +230,13 @@ These are actual headless-emulator LCD captures. See [TESTING.md](TESTING.md),
 
 ## Overview
 
-Published version: **0.1.4-experimental**. The original record above, including its older version label and all measured resource figures, is preserved verbatim. 0.1.4 changes how MIX treats the dry signal (below); the echo path, feedback law and tone are the 0.1.2 engine's. The hardware status stays unmeasured.
-
-### MIX and track level (0.1.4)
-
-Issue [#607](https://github.com/repeat98/modwerk/issues/607) reported that Tape Echo turns the track down. It did: MIX was a linear dry/wet crossfade, so at the default MIX 90 the dry signal was at 29% (-10.7 dB) while the echo path alone sits 6 dB or more below its input. A broadband signal came out 7 to 8 dB quieter at MIX 90.
-
-Now the dry signal stays at full level through MIX 95 and fades out only above it, to nothing at 127. The same broadband signal comes out within 0.5 dB of its input from MIX 0 to 95 (FDBK 0 and 64, AGE 64), and a dry hit keeps its level. Above 95 the level falls toward the echo-only level as the dry fades out (about 8 dB below the input for this signal at 127, the same as before 0.1.4).
-
-What did not change, on purpose: the echo level, the feedback law and the tone. Raising the echo level to match the input was tried and rejected: the self-oscillation region then clips the output (25% of samples at FDBK 102 and 68% at FDBK 127 at full wet, against none before). Saved projects with Tape Echo sound louder at the same MIX, by up to 10.7 dB on the dry signal at MIX 90, and their echoes are quieter against it. Lower MIX or the track volume to taste.
-
-There is no stereo mode. A tape echo has one tape and one playback head, so Tape Echo stays mono on the echo path; the dry signal stays stereo. A second channel would double its per-track CPU cost while the freeze at seven instances is still open.
+Published version: **0.1.5-experimental**, a rollback of 0.1.4 to the 0.1.3-experimental code. The original record above, including its older version label and all measured resource figures, is preserved verbatim. 0.1.3 added documentation and an isolated audio comparison; 0.1.5 keeps that and the 0.1.2-experimental runtime and historical hardware status.
 
 Tape Echo is a mono single-head echo in Octatrack 1.40C FX2, with stereo dry output, tempo-synced or free timing, pitch movement and tape-age texture. The Controls section above describes every active control and the disabled detail page.
 
 ## Usage
 
-Use a backed-up test project and a short transient to hear the repeats clearly. Assign Tape Echo in FX2, choose BEAT timing for musical divisions, and begin with moderate feedback. Increasing WOW moves repeat pitch; increasing AGE darkens the repeats and adds flutter and hiss. MIX 0 gives exact dry audio, and the dry signal stays at full level through MIX 95, so raising MIX adds echo without turning the track down. Review old HEADS locks when migrating projects, as described above.
+Use a backed-up test project and a short transient to hear the repeats clearly. Assign Tape Echo in FX2, choose BEAT timing for musical divisions, and begin with moderate feedback. Increasing WOW moves repeat pitch; increasing AGE darkens the repeats and adds flutter and hiss. MIX 0 gives exact dry audio. Review old HEADS locks when migrating projects, as described above.
 
 ### Quick tutorial
 
@@ -256,11 +246,11 @@ Use a backed-up test project and a short transient to hear the repeats clearly. 
 
 ## Compatibility and limitations
 
-Tape Echo targets Octatrack OS 1.40C FX2 and keeps stock DELAY and SPRING REV available. It uses the shared 10 MiB DRAM arena and existing stock delay rings; the original CPU integration and resource figures above remain the evidence for these costs. The pinned historical record reports six instances running and a seventh freezing the unit; other historical builds froze during edits. The current candidate is not a hardware-confirmed fix. Timing headroom, cache/bus behavior and live-set reliability remain unqualified. 0.1.4 does not address those limits.
+Tape Echo targets Octatrack OS 1.40C FX2 and keeps stock DELAY and SPRING REV available. It uses the shared 10 MiB DRAM arena and existing stock delay rings; the original CPU integration and resource figures above remain the evidence for these costs. The pinned historical record reports six instances running and a seventh freezing the unit; other historical builds froze during edits. The current candidate is not a hardware-confirmed fix. Timing headroom, cache/bus behavior and live-set reliability remain unqualified. Do not interpret this editorial release or its preview as resolving those limits.
 
 ## Tests and measurements
 
-See the unchanged [TESTING.md](TESTING.md), Local gates and audition, and Status sections above for the original revision, executed-instruction figures and hardware limitations. Executed instructions are distinct from hardware cycles. 0.1.4 changes the mix output kernel, so the original evidence is history, not proof for this version; [TESTING.md](TESTING.md) lists what was re-run on the emulator for 0.1.4. No physical-hardware result exists for it. The audio render verifies nonzero output, exact MIX 0, pass timing and decoded MP3 peaks below −1 dBFS without clipped samples. Its settings, source hashes and method are in [audio preview provenance](docs/audio-preview.md).
+See the unchanged [TESTING.md](TESTING.md), Local gates and audition, and Status sections above for the original revision, executed-instruction figures and hardware limitations. Executed instructions are distinct from hardware cycles. This editorial update retains the original approved 0.1.2-experimental evidence; it adds no stress or physical-hardware results. The audio render verifies nonzero output, exact MIX 0, pass timing and decoded MP3 peaks below −1 dBFS without clipped samples. Its settings, source hashes and method are in [audio preview provenance](docs/audio-preview.md).
 
 ## Authorship and licences
 
@@ -268,10 +258,10 @@ Module author: [Jannik Aßfalg](https://github.com/repeat98). Octabam attributio
 
 ## Screens and audio
 
-The original real emulator captures above show the FX2 chooser and the six active controls. Their monochrome exports below preserve every captured pixel, with only a two-color palette change. Their version/build identity remains 0.1.2-experimental; the panel, labels and controls they show are unchanged in 0.1.4, but they do not show the mix law. See [capture provenance](media/capture.json) and [pixel-mask comparison](docs/monochrome-captures.md).
+The original real emulator captures above show the FX2 chooser and the six active controls. Their monochrome exports below preserve every captured pixel, with only a two-color palette change. Their version/build identity remains 0.1.2-experimental because the checked runtime is unchanged; see [capture provenance](media/capture.json) and [pixel-mask comparison](docs/monochrome-captures.md).
 
 ![Tape Echo selected in FX2 SETUP.](media/ot-setup-mono.png)
 
 ![Tape Echo main controls: TIME, FDBK, WOW, AGE, SYNC and MIX.](media/ot-controls-mono.png)
 
-**Audio preview.** [Listen](media/audio-preview.mp3). Legowelt Juno 106 chord pluck: dry (0 s), clean 1/8 repeats (0.85 s; FDBK 78, WOW 10, AGE 20), worn dotted-1/8 repeats (3.85 s; FDBK 94, WOW 80, AGE 70). BEAT, 128 BPM, MIX 75. 7.85 s, no added gaps; tails edited short. First-hit RMS matched (20 ms). Offline computer render through Tape Echo 0.1.2's CPU engine, made before 0.1.4 held the dry signal at full level through MIX 95 (the dry notes are louder against the repeats at MIX 75 now); not recorded on an Octatrack. Source credits, permission, excerpt preparation, settings, hashes and render details are in [audio preview provenance](docs/audio-preview.md).
+**Audio preview.** [Listen](media/audio-preview.mp3). Legowelt Juno 106 chord pluck: dry (0 s), clean 1/8 repeats (0.85 s; FDBK 78, WOW 10, AGE 20), worn dotted-1/8 repeats (3.85 s; FDBK 94, WOW 80, AGE 70). BEAT, 128 BPM, MIX 75. 7.85 s, no added gaps; tails edited short. First-hit RMS matched (20 ms). Offline computer render through Tape Echo 0.1.2's unchanged CPU engine, not recorded on an Octatrack. Source credits, permission, excerpt preparation, settings, hashes and render details are in [audio preview provenance](docs/audio-preview.md).

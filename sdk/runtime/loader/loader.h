@@ -133,6 +133,9 @@ extern uintptr_t volatile *const modwerk_runtime_event_row[RUNTIME_SITE_EVENTS];
 extern const uint8_t modwerk_events_code[], modwerk_events_code_end[];
 #endif
 void modwerk_machine_tables_changed(void);          /* masked, after rows changed; weak no-op by default */
+/* Masked: a site's bytes went back to stock (`patched` were its module's), so stock data that copied them can follow;
+ * weak no-op by default. */
+void modwerk_machine_site_restored(uint32_t address, uint32_t length, const uint8_t *patched, const uint8_t *stock);
 unsigned modwerk_runtime_capabilities(uint8_t *out); /* MWCP v1: 12 bytes, read-only */
 extern volatile uint32_t modwerk_runtime_ticks; /* advanced by the glue's tick, for diagnostics */
 uint32_t modwerk_runtime_value(void);

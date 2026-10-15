@@ -57,6 +57,7 @@ src/community/profile-links.ts
 src/community/report-closure.ts
 src/community/usage-contract.ts
 src/community/usage-pages.ts
+src/config/beta-invitation.ts
 src/config/development-discord.ts
 src/config/support.ts
 src/config/usb-audio.ts

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { MODULES } from '../catalog/modules'
 import { lastInventory, sameModules, type Inventory } from '../config/inventory'
 import { syncHistory, type SyncRecord } from '../config/octatrack-progress'
@@ -30,7 +31,7 @@ function selftestLine(health: DiagnosticReading) {
 /**
  * Status: one fixed panel of cells, like a control room's, that never grows with its contents. The load meters, the
  * last five minutes, the last self-test and the card, what is on the unit and this browser's syncs; long lists scroll in
- * their cell. Unit readings happen only while it shows; without a unit every cell stays in place, showing what it can.
+ * their cell. The load is recorded on every page; other unit readings happen only while it shows. Without a unit every cell stays in place, showing what it can.
  */
 export function OctatrackOverview({ link, inventory, sets, needs, health, active, selected, onOpen, onSync, onSaveUnit, onReport }: {
   link: OctatrackLink | null; inventory?: Inventory; sets: Configuration[]; needs?: ProjectNeeds; health?: DiagnosticReading | null; active: boolean; selected?: Configuration
@@ -38,6 +39,8 @@ export function OctatrackOverview({ link, inventory, sets, needs, health, active
 }) {
   const state = useOctatrackLink(link), { status, identity } = state
   const connected = !!identity?.canSubmit && status === 'ready', busy = BUSY.includes(status)
+  // A self-test started here (a sync's own stress test shows in its dialog); why it couldn’t run, when it couldn’t.
+  const testing = status === 'testing' && !state.module, [why, setWhy] = useState<string | null>(null)
   const last = connected || busy ? undefined : lastInventory()
   const unitIds = connected ? inventory?.moduleIds : last?.moduleIds
   const onUnit = sets.find(set => set.moduleIds.length > 0 && !!unitIds && sameModules(set.moduleIds, unitIds))
@@ -52,9 +55,12 @@ export function OctatrackOverview({ link, inventory, sets, needs, health, active
     <div className="hub-console">
       <OctatrackLoad link={link} active={active} />
       <section className="hub-cell hub-cell-health" aria-label="Self-test and card">
-        <h3>Last self-test</h3>
-        {test ? <p className="hub-test"><span className={'unit-led is-' + test.led} aria-hidden="true" />{test.text}</p> : <p className="hub-empty">{unread}</p>}
-        {test?.peaks && health && <dl className="hub-peaks" aria-label="Peaks during the test">{([['CPU', health.cpu], ['Tracks 1–4', health.tracks1to4], ['Tracks 5–8', health.tracks5to8]] as const).map(([name, value]) =>
+        <div className="hub-cell-head"><h3>Last self-test</h3>
+          {link && identity?.canSubmit && (connected || testing) && <button type="button" className="text-button" disabled={!connected} onClick={() => { setWhy(null); void link.test().then(setWhy) }}>Run self-test</button>}</div>
+        {testing ? <p className="hub-test" role="status"><span className="unit-led is-load" aria-hidden="true" />Running · {Math.round((state.progress ?? 0) * 100)}%</p>
+          : test ? <p className="hub-test"><span className={'unit-led is-' + test.led} aria-hidden="true" />{test.text}</p> : <p className="hub-empty">{unread}</p>}
+        {why && !testing && <p className="hub-empty" role="alert">{why[0].toUpperCase() + why.slice(1)}.</p>}
+        {test?.peaks && health && <dl className="hub-peaks" aria-label="Peaks during the test">{([['CPU', health.cpu], ['DSP tracks 1–4', health.tracks1to4], ['DSP tracks 5–8', health.tracks5to8]] as const).map(([name, value]) =>
           <div key={name}><dt>{name}</dt><dd><meter min={0} max={1000} value={value} aria-label={name + ' peak during the test'} aria-valuetext={percent(value)} />{percent(value)}</dd></div>)}</dl>}
         <h3>On the card</h3>
         {card ? <p className="hub-test"><span className={'unit-led is-' + card.led} aria-hidden="true" />{card.text}</p> : <p className="hub-empty">{unread}</p>}

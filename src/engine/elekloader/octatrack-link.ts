@@ -354,9 +354,24 @@ export class OctatrackLink {
   }
   cancel() { this.abort?.abort() }
   /** The base's self-test, as an update's stress test: null when it passed, else why not; progress while it runs. */
-  selftest(): Promise<string | null> {
+  selftest(onRecord?: (record: SelftestRecord) => void): Promise<string | null> {
     if (!this.transport) return Promise.resolve('the Octatrack isn’t connected')
-    return runSelftest(this.transport, { signal: this.abort?.signal, startMs: this.stopWaitMs, progress: (done, total) => this.set({ ...this.state, progress: total ? done / total : 0 }), record: record => this.diagnostic('selftest', {reading:diagnosticReading(record)}) })
+    return runSelftest(this.transport, { signal: this.abort?.signal, startMs: this.stopWaitMs, progress: (done, total) => this.set({ ...this.state, progress: total ? done / total : 0 }), record: record => { onRecord?.(record); this.diagnostic('selftest', {reading:diagnosticReading(record)}) } })
+  }
+  /** The base's self-test on its own, from Status (PROJ > MODWERK > SELF TEST over USB): it starts only with the
+   * transport stopped and nothing loading. Null when it ran (its record, which Status reads, says how it went), else
+   * why it couldn’t run; progress while it runs. */
+  test(): Promise<string | null> {
+    return this.serial(async () => {
+      const { identity, active } = this.state, connection = this.connection
+      if (this.state.status !== 'ready' || !identity?.canSubmit) return 'the Octatrack isn’t ready'
+      if (!await this.claim()) return 'another app is using the Octatrack'
+      this.abort = new AbortController()
+      this.set({ status: 'testing', identity, active, progress: 0 })
+      let ran = false
+      try { const why = await this.selftest(record => { ran = record.state === 2 || record.state === 3 }); return ran ? null : why } catch { return 'the Octatrack stopped answering it' }
+      finally { await this.release(); if (connection === this.connection) this.set({ status: 'ready', identity, active }) }
+    })
   }
   /** Existing read-only status record; background diagnostics call this only after explicit consent. */
   health(signal?: AbortSignal, allowed: () => boolean = () => true) { return this.read('diagnostic status', transport => transport.selftest(false), signal, allowed).then(record => record ? diagnosticReading(record) : undefined) }
