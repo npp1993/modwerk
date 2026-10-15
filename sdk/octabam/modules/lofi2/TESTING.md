@@ -271,39 +271,22 @@ The manifest declares FX2, the only chooser the first builds composed. A scratch
 
 Not tested: FX1 on hardware, FX1 on core 1 with audio measured, parameter locks on FX1. `compatibility.location` stays FX2 until one of those exists and the browser builder's chooser is compared.
 
-## Elekloader path: the Modwerk base and USB loading (here, at pin `e8665fae`; not repeated)
+## USB loading: the runtime package and its cycle figure (here, 15 October 2026)
 
-USB loading is out of scope for now: every module in this group waits on upstream loader changes. This section is kept as a record of what was tried on the earlier pin. At the current 416 static cycles the base's rule below would charge 728 against its limit of 726, so the static figure no longer clears it either.
+LOFI2 is published as a runtime package for the Modwerk base, built from source by `npm run octatrack:module-packages` (`src/engine/assets/octatrack-module-packages.json`: slots FX1 and FX2, 132 state words, no buffer): `public/octatrack-modules/lofi2/0.1.0-experimental.mwrm`, ABI 6, 6,300 bytes, module `d7bf66ce`, preferred effect id 9, SHA-256 `7ee9277f3510988366912a0b7ed4e7ca0b5523503b48844e94af7b7ff33fe976`. `--check --stock` on the tester's 1.40C: every published package identical, LOFI2's longest run shared with the stock OS 8 non-filler bytes (fails at 12).
 
-Since the migration merged, a DSP effect reaches the unit as a runtime package loaded over USB into the Modwerk base. Run in a scratch copy of `main` with this folder at `sdk/octabam/modules/lofi2`, `lofi2` added to `dsp_packages.py`'s `FX` list and a scratch catalog pin; none of that is committed.
+**Why the figure is a hardware one.** The base charges an emulator figure (executed or modeled) at 7/4 and admits a module only if one instance fits beside seven stock slots: 3,120 - 7 x 342 = 726 (`dsp.c`). LOFI2's executed worst case (430, trig split) is charged 753 and its static count (416) 728, so both are refused. A figure timed on hardware is charged as it stands.
 
-```sh
-ELEKLOADER_DSP_ASM=.../dsp_asm python3 -B sdk/machines/octatrack/elekloader/dsp_packages.py --check src/engine/assets/dsp-packages.json
-ELEKLOADER_DSP_ASM=.../dsp_asm python3 -B sdk/machines/octatrack/elekloader/dsp_packages.py --out dsp-packages.lofi2.json
-python3 -B sdk/runtime/loader/build.py --dsp dsp-packages.lofi2.json:lofi2 --slots fx2 \
-    --cycles 414 --cycles-kind modeled --state 132 --no-page --name LOFI2 -o lofi2.mwrm
-```
+**How it was timed.** On the tester's MKII, a development twin of the beta base of `main` 836d1c42 (`build_core.py --dsp-loader --dev` with the beta options, RAM boot, no flash), a private measurement-only package with the same DSP words declaring a placeholder 726 so the base would admit it (never published), and `scripts/octatrack-measure.py --pkg ... NONE LOFI2 'SPRING REV'` on Part 1: FX2 of T1 (core 1) and T5 (core 0), playing; as picked, every knob at its minimum, every knob at its maximum. Chip cycles a sample above NONE:
 
-| Step | Result |
-| --- | --- |
-| `dsp_packages.py --check` with LOFI2 added | the eight published packages stay identical |
-| LOFI2's relocatable DSP package | builds: 1,352 words (the 516-word table first, then 836 of code), 4 relocations, init at 516, proc at 534, proofs at four bases; SHA-256 of the words `4090dfd37463d5e75baf17b8b8ccce19d3db59abc9a3d02a4d25a01cc80f29ee` |
-| `build.py --dsp ... --no-page` | builds a 5,484-byte ABI 6 package: no ColdFire code, hooks or stock-code sites, DSP effect 9 (private, not committed) |
-| The effect page recipe (chooser row and knob pages on the base) | not built: it reads the generated catalogue, which needs the catalog pin |
-| Install on a base, emulator or unit | not run |
+| Effect | Average (core 1 / 0) | Dearest of the three | Peak frame |
+| --- | --- | --- | --- |
+| LOFI2 | 408.2 / 380.8 | 636.2 / 628.2 | 736.7 / 677.2 |
+| SPRING REV | 314.8 / 288.1 | 360.6 / 288.2 | 482.9 / 332.7 |
 
-What the base's admission rule (`modwerk_machine_dsp_admit` in `sdk/machines/octatrack/elekloader/dsp.c`, constants in `build_core.py`) says about it, read from the source, not run:
+The package declares 637 (core 1's dearest, rounded up), the convention the base's ledger uses for stock (each stock slot is charged DJ EQ's dearest, 342) and for the modules in docs/OCTATRACK_ELEKLOADER_MIGRATION.md. Peak frames run 40 to 100 above the dearest for every effect; LOFI2's is 100.5 above on core 1, the top of that range. 637 leaves 89 cycles under the 726 limit. The script's maximum pass is MODE UP with LPF 127 (the shelf out of circuit); a hand pass at the manifest's dearest settings (MODE DOWN, LPF 0) is not recorded yet. If it reads higher, the package is rebuilt with that figure.
 
-- **Memory: fits.** 1,352 words against a per-core arena of about 5,194 words with every stock effect on demand, so on the base LOFI2 costs no stock reverb. State is 132 words (`$00-$83`), exactly the base's limit of 132. No buffer.
-- **Cycles: on the line.** One instance must fit beside seven stock slots: 3,120 - 7 x 342 = 726 chip cycles, and an emulator figure (modeled or executed) is charged at 7/4, so the largest one the base admits is 414. Which figure a package declares decides it:
-
-  | Figure declared | Charged | Result |
-  | --- | --- | --- |
-  | 414, modeled (the static count; TapeHead and Mini Verb declare theirs this way) | 725 | admitted, 1 cycle under the limit |
-  | 406, executed, no trig split | 711 | admitted |
-  | 429, executed, worst trig split (E-Verb declares its worst split) | 751 | refused, `RUNTIME_CYCLES` |
-
-  The merged revision (654 static, 596 executed) was refused on every figure. A figure timed on hardware is charged as it stands; none exists. Which figure to declare is the owner's call.
+Emulator dry run (`ot_emu --dsp`, the twin, the measurement package, `scripts/verify-octatrack-dsp-loader.mjs beside:lofi2`): installed; picked on FX2 of T1 and T5, it kept effect id 9; PLATE REV on T2 and DARK REV on T6; each core holds LOFI2's code word for word in its arena; no refused selection, no loader errors. That proves admission and binding only, not timing or audio.
 
 ## Screenshots (here)
 
@@ -346,12 +329,12 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 - FX1 on hardware (emulator checks only, above), and LOFI2 beside any Modwerk module on hardware.
 - `rig_render` on both cores, `verify_set` under the ColdFire port, `make check` as a whole.
 - `stress_project.py` on a real Octatrack project and `pressure.py render`: the stress run above drives the same load straight into `dsp_host`.
-- `npm run modules:generate`, `npm run module:verify` (native/browser comparison) and the published USB package: the hardware report is in, but generation stops at Tape Echo's browser preservation binding (Repository checks, below).
-- On the Modwerk base: the effect page recipe, the published package manifest entry, and any install, pick, self-test or soak on a Modwerk base (emulator or unit).
+- `npm run module:verify` is not recorded: 3 of 134 selections differ (see Repository checks).
+- On the flashed beta base: install, self-test, Keep and Undo, FX1 and FX2 on both cores, two instances, removal and the missing-module fallback, and persistence of the published USB package (pending on the unit).
 
 ## Packages (here)
 
-- `scripts/build-module-packages.py`: `lofi2` added to the effect order after `everb`, with a descriptor guard for FX2 id 0x09 (DARK REV's descriptor as donor, the one E-Verb uses; the id's stock FX2 slot is NONE). Both guard hashes were recomputed from the tester's own OS 1.40C and equal E-Verb's recorded ones; only hashes are kept.
+- `scripts/build-module-packages.py`: `lofi2` added to the effect order after `bbd`, with a descriptor guard for FX2 id 0x09 (DARK REV's descriptor as donor, the one E-Verb uses; the id's stock FX2 slot is NONE). Both guard hashes were recomputed from the tester's own OS 1.40C and equal E-Verb's recorded ones; only hashes are kept.
 - `bash scripts/build-modules-isolated.sh . <new folder> <modwerk-source-tools image id>` (Docker, no network, no firmware): passed, "Compiled loadable DSP modules with four-origin relocation proofs".
 - `npm run modules:import -- <folder>/packages --development`: imported. LOFI2's package in `src/engine/assets/dsp-packages.json`: 1,354 words, init 516, proc 534, words SHA-256 `dcb061b878c2cbf88706165e1bdc4779028428c1734b43056822c3a29922c47c`.
 

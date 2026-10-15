@@ -78,8 +78,8 @@
     {
       "id": "lofi2",
       "slots": "both",
-      "cycles": 431,
-      "cyclesKind": "executed",
+      "cycles": 637,
+      "cyclesKind": "hardware",
       "state": 132,
       "abi": 6,
       "features": 0,
@@ -90,7 +90,7 @@
       "name": "LOFI2",
       "module": "d7bf66ce",
       "bytes": 6300,
-      "sha256": "fbfca27ccb188645c2a30e08f11c3df601f3b2fa2f44de2e9d776cf4d9d15a40",
+      "sha256": "7ee9277f3510988366912a0b7ed4e7ca0b5523503b48844e94af7b7ff33fe976",
       "path": "octatrack-modules/lofi2/0.1.0-experimental.mwrm"
     },
     {
