@@ -402,7 +402,7 @@
   },
   "source": {
     "repository": "https://github.com/sambanks/octabam",
-    "revision": "21f6de905df71c2d7e4faba6cc7b5c7f7fb53de7",
+    "revision": "8250be0c23ca0a0a953cb7e5721e3bdb98dadfe5",
     "path": "modules/lofi2"
   }
 }

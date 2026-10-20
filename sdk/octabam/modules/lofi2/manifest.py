@@ -196,6 +196,10 @@ MODULE = Module(
     # which makes MODE print its value in its own name field AND flash it
     # below (RING over RING on the unit). As a name select MODE keeps its
     # name, as RNGE and every stock select do, and still renames slot 2.
+    # octabam 947fe57a adds ModeView(mode=1) and ModeView(mode=2) with no
+    # names (DOWN and UP keep FDBK) so its verify_modedefaults finds a view
+    # for MODE DEFAULTS over mode_slot; a view is sparse, so they rename
+    # nothing, and a name select applies no defaults: not carried here.
     name_selects=(NameSelect(8, (ModeView(mode=0, names={2: b"GAIN"}),)),),
 
     dsp=DspSection(
