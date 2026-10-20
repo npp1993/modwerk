@@ -333,7 +333,6 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 - FX1 in a card image on hardware (FX1 ran on the unit with the USB package only).
 - `rig_render` on both cores, `verify_set` under the ColdFire port, `make check` as a whole.
 - `stress_project.py` on a real Octatrack project and `pressure.py render`: the stress run above drives the same load straight into `dsp_host`.
-- `npm run module:verify` is not recorded: 3 of 134 selections differ (see Repository checks).
 - On the flashed beta base: a worst-case timing pass (no development meters there), LOFI2 beside other DSP modules, eight instances.
 
 ## Packages (here)
@@ -347,6 +346,8 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 - `npm run sdk:imports:check`: passes with `sdk/imports/lofi2-21f6de9.json`.
 - `npm run licenses:generate`: passes with the `lofi2` licence component.
 - `npm run perf:audit -- check`: no check failed (above).
-- `npm run modules:generate` and `npm run modules:check`: LOFI2's own record now passes (qualification with the hardware report, README sections, tutorial, screenshots). The run then **fails on another module**: "Invalid or stale Tape Echo browser preservation binding; full qualification is required". Tape Echo 0.1.3's retained evidence (`scripts/browser-infrastructure-preservation.mjs`) allows only a fixed list of files under `src/engine` to differ from its approved snapshot, and adding any module changes `scripts/build-module-packages.py` and the compiled packages in `src/engine/assets`, which are not on that list. Only the owner can refresh that binding or requalify Tape Echo; nothing here works around it.
-- `npm run module:verify -- lofi2`: **not run**. It needs the generated catalogue, which the failure above prevents.
-- `npm run module:doctor -- lofi2`: red on the lines that follow from the two above.
+- `npm run modules:generate` and `npm run modules:check`: pass on main `e370b78e` merged (20 October 2026; the Tape Echo preservation binding that refused new modules on 13 October no longer does).
+- `npm run module:verify -- lofi2 --os <the tester's 1.40C>` (20 October 2026, merged with main `e370b78e`): 130 selections; 46 native module-owned images match (20 identical outright, 26 outside the platform writes), 84 matching refusals, 0 mismatches. Recorded in `sdk/native-comparisons/lofi2.json`. The run also reordered POLY8's row in `chooser-metadata.json` (no entry changed); that reorder is not kept, and `--check` passes against the committed order. The 15 October run's three mismatches (native refused crowded selections for menu space where the browser builder refused for DSP space) are gone since the builder's overflow-parity fix (#682).
+- The beta base rebuilt for LOFI2's chooser row with the beta flags (`octatrack:base … --resident-on-demand --controllers --write`, Elekloader at kit pin `7b5b5b8`): identity `6b6a1616…`, .bin `5eccbce3…`. The USB package rebuilds byte-identical (`7ee9277f…`); so do the five base-bound packages, whose `requiredBase` moves to the new identity.
+- `npm run module:doctor -- lofi2`: no red line.
+- `npm run pr:ready` on this Mac (20 October 2026): generated files current; lint, typecheck and the app tests pass (two community tests that timed out under load pass when rerun alone). `sdk:check` fails three tests here that do not involve LOFI2: `test_run_pack` (packer parity), `test_base_bound` for CC Map and `test_published_module_packages_rebuild_byte_for_byte` at Tape Echo (both read a local Elekloader checkout that is not at the recipes' pin; LOFI2's package is reported identical before it stops).
