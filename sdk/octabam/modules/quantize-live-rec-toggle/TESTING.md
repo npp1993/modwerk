@@ -10,7 +10,7 @@ Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 - An MKI panel in the emulator; a project loaded from a real card; grid recording; MIDI tracks; the gesture with no project loaded.
 - Chip timing, and frame-interrupt load or a stress run on a unit: the load and stress figures under Performance are from the emulator.
-- Over USB: project reload with the module installed, and stock [REC] + [PLAY] behaviour after its removal (see Hardware report). Part reload: see below.
+- Over USB: stock [REC] + [PLAY] behaviour after its removal (see Hardware report). Part and project reload: see below.
 
 ## Hardware report (MKII, 13 October 2026)
 
@@ -155,8 +155,8 @@ Built from this source on main `b058d41e` with `sdk/runtime/loader/build.py --oc
 - Emulator, the beta base built for a RAM boot (`npm run octatrack:base` with the beta options and `--out`, on main `86e0dfb8`; it matches the committed base): `scripts/octatrack-emulator/run-sites.sh` passed (both sites hold the module's jumps while it is live, and their earlier bytes once it is removed), and a trial rolled back without Keep (Undo) left both sites as they were before. The emulator was `scripts/octatrack-emulator/build.py` against upstream Octabam at the pinned `67e5ea3`; the local Octabam checkout's emulator stopped at the base's boot gate (`unrecognised spin`), which the pinned one passes.
 - `sdk/tests/test_runtime_loader.py`: 15 tests pass, one opt-in skip.
 - The module is named Quant Live Rec (15 October 2026, the user's choice), the name the package carries, so the published package can take it from the catalogue.
-- On the user's MKII (Hardware report): trials undone, kept, the gesture, persistence across a power cycle and removal. Not tested: project reload with it installed, and stock behaviour after its removal.
-- Part reload, same MKII, 20 October 2026 (flashed beta base `6650236a`, package `026464de` kept beside Output Matrix, Analog BD, Apply Scene, LOFI2 and LIFT): after a flip with [REC] + [PLAY], RELOAD PART left the LIVE REC setting unchanged, as expected for a PERSONALIZE setting that no Part stores. Whether the gesture was used again after the reload was not recorded.
+- On the user's MKII (Hardware report): trials undone, kept, the gesture, persistence across a power cycle and removal. Not tested: stock behaviour after its removal.
+- Part and project reload, same MKII, 20 October 2026 (flashed beta base `6650236a`, package `026464de` kept beside Output Matrix, Analog BD, Apply Scene, LOFI2 and LIFT): after a flip with [REC] + [PLAY], RELOAD PART and a project reload each left the LIVE REC setting unchanged, as expected for a PERSONALIZE setting that neither a Part nor the project stores. Whether the gesture was used again after each reload was not recorded.
 
 ## Captures
 
