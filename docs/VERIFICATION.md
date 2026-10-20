@@ -1,5 +1,14 @@
 # Verification record
 
+## LOFI2 0.1.0-experimental — 20 October 2026
+
+New Octatrack effect: Bryan T's LOFI2 from octabam `21f6de90` (ring modulator or stereo frequency shifter, then sample-rate and bit reduction and a shelf), effect ID 9, FX1 and FX2. Hardware: the contributor's MKII ran the card image LOFI2T03 and the USB package `7ee9277f…` on beta base `acf91e0a` (module's `evidence/hardware.md`).
+- **Native/browser (`module:verify lofi2`):** 130 selections, 46 matching images (20 identical outright, 26 outside the platform writes), 84 matching refusals, 0 mismatches. Its chooser-metadata reorder (POLY8 only, no entry changed) was dropped; `--check` passes against the committed order.
+- **Packages:** compiled in the isolated toolchain image and imported. The USB package rebuilds byte-identical (`7ee9277f…`, ABI 6, 637 hardware-timed cycles), built alone through `module_packages.build` because the full run stops on the standalone recipes (as for Mini Verb 0.2.3).
+- **Beta base:** main's `6650236a` rebuilds byte-identical with the beta flags without `--cached-modules` and Elekloader at kit pin `7b5b5b8`; with LOFI2's chooser row the same flags give `6b6a1616` (.bin `5eccbce3…`). Lease symbols, arena and trust rows unchanged (pool +0x200); the five base-bound packages rebuild byte-identical, only `requiredBase` moves.
+- **Analog BD companion proofs:** re-exported natively (`export-composition-proofs.py --suite analog-bd`, 8 shards, menus precomputed with `defaultChoosers`): all 212 proofs identical, only `moduleSourceTreeSha256` moves. `verify-analog-bd-native.mjs` passes: 162 native OS and GNU bootloader comparisons, 50 matching refusals, 6 firmware round trips.
+- **Not tested:** LOFI2 on the on-demand beta base (#729) or on `6b6a1616` on a unit; eight instances and scenes on a unit.
+
 ## Mini Verb 0.2.3-experimental — 20 October 2026
 
 Mini Verb's ring now wraps at 15,870 words (`m4 = m5 = $3dfd`), so on T3 and T7 it no longer writes the last 514 words of its FX2 slot, Sidechain Compressor's cross-core key window. Start-up keeps 128 dry calls; the last 124 clear inside the ring. Owner-approved update without hardware testing, bound to native source `6ccdb685…` (`sdk/miniverb-build-approval.json`).
