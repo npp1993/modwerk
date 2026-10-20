@@ -7260,7 +7260,7 @@
           "value": 26,
           "unit": "instructions/event",
           "method": "static",
-          "conditions": "Longest path through the [PLAY] entry (invert, then reopen the toast), counted from the source; stock routines it calls (among them the menu redraw after a flip) are excluded. Runs only on a [PLAY] press or [REC] release, never per frame.",
+          "conditions": "Longest path through the [PLAY] entry (invert, then reopen the toast), counted from the source; stock routines it calls (among them the menu redraw after a flip) are excluded. Runs only on a [PLAY] press or [REC] release, never per frame. Under a MIDI flood in ot_emu (emulator, not hardware) it executed 4 to 25 per event, and MIDI transport messages never reached it.",
           "source": "TESTING.md"
         },
         "impact": {
@@ -7268,7 +7268,7 @@
           "cpu": {
             "level": "minimal",
             "basis": "source-estimate",
-            "rationale": "Two to about two dozen instructions on a [PLAY] press or [REC] release; no per-frame or per-sample work.",
+            "rationale": "Two to about two dozen instructions on a [PLAY] press or [REC] release; no per-frame or per-sample work. In ot_emu under a MIDI flood (about 1,000 messages a second and clock at 240 BPM) the longest frame interrupt was the stock image's (129 us with the flood alone, 150 us with the gesture on both) and idle 0.3 points lower while the gesture was used; emulator figures, not the unit's time.",
             "source": "TESTING.md"
           },
           "dsp": {
@@ -7329,7 +7329,7 @@
             "screenshotStyle": "black-and-white"
           },
           "moduleVersion": "0.1.0-experimental",
-          "sourceSha256": "3919857a869087c66907941c64c2ef735f44e32849237a876521f8525fc9a8e1",
+          "sourceSha256": "403c3e4b47e312d78c4ba5a6049d80452efbd63905f33573666c22f281e498b5",
           "imageSha256": "026464deb27c8178d44ad1fd5866b754478b11c114561e73000cdca3b44f86e8",
           "cycles": [
             {

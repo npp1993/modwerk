@@ -3,13 +3,13 @@
 Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 - Upstream: sambanks/octabam `6e4aeb76695cbb612e4b424c55fd2207facf73ef`, which takes the module from Zac-Kyoti/octatrack-kyoti-fw `77f132f9a60c6afa98ea4486540f6107398bdad3`.
-- Native source SHA-256 of this folder (`moduleNativeSourceSha256`): `3919857a869087c66907941c64c2ef735f44e32849237a876521f8525fc9a8e1`.
+- Native source SHA-256 of this folder (`moduleNativeSourceSha256`): `403c3e4b47e312d78c4ba5a6049d80452efbd63905f33573666c22f281e498b5`. It was `3919857a869087c66907941c64c2ef735f44e32849237a876521f8525fc9a8e1` until 20 October 2026, when only `evidence/performance.json` (part of that hash) took the emulator load and stress figures; `manifest.py`, `patch_qlrec.s` and `verify.py` are unchanged, and the USB package still builds to `026464de…`.
 - Tested image: QLRTEST03, a static native octabam build of this module alone with every stock effect kept, from the original OS 1.40C (remix `qlr-stock`, main `b058d41e`): MAIN OS SHA-256 `eb34c12e9c906107fc6a8285ec757eaacf83a39c8dfb42e7bc390421f4189afd`, card file SHA-256 `14b762c7bd50767104c705eb0ae2b6bb101d927d6ec62b1604be40f17979d0c4`. The gate, the captures and the instruction counts below were run on it. **The card image has not run on a unit;** the same source has, over USB (Hardware report). The MKII ran QLRTEST02 from the card (MAIN OS `57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69`, source `50f65395`), whose unit wrote the flip's two words in the other order and called the redraw directly (Source identity).
 
 ## Not tested
 
 - An MKI panel in the emulator; a project loaded from a real card; grid recording; MIDI tracks; the gesture with no project loaded.
-- Chip timing, frame-interrupt load and any stress run (see Performance).
+- Chip timing, and frame-interrupt load or a stress run on a unit: the load and stress figures under Performance are from the emulator.
 - Over USB: Part or project reload with the module installed, and stock [REC] + [PLAY] behaviour after its removal (see Hardware report).
 
 ## Hardware report (MKII, 13 October 2026)
@@ -110,7 +110,24 @@ Executed instructions of the unit, counted with the port's program-counter watch
 
 Counted on QLRTEST03's MAIN OS; each invert executes one instruction more than in QLRTEST02 (24), the `lea` before the redraw. In the invert-while-recording run the watch reported the instruction at offset 0x26 twice in a row, as it does when an interrupt is taken at that instruction, so that run executed 25 distinct instructions. The longest path in the source is 26 instructions. `evidence/performance.json` prices an instruction at 16 core cycles, the conservative V4 envelope Mute Modes' TESTING.md derives from the MCF54455 manual: 416 static, 400 measured, against one 362.8 µs frame at 264 MHz (95,778) taken as a generous deadline for a key handler. These are not chip timings. The stock routines the unit calls (the project gate, the checksum, the menu redraw, opening and closing the notification) are stock cost and are not counted.
 
-`npm run perf:audit -- check evidence/performance.json` passes the cycle row and **fails the stock benchmark and the stress run: neither was measured.** Both are defined for code in the frame or MIDI path (a `cfmeter.py` capture from a unit, a MIDI flood). This unit runs only inside two key handlers and handles no MIDI, so by its source it adds nothing to the frame interrupt; that is an argument, not a measurement. `module:doctor` therefore reports the performance line as failing until the owner accepts or waives it.
+### Load and stress (emulator, 20 October 2026)
+
+Not run on the unit. Everything below is ot_emu (`--mkii --dsp`, frame engine on, the ColdFire port built from the `upstream:tools` Octabam checkout 67e5ea37, the binary Apply Scene's measurements used) and does not count as hardware evidence. The port prices every instruction at one step of its own clock, so its microseconds are not the unit's time. The method is Apply Scene's (its TESTING.md, Performance), with this module's gesture in place of SCENE + YES.
+
+Setup: two native static-stock images built in a private copy of this source's `sdk/octabam`, one with CF METER + CF METER IDLE (upstream Octabam's probe; not in Modwerk) and the stock effects, one with this module added (its unit linked at `0x400d6d00`, the two `jmp` sites as in every build); Apply Scene's perf fixture project (T8 FX2 = CF METER); transport playing, crossfader 64. The flood is one three-byte MIDI message per ms (note on, note off 4 ms later and CCs on channels 1-8 and 11, about 1,000 a second) plus clock at 240 BPM. The gesture: hold [REC], tap [PLAY], tap [PLAY] again, release [REC]; the same keys on the stock image. Handler entries of the MIDI thread, the [PLAY] handler `0x40061778`, the [REC] release `0x4004883a`, the notification `0x4005a2b8` and every instruction of the unit were counted with the port's PC watch.
+
+`npm run perf:audit -- check sdk/octabam/modules/quantize-live-rec-toggle/evidence/performance.json`:
+
+| row | result |
+|---|---|
+| cycles | ✓ worst event 400 of 95,778 cycles (0%) |
+| stock benchmark | ✓ the longest frame interrupt grows by -0.1 us (-0.0% of the 362.8 us frame), idle falls by 0.3 points vs stock |
+| stress | ✓ 1000 messages/s at 240 BPM for 62 s, no stuck note, no hang, 0 dropped |
+
+- **Load (10 s per run, `cfmeter.py --dump`, five 2 s cycles each).** The flood alone: longest frame interrupt 129.3 us on the stock image, 129.2 us with the module; idle 62.38 % on both. The flood plus the gesture about every 1.1 s (10 gestures, 10 flips on the module's image; the first one starts live recording on both): 149.6 us and 60.46 % on the stock image, 149.5 us and 60.19 % with the module. The rise from 129 to 150 us is the same on both images: live recording and the key handling are stock's. CF METER IDLE reads 0 % on both images (the port fast-forwards main's idle park), so idle is the port's own share: 100 × (1 − executed instructions / (3,990 instructions per sample × elapsed samples)).
+- **Stress (62 s, the module's image; the same run on the stock image for comparison).** 62,068 messages and 5,960 clocks; STOP with a note held at 7, 22, 37 and 52 s (which also ends live recording), then Part 2, PLAY, Part 1 (by calling stock's own selection routine `0x4004a8a4`, as Apply Scene did: PART + TRIG did not change the Part in the port's panel script; once the port refused the call while main was busy and it went through 50 ms later); the gesture every 2.5 s between, 24 times, 24 flips. No handler saw fewer entries than messages sent (a few types up to three more, one or two on the stock image: the watch counting an entry twice). Nothing went to MIDI OUT; the per-channel note bookkeeping at the end equals the stock image's. No samples are loaded and no MIDI track plays notes in this project, so an audible stuck note could not occur here. Frames ran to the end and a gesture after the last STOP reached the [PLAY] handler and opened the toast.
+- **Instructions per event under the flood.** Over the 115 events of these runs the unit executed 4 ([PLAY] alone), 17 (show), 18 (show while live recording runs, swallowed as stock does nothing), 24 or 25 (flip) and 5 ([REC] release with a toast): the measured worst case above (25) stands.
+- **MIDI transport.** With CLOCK RECEIVE and transport receive on, three rounds of MIDI START, STOP, CONTINUE and STOP each ran their own handler past its receive gate (START posted to the sequencer queue) and never entered the [PLAY] key handler `0x40061778` or the unit: 0 entries, against 1 for a panel [PLAY] tap. So a MIDI flood or MIDI transport does not run this module's code; only the panel keys do.
 
 ## Memory
 
@@ -123,12 +140,12 @@ Recorded on 20 October 2026 on main `e370b78e` with the module listed: packages 
 - **130 selections: 46 built and identical to native octabam (20 outright, 26 outside the platform writes), 84 matching refusals, 0 mismatches.** Native pair checks: 25 modules, 300 pairs in 3 contexts, 10 refused.
 - Shared-code changes the listing needs: this module in the hard-coded lists of `scripts/build-module-packages.py` and `src/engine/compose-os.ts`, its ROM unit placed after the utility and replacing modules in `src/engine/requested-modules.ts` (`LATE_ROM`), and this module in the release-scope and module-set tests. Recorder Loop Fix's floating cave keeps main's overflow fallback, which native follows since repeat98/modwerk#682.
 - `module:verify` adds this module to `src/engine/assets/chooser-metadata.json`, which the Octatrack base hashes as a build input, so the committed beta base is rebuilt with it (`24b25c39`, lease symbols unchanged) and the base-bound packages name it; their bytes are unchanged.
-- `npm run module:doctor -- quantize-live-rec-toggle`: every line passes but the two performance rows (Performance, above).
+- `npm run module:doctor -- quantize-live-rec-toggle`: every line passes, the performance rows with the emulator figures above.
 
 What listing still needs:
 
 1. The owner's word on the hardware record binding the USB package `026464de…` that ran on the MKII, rather than a card image: the card image QLRTEST03 has not run on a unit.
-2. The owner's decision on the two performance rows that were not measured (Performance, above).
+2. The owner's decision on whether the emulator load and stress rows (Performance, above) stand in for a unit's; `evidence/performance.json` asks for a waiver.
 
 ## USB package (15 October 2026)
 
