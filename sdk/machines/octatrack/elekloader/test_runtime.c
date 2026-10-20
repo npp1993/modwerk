@@ -53,6 +53,17 @@ int main(void)
     CHECK(modwerk_runtime_key(0x31, 1) == 1 && keys == 3); /* position 1 took it: position 3 never saw it */
     CHECK(modwerk_runtime_key(0x28, 1) == 0 && keys == 5);
     modwerk_runtime_draw(frame); CHECK(draws == 2);
+    /* The track screen is redrawn, once, on the UI tick after the live modules change (a restore after a boot, an
+     * install, a removal, a Keep or an Undo), read only when the owner epoch moved and is even. */
+    CHECK(modwerk_test_redraws == 0);                    /* the epoch never moved: the set was not read */
+    owner_epoch += 2; modwerk_runtime_tick(); CHECK(modwerk_test_redraws == 1);
+    modwerk_runtime_tick(); CHECK(modwerk_test_redraws == 1);
+    owner_epoch += 2; modwerk_runtime_tick(); CHECK(modwerk_test_redraws == 1); /* a prepare or discard: same set */
+    live[1] = 0; owner_epoch += 1; modwerk_runtime_tick(); CHECK(modwerk_test_redraws == 1); /* under way: wait */
+    owner_epoch += 1; modwerk_runtime_tick(); CHECK(modwerk_test_redraws == 2);
+    live[1] = &module; live[3] = 0; owner_epoch += 2; modwerk_runtime_tick(); CHECK(modwerk_test_redraws == 3); /* moved */
+    live[1] = 0; owner_epoch += 2; modwerk_runtime_tick(); CHECK(modwerk_test_redraws == 4); /* none left */
+    owner_epoch += 2; modwerk_runtime_tick(); CHECK(modwerk_test_redraws == 4);
     /* Activation only while nothing plays or records; stock code only, below the bootloader copy. */
     modwerk_test_stopped = 0;
     CHECK(!modwerk_runtime_backend.enter(0));

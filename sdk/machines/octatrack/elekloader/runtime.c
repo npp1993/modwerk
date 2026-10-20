@@ -228,6 +228,34 @@ static uintptr_t hook(unsigned position, enum runtime_event e)
     const struct runtime_module *m = modwerk_runtime_module(position);
     return m ? m->hook[e] : 0;
 }
+/* Stock draws a page only on its own events, so a module that changes how stock draws one (Output Matrix's LEV box)
+ * shows only at the next key that redraws it. The restore after a boot comes about three seconds after the first
+ * draw: on the owner's MKII (16 October 2026) the LEV box kept stock's split bars until CUE was pressed. So once the
+ * live modules differ from those the screen was last redrawn with, after a restore, an install, a removal, a Keep or
+ * an Undo alike, this tick redraws the track screen as CUE does (0x4004e978: 0x4004d948(-1), which marks the display
+ * for the UI loop's flush). Here, in the UI task, where stock's key handlers draw; never on the engine task that
+ * installs, nor in an interrupt: the drawer writes the screen's plane and its globals, which only the UI task does.
+ * The live set is read only when the loader's owner epoch moved and is even (no change under way), and kept as a
+ * 32-bit mix of each live position's module, id and position (0 with none, as at the first draw). */
+#ifdef MODWERK_HOST
+unsigned modwerk_test_redraws;
+#define REDRAW() (++modwerk_test_redraws)
+#else
+#define REDRAW() ((void (*)(int))0x4004d948u)(-1)
+#endif
+static uint32_t drawn_epoch, drawn_set;
+static void redraw_after_change(void)
+{
+    uint32_t epoch = modwerk_runtime_owner_epoch(), set = 0; /* none live: 0, as the screen was first drawn */
+    if (epoch == drawn_epoch || (epoch & 1u)) return;
+    for (unsigned i = 0; i < RUNTIME_MODULES; ++i) {
+        const struct runtime_module *m = modwerk_runtime_module(i);
+        if (m) set = (set ^ (uint32_t)(uintptr_t)m ^ m->id ^ (uint32_t)i << 24) * 0x01000193u;
+    }
+    if (modwerk_runtime_owner_epoch() != epoch) return; /* changed while read: the next tick reads it again */
+    drawn_epoch = epoch;
+    if (set != drawn_set) drawn_set = set, REDRAW();
+}
 void modwerk_runtime_tick(void)
 {
     MW_STAMP(1);
@@ -235,6 +263,7 @@ void modwerk_runtime_tick(void)
         uintptr_t f = hook(i, RUNTIME_TICK);
         if (f) ((void (*)(struct modwerk_runtime_api *))f)(&modwerk_runtime_api);
     }
+    redraw_after_change();
     modwerk_runtime_ticks = modwerk_runtime_ticks + 1;
 }
 void modwerk_runtime_draw(unsigned char *frame)
