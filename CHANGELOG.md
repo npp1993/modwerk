@@ -8,7 +8,7 @@
   - A PROJECT menu stayed intact through an install and a removal of Apply Scene.
   - On the unfixed `b5fae2ae` and `3e3e3de1` the install showed the stale box.
   - A RAM-boot restore did not show it on any base, because the screen redraws as the module loads and the dialog opens.
-  - Not yet checked: `6650236a` itself on the unit, and the restore after a real power cycle, which needs a flashed base.
+  - `6650236a` itself (20 October): RAM-booted, then Output Matrix `9f97f3bd` installed over USB showed MNL with a solid bar at once. Flashed, its first boot restored Output Matrix and the box read MNL with a solid bar after MODULES LOADED, with no key pressed. With Analog BD, Apply Scene, LOFI2, Quant Live Rec and LIFT kept beside it, a power cycle restored all six and the box again read MNL with a solid bar. The unfixed base was not flashed for a side-by-side power cycle on the same day; the 16 October report is the before.
 
 - Documentation: clarified that screenshots are allowed without opening, navigating or controlling a browser. Recorded screenshot capture as a requested developer-MCP capability that is not implemented; unavailable capture remains an explicit visual-evidence gap.
 

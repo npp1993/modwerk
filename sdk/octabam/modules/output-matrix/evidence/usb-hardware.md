@@ -38,8 +38,11 @@ Follow-up (20 Oct 2026, the author's MKII, RAM boots driven over USB, panel obse
 | `2f575d3e` | route to MNL, save, RAM-boot restore | MNL with a solid bar; CUE changed nothing: pass |
 | `2f575d3e` | install and remove Apply Scene with a PROJECT menu open | menu intact; MNL kept: pass |
 | `2f575d3e` | remove Output Matrix while MATRIX uses its DSP code | refused (loader refusal 7), as expected |
+| `6650236a` (fix, rebased; package `9f97f3bd`) | fresh RAM boot, install and keep | MNL, solid bar at once, no key pressed: pass |
+| `6650236a`, flashed | first boot after the flash restores the kept set | MNL, solid bar after MODULES LOADED, no key pressed: pass |
+| `6650236a`, flashed | power cycle with Output Matrix, Analog BD, Apply Scene, LOFI2, Quant Live Rec and LIFT kept | all six restored (read over USB); MNL, solid bar, no key pressed: pass |
 
-`2f575d3e` was a build made before the fix was rebased onto newer main code. The fix ships in base `6650236a` (package `9f97f3bd`, relinked on main for its moved arena), which has not run on the unit. The restore after a real power cycle on a flashed base with the fix is not verified. A RAM-boot restore did not reproduce the issue on any base. The record above stays as it was observed on `3e3e3de1`.
+`2f575d3e` was a build made before the fix was rebased onto newer main code. The fix ships in base `6650236a` (package `9f97f3bd`, relinked on main for its moved arena), which passed on the unit, RAM-booted and flashed, including a real power cycle. A RAM-boot restore did not reproduce the issue on any base. The record above stays as it was observed on `3e3e3de1`.
 
 ## Limitations
 

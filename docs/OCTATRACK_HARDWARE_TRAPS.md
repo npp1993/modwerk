@@ -512,9 +512,10 @@ handlers), never from the engine task that installs or from an interrupt. The
 base calls it on the UI tick once the live modules change (`runtime.c`). On the
 same MKII the fix base `2f575d3e` showed Output Matrix's own label right after the
 install. That build was made before a rebase onto newer main code; the same
-`runtime.c` is now in base `6650236a`, which has not been on the unit. After a RAM-boot restore it showed MNL with a solid bar that CUE left
-unchanged. A PROJECT menu stayed intact through an install and a removal. The
-power-cycle restore with this fix is unverified, because it needs a flashed base.
+`runtime.c` is now in base `6650236a`. After a RAM-boot restore `2f575d3e` showed MNL with a solid bar that CUE left
+unchanged. A PROJECT menu stayed intact through an install and a removal. Flashed
+`6650236a` (same MKII, 20 October 2026): an install, the first boot's restore and a
+power cycle with six modules kept each left MNL with a solid bar, no key pressed.
 
 **A RAM boot can come back without USB.** On 19 October 2026 one RAM boot of a
 dev twin (`82b9bef4`) ran for over 15 minutes (its log has loads) but never
