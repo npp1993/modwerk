@@ -281,7 +281,7 @@ describe('social onboarding from either account entry point',()=>{
     const flow=f.db.prepare('SELECT payload FROM social_flows WHERE token_hash=?').get(await digest(onboarding.code)) as {payload:string}
     const held=JSON.parse(await symmetricDecrypt({key:f.env.AUTH_SECRET!,data:flow.payload})).session
     expect((await(await f.call('/auth/session','GET',undefined,held)).json()).user).toBeNull()
-    for(const path of ['/auth/build-access','/auth/data-export','/auth/account-removal'])expect((await f.call(path,'POST',{},held)).status).toBe(401)
+    for(const path of ['/auth/data-export','/auth/account-removal'])expect((await f.call(path,'POST',{},held)).status).toBe(401)
     for(const path of ['/auth/profile','/auth/sessions','/auth/news'])expect((await f.call(path,'GET',undefined,held)).status).toBe(401)
     expect((await f.call('/forum/threads','POST',{title:'Blocked',body:'Pending',category:'general'},held)).status).toBe(401)
     expect(f.db.prepare('SELECT COUNT(*) AS count FROM member_discord_invites').get()).toEqual({count:1})
@@ -406,7 +406,6 @@ describe('profile editing and self-service account deletion',()=>{
     expect(f.db.prepare('SELECT * FROM octatrack_diagnostic_events WHERE user_id=?').get(id)).toBeUndefined()
     expect(f.db.prepare('SELECT * FROM octatrack_diagnostic_consent WHERE user_id=?').get(id)).toBeUndefined()
     expect(f.db.prepare('SELECT username,display_name,suspended FROM users WHERE id=?').get(id)).toEqual({username:null,display_name:'Deleted member',suspended:1})
-    expect((await f.call('/auth/build-access','POST',{},first)).status).toBe(401)
     expect((await f.call('/auth/profile','GET',undefined,first)).status).toBe(401)
     expect((await f.call('/forum/threads/'+thread)).status).toBe(200)
     expect((await(await f.call('/forum/threads/'+thread)).json()).posts[0].username).toBeNull()
@@ -422,12 +421,12 @@ describe('profile editing and self-service account deletion',()=>{
     expect((await f.call('/auth/account','DELETE',{confirm:'DELETE',password:'wrong password'},session)).status).toBe(403)
     expect((await f.call('/auth/account','DELETE',{confirm:'DELETE',password},session)).status).toBe(200)
   })
-  it('keeps forum reading public and requires a current member for interaction and building',async()=>{
+  it('keeps forum reading public, requires a current member for interaction and lets guests build',async()=>{
     const f=await fixture(),session=await f.member()
     expect((await f.call('/forum/threads')).status).toBe(200)
-    expect((await f.call('/auth/build-access','POST',{})).status).toBe(401)
+    expect((await f.call('/auth/build-access','POST',{})).status).toBe(200)
     for(const [path,body] of [['/modules/miniverb/comments',{body:'A comment'}],['/modules/miniverb/rating',{value:5}],['/forum/threads',{title:'Thread',body:'Text',category:'general'}]] as const)expect((await f.call(path,'POST',body)).status).toBe(401)
     f.db.exec('UPDATE auth_sessions SET expiresAt=0')
-    expect((await f.call('/auth/build-access','POST',{},session)).status).toBe(401)
+    expect((await f.call('/auth/build-access','POST',{},session)).status).toBe(200)
   })
 })

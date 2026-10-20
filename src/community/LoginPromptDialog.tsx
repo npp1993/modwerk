@@ -2,10 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import { accountHref } from './member-access'
 import { useCommunity } from './context'
 import { Icon } from '../components/Icon'
-/** The sign-in prompt. Without `action` it is the firmware build gate; with one ("Sign in to like this module") it explains what a free account unlocks. */
-export function LoginPromptDialog({next,onClose,action}:{next:string;onClose:()=>void;action?:string}) {
+/** The sign-in prompt. Without `action` it is the firmware build gate, which `onSkip` lets a guest pass; with one ("Sign in to like this module") it explains what a free account unlocks. */
+export function LoginPromptDialog({next,onClose,action,onSkip}:{next:string;onClose:()=>void;action?:string;onSkip?:()=>void}) {
   const dialog=useRef<HTMLDialogElement>(null),signIn=useRef<HTMLAnchorElement>(null)
+  const [skipWait,setSkipWait]=useState(5),hasSkip=!!onSkip
   useEffect(()=>{const element=dialog.current,previousFocus=document.activeElement;element?.showModal();signIn.current?.focus();return()=>{element?.close();if(previousFocus instanceof HTMLElement)previousFocus.focus()}},[])
+  useEffect(()=>{
+    if(!hasSkip||!skipWait)return
+    const timer=window.setTimeout(()=>setSkipWait(skipWait-1),1000)
+    return()=>window.clearTimeout(timer)
+  },[hasSkip,skipWait])
   return <dialog ref={dialog} className="app-dialog login-prompt-dialog" aria-labelledby="login-prompt-title" aria-describedby="login-prompt-message login-prompt-notice login-prompt-privacy" onCancel={event=>{event.preventDefault();onClose()}} onKeyDown={event=>event.stopPropagation()}>
     <header className="login-prompt-header">
       <h2 id="login-prompt-title">{action??'Sign in to build firmware'}</h2>
@@ -13,7 +19,7 @@ export function LoginPromptDialog({next,onClose,action}:{next:string;onClose:()=
     </header>
     <p id="login-prompt-message">Sign in or create a free Modwerk account to continue.</p>
     <div id="login-prompt-notice" className="login-prompt-notice">
-      {action?<p>A free account lets you like and rate modules, join discussions, follow module updates and build firmware. Every member helps us grow an active community for bug reports, feedback and forum discussions.</p>:<p>Firmware builds are currently available only to signed-in users. This helps us grow an active community for bug reports, feedback and forum discussions.</p>}
+      {action?<p>A free account lets you like and rate modules, join discussions, follow module updates and build firmware. Every member helps us grow an active community for bug reports, feedback and forum discussions.</p>:<p>An account lets you report bugs, give feedback, follow module updates and join the forum. Every member helps us grow an active community.</p>}
       <p><strong>Modwerk will always stay free and open source &lt;3</strong></p>
     </div>
     <p id="login-prompt-privacy">{action?'You come back to this page after signing in.':'Your configuration will be waiting when you return. Your firmware stays on this device.'}</p>
@@ -21,6 +27,7 @@ export function LoginPromptDialog({next,onClose,action}:{next:string;onClose:()=
       <a ref={signIn} className="button button-primary" href={accountHref('login',next)} onClick={onClose}>Sign in</a>
       <a className="button button-quiet" href={accountHref('register',next)} onClick={onClose}>Create account</a>
     </div>
+    {onSkip&&<button type="button" className="text-button login-prompt-skip" disabled={skipWait>0} onClick={onSkip}>{skipWait?`Skip for now (${skipWait}s)`:'Skip for now'}</button>}
   </dialog>
 }
 /** Lets a visitor press a member-only control: `prompt` opens the dialog instead of the action, and `next` (or a per-action

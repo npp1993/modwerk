@@ -178,9 +178,19 @@ static int in_dispatch(uint32_t v) { (void)v; return 0; }
 static uintptr_t raise_of(uint32_t hook) { (void)hook; return 0; }
 #endif
 
+#ifdef MODWERK_CACHED_MODULES
+/* build_core.py --cached-modules (prototype, README.md "Cached modules"): the ledger and the modules use the pool's
+ * own, cached alias and never the uncached one, so neither alias can hold a stale copy of the other. Extents are
+ * whole 16-byte lines, so no cache line is shared by two. What the data cache holds must still reach memory before
+ * the instruction cache fetches it: prepare pushes the extent it wrote, then invalidates the instruction caches. */
+static uint8_t *first(void) { return pool; }
+#define CACHED_MODULES 1
+#else
 /* The ledger. Extents are whole 16-byte lines, written and read only through
  * the uncached alias, so no cache line outlives the memory it came from. */
 static uint8_t *first(void) { return modwerk_machine_uncached(pool); }
+#define CACHED_MODULES 0
+#endif
 static uint8_t *end_of(const struct runtime_module *m) { return (uint8_t *)(uintptr_t)m + m->size; }
 /* Free bytes from `from` to the next owned extent or the end of the pool. */
 static uint32_t run(const uint8_t *from)
@@ -305,11 +315,14 @@ static void reclaim(const struct runtime_context *context)
     unsigned n = modwerk_machine_paused(span, RUNTIME_PAUSED, context);
     for (unsigned i = owners; n <= RUNTIME_PAUSED && i--;) {
         uint32_t lo = (uint32_t)(uintptr_t)owned[i], hi = lo + owned[i]->size;
+#if CACHED_MODULES /* code runs from the cached alias, which is not the canonical one: compare canonical addresses */
+        lo = modwerk_machine_reference(lo), hi = lo + owned[i]->size;
+#endif
         int reached = reachable(owned[i]);
         for (unsigned k = 0; k < n && !reached; ++k)
             for (const uint8_t *p = span[k].from; p + 4 <= span[k].to && !reached; p += 2) {
                 uint32_t v = be32(p);
-                if ((owned[i]->dsp.flags & RUNTIME_GROUP_METADATA) || owned[i]->dsp.foreign_roots) v = modwerk_machine_reference(v);
+                if (CACHED_MODULES || (owned[i]->dsp.flags & RUNTIME_GROUP_METADATA) || owned[i]->dsp.foreign_roots) v = modwerk_machine_reference(v);
                 reached = v >= lo && v < hi;
             }
         if (!reached) forget(owned[i]);
@@ -373,12 +386,55 @@ static int in_flight(const struct runtime_module *a, const struct runtime_module
         }
     return 0;
 }
+/* Code bytes through the machine's code alias, a word at a time where the alias is aligned: every access there is
+ * a bus cycle, and these run masked (byte by byte, Play Modes' 35 sites held frames 229 µs; beta finding 46). The
+ * union keeps memory order on either endianness. */
+union code_word { uint32_t w; uint8_t b[4]; };
+static int code_equal(const volatile uint8_t *now, const uint8_t *want, uint32_t n)
+{
+    uint32_t j = 0;
+    for (; j < n && ((uintptr_t)(now + j) & 3u); ++j) if (now[j] != want[j]) return 0;
+    for (; j + 4u <= n; j += 4u) {
+        union code_word u = {*(const volatile uint32_t *)(now + j)};
+        if (u.b[0] != want[j] || u.b[1] != want[j + 1] || u.b[2] != want[j + 2] || u.b[3] != want[j + 3]) return 0;
+    }
+    for (; j < n; ++j) if (now[j] != want[j]) return 0;
+    return 1;
+}
+static void code_write(volatile uint8_t *to, const uint8_t *from, uint32_t n)
+{
+    uint32_t j = 0;
+    for (; j < n && ((uintptr_t)(to + j) & 3u); ++j) to[j] = from[j];
+    for (; j + 4u <= n; j += 4u) {
+        union code_word u;
+        u.b[0] = from[j], u.b[1] = from[j + 1], u.b[2] = from[j + 2], u.b[3] = from[j + 3];
+        *(volatile uint32_t *)(to + j) = u.w;
+    }
+    for (; j < n; ++j) to[j] = from[j];
+}
 static int holds(const struct runtime_module *m, int patched)
 {
     for (uint32_t i = 0; m && i < m->sites; ++i) {
         const struct runtime_site *s = &m->site[i];
+        if (!code_equal(modwerk_machine_code(s->address), patched ? s->code : s->stock, s->length)) return 0;
+    }
+    return 1;
+}
+/* Does `to` find its stock bytes once `from`'s sites are put back (what holds(to, 0) would read after
+ * put(from, 0))? Read only, so it runs unmasked under the caller's lock, which keeps it the only code writer. */
+static int holds_stock_after(const struct runtime_module *from, const struct runtime_module *to)
+{
+    for (uint32_t i = 0; to && i < to->sites; ++i) {
+        const struct runtime_site *s = &to->site[i];
         const volatile uint8_t *now = modwerk_machine_code(s->address);
-        for (uint32_t j = 0; j < s->length; ++j) if (now[j] != (patched ? s->code : s->stock)[j]) return 0;
+        for (uint32_t j = 0; j < s->length; ++j) {
+            uint32_t a = s->address + j;
+            uint8_t b = now[j];
+            for (uint32_t k = 0; from && k < from->sites; ++k)
+                if (a >= from->site[k].address && a < from->site[k].address + from->site[k].length)
+                    b = from->site[k].stock[a - from->site[k].address];
+            if (b != s->stock[j]) return 0;
+        }
     }
     return 1;
 }
@@ -432,7 +488,7 @@ static void put(const struct runtime_module *m, int patched)
         const struct runtime_site *s = &m->site[i];
         volatile uint8_t *to = modwerk_machine_code(s->address);
         modwerk_machine_flush_data(s->address, s->length);
-        for (uint32_t j = 0; j < s->length; ++j) to[j] = (patched ? s->code : s->stock)[j];
+        code_write(to, patched ? s->code : s->stock, s->length);
         if (!patched) modwerk_machine_site_restored(s->address, s->length, s->code, s->stock);
     }
 }
@@ -482,22 +538,26 @@ static int switch_locked(unsigned position, struct runtime_module *to, const str
         (!legacy_dsp || !modwerk_machine_dsp_admit(dsp_of(from), &want)) && want.id == dsp_of(to)->id;
     int rows = subscribes(from) || subscribes(to);
     if (ok && rows) ok = events_stage(position, to);
+    /* Only the writes run masked. The checks before and after them only read code, which the caller's lock keeps
+     * this the only writer of: masked as well, a module with many sites held the frame interrupt past 200 µs (Play
+     * Modes' 35, 229 µs) and could stop the DSPs (beta finding 46). */
+    if (ok) ok = holds(from, 1) && holds_stock_after(from, to);
     if (ok) {
         uint32_t mask = modwerk_machine_mask(); /* the machine's real-time interrupts may run these bytes */
-        ok = holds(from, 1);
-        if (ok) {
-            put(from, 0);
-            ok = holds(to, 0);
-            if (ok) {
-                put(to, 1);
-                ok = holds(to, 1);
-                if (!ok) put(to, 0);
-            }
-            if (!ok) put(from, 1);
-            modwerk_machine_invalidate_code();
-        }
-        if (ok && rows) events_commit(), modwerk_machine_tables_changed();
+        put(from, 0);
+        put(to, 1);
+        modwerk_machine_invalidate_code();
+        if (rows) events_commit(), modwerk_machine_tables_changed();
         modwerk_machine_unmask(mask);
+        ok = holds(to, 1);
+        if (!ok) { /* a write that did not land: put back the sites and the rows `from` had */
+            mask = modwerk_machine_mask();
+            put(to, 0);
+            put(from, 1);
+            modwerk_machine_invalidate_code();
+            if (rows && events_stage(position, from)) events_commit(), modwerk_machine_tables_changed();
+            modwerk_machine_unmask(mask);
+        }
         if (ok) {
             owners_changing();
             live[position] = to;
@@ -746,6 +806,9 @@ static int __attribute__((used)) prepare_context(void *u, const uint8_t *data, u
             }
             p += site_bytes(abi, n, r);
         }
+#if CACHED_MODULES /* instruction fetches read memory, not the data cache: the extent's lines reach memory first */
+        modwerk_machine_flush_data((uint32_t)(uintptr_t)m, head + code + tail);
+#endif
         modwerk_machine_invalidate_code();
         uint32_t *dsp_words = (uint32_t *)(void *)((uint8_t *)m + head + code);
         uint16_t *dsp_relocations = (uint16_t *)(void *)(dsp_words + dsp.count);

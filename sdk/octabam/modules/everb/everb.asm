@@ -14,17 +14,18 @@
 ; Even frames (A) read the tank, odd frames (B) write it: the two arms are a
 ; MODEFORK, so cycle_count.py prices each frame at the dearer arm.
 ;
-; Ring: the 16K Y allocator buffer, one head r5 (m5 = 16383), segments below it:
+; Ring: the first 15870 words of the 16K Y allocator buffer, one head r5 (m5 = 15869),
+; segments below it:
 ;   pre   writes at r5    +0
-;   ap0   writes at r5 -5515
-;   ap1   writes at r5 -5799
-;   ap2   writes at r5 -6041
-;   ap3   writes at r5 -6243
-;   ln0   writes at r5 -6409
-;   ln1   writes at r5 -9575
-;   ln2   writes at r5-12237
-;   ln3   writes at r5-14477
-;   16369 of 16384 words.
+;   ap0   writes at r5 -5016
+;   ap1   writes at r5 -5300
+;   ap2   writes at r5 -5542
+;   ap3   writes at r5 -5744
+;   ln0   writes at r5 -5910
+;   ln1   writes at r5 -9076
+;   ln2   writes at r5-11738
+;   ln3   writes at r5-13978
+;   15870 of 15870 words.
 ; X block r7+0..126, every word cleared by init:
 ;   0 base, 1 head, 2 clr, 3 ph, 4 frac, 5 gp, 6 dp, 7 jprev, 8 rng, 9 sigt
 ;   10 tau4, 11 omw, 12 grp, 13 us, 14 dz0, 15 dz1, 16 p1, 17 d, 18 fv0
@@ -55,7 +56,7 @@ ev_izro:
         move    x:(r4),a
         move    a,x:(r7+$0)
         move    a,x:(r7+$1)
-        move    #>$80,a                 ; 128 calls of 128 words clear the ring
+        move    #>$000080,a             ; 128 dry calls, the last 124 clear 128 words each
         move    a,x:(r7+$2)
         move    #>$79999a,a             ; quadrature oscillator amplitude
         move    a,x:(r7+$25)
@@ -63,19 +64,19 @@ ev_izro:
         move    a,x:(r7+$8)
         move    #>$7fffff,a             ; the reverse duck starts open
         move    a,x:(r7+$60)
-        move    #>$ffe6f7,a             ; line 0 write offset
+        move    #>$ffe8ea,a             ; line 0 write offset
         move    a,x:(r7+$36)
         move    #>$fff3a5,a             ; -3163
         move    a,x:(r7+$3a)
-        move    #>$ffda99,a             ; line 1 write offset
+        move    #>$ffdc8c,a             ; line 1 write offset
         move    a,x:(r7+$37)
         move    #>$fff59d,a             ; -2659
         move    a,x:(r7+$3b)
-        move    #>$ffd033,a             ; line 2 write offset
+        move    #>$ffd226,a             ; line 2 write offset
         move    a,x:(r7+$38)
         move    #>$fff743,a             ; -2237
         move    a,x:(r7+$3c)
-        move    #>$ffc773,a             ; line 3 write offset
+        move    #>$ffc966,a             ; line 3 write offset
         move    a,x:(r7+$39)
         move    #>$fff89f,a             ; -1889
         move    a,x:(r7+$3d)
@@ -89,16 +90,20 @@ proc:
         beq     ev_ready
         sub     #$1,a
         move    a,x:(r7+$2)
+        cmp     #>$00007c,a
+        bge     ev_clrx                         ; a dry call that clears nothing
         asl     #$7,a,a
         move    x:(r7+$0),x0
         add     x0,a
         move    a,r4
-        move    #>$ffffff,m4
+        move    #>$003dfd,m4                    ; the first clearing call wraps two words to the ring start
         clr     a
         do      #128,>ev_clrd
         move    a,y:(r4)+
 ev_clrd:
         nop
+        move    #>$ffffff,m4
+ev_clrx:
         rts
 ev_ready:
 ; Smoothed values run v + delta*frac through a call (frac +1/32 per frame). Each call
@@ -391,7 +396,7 @@ ev_erg0:
         move    a1,x:(r7+$6)
         bra     ev_loop
 ev_gr2:
-; PRE (slot 7): D = 154 * 2^(5.16u) samples (7..250 ms), as a fraction of 5512
+; PRE (slot 7): D = 154 * 2^(5.16u) samples (7..250 ms), as a fraction of 5512, at most 5008 (227 ms, from PRE 124)
         move    x:(r6+$c),a
         and     #>$00ff00,a
         asl     #$8,a,a
@@ -405,6 +410,9 @@ ev_gr2:
         bsr     ev_exq
         move    a,x0
         mpy     x0,x0,a
+        move    #>$744bcc,x0
+        cmp     x0,a
+        tgt     x0,a                            ; D <= 5008
         tfr     a,b
         move    #>$58,n1
         bsr     ev_upd
@@ -413,6 +421,9 @@ ev_gr2:
         move    #>$402e50,x0
         cmp     x0,a
         tlt     x0,a
+        move    #>$7c91bf,x0
+        cmp     x0,a
+        tgt     x0,a
         move    a,x0
         mpyi    #>$ad6a32,x0,a
         bsr     ev_exq
@@ -575,8 +586,8 @@ ev_loop:
         move    #>$ffffff,m2
         move    #>$ffffff,m3
         move    #>$ffffff,m6
-        move    #>$3fff,m5
-        move    #>$3fff,m4
+        move    #>$003dfd,m5
+        move    #>$003dfd,m4
         move    #>$1,n0
         move    r7,r6
         move    #>$40,n6
@@ -771,7 +782,7 @@ ev_gz2:
         move    b,x0
         move    #>$fff3a5,y0
         mpy     y0,x0,a
-        add     #>$ffe6f7,a
+        add     #>$ffe8ea,a
         move    a1,n5
         move    a0,b1                           ; fraction (u >= 0 left the extension clear)
         lua     (r5+n5),r4
@@ -787,7 +798,7 @@ ev_gz2:
         move    a,x0
         move    #>$fff59d,y0
         mpy     y0,x0,b
-        add     #>$ffda99,b
+        add     #>$ffdc8c,b
         move    b1,n5
         move    b0,a1                           ; fraction (u >= 0 left the extension clear)
         lua     (r5+n5),r4
@@ -808,7 +819,7 @@ ev_gz2:
         move    b,x0
         move    #>$fff743,y0
         mpy     y0,x0,a
-        add     #>$ffd033,a
+        add     #>$ffd226,a
         move    a1,n5
         move    a0,b1                           ; fraction (u >= 0 left the extension clear)
         lua     (r5+n5),r4
@@ -824,7 +835,7 @@ ev_gz2:
         move    a,x0
         move    #>$fff89f,y0
         mpy     y0,x0,b
-        add     #>$ffc773,b
+        add     #>$ffc966,b
         move    b1,n5
         move    b0,a1                           ; fraction (u >= 0 left the extension clear)
         lua     (r5+n5),r4
@@ -1170,7 +1181,7 @@ ev_pred:
 ; line 0
         move    #>$fffee7,y0
         mpy     x1,y0,a                         ; -a S
-        add     #>$ffea75,a
+        add     #>$ffec68,a
         clr     b
         move    a1,n5
         move    a0,b1
@@ -1183,17 +1194,17 @@ ev_pred:
         move    x:(r1)+,b       a,y0            ; f/4 ; Wd
         add     x0,b            x:(r3)-,x0      ; v/4 ; g
         mac     y0,x0,b                         ; W'
-        move    #>$ffea75,n5
+        move    #>$ffec68,n5
         move    b,y:(r5+n5)
         tfr     y0,a            b,y1
         mac     -x0,y1,a                        ; y/4
-        move    #>$ffe6f7,n5
+        move    #>$ffe8ea,n5
         move    a,y:(r5+n5)
         move    a,x:(r2)+                       ; early tap
 ; line 1
         move    #>$ffff11,y0
         mpy     x1,y0,a                         ; -a S
-        add     #>$ffe959,a
+        add     #>$ffeb4c,a
         clr     b
         move    a1,n5
         move    a0,b1
@@ -1206,17 +1217,17 @@ ev_pred:
         move    x:(r1)+,b       a,y0            ; f/4 ; Wd
         add     x0,b            x:(r3)-,x0      ; v/4 ; g
         mac     y0,x0,b                         ; W'
-        move    #>$ffe959,n5
+        move    #>$ffeb4c,n5
         move    b,y:(r5+n5)
         tfr     y0,a            b,y1
         mac     -x0,y1,a                        ; y/4
-        move    #>$ffda99,n5
+        move    #>$ffdc8c,n5
         move    a,y:(r5+n5)
         move    a,x:(r2)+                       ; early tap
 ; line 2
         move    #>$ffff39,y0
         mpy     x1,y0,a                         ; -a S
-        add     #>$ffe867,a
+        add     #>$ffea5a,a
         clr     b
         move    a1,n5
         move    a0,b1
@@ -1229,17 +1240,17 @@ ev_pred:
         move    x:(r1)+,b       a,y0            ; f/4 ; Wd
         add     x0,b            x:(r3)-,x0      ; v/4 ; g
         mac     y0,x0,b                         ; W'
-        move    #>$ffe867,n5
+        move    #>$ffea5a,n5
         move    b,y:(r5+n5)
         tfr     y0,a            b,y1
         mac     -x0,y1,a                        ; y/4
-        move    #>$ffd033,n5
+        move    #>$ffd226,n5
         move    a,y:(r5+n5)
         move    a,x:(r2)+                       ; early tap
 ; line 3
         move    #>$ffff5d,y0
         mpy     x1,y0,a                         ; -a S
-        add     #>$ffe79d,a
+        add     #>$ffe990,a
         clr     b
         move    a1,n5
         move    a0,b1
@@ -1252,11 +1263,11 @@ ev_pred:
         move    x:(r1)+,b       a,y0            ; f/4 ; Wd
         add     x0,b            x:(r3)-,x0      ; v/4 ; g
         mac     y0,x0,b                         ; W'
-        move    #>$ffe79d,n5
+        move    #>$ffe990,n5
         move    b,y:(r5+n5)
         tfr     y0,a            b,y1
         mac     -x0,y1,a                        ; y/4
-        move    #>$ffc773,n5
+        move    #>$ffc966,n5
         move    a,y:(r5+n5)
         move    a,x:(r2)+                       ; early tap
 ; wet = taps + 0.5 (allpass outputs): L takes y0 - y3, R y1 - y2

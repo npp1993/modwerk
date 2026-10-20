@@ -23,7 +23,13 @@ FX2. Their descriptors, DSP code and dispatch entries stay stock.
 FREQ is the base cutoff for LP/BP/HP/NOTCH and the base gain for AMP. DEPTH is
 bipolar: its center leaves the destination static, positive values increase
 it on a pulse, and negative values decrease it. RES controls the four filter
-types and is inert for AMP. MIX zero is exact dry passthrough.
+types and is inert for AMP. MIX zero is exact dry passthrough and 127 is
+fully wet. Euclid has no sound of its own: its wet signal is the input
+through the pulsed filter or amp, so with the filter wide open or DEPTH at
+center MIX 127 sounds like the dry input
+([#681](https://github.com/repeat98/modwerk/issues/681)). For an audible
+pattern, move DEPTH well away from center and lower FREQ, or use AMP with AMT
+raised.
 
 TYPE offers LP, BP, HP, AMP and NOTCH. AMP retains value 3 so existing saved
 parts remain compatible; NOTCH is appended at value 4. The filter modes use

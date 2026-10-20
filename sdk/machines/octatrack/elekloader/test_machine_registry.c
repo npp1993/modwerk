@@ -56,12 +56,18 @@ static uintptr_t volatile machine_row[5], sequencer_row[9];
 static int masked;
 uint32_t modwerk_machine_mask(void) { CHECK(!masked); masked = 1; return 7; }
 void modwerk_machine_unmask(uint32_t s) { CHECK(masked && s == 7); masked = 0; }
-void modwerk_machine_flush_data(uint32_t a, uint32_t n) { (void)a; (void)n; }
-uint8_t *modwerk_machine_code(uint32_t a) { CHECK(masked); return host_at(a); }
+/* Code is read unmasked and written masked (put() flushes each site just before writing it). */
+void modwerk_machine_flush_data(uint32_t a, uint32_t n) { CHECK(masked); (void)a; (void)n; }
+uint8_t *modwerk_machine_code(uint32_t a) { return host_at(a); }
 void modwerk_machine_invalidate_code(void) {}
 /* The asm side (machine_registry.s). */
-static uint8_t seen[12]; static int stock_validations;
-int mw_stock_validate(uint8_t *part) { ++stock_validations; memcpy(seen, part + 0x2a + 30 * 3 + 6, 6); memcpy(seen + 6, part + 0x1da + 30 * 3 + 6, 6); return 11; }
+static uint8_t seen[12], seen_keys[4]; static int stock_validations;
+int mw_stock_validate(uint8_t *part)
+{
+    ++stock_validations; memcpy(seen, part + 0x2a + 30 * 3 + 6, 6); memcpy(seen + 6, part + 0x1da + 30 * 3 + 6, 6);
+    memcpy(seen_keys, part + 0x2fe + 30 * 3 + 6 + 2, 4); /* T4 FX2's page-2 slots 8-11 */
+    return 11;
+}
 void mw_stock_pool_open(void) { ++stock_calls; }
 void mw_stock_list_draw(void) {}
 const char mw_seq_none[1] = "";
@@ -237,6 +243,19 @@ int main(void)
     CHECK(mw_validate(part0()) == 11 && seen[0] == 0x70 && seen[11] == 0x7b);
     part0()[60 + 90] = 'D'; part0()[61 + 90] = 'V'; part0()[62 + 90] = 1;   /* a signature this base does not know */
     CHECK(mw_validate(part0()) == 11 && seen[0] == 0x70);
+    /* Beta finding 47: a set-up Sidechain Compressor (KEY T2, KFLT and KGN 64) on T4 FX2 shows stock its own COMPRESSOR
+     * defaults in slots 8-11 and keeps its bytes; stock's own KEY 127, another effect or a MON out of range reach stock. */
+    uint8_t *keys = (uint8_t *)part0() + 0x2fe + 90 + 6 + 2, fx2 = part0()[8 + 3], was[4];
+    memcpy(was, keys, 4); part0()[8 + 3] = 24; keys[0] = 2; keys[1] = 64; keys[2] = 64; keys[3] = 0;
+    CHECK(mw_validate(part0()) == 11 && seen_keys[0] == 0x7f && !seen_keys[1] && !seen_keys[2] && !seen_keys[3]);
+    CHECK(keys[0] == 2 && keys[1] == 64 && keys[2] == 64 && keys[3] == 0);
+    keys[0] = 0x7f;
+    CHECK(mw_validate(part0()) == 11 && seen_keys[0] == 0x7f && seen_keys[1] == 64);
+    keys[0] = 2; keys[3] = 2;
+    CHECK(mw_validate(part0()) == 11 && seen_keys[0] == 2 && seen_keys[3] == 2);
+    keys[3] = 0; part0()[8 + 3] = 8;                                          /* DELAY */
+    CHECK(mw_validate(part0()) == 11 && seen_keys[0] == 2 && seen_keys[1] == 64);
+    part0()[8 + 3] = fx2; memcpy(keys, was, 4);
     /* Its track renders stock's silent source, an unsigned FLEX track stock's FLEX. */
     part0()[60 + 90] = 'A'; part0()[61 + 90] = 'B'; part0()[62 + 90] = 1;
     silent = silent_renders; int flex = stock_renders;

@@ -113,7 +113,7 @@ ELEKLOADER_DSP_ASM=/path/to/dsp_asm python3 -B sdk/machines/octatrack/elekloader
 python3 -B sdk/runtime/loader/build.py --dsp src/engine/assets/dsp-packages.json:everb \
   --slots fx2 --cycles 382 --cycles-kind executed --state 132 --buffer 16384 -o /private/everb.mwrm
 python3 -B sdk/runtime/loader/build.py --dsp src/engine/assets/dsp-packages.json:miniverb \
-  --slots fx2 --cycles 411 --cycles-kind modeled --state 64 --buffer 16384 -o /private/miniverb.mwrm
+  --slots fx2 --cycles 411 --cycles-kind modeled --state 64 --buffer 15870 -o /private/miniverb.mwrm
 python3 -B sdk/runtime/loader/build.py --dsp src/engine/assets/dsp-packages.json:tapehead \
   --slots both --cycles 295 --cycles-kind modeled --state 54 -o /private/tapehead.mwrm
 python3 -B sdk/runtime/loader/build.py --dsp src/engine/assets/dsp-packages.json:airwindows-chorus \
@@ -327,6 +327,40 @@ and hash, and copies the image over `0x40000400`; anything else boots the
 flashed base. Ported from Octabam's REMIX SWITCH (PR #655 at `879cecb`,
 MIT); the DSP park is its source unchanged. Any host on the vendor interface
 can trigger it without a confirmation on the unit: development only.
+
+### Updating the base over USB (flash.c)
+
+The card is for the first install only. A base writes its own container to
+NOR when a host asks, with stock's OS UPGRADE routines (the sector erase and
+256-byte page program at `0x40020628` / `0x400206f4` and the sector table at
+`0x400a95c0` in 1.40C), so a later base reaches the unit without the card:
+
+1. The host RAM-boots the new base (`boot DIR`): the trial. The unit must come
+   back on it over USB; a power cycle returns to the flashed base when it does not.
+2. The host stages the new base's plain ELEK container (the `.bin` deciphered,
+   `NOT_FLASH_CANDIDATE.bin` → `formats.parse(...).container`) with that running
+   base: `npm run device -- flash DIR`, or the site's **Update over USB** in the
+   base dialog (`OctatrackLink.updateBase`). Verify checks the container's format
+   and section sum. Commit copies it aside, depacks it into the RAM boot stage
+   with a bounded decoder (the kit's codec in C) and refuses unless the result is
+   an OS entry carrying NOR's bootstrap version, stock's bootloader copy byte for
+   byte and the running base's own packed `.run` stream: **a base writes only
+   itself**, so nothing reaches NOR that did not boot and answer on this unit.
+   Then OS UPGRADE's quiesce, the sectors up to the container's end erased, the
+   pages programmed, NOR compared word by word (once more after a second write),
+   and the reply. A container NOR already holds writes nothing.
+3. Accept (or any rollback after the write) restarts the unit half a second on,
+   as a RAM boot does but with no mailbox, so the bootstrap unpacks NOR: the new
+   base. The host sees it come back and checks IDENTIFY.
+
+A verify that still fails after the second write answers `uncertain` and leaves
+the unit running from RAM for another try (the self-test record's `refusal`
+reads 100 + flash.h's reason); only a power-off then needs the Startup Menu.
+The write itself (some seconds) is the window a power cut can hit, as with
+the card. A base without the capability (feature bit 8 of CAPABILITIES) still
+needs the card once. Host check: `test_flash.c` (NOR modelled as clearing
+bits only, the kit's packer for the fixture); the stock routines, the quiesce
+and the restart are hardware-only.
 
 `build_ports.py` prepares independent source ports with the same pinned SDK
 and its native source checker. It registers the internal USB MIDI dependency

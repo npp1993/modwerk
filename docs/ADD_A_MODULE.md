@@ -88,7 +88,7 @@ Use the exact catalog/manifest version and the source-update date (`YYYY-MM-DD`)
 
 `npm run check -- --base origin/main` and `npm run build` reject missing current-version notes, duplicate/invalid versions, malformed dates and unknown module IDs. `node scripts/module-changelogs.mjs` runs just this inexpensive metadata check. Regenerate catalogs after a manifest version changes, then validate before committing. Notes live outside module source folders so adding them does not invalidate retained qualification records or trigger native compilation.
 
-The published release inventory includes these exact version-matched notes. Publication is quiet by default, including metadata-only version bumps. Set optional `announce: true` on that exact entry only after the owner or registered author explicitly chooses to notify followers; omitted or false means no follower update or automatic new-module announcement. An agent must not infer this choice from a request to publish, fix an issue or update media. A current version can opt in after a quiet deployment; retries, later media edits and superseded versions do not replay it. Existing follows and delivery preferences remain intact. Announced update emails include every change and limitation from the saved entry in HTML and plain text, with a link to the module’s Changelog tab.
+The published release inventory includes these exact version-matched notes. Published module versions automatically notify their followers, including eligible prior downloaders. Update email is enabled by default and uses the existing daily module digest; members can unfollow a module or opt out of update/activity email. No per-release announcement opt-in is required, and legacy `announce` flags do not suppress notifications. Equal-version media or documentation edits do not replay an update, and superseded inventories never announce an older release. Before pushing a module update, the coding agent must tell the maintainer in chat that successful publication will notify followers, including by email according to their preferences; a push alone does not send mail. Update emails include the saved change list and limitations in HTML and plain text, with a link to the Changelog tab.
 
 Documentation/media-only fixes do not need a version bump unless requesting automatic author publication, but must add a clearly marked documentation-only or media-only note to the current entry in the same PR. A new version, including a metadata-only version when deliberately published, must always have its own entry.
 
@@ -198,6 +198,13 @@ the [loader compatibility guide](../sdk/machines/octatrack/elekloader/README.md#
    npm run modules:import -- ../module-packages/packages --development
    ```
    Commit what the import changes. CI compiles the same packages again and fails if they differ.
+   On macOS with colima, Docker sees only your home folder, and the script stages the source with `mktemp -d`, which on macOS makes it under `/var/folders` and ignores `TMPDIR`. Put a `mktemp` shim first on `PATH` for that run so the staging folder lands under `$HOME`:
+   ```sh
+   mkdir -p ~/.cache/mktemp-shim ~/.cache/tmp-isolated
+   printf '#!/bin/sh\nexec /usr/bin/mktemp -d "$HOME/.cache/tmp-isolated/tmp.XXXXXXXX"\n' > ~/.cache/mktemp-shim/mktemp
+   chmod +x ~/.cache/mktemp-shim/mktemp
+   PATH=~/.cache/mktemp-shim:$PATH bash scripts/build-modules-isolated.sh . ../module-packages "$image"
+   ```
 5. **Compare with native octabam** on your own 1.40C update file:
    ```sh
    npm run module:verify -- <id> --os ~/path/to/OCTATRACK_OS1.40C.bin

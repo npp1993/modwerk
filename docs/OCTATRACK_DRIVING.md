@@ -89,13 +89,15 @@ error and moves on. macOS `nc -U` hangs up before the reply, so use the script.
 | `selftest` | PROJ > MODWERK > SELF TEST over USB: start it (transport stopped), wait, print the verdict, the modules that ran and the CPU and core peaks |
 | `stall` | the last DSP stall record: why, the loader's whole report, each core's last packet header, the live FX ids, as they stood when the stall was seen (it survives the power cycle); `stalltest` writes one now |
 | `try FILE`, `remove FILE` | install or remove a module package, accepted at once |
+| `flash DIR` | after `boot DIR`: that base writes its own container (`DIR/NOT_FLASH_CANDIDATE.bin` deciphered) to NOR with stock's routines, verifies it and restarts on it; refuses any other base's. Not yet run on a unit; the owner's call ([traps](OCTATRACK_HARDWARE_TRAPS.md#writing-nor-over-usb)) |
 | `boot DIR`, `boot DIR 4096` | RAM boot a `build_core.py` output; the session restarts on the new base. From the flashed `usbtest9` on macOS add 4096 (bytes a frame): it times out on the default 4,095-byte frames ([traps](OCTATRACK_HARDWARE_TRAPS.md#usb-and-ep0)) |
 
 ## The panel, as it behaves
 
 - **Effects.** FUNC+FX1/FX2 opens the chooser (the left list; its right side are the effect's setup knobs).
   Moving the cursor does not pick; YES does. NO closes. LEVEL scrolls. `pick:` does all of it.
-- **Parts.** Holding PART shows the selector: UP Part 1, RIGHT 2, DOWN 3, LEFT 4. **Never FUNC+PLAY there
+- **Parts.** Holding PART shows the selector: UP Part 1, RIGHT 2, DOWN 3, LEFT 4. A switch also assigns that Part to the
+  current pattern (stock), so switch back to the pattern's own Part (the byte in the table below) before you leave. **Never FUNC+PLAY there
   (`PART+FUNC+PLAY`): it CLEARS the Part**, both working and saved copies, its knobs, machines and name
   (`PART 1`), and saves that (stock's Part Clear; 11 October 2026). FUNC+PLAY elsewhere clears the pattern.
   To reload, use `reload`: FUNC+PART opens RENAME, RELOAD, SAVE, SAVE ALL, keeps its cursor from last time and
@@ -116,7 +118,7 @@ error and moves on. macOS `nc -U` hangs up before the reply, so use the script.
 | What | Where |
 |---|---|
 | current track, Part | byte `0x80000000`, byte `0x80000003` |
-| what each track runs (FX1 T1-8, then FX2) | 16 bytes at `0x80000ec4`; a Part's effects reach it when the transport starts, not at a stopped pattern change |
+| what each track runs (FX1 T1-8, then FX2) | 16 bytes at `0x80000ec4`; a Part's effects reach it at each track's next trig while playing, not at a stopped pattern change. A track without trigs keeps the last bank's effect (16 October 2026, twin of `38a0bde1`: B01's DELAY never reached trigless tracks that ran DARK REV), so test a pick's admission on tracks with trigs or in a blank project |
 | current bank | `0x46c82456` holds its base: `0x400e21e0 + bank * 0x9b340` |
 | a working Part's effects | 16 bytes at bank base `+ 0x8ed80 + part * 6322` (the whole Part is 6,322 bytes) |
 | the saved copy | bank base `+ 0x9504a + part * 6322` |
@@ -134,6 +136,10 @@ To compare a Part's working and saved copies: `mem:` both addresses with length 
 - One session; a handful of steps per command; `perl -e 'alarm N; exec @ARGV'` around anything that talks to
   the unit.
 - Let steps wait for their result (`pick:`, `part`), not fixed `w` waits.
+- After a power cycle, the first `npm run device` command often fails while the bridge reopens the unit; run it
+  again before treating it as a fault. `status` then shows generation 0 and the base's own digest as the active
+  set even when kept modules were restored ([case 16](OCTATRACK_MODULE_EDGE_CASES.md)); `npm run device -- do
+  inventory` lists what is installed (a contributor's MKII, beta bases `38a0bde1…` and `99336d35…`, 15 October 2026).
 - Before a test: `ui`, the bank and Part bytes, the Part's working-equals-saved check. After: restore and
   read them again.
 - Long runs (`scripts/octatrack-qualify.py`, benchmarks) in the background with a progress log; look at the
@@ -141,3 +147,6 @@ To compare a Part's working and saved copies: `mem:` both addresses with length 
 - If the screen does not change for a minute, the run is stuck: kill it, restart the session, read `ui`.
 - Audio: `~/.cache/modwerk-octatrack/tools/rec SECONDS OUT.wav Octatrack` records MAIN and CUE over USB
   (4 channels, 44.1 kHz, 32-bit). A sustained sound (a looped sample) shows clicks; a clap does not.
+  Recording costs the ColdFire about 15 CPU points while it runs (20 October 2026, base `908f0107`: playing 61-64 %,
+  recording 77-78 %), so read CPU without it. A dropout shows as a run of exact zeros or a block of 16-64 samples
+  played twice inside sound; the `gap` step (longest time between frames, normally 380-420 us) is the DSP-side check.

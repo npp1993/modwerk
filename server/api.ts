@@ -14,7 +14,7 @@ import { developerAuthentication, developerUser } from './developer-auth'
 import { developerApi } from './developers'
 import { moduleSupportRoutes } from './module-support'
 import { communityModule, moduleThreadId } from '../src/community/modules'
-import { ensureDiscussionThread } from './module-threads'
+import { ensureDiscussionThread, ensureModuleThreadsOnce } from './module-threads'
 import { validateDigiIssueContext } from '../src/community/digi-issue-context'
 import { recordAnonymousCount, recordUsage, recordModuleDownload, usageStatistics } from './usage'
 import { moduleStatistics } from './module-statistics'
@@ -37,6 +37,7 @@ import { handleGithubWebhook, githubConfig, mirrorIssue, setGithubIssueState } f
 import { publicIssueReplies } from './issue-replies'
 import { createConfigurationReport } from './configuration-reports'
 import { octatrackDiagnosticRoutes } from './octatrack-diagnostics'
+import { remoteSessionRoutes } from './remote-sessions'
 import { IssueInputError, validateIssueContext, validateLogMissing } from '../src/community/issue-context'
 import { OT_LOG_MAX_BYTES, OtLogError, parseOtLog } from '../src/community/ot-log'
 
@@ -97,6 +98,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     const adminId = await adminActor(request,env,db), admin = !!adminId
     const diagnostics = await octatrackDiagnosticRoutes(request,db,user,admin,env.DIAGNOSTICS_READ_KEY_SHA256)
     if (diagnostics) return diagnostics
+    const remote = await remoteSessionRoutes(request,env,db,user,adminId)
+    if (remote) return remote
     const push = await pushRoutes(request,env,db,user,admin)
     if(push)return push
     const signedDeveloper = await developerUser(request,env,db)
@@ -132,7 +135,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
     if ((match = path.match(/^\/api\/modules\/([a-z0-9-]+)$/)) && request.method === 'GET') {
       await knownModule(db,match[1])
       const isSet=match[1].startsWith('remix-')
-      if (!isSet) await ensureDiscussionThread(db,match[1])
+      if (!isSet) await ensureModuleThreadsOnce(db)
       const [posts,statistics,media] = await Promise.all([
         isSet ? Promise.resolve({results:[]}) : db.prepare("SELECT p.id,p.body,p.created_at,u.display_name AS author,p.user_id,t.locked FROM forum_posts p JOIN forum_threads t ON t.id=p.thread_id JOIN users u ON u.id=p.user_id WHERE t.id=? AND p.id<>t.id AND p.hidden=0 AND (t.hidden=0 OR ?=1) ORDER BY p.created_at DESC,p.rowid DESC LIMIT 100").bind(moduleThreadId(match[1]),Number(admin)).all<{id:string;body:string;created_at:string;author:string;user_id:string;locked:number}>(),
         db.prepare(`WITH requested AS (SELECT ? AS module_id,? AS user_id) SELECT

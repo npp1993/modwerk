@@ -37,7 +37,7 @@ describe('once-per-account owner note', () => {
     const { call, member, db } = await fixture(), owner = await member('noteexport')
     await call('/auth/owner-note', 'POST', {}, owner.token)
     const exported = await call('/auth/data-export', 'POST', { password }, owner.token)
-    expect((await exported.json()).data.ownerNotes).toEqual([{ note: '2026-10-15-beta-2', seen_at: expect.any(String) }])
+    expect((await exported.json()).data.ownerNotes).toEqual([{ note: '2026-10-16-beta-3', seen_at: expect.any(String) }])
     db.prepare('DELETE FROM account_tokens WHERE user_id=?').run(owner.id)
     db.prepare('DELETE FROM auth_users WHERE id=?').run(owner.id)
     expect(db.prepare('SELECT COUNT(*) AS count FROM member_owner_notes').get()).toEqual({ count: 0 })

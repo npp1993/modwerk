@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Jannik Aßfalg (repeat98)
 import { compareModuleVersions } from '../catalog/versions.ts'
 
+/** Legacy announce flags remain readable; follower notifications are automatic and respect member opt-outs. */
 export type ReleaseNotes = { version: string; date: string; changes: string[]; sourceCommit?: string; announce?: boolean }
 
 /** The authored changelog, published inventory and stored email snapshot share one validation. */

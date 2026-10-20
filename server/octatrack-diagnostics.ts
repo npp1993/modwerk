@@ -71,12 +71,13 @@ export function validateDiagnostic(value: unknown): OctatrackDiagnostic {
 async function consent(db: Database, userId: string, now = new Date()): Promise<DiagnosticConsent> {
   const row = await db.prepare('SELECT enabled,version,changed_at FROM octatrack_diagnostic_consent WHERE user_id=?').bind(userId).first<{ enabled: number; version: string; changed_at: string }>()
   const expiresAt = row ? new Date(Date.parse(row.changed_at) + DIAGNOSTIC_CONSENT_DAYS * 86400000).toISOString() : null
-  return { accountId:userId, enabled: !!row?.enabled && row.version === OCTATRACK_DIAGNOSTICS_VERSION && row.changed_at <= now.toISOString() && expiresAt! > now.toISOString(), version: OCTATRACK_DIAGNOSTICS_VERSION, changedAt: row?.changed_at ?? null, expiresAt }
+  return { accountId:userId, enabled: !!row?.enabled && row.version === OCTATRACK_DIAGNOSTICS_VERSION && row.changed_at <= now.toISOString() && expiresAt! > now.toISOString(), version: row?.version ?? OCTATRACK_DIAGNOSTICS_VERSION, changedAt: row?.changed_at ?? null, expiresAt }
 }
-/** Hourly cleanup also removes data with expired consent or accounts that are no longer verified members. Reads enforce the same cutoff. */
+/** Hourly cleanup also removes data with expired consent or accounts that are no longer verified members. Reads enforce the same cutoff.
+ * Reports sent under an earlier consent text stay until withdrawal or expiry; only new reports need the current text. */
 export async function cleanupOctatrackDiagnostics(db: Database, now = new Date()) {
   await db.batch([
-    db.prepare('DELETE FROM octatrack_diagnostic_events WHERE created_at<? OR user_id IN (SELECT user_id FROM octatrack_diagnostic_consent WHERE enabled=0 OR version<>? OR changed_at<=?) OR user_id IN (SELECT id FROM users WHERE suspended=1 OR email_verified=0)').bind(since(now, DIAGNOSTIC_RETENTION_DAYS), OCTATRACK_DIAGNOSTICS_VERSION, since(now, DIAGNOSTIC_CONSENT_DAYS)),
+    db.prepare('DELETE FROM octatrack_diagnostic_events WHERE created_at<? OR user_id IN (SELECT user_id FROM octatrack_diagnostic_consent WHERE enabled=0 OR changed_at<=?) OR user_id IN (SELECT id FROM users WHERE suspended=1 OR email_verified=0)').bind(since(now, DIAGNOSTIC_RETENTION_DAYS), since(now, DIAGNOSTIC_CONSENT_DAYS)),
     db.prepare('DELETE FROM octatrack_beta_daily WHERE day<=?').bind(since(now, DIAGNOSTIC_RETENTION_DAYS).slice(0,10)),
   ])
 }
@@ -94,7 +95,7 @@ export async function octatrackDiagnosticRoutes(request: Request, db: Database, 
     const after = url.searchParams.get('since')
     if (after !== null && (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/.test(after) || Number.isNaN(Date.parse(after)))) throw new HttpError(400, 'Give since as an ISO time.')
     const order = after === null ? 'DESC,e.rowid DESC LIMIT 100' : 'ASC,e.rowid ASC LIMIT 500'
-    const rows = (await db.prepare('SELECT e.event_id AS eventId,e.created_at AS createdAt,e.data_json,u.username FROM octatrack_diagnostic_events e JOIN users u ON u.id=e.user_id JOIN octatrack_diagnostic_consent c ON c.user_id=e.user_id WHERE e.created_at>=? AND e.created_at>=? AND c.enabled=1 AND c.version=? AND c.changed_at>? AND c.changed_at<=? AND u.suspended=0 AND u.email_verified=1 ORDER BY e.created_at '+order).bind(cutoff,after??cutoff,OCTATRACK_DIAGNOSTICS_VERSION,since(now,DIAGNOSTIC_CONSENT_DAYS),now.toISOString()).all<{ data_json: string }>()).results
+    const rows = (await db.prepare('SELECT e.event_id AS eventId,e.created_at AS createdAt,e.data_json,u.username FROM octatrack_diagnostic_events e JOIN users u ON u.id=e.user_id JOIN octatrack_diagnostic_consent c ON c.user_id=e.user_id WHERE e.created_at>=? AND e.created_at>=? AND c.enabled=1 AND c.changed_at>? AND c.changed_at<=? AND u.suspended=0 AND u.email_verified=1 ORDER BY e.created_at '+order).bind(cutoff,after??cutoff,since(now,DIAGNOSTIC_CONSENT_DAYS),now.toISOString()).all<{ data_json: string }>()).results
     const counts = (await db.prepare('SELECT day,event,count FROM octatrack_beta_daily WHERE day>? ORDER BY day DESC,event').bind(cutoff.slice(0,10)).all()).results
     return response({ events: rows.map(({data_json,...row}) => ({...row,data:JSON.parse(data_json)})), counts })
   }

@@ -58,6 +58,13 @@ rate, bit depth or native track-control defaults are changed by the GUI.
 
 - Original Octatrack OS 1.40C only; inherited stock is recovered and guarded
   from the visitor's verified local file. No firmware is distributed.
+- Like every DRAM module, the build gives up about 10 MB of sample memory
+  to the platform reserve; the finished build shows how much it reserves. A
+  project that filled Flex and recorder memory on the stock OS can then show
+  OUT OF MEMORY when a Flex sample loads. Shorten the recorder reservation
+  in the project's memory settings or the recorders' RLEN, or load long
+  samples into a Static machine
+  ([#433](https://github.com/repeat98/modwerk/issues/433)).
 - One USB audio source per build. The required shared USB MIDI receiver,
   clock timestamp path and combined ISR are included.
 - Outbox UAC2 accepts the 44.1 kHz SET_CUR control data stage and rejects

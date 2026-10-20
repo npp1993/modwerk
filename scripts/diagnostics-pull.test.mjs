@@ -32,13 +32,27 @@ describe('diagnostics pull', () => {
     expect(text).toContain(`${when(failed.createdAt)} @other sync_failed sending error=device refusal=3 poly8@0.3.0`)
     expect(text).toContain('2026-10-15  failed 1')
   })
-  it('counts a reconnect back on the bare base as a restart, but not a plain reconnect', () => {
-    const base = 'a'.repeat(64), set = 'b'.repeat(64), next = 'c'.repeat(64)
-    const at = (n, event, active) => entry(n, 'tester', { event, phase: 'ready', base, ...active && { active } })
-    const found = members([at(1, 'connected', base), at(2, 'kept', set), at(3, 'disconnected', set), at(4, 'connected', set),
-      at(5, 'disconnected', set), at(6, 'connected', base), at(7, 'sync_failed', next), at(8, 'connected'), at(9, 'connected', base)]).get('tester')
-    expect(found.restarts).toEqual([entry(6).createdAt, entry(9).createdAt])
+  it('counts restarts from the unit’s log and names what each boot’s restore did, once per change', () => {
+    const base = 'a'.repeat(64)
+    const start = (seq, boot) => ({ seq, boot, second: 0, kind: 'start', a: 0, cpu: 0, dsp1to4: 0, dsp5to8: 0, machines: [], fx: [], keys: [], screen: 0, tempo24: 0, playing: false })
+    const health = (n, saved, savedCount, live) => entry(n, 'tester', { event: 'health', phase: 'ready', base, active: base, reading: { saved, savedCount, live } })
+    const at = (n, event) => entry(n, 'tester', { event, phase: 'ready', base, active: base })
+    const events = [at(1, 'connected'), health(2, 2, 0, 0), health(3, 7, 6, 6), at(4, 'connected'), health(5, 1, 6, 6),
+      at(6, 'connected'), health(7, 1, 6, 6), at(8, 'connected'), health(9, 4, 0, 0),
+      entry(10, 'tester', { event: 'device_log', phase: 'ready', log: { loads: [], incidents: [start(1, 5), start(4, 6), start(9, 7)] } })]
+    const found = members(events).get('tester')
+    // The first reading after each connection only; a repeat of the same result (a plain reconnect) is not listed again.
+    expect(found.reloads.map(r => [r.at, r.saved])).toEqual([[entry(2).createdAt, 2], [entry(5).createdAt, 1], [entry(9).createdAt, 4]])
     expect(found.bases).toEqual([base])
+    const text = summary({ events, counts: [] })
+    expect(text).toContain("  restarts 2 (the unit's log, starts 5-7)")
+    expect(text).toContain(`  set reloads at boot: ${when(entry(2).createdAt)} nothing saved, ${when(entry(5).createdAt)} RESTORED 6/6, ${when(entry(9).createdAt)} another base’s set`)
+  })
+  it('keeps the card build’s refused selections out of the problems', () => {
+    const check = n => entry(n, 'tester', { event: 'build_failed', phase: 'preparing', buildKind: 'octatrack-firmware', error: 'selection' })
+    const text = summary({ events: [check(1), check(2), entry(3, 'other', { event: 'build_failed', phase: 'building', buildKind: 'octatrack-base', error: 'build' })], counts: [] })
+    expect(text).toContain('Problems (1, newest first')
+    expect(text).toContain('Card-build checks that refused a selection (on every module change; not failures): @tester 2')
   })
   it('names each base against the site’s, the last self-test’s peaks and the member’s reports', () => {
     const old = 'a'.repeat(64), current = 'd'.repeat(64)

@@ -1,6 +1,6 @@
 {
   "firmware": "1.40C",
-  "imageSha256": "b525e4a42fdddaf6c6f381478bc54e56206e3d5df9be1c76272d8c36d84cdc7a",
+  "imageSha256": "6f2cdb56a8787456a8137c58f97df2a24df4173b68abc83cd7046d9015256020",
   "emulatorSha256": "9af97ff3932b37b33e6f8f17b03fad57e37ed3a306e3f4e7d9446716d703071b",
   "setup": "Headless ot_emu; MKII panel; stopped transport; 128×64 LCD at integer scale 6.",
   "palette": {
@@ -115,10 +115,10 @@
     "ot-reverse.png": "dc25da46c06298d10e36aba3c97b05f98edc995558f0c9ea5df3513c72e41b2b"
   },
   "schemaVersion": 1,
-  "captured": "2026-10-11",
+  "captured": "2026-10-18",
   "moduleId": "everb",
-  "moduleVersion": "0.1.1-experimental",
-  "sourceSha256": "c06251e3744d0d9f66bc0d9622bf5ca3d00c8a69a52aedffdb49577d5bf2990a",
+  "moduleVersion": "0.1.2-experimental",
+  "sourceSha256": "f2d97d9fb04bc8963a08e4d393b64c45e6e69cd2fc9b281c16a2265f88c5e385",
   "stockOs": {
     "release": "1.40C",
     "updateSha256": "34695b606eb00e1b4dded5fd0c4b66f3a460522a632e47d7416dbd220599e1ad",
@@ -150,12 +150,12 @@
       "SPRING REV",
       "DARK REV"
     ],
-    "baseCommit": "31519756b17566c35ad67c61301b770bc5522a07",
+    "baseCommit": "a59677ee44b2ec8e33e7b9b8c0916097643428bb",
     "builder": "native build_bus.py, in-process remix as scripts/export-composition-proofs.py builds it (OCTABAM_STATIC_STOCK=1); verify.py build_image()"
   },
   "limitations": [
     "Emulator UI only: stopped transport, empty scratch card, no sample playback; no audio or hardware evidence.",
     "Private native image built locally from the module source; not a published release.",
-    "Re-captured on the 0.1.1 image with the 0.1.0 plan: all five PNGs are byte-identical to the 0.1.0 captures, since 0.1.1 changes no drawing (only FUNC + turn stops). They do not show FUNC + turn; func_stops.py measures that."
+    "Re-captured on the 0.1.2 image (6f2cdb56...) with the 0.1.0 plan: all five PNGs are byte-identical to the 0.1.0 and 0.1.1 captures, since neither update changes any drawing (0.1.1: FUNC + turn stops; 0.1.2: the DSP ring length and the top of the pre-delay range). They do not show FUNC + turn; func_stops.py measures that."
   ]
 }

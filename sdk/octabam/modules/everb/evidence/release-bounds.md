@@ -1,11 +1,40 @@
-# E-Verb 0.1.0-experimental release resource bounds
+# E-Verb release resource bounds
+
+## 0.1.2-experimental
+
+0.1.2 shortens the delay ring to 15,870 words (modulus `$3dfd`) and keeps its
+start-up clear inside it: of 0.1.1's 128 dry calls, the first four now clear
+nothing and the last 124 clear 128 words each, and `m4` goes back to linear
+before that path returns. The pre-delay keeps 0.1.1's law but is clamped at
+5,008 samples (227 ms), and the reverse rate at the same point (issue #696). The
+per-frame loop changes only in immediate constants, so both sample arms keep
+their 468 and 382 modeled cycles, and the static census in TESTING.md gives the
+same 468.
+
+- **Cycle bound, recomputed.** The program is 1,602 words (`verify.py` placement).
+  Charging it once per call, less the 468 sample words, gives 1,134 words. The 24
+  `bsr` sites and the longest helper (`ev_usn`, 34 words) are unchanged: 816. Both
+  clearing loops still run 132 and 128 iterations: 516. The union is
+  `1,134 + 816 + 516 = 2,466`, which still rounds up to **2,560 modeled
+  cycles/call**. The block bound is unchanged: `8 * (468 + 382) + 2 * 2,560 =
+  11,920` per instance and **47,680/core/block** against 49,920, leaving 2,240.
+- **Memory.** The OS still gives every FX2 instance its 16,384 Y words; E-Verb uses
+  the first 15,870 and never touches the last 514, which Sidechain Compressor uses
+  on T3 and T7. Per instance stays `256 * 3 + 16,384 * 3 = 49,920` bytes. Shared:
+  two 1,602-word P programs (9,612 bytes), the 24-byte stack reservation, the
+  416-byte descriptor and the 52-byte REV formatter: **10,104 bytes**. Eight
+  instances total **409,464 bytes**.
+
+The rest of this file is 0.1.0's accounting; 0.1.1 changed only descriptor words.
+
+## 0.1.0-experimental
 
 Native source: PR #376 at `e3047c0d9eb7bb150c003a86414886b22d8992f2`.
 MAIN OS SHA-256: `b776efe203efecd0ceda90f68d7fe109cc8fc13a1f07bed00303f81af2769195`.
 The release moves the module and adds metadata; its DSP, generator, native manifest,
 render gates and performance runner are unchanged from that tested image.
 
-## Software cycle upper bound
+### Software cycle upper bound
 
 Basis: 44.1 kHz, 16 frames/block, eight FX2 instances, four per core.
 The original 468 modeled cycles/sample prices only the dearer sample arm; it is
@@ -42,7 +71,7 @@ audio-input gates, matched stock instruction benchmark and eight-instance stress
 The owner reports a functional MKII audition separately. Chip bus contention,
 maximum simultaneous streaming/USB/MIDI load and hardware canaries are unmeasured.
 
-## Exact reserved memory
+### Exact reserved memory
 
 The original report inventories used X state. This release additionally counts
 the unused 124-word remainder of the existing 256-word stock X instance block.

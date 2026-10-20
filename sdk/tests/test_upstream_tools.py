@@ -7,6 +7,7 @@ import stat
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 APP = pathlib.Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("upstream_tools", APP / "scripts/upstream-tools.py")
@@ -96,6 +97,23 @@ class UpstreamCheckouts(unittest.TestCase):
             tools.update_octabam(self.pins, self.base)
         self.assertEqual(self.pins.read_text(), before)
         self.assertEqual(tools.git(self.base / "octabam", "rev-parse", "HEAD"), self.first)
+
+    def test_update_accepts_a_reviewed_revision_of_a_repaired_tool(self):
+        self.sync()
+        probe = self.upstream / "tools/hw/usb_probe.py"
+        source = b"# reworded upstream\n" + probe.read_bytes()
+        probe.write_bytes(source)
+        spec = tools.adapter.TOOLS["usb_probe.py"]
+        text = source.decode()
+        for old, new in spec["edits"]:
+            text = text.replace(old, new)
+        with mock.patch.dict(spec, revisions={tools.sha(source): tools.sha(text.encode())}):
+            second = self.commit("reworded probe")
+            self.assertEqual(tools.update_octabam(self.pins, self.base), (second, True))
+            path = self.sync(second)
+            self.assertEqual(tools.edits(path), set(tools.REPAIRED))
+            self.assertEqual((path / "tools/hw/usb_probe.py").read_text(), text)
+            self.sync(second)
 
     def test_checkouts_stay_outside_git_and_on_their_own_remote(self):
         with self.assertRaisesRegex(ValueError, "outside every Git"):

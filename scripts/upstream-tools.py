@@ -66,14 +66,14 @@ def repair(path):
     for name, spec in adapter.TOOLS.items():
         tool = path / 'tools/hw' / name
         data = tool.read_bytes()
-        if sha(data) != spec['output']:
+        if sha(data) not in adapter.reviewed(spec).values():
             tool.write_bytes(adapter.repair(name, data))
 
 
 def check_edits(path, allowed):
     """Refuse local edits other than the reviewed repairs in their exact repaired form."""
     for item in edits(path):
-        if item not in allowed or sha((path / item).read_bytes()) != adapter.TOOLS[Path(item).name]['output']:
+        if item not in allowed or sha((path / item).read_bytes()) not in adapter.reviewed(adapter.TOOLS[Path(item).name]).values():
             raise ValueError('%s has local edits (%s); keep your own work out of this checkout.' % (path, item))
 
 

@@ -13,8 +13,10 @@ import { sendNewsMail } from './server/news-mail'
 import { syncModuleReleases } from './server/module-updates'
 import { cleanupForumMedia } from './server/forum-media'
 import { cleanupAudioPreviews } from './server/audio-previews'
+import { cleanupRemoteSessions } from './server/remote-sessions'
 import { handleCommunity } from './server/transport'
 import type { Env } from './server/platform'
+export { RemoteSessionRelay } from './server/remote-relay'
 
 const failureDetail = (reason: unknown) => reason instanceof Error ? reason.stack ?? reason.message : String(reason)
 
@@ -46,7 +48,7 @@ export default {
     const db = env.DB
     const activity = () => syncModuleReleases(env, db).catch(error => { console.error(`Published module versions could not be checked; retrying next hour: ${failureDetail(error)}`) }).then(() => sendActivityDigests(env, db))
     context.waitUntil(runHourly({
-      'Octatrack diagnostics cleanup': () => cleanupOctatrackDiagnostics(db),
+      'Octatrack diagnostics cleanup': () => cleanupOctatrackDiagnostics(db), 'remote session cleanup': () => cleanupRemoteSessions(db),
       'push cleanup': () => cleanupPush(db), 'usage cleanup': () => cleanupUsage(db), 'presence cleanup': () => cleanupPresence(db), 'account cleanup': () => cleanupAccounts(db),
       'developer auth cleanup': () => cleanupDeveloperAuth(db), 'module threads': () => ensureModuleThreads(db), 'activity digests': activity, 'forum media cleanup': () => cleanupForumMedia(env), 'audio preview cleanup': () => cleanupAudioPreviews(env),
     }))

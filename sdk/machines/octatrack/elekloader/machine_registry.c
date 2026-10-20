@@ -28,6 +28,12 @@ typedef volatile uint8_t Part;
 typedef struct modwerk_machine Machine;
 #define MACHINES (MODWERK_OT_MACHINES - RUNTIME_EVENTS)
 #define SEQUENCER (MODWERK_OT_SEQUENCER_ROWS - RUNTIME_EVENTS)
+#ifdef MODWERK_DEV
+void modwerk_cost_stamp(unsigned k); /* diag.c: the development profile of the base's hooks */
+#define MW_STAMP(k) modwerk_cost_stamp(k)
+#else
+#define MW_STAMP(k) ((void)0)
+#endif
 
 /* The rows' machines, read from the table masked so a switch is never seen half-way; the
  * pointers stay on the reader's stack, so the loader keeps their modules until it returns. */
@@ -292,7 +298,12 @@ unsigned mw_assign(Part *part, unsigned track, unsigned row)
     }
     return row < 5 ? row : 1;
 }
+static void ui_tick(void);
 void mw_ui_tick(void)
+{
+    MW_STAMP(14); ui_tick(); MW_STAMP(15);
+}
+static void ui_tick(void)
 {
     const Machine *m[ROWS - 5u]; unsigned n = machines(m);
     for (unsigned k = 0; k < n; ++k) if (m[k]->ui_tick) m[k]->ui_tick();
@@ -311,8 +322,21 @@ uint32_t mw_page(const Part *ptr)
     if (t < 8) owner(m, n, current_part(), (unsigned)t, &who); else who = 0;
     return who && who->track_page ? who->track_page(ptr) : 0;
 }
+/* Sidechain Compressor keeps KEY, KFLT, KGN and MON in stock COMPRESSOR's page-2 slots 8-11 (Part 0x2fe + 30 t + 6 fx
+ * + 2..5), which stock's descriptor declares with its own ranges and defaults 0x7f/0/0/0. Before the saved set is
+ * back, the boot's battery restore judged a set-up side-chain (KEY OFF..T8, KFLT and KGN 64) by those ranges and
+ * refused the whole bank (beta finding 47, as finding 24 above). Stock judges its own defaults there instead, and the
+ * side-chain's bytes come back; a KEY above T8 is stock's own value and goes to stock as it is. */
+#define COMPRESSOR 24u
+#define FX_SETUP 0x2feu
+static const uint8_t compressor_slots[4] = {0x7f, 0, 0, 0};
+static unsigned sidechain(const Part *part, unsigned t, unsigned fx)
+{
+    unsigned at = FX_SETUP + 30 * t + 6 * fx + 2;
+    return part[8 * fx + t] == COMPRESSOR && part[at] <= 8 && part[at + 1] < 0x80 && part[at + 2] < 0x80 && part[at + 3] <= 1 ? at : 0;
+}
 /* The stock validator never sees a PROTECT machine's 12 FLEX bytes, nor a known absent one's (the boot's battery
- * restore, above); machines' validate wrap it in row order. */
+ * restore, above), nor a side-chain's four; machines' validate wrap it in row order. */
 static const Machine *wrapping[ROWS - 5u];
 static unsigned wraps, depth;
 static int next_validator(uint8_t *part)
@@ -323,7 +347,8 @@ static int next_validator(uint8_t *part)
 int mw_validate(Part *part)
 {
     const Machine *m[ROWS - 5u], *who; unsigned n = machines(m), mask = 0;
-    uint8_t saved[8][12];
+    uint8_t saved[8][12], keys[8][2][4];
+    unsigned key_at[8][2];
     const Part *stock = AT(0x400d320cu);
     for (unsigned t = 0; t < 8; ++t) {
         owner(m, n, part, t, &who);
@@ -331,13 +356,20 @@ int mw_validate(Part *part)
             mask |= 1u << t;
             for (unsigned k = 0; k < 12; ++k) { unsigned at = (k < 6 ? 0x2a : 0x1da) + 30 * t + 6 + k % 6; saved[t][k] = part[at]; part[at] = stock[k]; }
         }
+        for (unsigned fx = 0; fx < 2; ++fx)
+            if ((key_at[t][fx] = sidechain(part, t, fx)))
+                for (unsigned k = 0; k < 4; ++k) keys[t][fx][k] = part[key_at[t][fx] + k], part[key_at[t][fx] + k] = compressor_slots[k];
     }
     for (unsigned k = 0; k < n; ++k) wrapping[k] = m[k];
     wraps = n; depth = 0;
     int result = next_validator((uint8_t *)part);
     wraps = depth = 0;
-    for (unsigned t = 0; t < 8; ++t) if (mask & 1u << t)
-        for (unsigned k = 0; k < 12; ++k) { unsigned at = (k < 6 ? 0x2a : 0x1da) + 30 * t + 6 + k % 6; part[at] = saved[t][k]; }
+    for (unsigned t = 0; t < 8; ++t) {
+        if (mask & 1u << t)
+            for (unsigned k = 0; k < 12; ++k) { unsigned at = (k < 6 ? 0x2a : 0x1da) + 30 * t + 6 + k % 6; part[at] = saved[t][k]; }
+        for (unsigned fx = 0; fx < 2; ++fx)
+            if (key_at[t][fx]) for (unsigned k = 0; k < 4; ++k) part[key_at[t][fx] + k] = keys[t][fx][k];
+    }
     return result;
 }
 static unsigned open_pool(const Machine *const *m, unsigned n)

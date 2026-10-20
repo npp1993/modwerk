@@ -4,6 +4,7 @@
  * admission against the arena, the instance block, cycles, free ids and
  * effects in use, and the catalog the DSP manager reads. */
 #include "sha256.c"
+volatile uint32_t modwerk_flash_refusal; /* flash.c, not linked here */
 #include "dsp.c"
 #include "fxmap.c"
 #include <stdio.h>

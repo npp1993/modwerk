@@ -77,7 +77,7 @@ export async function buildBase(stock: Uint8Array, packageText: string, fills: r
   if (!manifest._map?.has(RUN_UNPACK)) return { bin: outputs.bin, sha256: sha(outputs.bin), base }
   // Its boot decodes .run packed (run-pack.ts): MAIN again with it packed, repacked and verified as build() does.
   const main = packRun(formats.mainImage(formats.parse(outputs.bin, device), device), manifest.link.layout, device.mainLoad)
-  const packed = formats.write(parsed, formats.packMain(main), device, VERSION)
+  const packed = formats.write(parsed, formats.packMain(main, device), device, VERSION)
   formats.verify(packed, parsed, main, device, VERSION)
   if (!packed.bin) throw new Error('The builder did not write a .bin.')
   return { bin: packed.bin, sha256: sha(packed.bin), base }

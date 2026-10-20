@@ -197,6 +197,8 @@
     "limitations": [
       "Parts store stock FLEX kind 1 plus FM/1 in unused NEIGHBOR control bytes. A stock build reads the track as FLEX; it does not synthesize FM. Choose stock explicitly before downgrading.",
       "LFO3 speed/depth become VOIC/CHRD; LFO3 depth is muted. ATK/HOLD/REL remain inherited stock AMP controls and drive the synth’s own envelope.",
+      "ATK 0 with a short HOLD or REL starts and stops each voice abruptly and can click; raise ATK a few steps or lengthen REL (#557).",
+      "LFO1/LFO2 destinations keep FLEX's names: STRT is RATO, LEN is INDX, RATE is FINE, RTRG is FDBK, RTIM is DEC (#589). Whether LFOs on them change the FM sound is not tested.",
       "The matching quantizer is bundled privately because the engine shares its mailbox and fixed scale accessor. Do not also select the public Scale Quantizer.",
       "Cannot combine with Analog BD or the public Scale Quantizer because their native hooks overlap. Compatible mixed builds have native/browser byte-parity evidence; mixed audio loads have not been stress-tested.",
       "MIDI selector recovery and one-track mono/four-voice playback are emulator-tested. External MIDI note/CC traffic, saved project/Part reloads, legato, modulation, maximum simultaneous tracks and hardware timing remain unqualified.",

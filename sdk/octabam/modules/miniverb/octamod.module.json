@@ -3,7 +3,7 @@
   "id": "miniverb",
   "key": "MINIVERB",
   "name": "Mini Verb",
-  "version": "0.2.2-experimental",
+  "version": "0.2.3-experimental",
   "category": "effects",
   "author": {
     "github": "repeat98",
@@ -98,11 +98,11 @@
     "recorded": "2026-10-13",
     "storage": {
       "label": "DSP program / buffer",
-      "display": "532 words / 16K ring",
+      "display": "538 words / 15,870-word ring",
       "value": null,
       "unit": "see display",
       "method": "static",
-      "conditions": "532 assembled DSP program words (0.2.1: 536; two redundant coefficient reloads removed); unchanged 16K Y ring and 32-word X scalar allocation.",
+      "conditions": "538 assembled DSP program words (0.2.2: 532; six words outside the sample loop bound the start-up clear). The ring wraps at 15,870 words of the 16K Y allocation, so the slot's last 514 words (Sidechain Compressor's key window on T3 and T7) are never touched; unchanged 32-word X scalar allocation.",
       "source": "TESTING.md"
     },
     "processing": {
@@ -131,17 +131,17 @@
       "memory": {
         "level": "moderate",
         "basis": "source-estimate",
-        "rationale": "Existing 16K ring and X reservation unchanged; 402,936 logical bytes for eight instances including both programs and full hardware stack capacity. Complete runtime bounds and hardware canaries remain unverified.",
+        "rationale": "Inherited 16K Y allocation, of which the ring uses 15,870 words, and the X reservation; 402,972 logical bytes for eight instances including both programs and full hardware stack capacity. Complete runtime bounds and hardware canaries remain unverified.",
         "source": "TESTING.md"
       }
     }
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "0.2.2 output is bit-identical to published 0.2.1 under moving controls, every trigger split and hot input on both DSP cores; it removes two redundant coefficient reloads (411 instead of 415 modeled cycles/sample). 75 current-source native DSP checks passed. Native/browser parity, isolated packages, hardware and the original THRU noise are not yet verified for this source; see TESTING.md.",
+    "summary": "0.2.3 output is bit-identical to published 0.2.2 under moving controls, every trigger split and hot input on both DSP cores; its ring wraps at 15,870 words, so it never writes the slot's last 514 words (Sidechain Compressor's key window on T3 and T7): guarded renders show no write past the ring, and the same guard catches 0.2.2. 76 current-source native DSP checks passed. Native/browser parity, isolated packages, hardware and the original THRU noise are not yet verified for this source; see TESTING.md.",
     "hardwareStatus": "untested",
     "gates": [
-      "verify.py: bit-identity with published 0.2.1, exact dry, bounded neutral quantization, raw-wet mixer regression, endpoint spectra, eight-instance isolation, dirty-state guards and 30-second moving render",
+      "verify.py: bit-identity with published 0.2.2, the 15,870-word write guard and its 0.2.2 control, exact dry, bounded neutral quantization, raw-wet mixer regression, endpoint spectra, eight-instance isolation, dirty-state guards and 30-second moving render",
       "benchmark.py: matched worst-case SPRING REV comparison on both cores, all trigger splits",
       "Native/browser composition parity and changed-original refusal",
       "Reproducible source-only packages"

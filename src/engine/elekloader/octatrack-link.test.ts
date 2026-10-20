@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sha } from '../../../vendor/elekloader/kit/src/bytes.ts'
-import { FAKE_BASE, fakeSession, fakeUnit } from '../../dev/octatrack-link-fake'
+import { FAKE_BASE, fakeBaseOf, fakeSession, fakeUnit } from '../../dev/octatrack-link-fake'
+import { packSection } from '../../../vendor/elekloader/kit/src/codec/aplib.ts'
+import { encodeBin } from '../../../vendor/elekloader/kit/src/elek.ts'
 import { removalPackage } from './module-set'
-import { LinkBusyError, OctatrackLink, tabLocks } from './octatrack-link'
+import { LinkBusyError, OctatrackLink, openFailure, tabLocks } from './octatrack-link'
 import { UploadUnconfirmedError } from './upload-session'
 import { UsbVendorTransport } from './upload-usb'
 
@@ -47,12 +49,27 @@ describe('finding the unit', () => {
     await settle();allowed=false;controller.abort();complete();await cancelled
     expect(transfer).not.toHaveBeenCalled();expect(release).toHaveBeenCalledTimes(1)
   })
+  it('says why the unit can’t be opened where a retry alone won’t help', () => {
+    expect(openFailure('Mozilla/5.0 (X11; Linux x86_64) Chrome/141.0')).toContain('Can’t connect? in Setup')
+    expect(openFailure('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/141.0')).toContain('install the base from the card first')
+    expect(openFailure('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/141.0')).toBe('Chrome couldn’t open the Octatrack. Unplug it, plug it back in and try again.')
+    expect(openFailure('Mozilla/5.0 (Linux; Android 15) Chrome/141.0')).toContain('Unplug it')
+  })
   it('reports a browser without WebUSB instead of offering a dead button', () => {
     expect(new OctatrackLink(undefined).getState().status).toBe('unsupported')
   })
   it('reopens an allowed unit and reads its base without the picker', async () => {
     const { link } = await linked()
     expect(link.getState()).toMatchObject({ status: 'ready', identity: { base: FAKE_BASE, model: 'OCTATRACK MKII', canSubmit: true }, active: FAKE_BASE })
+  })
+  it('undoes a sync whose page closed during its trial, instead of failing every sync until the cable is pulled', async () => {
+    const unit = fakeUnit()
+    unit.orphan = '77'.repeat(32) // the base waits for 10 s without any USB request, which this page's reads prevent
+    const link = new OctatrackLink(unit.usb, fakeSession(unit), 300)
+    link.start()
+    await vi.waitFor(() => expect(link.getState().status).toBe('ready'))
+    expect(unit.orphan).toBeUndefined()
+    expect(link.getState()).toMatchObject({ status: 'ready', active: FAKE_BASE, notice: { tone: 'success', text: 'The last sync wasn’t finished, so the Octatrack undid it.' } })
   })
   it('tells a stock unit apart, then finds the base when the unit restarts after its OS upgrade', async () => {
     const { unit, link } = await linked('stock')
@@ -502,5 +519,48 @@ describe('several tabs of the site', () => {
     await waiting
     expect(b.getState()).toMatchObject({ status: 'trial', module: 'Set B' })
     await b.keep()
+  })
+})
+
+describe('updating the base over USB', () => {
+  // A card file as buildBase makes one: the kit's container around a small packed image.
+  function fakeBin() {
+    const image = new Uint8Array(70000)
+    for (let i = 0; i < image.length; i++) image[i] = (i * 7) & 0xff
+    image.set([0x4f, 0xef, 0xff, 0xe4])
+    const section = packSection(image), head = new TextEncoder().encode('ELEK0178     1.40C')
+    const container = new Uint8Array(Math.ceil((head.length + section.length) / 4) * 4)
+    container.set(head); container.set(section, head.length)
+    return { bin: encodeBin(container, 0x2f1349d2), image, expected: fakeBaseOf(image) }
+  }
+  const dedupe = (steps: string[]) => steps.filter((step, i) => step !== steps[i - 1])
+  it('RAM-boots the new base, has it write itself to NOR and comes back on it', async () => {
+    const { unit, link } = await linked(), { bin, expected } = fakeBin(), steps: string[] = []
+    await link.updateBase(bin, expected, step => steps.push(step))
+    expect(dedupe(steps)).toEqual(['staging', 'starting', 'started', 'writing', 'restarting', 'done'])
+    expect(unit.flashed).toBe(expected)
+    expect(link.getState()).toMatchObject({ status: 'ready', identity: { base: expected }, active: expected })
+  })
+  it('arms the trial again from the flashed base when the unit was running another from RAM', async () => {
+    const unit = fakeUnit(), link = new OctatrackLink(unit.usb, fakeSession(unit), 300)
+    unit.base = 'cc'.repeat(32) // a RAM-booted twin: its gate does not read the mailbox
+    link.start(); await vi.waitFor(() => expect(link.getState().status).toBe('ready'))
+    const { bin, expected } = fakeBin(), steps: string[] = []
+    await link.updateBase(bin, expected, step => steps.push(step))
+    expect(dedupe(steps)).toEqual(['staging', 'starting', 'staging', 'starting', 'started', 'writing', 'restarting', 'done'])
+    expect(unit.flashed).toBe(expected)
+  })
+  it('skips the trial when the new base already runs, and refuses after the trial when the new base cannot write itself', async () => {
+    const { unit, link } = await linked(), { bin, expected } = fakeBin(), steps: string[] = []
+    unit.base = expected; unit.unplug(); unit.plug('base'); await vi.waitFor(() => expect(link.getState().identity?.base).toBe(expected))
+    await link.updateBase(bin, expected, step => steps.push(step))
+    expect(dedupe(steps)).toEqual(['started', 'writing', 'restarting', 'done'])
+    const older = fakeUnit(); older.updatesBase = false
+    const old = new OctatrackLink(older.usb, fakeSession(older), 300)
+    old.start(); await vi.waitFor(() => expect(old.getState().status).toBe('ready'))
+    const steps2: string[] = []
+    await expect(old.updateBase(bin, expected, step => steps2.push(step))).rejects.toThrow('install it from the card')
+    expect(dedupe(steps2)).toEqual(['staging', 'starting', 'started']) // the trial ran; nothing was written
+    expect(older.flashed).toBe(FAKE_BASE); expect(older.base).toBe(expected)
   })
 })

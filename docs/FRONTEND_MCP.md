@@ -193,6 +193,65 @@ unqualified machine groups retain their existing refusals. The MCP offers no
 raw memory/key injection, arbitrary packages, whole-OS flashing or automatic
 Keep. Base installation/upgrades retain the reviewed card/recovery flow.
 
+## A member's unit through a remote session
+
+An administrator can read a member's Octatrack through their browser, with
+their consent, using the same device tools. Start the MCP with an
+administrator account's session (`--session-file`), `--allow-api-writes`, the
+live API (`--api https://<worker>/api`) and the site that API trusts
+(`--site https://modwerk.app/`, its `APP_URL`); no `--device-socket` is needed.
+
+1. `remote_session_request({"username":"…","reason":"…","minutes":30,"confirm":true})`
+   asks the member. The reason is shown to them word for word: say what you
+   want to find out. One open request per member; it lapses after 10 minutes.
+2. The member sees the request within a minute on any page of the site (the
+   bell's poll carries it), reads who asks, why, for how long and what is
+   allowed, and presses Accept and choose Octatrack. `remote_session_status`
+   shows `pending`, `declined`, `expired` or `active`.
+3. `remote_session_connect({"session":"…"})` opens the relay. From then on
+   `device_status`, `device_load` and `device_log` (the unit's own load records
+   and incidents) read the member's unit through the site's own
+   `OctatrackLink`, exactly as over the local bridge.
+4. `remote_session_say({"text":"…"})` shows a line in the member's banner, for
+   example to ask for a power cycle. `remote_session_end` ends it; the member
+   can end it at any time, and it ends on time (5 to 60 minutes).
+
+Sessions are read-only. The scope allows IDENTIFY, CAPABILITIES, RESULT,
+MISSING, INVENTORY, LOAD, LOG, the self-test record (value 0) and the fixed
+HELLO frame on the Modwerk interface, and nothing else: no trial, Keep, Undo,
+self-test start, saved-file export, memory, keys or screen. The relay
+(`server/remote-relay.ts`, a Durable Object) and the member's browser
+(`src/community/remote-session.ts`) both apply `remoteTransferRefusal` from
+`src/community/remote-session-contract.ts`; the browser holds the device and
+the site's USB lock for the whole session, so the site's own syncs and reads
+wait. The MCP refuses the write tools up front. Writes would need a new,
+separately consented scope and consent version. The member's browser can't
+read anything the base does not answer over USB, so a stock unit or a base
+without a request (such as LOG) reports it as unsupported.
+
+The site keeps the request, the answer, start and end, who ended it and request
+counts per kind for 90 days (`remote_sessions`, migration 0079), never the
+bytes read. Results from a member's unit are that member's hardware evidence
+only when they also confirm what they did on the unit; the relay itself proves
+nothing about audio, persistence or reboots.
+
+## Screenshots and visual evidence
+
+Screenshots are allowed for visual review. Capture an already displayed page
+without opening, navigating or controlling a browser, or inspect supplied/retained
+images. Browser-control, computer-use and Playwright site testing remain excluded.
+Record the route/state, viewport and source revision when known. If the capture
+source is unavailable, report that limitation and continue with source/API/DOM
+evidence; do not switch to browser automation to obtain an image.
+
+**Requested capability, not implemented (20 October 2026):** add read-only
+screenshot capture to the developer MCP so an agent can inspect the displayed
+interface without driving the browser. The current MCP has no screenshot tool
+or rendered-pixel source; `site_features` and `api_request` return domain/API data.
+A future tool needs a separate capture source and should return the image with
+its available page/state provenance. Until implemented, an MCP response cannot
+stand in for a screenshot or establish rendered-layout quality.
+
 ## Evidence and testing
 
 Run the repository's normal locked checks and MCP regressions before hardware:

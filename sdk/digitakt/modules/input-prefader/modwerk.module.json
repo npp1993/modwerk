@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 3,
+  "id": "input-prefader",
+  "name": "Input Pre-Fader Sends",
+  "version": "0.1.0-experimental",
+  "machine": "digitakt",
+  "category": "system",
+  "exclusive": false,
+  "author": {
+    "github": "draadpiraat",
+    "credits": [
+      "draadpiraat — design and code"
+    ]
+  },
+  "maintainers": [
+    "draadpiraat"
+  ],
+  "presentation": {
+    "label": "INPUT PRE SENDS",
+    "family": "Mixer",
+    "summary": "Takes the external inputs’ delay and reverb sends before their LEV, so the inputs can go fully wet to the FX.",
+    "overview": "Stock, the Digitakt derives IN L and IN R’s delay and reverb sends from the level after their External Mixer LEV, so turning LEV down also silences what they send to the effects. With SETTINGS > INPUT SENDS PRE ticked, the inputs’ sends are taken before LEV instead (still after PAN): LEV sets only the dry inputs on the mains, and at LEV 0 the inputs reach the delay and reverb fully wet. The sends then match what stock sends at LEV 127. Unticked, the render runs exactly the stock instructions. Tracks 1-8, DUAL MONO and every other mixer setting are unchanged.",
+    "highlights": [
+      "IN L and IN R send to the delay and reverb independently of their LEV.",
+      "LEV 0 gives a 100% wet input: the effects only, no dry signal on the mains.",
+      "Unticked, the mixer is stock; tracks are never affected."
+    ],
+    "usage": [
+      "Connect a source to IN L and IN R, open the External Mixer (FUNC + LFO until its page) and turn the inputs' DEL or REV up so you hear the effect.",
+      "Turn IN L and IN R LEV down to 0. With the row unticked (stock) the inputs and their effect go silent.",
+      "Open SETTINGS and tick INPUT SENDS PRE. The dry inputs stay silent, and the delay and reverb now get them as if LEV were at full: 100% wet.",
+      "Raise LEV again to blend the dry inputs back in; the sends stay the same. Untick the row to return to stock post-fader sends."
+    ]
+  },
+  "access": {
+    "location": "SETTINGS > INPUT SENDS PRE",
+    "steps": [
+      "Use a build containing Input Pre-Fader Sends for the original Digitakt on OS 1.54.",
+      "Press SETTINGS and go to the INPUT SENDS PRE row with UP/DOWN.",
+      "Press YES to tick it (PRE) or untick it (POST, stock). LEFT and RIGHT also untick and tick it.",
+      "Press FUNC + LFO until the External Mixer page, and set IN L/IN R LEV, DEL and REV as usual."
+    ],
+    "screenshots": [
+      "media/settings-post.png",
+      "media/settings-pre.png"
+    ]
+  },
+  "controls": [
+    {
+      "name": "INPUT SENDS PRE",
+      "default": null,
+      "doc": "Ticked: IN L and IN R’s DEL and REV sends are taken before their LEV (after PAN), as at LEV 127. Unticked: stock post-fader sends. Unticked at every power-on; not saved with the project.",
+      "labels": null
+    }
+  ],
+  "compatibility": {
+    "releases": [
+      "1.54"
+    ],
+    "requires": [],
+    "conflicts": [],
+    "limitations": [
+      "Built for OS 1.54 only.",
+      "The setting is not saved: it starts unticked (stock) at every power-on and is the same for every project and pattern.",
+      "PRE sends are taken after PAN, as the stock sends are."
+    ]
+  },
+  "platform": {
+    "kind": "elemod",
+    "core": "2.1",
+    "build": "build.json",
+    "events": [
+      "ev_settings"
+    ],
+    "claims": [
+      "settings:INPUT SENDS PRE"
+    ]
+  },
+  "resources": {
+    "memoryBytes": 312,
+    "fastBytes": 0,
+    "load": {
+      "display": "Adds 0.2% average, 0.3% worst-case of an audio block over stock (emulator)",
+      "method": "emulator",
+      "conditions": "Emulator: OS 1.54 on Core 2.1, 3,000 audio blocks timed with the MCF5441x instruction-timing model at 250 MHz, zero-wait memory, row ticked. Stock: 60.3% average, 60.7% worst block; with the module 60.5% and 61.0% (unticked 60.5% and 60.9%). The handlers run on all ten mixer channels every block, so the cost does not depend on the pattern. Not a hardware measurement."
+    }
+  },
+  "evidence": {
+    "tier": "author-hardware",
+    "moduleVersion": "0.1.0-experimental",
+    "sourceSha256": "52cda84a0158a4b01af9db0b62a2c5a16e3546c70854176455a265074c642a31",
+    "reports": [
+      "evidence/hardware-testing.json",
+      "evidence/source-identity.json",
+      "evidence/cpu-load.json",
+      "TESTING.md"
+    ],
+    "hardware": {
+      "model": "Digitakt I",
+      "release": "1.54",
+      "testedOn": "2026-10-19",
+      "tester": "draadpiraat",
+      "durationMinutes": 10,
+      "summary": "draadpiraat flashed the module-alone build and a build with Digi Health and Digi EQ on their Digitakt I, OS 1.54, about 5 minutes each: the row appears, at LEV 0 the inputs are silent unticked and fully wet ticked, LEV changes only the dry signal when ticked, no clicks when switching, tracks unchanged, unticked after a power cycle; the combined build “checks out correctly”.",
+      "limitations": [
+        "Project save/load, pattern changes and sampling from the inputs not tested.",
+        "The combined build’s steps were reported together, not one by one.",
+        "Firmware was not read back from the device."
+      ]
+    },
+    "verifiedBy": null
+  },
+  "tests": {
+    "report": "TESTING.md",
+    "summary": "Author hardware (Digitakt I, OS 1.54, module alone and with Digi Health and Digi EQ) and emulator: unticked is stock, ticked sends the inputs to the delay and reverb regardless of LEV, no clicks, tracks unchanged. Project save/load and sampling not tested.",
+    "documentation": {
+      "tutorial": {
+        "title": "Quick tutorial: a 100% wet input",
+        "steps": [
+          "Connect a source to IN L and IN R, open the External Mixer (FUNC + LFO until its page) and turn the inputs' DEL or REV up so you hear the effect.",
+          "Turn IN L and IN R LEV down to 0. With the row unticked (stock) the inputs and their effect go silent.",
+          "Open SETTINGS and tick INPUT SENDS PRE. The dry inputs stay silent, and the delay and reverb now get them as if LEV were at full: 100% wet.",
+          "Raise LEV again to blend the dry inputs back in; the sends stay the same. Untick the row to return to stock post-fader sends."
+        ]
+      },
+      "screenshots": [
+        "media/settings-post.png",
+        "media/settings-pre.png"
+      ],
+      "captureRecord": "media/capture.json"
+    }
+  },
+  "license": {
+    "spdx": "GPL-3.0-or-later",
+    "file": "LICENSE",
+    "declaration": "Original work by draadpiraat."
+  },
+  "media": [
+    {
+      "path": "media/thumbnail.svg",
+      "kind": "thumbnail",
+      "caption": "Input Pre-Fader Sends thumbnail",
+      "alt": "Two input signals split before their level fader into the delay and reverb sends.",
+      "credit": "draadpiraat",
+      "license": "GPL-3.0-or-later",
+      "source": "Original illustration"
+    },
+    {
+      "path": "media/settings-post.png",
+      "kind": "screenshot",
+      "caption": "INPUT SENDS PRE unticked: stock post-fader sends",
+      "alt": "INPUT SENDS PRE unticked: stock post-fader sends, on the Digitakt monochrome LCD",
+      "credit": "Modwerk documentation capture; Elektron interface; draadpiraat module",
+      "license": "LicenseRef-Digi-UI-Documentation",
+      "source": "original",
+      "capture": {
+        "type": "emulator",
+        "release": "1.54",
+        "moduleVersion": "0.1.0-experimental",
+        "imageSha256": "e0f55015fffff75361d1912f1b61231b93b3fd33ab910620608cbb1da6ec4b89",
+        "setup": "Pinned digiemu, firmware-native drawing, disposable first-boot project. No audio or cycle-timing qualification."
+      }
+    },
+    {
+      "path": "media/settings-pre.png",
+      "kind": "screenshot",
+      "caption": "INPUT SENDS PRE ticked: the inputs send before LEV",
+      "alt": "INPUT SENDS PRE ticked: the inputs send before LEV, on the Digitakt monochrome LCD",
+      "credit": "Modwerk documentation capture; Elektron interface; draadpiraat module",
+      "license": "LicenseRef-Digi-UI-Documentation",
+      "source": "original",
+      "capture": {
+        "type": "emulator",
+        "release": "1.54",
+        "moduleVersion": "0.1.0-experimental",
+        "imageSha256": "e0f55015fffff75361d1912f1b61231b93b3fd33ab910620608cbb1da6ec4b89",
+        "setup": "Pinned digiemu, firmware-native drawing, disposable first-boot project. No audio or cycle-timing qualification."
+      }
+    }
+  ]
+}

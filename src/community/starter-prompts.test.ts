@@ -56,6 +56,7 @@ describe('starter prompts', () => {
         expect(prompt).toContain('AGENTS.md first')
         expect(prompt).toContain('docs/DEVELOPER_WORKFLOW.md')
         expect(prompt).toContain('record only results I actually report')
+        expect(prompt).toContain('tell me in chat that publication will notify followers, including by email unless they opted out')
         expect(prompt).toContain('never commit firmware')
         expect(prompt).not.toMatch(/Jannik|Assfalg/i)
         // The prompt carries the order of work; the rules live in files every agent reads.

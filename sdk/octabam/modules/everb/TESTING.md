@@ -6,6 +6,175 @@ functional audition on EVRB01T01; [the exact-build report](evidence/owner-hardwa
 No emulator result below is relabelled as hardware evidence. Firmware, images, memory dumps and renders stayed outside the
 repository and were deleted.
 
+## 0.1.2: the ring stops clear of Sidechain Compressor's key window (issue #696)
+
+**Report.** [#696](https://github.com/repeat98/modwerk/issues/696) (18 October 2026): Sidechain Compressor keeps its
+cross-core key window in the last $202 (514) words of the bank-track-3 FX2 slots, Y:$33DFE–$33FFF (T7, core A) and
+Y:$3BDFE–$3BFFF (T3, core B), past the +$3DA2 that stock effects write. Effects that fill their slot write it, and in card
+builds Sidechain writes their buffer every block. The reporter heard an empty T7 with Mini Verb on FX2 play a ghost of a
+loud T5 (MKI, an octabam image with Sidechain, Mini Verb and Gate Verb), and asked whether E-Verb could stop at +$3DFD.
+Modwerk builds E-Verb beside Sidechain Compressor, with and without the stock FX2 effects (`sdk/native-comparisons/everb.json`).
+
+**Cause in E-Verb.** The ring was modulo 16,384 (m4 = m5 = $3fff), so its head passed over every word of the slot, and
+the start-up clear wrote all 16,384 words. The segments' 16,369-word extent made no difference: on T3 and T7, 0.1.1
+writes and reads the whole window.
+
+**Fix.** `generate.py` sets the ring to RING = $3DFE (15,870) words, with m4 = m5 = $3dfd. The FX2 slot bases are
+16K-aligned (`dsp_host` places positions 0–3 at Y:$4000, $8000, $30000 and $34000 on core A, and at $4000, $8000, $38000
+and $3C000 on core B; the modulo-16,384 ring already relied on the alignment), so the non-power-of-two modulus wraps at
++$3DFD. The start-up keeps 0.1.1's 128 dry calls: the first four now clear nothing, the last 124 clear 128 words each
+under the same modulus (the first of them wraps two words onto the ring start), and m4 goes back to linear before that
+path returns. The 499 words come off the top of the pre-delay segment (5,013 samples, was 5,512). PRE keeps 0.1.1's law,
+154 · 2^(5.16 u) samples, and D is clamped at 5,008 samples (227.1 ms), as is the reverse rate: PRE 124 to 127 all give
+227 ms (0.1.1: 229.7 to 250 ms), and PRE 0 to 123 are unchanged. `manifest.py` claims `buffer_words=15870`, the figure an
+extent check such as sambanks/octabam#785's compares with the window; the runtime package declares the same 15,870
+words, which the base reads only as a bound and a flag. The frame loop changes only in immediate constants; the program
+grows by 14 words (1,602, 435 free before PLATE REV's helper). The 0.1.2 private image is
+6f2cdb56a8787456a8137c58f97df2a24df4173b68abc83cd7046d9015256020 (1,112,560 bytes, built as below).
+
+A first draft rescaled the whole PRE law instead (every PRE value 2–9 % shorter). The local review preferred the clamp,
+which leaves every setting below PRE 124 as it was; the draft's evidence is not reused here.
+
+**Source.** The files of this folder at the commit named by `tests.evidenceRevision`, on top of `a59677ee` (main,
+18 October 2026). Changed in 0.1.2, SHA-256:
+
+| File | SHA-256 |
+|---|---|
+| everb.asm | a42906c9290ded342710fea766b98db1b81d69e34139a3fcacde10cf156fb625 |
+| generate.py | e148138de2d15d5431bdddbb6998dd1a5acd2ba4559c8565d3a7d3bd8ffc4f39 |
+| manifest.py | 657103ed759afecbe86b6be4388619f01e1f4ffda820cee83a5427eb58dd4592 |
+| verify.py | 783cf71344e0dd5552a4f97509b805307eb4f43aaee341f87ad51c79c6ea5dba |
+| evidence/performance.json | 40f67098d6d3ac53fabccd69d2c174fe1379a9f9ae6d97669dc0a55a643cc757 |
+
+`perf.py` and `func_stops.py` are unchanged from 0.1.1. The module's native source SHA-256 is
+f2d97d9fb04bc8963a08e4d393b64c45e6e69cd2fc9b281c16a2265f88c5e385. Commands, from `sdk/octabam`:
+
+```sh
+python3 modules/everb/verify.py                              # the 28 gates (about 90 s)
+python3 modules/everb/func_stops.py --image <image>          # FUNC + turn on ot_emu (about 5 min)
+python3 modules/everb/perf.py bench  <out>                   # matched benchmark with stock (about 1 min)
+python3 modules/everb/perf.py stress <out> --seconds 2       # the stress run (about 1.5 min)
+```
+
+**Results**, local and emulator only (same tools as below):
+
+| Check | 0.1.1 | 0.1.2 |
+|---|---|---|
+| `verify.py` window: Sidechain's window words written on T7 (Y:$30000) and T3 (Y:$38000), at REV off and on with DPTH +63 and at DPTH −64, 5,000 blocks of loud noise at SIZE 127, PRE 127, DCY 100 (2.5 ring turns) | FAIL: 514 of 514 in all six runs | PASS: 0 of 514; +$3DFD holds audio, so the frame loop reaches the boundary |
+| the same with the window and +$3DFD filled with 0x5a5a5a first: output against the unfilled run | identical (its clear wipes the window first) | identical: the window is never read |
+| against 0.1.1: 18 renders (six static settings, moving knobs on all eleven, on SIZE/DPTH/SPD and on PRE/REV, each unsplit and split 5) | | bit-identical in the 10 with PRE at 123 or below (the defaults, PRE 0, moving SIZE/DPTH/SPD); the 8 others set PRE 127 or move it through 124–127 |
+| `verify.py` | 27 gates pass | 28 gates pass: the 27 with output identical to 0.1.1's except the two placement lines (1,602 words, 435 free) and PRE 127's onset (228.12 ms, pre-delay 227.12), and window |
+| `func_stops.py` on the image | every knob 0, 64, 127 | the same, all eight checks pass |
+| `perf.py bench`: E-Verb worst unsplit / with splits; SPRING REV, DARK REV, PLATE REV, DJ EQ | 375.81 / 381.69; 314.19, 242.38, 218.25, 330.94 | identical |
+| `perf.py stress`: eight instances behind DJ EQ, LFOs, locks, splits, `-guard -dirty` | 32 s on 0.1.0: no hang, 0 stray, 0 clobbers, peak 2806.0 / 2793.6 | 2 s (2.8 ring turns): no hang, 0 stray, 0 clobbers, peak 2803.6 / 2792.6 |
+| LCD captures, same plan | | byte-identical to 0.1.0's and 0.1.1's |
+
+`verify.py` on the 0.1.2 source:
+
+```
+== everb: render gates (dsp_host, private image; not hardware)
+[PASS] source: everb.asm is generate.py's output: everb.asm matches generate.py
+[PASS] source: init leaves r1/n1/m1 alone
+[PASS] source: static cycles: 468 cycles/sample per instance (worst arm), 4 per core = 1872 of 3120; marker no-op True
+[PASS] placement: payload A: E-Verb P:0x01252..0x01893 (1602 words) in P:0x01252..0x01aa3; PLATE REV helper P:0x01a47..0x01aa3 as the stock metadata records it, identical to stock; 435 words free before it
+[PASS] placement: payload B: E-Verb P:0x01012..0x01653 (1602 words) in P:0x01012..0x01863; PLATE REV helper P:0x01807..0x01863 as the stock metadata records it, identical to stock; 435 words free before it
+[PASS] func stops: every knob carries the three-stop FUNC editor: SIZE DCY ABSB DPTH SPD MIX TILT PRE EDCY ESIZ carry the three-stop editor 0x400328e4 (stock code unchanged, stops [0, 64, 127]), REV the select editor 0
+[PASS] dry: MIX 0 is the input sample for sample (static): 0 of 48000 words differ
+[PASS] dry: MIX 0 is the input sample for sample (moving knobs): 0 of 48000 words differ
+[PASS] dry: MIX 0 is the input sample for sample (moving knobs, split 5): 0 of 48000 words differ
+[PASS] reverb: the onset follows PRE: PRE 0 7.96 ms (pre-delay 6.98), PRE 64 43.38 ms (pre-delay 42.35), PRE 127 228.12 ms (pre-delay 227.12); the same 0.98-1.03 ms path after each
+[PASS] reverb: the default tail decays: -39.6 dB from 0.2-0.7 s to 1.5-2.0 s
+[PASS] reverb: the channels are decorrelated: correlation -0.018 over 0.1-1.0 s
+[PASS] reverb: a higher DCY decays slower: T20 0.083 s at DCY 40, 1.152 s at DCY 90
+[PASS] reverb: a larger SIZE decays slower: T20 0.167 s at SIZE 30, 1.447 s at SIZE 100 (DCY 80)
+[PASS] idle: the defaults settle after the input stops: last 0.5 s of 11.5 s silence: L [0], R [6] LSB; a constant truncation residue (fixed point of the tank and tilt), no oscillation
+[PASS] isolation: eight instances under -guard 0x4000 -guard-shared -dirty 0x5a: 8 instances guarded, 0 stray regions, 0 clobbers
+[PASS] isolation: each instance alone renders bit-identically: 8 of 8 identical
+[PASS] isolation: only the fed instance makes sound: instances 1-7 silent while instance 0 plays
+[PASS] garbage: from a garbage block, silence in is silence out: 4 fills x 2 knob sets, 600 blocks, Y dirty too
+[PASS] garbage: a tone from a garbage block starts like a zeroed one: first 256 blocks peak within 1 dB
+[PASS] zipper: no block-rate step on any continuous knob: 10 knobs with the modulation off, then SPD at three modulation depths, SIZE under grains and DPTH between grains and shimmer; jump up / jump down / turn, move/static dBFS above; flagged none
+[PASS] splits: a split in every block renders the same reverb (modulation off): 50 ms envelope within 0.03 dB of the unsplit render at splits 1, 7 and 15
+[PASS] splits: a split in every block renders the same reverb (ergodic grains): tail level -51.33..-51.23 dBFS and decay -68.5..-68.4 dB/s split, against the grains' own -52.46..-50.75 dBFS and -71.1..-69.2 dB/s unsplit
+[PASS] splits: knobs moving with a split in every block, guarded: no hang, no stray write
+[PASS] reverse: REV switching every 40 ms does not click: largest step -40.1 dBFS switching, -37.8 dBFS held; 0 samples on the rail
+[PASS] depth locks: DPTH +63/-64 every 70 ms steps no more than with DPTH held: SPD 0 SIZE 0: -20.5/-20.3; SPD 0 SIZE 64: -20.0/-20.1; SPD 0 SIZE 127: -19.2/-20.0; SPD 64 SIZE 0: -20.2/-19.9; SPD 64 SIZE 64: -20.1/-20.1; SPD 64 SIZE 127: -18.9/-19.3; SPD 127 SIZE 0: -20.5/-20.3; SPD 127 SIZE 64: -18.2/-18.0; SPD 127 SIZE 127: -18.2/-18.3 dBFS, locking/held
+[PASS] envelope: EDCY +63 lengthens the decay but cannot hold the tail: -25.8 dBFS RMS at 0.5-1.5 s, -118.6 dBFS at 19-20 s (DCY 80, MIX 127, 0.5 s burst at 0.8 FS)
+[PASS] window: Sidechain Compressor's key window on T3 and T7 is never written or read: T7 (Y:$30000) REV 0 DPTH +63: 0 of 514 window words written, +$3DFD holds audio, output unchanged with the window filled; T7 (Y:$30000) REV 1 DPTH +63: 0 of 514 window words written, +$3DFD holds audio, output unchanged with the window filled; T7 (Y:$30000) REV 0 DPTH -64: 0 of 514 window words written, +$3DFD holds audio, output unchanged with the window filled; T3 (Y:$38000) REV 0 DPTH +63: 0 of 514 window words written, +$3DFD holds audio, output unchanged with the window filled; T3 (Y:$38000) REV 1 DPTH +63: 0 of 514 window words written, +$3DFD holds audio, output unchanged with the window filled; T3 (Y:$38000) REV 0 DPTH -64: 0 of 514 window words written, +$3DFD holds audio, output unchanged with the window filled
+== everb: all gates pass
+```
+
+Packages: compiled from the source commit in the pinned network-free toolchain (`scripts/build-modules-isolated.sh`) and
+imported; they differ from main only in E-Verb's version, its DSP code and source provenance. The USB runtime package is
+rebuilt for 0.1.2 and declares 15,870 buffer words. `npm run module:verify -- everb`: 126 selections, 42 matching
+module-owned images (20 identical outright, 22 outside platform writes), 84 matching refusals, zero mismatches; E-Verb
+with Sidechain Compressor builds with and without the stock FX2 effects. No selection that 0.1.1's record shares changed
+between built and refused, and every DSP-space refusal overruns by 61 words or more, so none comes from the 14 added
+words. The Analog BD composition proofs, re-exported natively, are identical apart from their source-tree pin.
+
+**Gate limits found while preparing 0.1.2.** These belong to 0.1.1's gates and are unchanged; they are recorded so the
+next change does not read them as regressions.
+
+- *Zipper.* The census reads one alignment. A knob change waits for its knob group (one of four, refreshed in turn), so
+  where an event falls in that four-block cycle, and the tone's phase there, decide what one render sees. Over 16
+  alignments (events 0–3 blocks later × tone phase 0, 1/8, 1/4, 3/8 of a cycle), 0.1.1 flags SIZE 20↔110 with the
+  modulation off at 4 (worst −59 dBFS), SPD at DPTH 32 at 6 (−61) and SIZE at DPTH 100 at 2 (−61); 0.1.2 gives the same
+  counts. Two control builds on the 0.1.2 source show what the gate catches:
+  - SIZE's glide slope refreshed only every fourth block (the zipper TESTING.md describes for an earlier build): the gate
+    fails it at its own alignment (SIZE up −66, down −63 dBFS), but over 16 alignments SIZE flags at only 7 and SIZE at
+    DPTH 100 at 5 (the local review's runs), so the catch depends on the alignment. SIZE's two-stage glide is refreshed
+    on every call by construction (`generate.py`, before the split test).
+  - DCY, ABSB and PRE landing on their target at their group's block instead of gliding: the gate fails on ABSB (down
+    −61 dBFS); PRE reads −140 at the gate's alignment and DCY stays under the limit (−78 and −85). Over 16 alignments PRE
+    flags at 14, ABSB at 12 and DCY at none (the local review's runs): unsmoothed PRE escapes the gate's own alignment.
+- *DPTH locks.* The ratio of the largest step while locking to the largest held is a ratio of two maxima over noise. Over
+  8 noise seeds at the gate's nine settings it reaches +3.3 dB on 0.1.1 at seed 34, past the 1.25× limit (+1.9 dB).
+  Without the read floor, the bug the gate was written for, the gate fails at its own seed: +20.2 dB at SPD 0, SIZE 127
+  (0.2 against −20.0 dBFS), +17.6 at SPD 64, SIZE 127 and +11.8 at SPD 0, SIZE 64.
+
+**Sound audit**, repeated on the 0.1.2 image the way "Sound quality" below describes (the method reproduces 0.1.1's
+tables there exactly). At the defaults (PRE 25) the table is byte-identical to 0.1.1's. At the dearest settings, which
+set PRE 127 and so now get 227 ms instead of 250 ms, the same two tones fail; the higher tones come out up to 6.2 dB
+louder:
+
+```
+signal                  out dBFS  harmonics  aliasing  residual   DC dBFS   rails  verdict
+tone-1100hz-12db           -18.2      -46.6    -115.3     -50.4    -110.6       0  ok
+tone-1100hz-1db             -8.9      -40.9     -96.5     -50.4    -115.0       0  ok
+tone-2701hz-12db           -27.6      -74.7    -107.9     -45.2    -105.7       0  ok
+tone-2701hz-1db            -16.6      -53.0     -68.5     -45.4    -102.5       0  ok
+tone-5301hz-12db           -31.5     -119.7    -102.9     -55.8    -106.7       0  ok
+tone-5301hz-1db            -19.5      -71.6     -33.0     -22.9    -100.4       0  FAIL
+tone-9102hz-12db           -35.6      <-140     -99.0     -45.8    -107.3       0  ok
+tone-9102hz-1db            -25.2      <-140     -16.5     -20.9    -104.3       0  FAIL
+idle                    after the input stops: idle activity of 1 LSB value(s), peak -109.5 dBFS  NOTE
+```
+
+The pre-delay is read with linear interpolation, and its fractional position sets how much of the top octave survives.
+That holds in 0.1.1 too: fully wet at the defaults, 0.1.1 gives −35.4, −28.3, −26.2 and −31.3 dBFS at 9.1 kHz for PRE 24,
+25, 26 and 30. 0.1.2's clamp lands on a whole sample (5,008.00), so its top octave at PRE 124–127 is brighter than 0.1.1's
+at 127.
+
+**Not tested**: any hardware; E-Verb and Sidechain Compressor running together in one image (the reporter's ghost was
+heard with Mini Verb on an octabam build, and `dsp_host` does not run Sidechain's tap, which hooks stock code: the window
+gate shows the memory separation, not the two effects side by side); the USB/base install path of the rebuilt runtime
+package (it differs from 0.1.1's in its DSP words and the declared buffer, which the base reads only as a bound and a
+flag); the MKI panel; a Part or project saved with 0.1.1 reloaded into 0.1.2 (nothing a project stores changes, but it
+was not run).
+
+**Hardware steps for 0.1.2**, on a build with E-Verb and Sidechain Compressor together (the configurator builds the pair
+with and without the stock FX2 effects), with model, OS, image SHA-256, date and duration. A/B against 0.1.1 where you
+can:
+
+1. E-Verb on FX2 of T3 and of T7, MIX 127, DCY 100, SIZE 127, loud material on other tracks, and a COMPRESSOR keyed from
+   a track on the other core (KEY) on another track: no ghost of another track in either reverb, and the key and its
+   gain reduction behave as with E-Verb absent. 0.1.1 should show the ghost on the same setup.
+2. PRE: 0 is about 7 ms, 64 about 42 ms, 124 to 127 all about 227 ms; turn it and REV on and off while playing: no
+   clicks beyond 0.1.1's.
+3. Two instances with different settings on tracks of both cores; save and reload the Part and the project;
+   power-cycle: the knob values come back and both instances play.
+4. Load a project saved with 0.1.1 that uses E-Verb: it loads and plays as before (PRE 124+ at 227 ms).
+
 ## 0.1.1: FUNC + turn stops (issue #438)
 
 **Report.** [#438](https://github.com/repeat98/modwerk/issues/438) (MKII, OS 1.40C, 0.1.0): on the main page, holding
@@ -108,8 +277,10 @@ published), with model, OS, image SHA-256, date and duration:
 
 ## Commands and exact revision
 
-The headings from here down are 0.1.0's measurements. 0.1.1's DSP code is byte-identical, so they hold for it unchanged;
-the section above has what 0.1.1 changed and re-measured.
+The headings from here down are 0.1.0's measurements. 0.1.1's DSP code is byte-identical, so they hold for it unchanged.
+0.1.2 changes the ring length, the start-up clear and the top of the pre-delay range; the 0.1.2 section above has what
+it changed and re-measured. Superseded below: the ring (16,369 of 16,384 words, a 128-call clear), the program size
+(1,588 words, 449 free), PRE 127 at 250 ms and the dearest-settings audit table.
 
 Source tested for 0.1.0: the files of `sdk/drafts/everb` at `e3047c0d9eb7bb150c003a86414886b22d8992f2` (0.1.0's
 `tests.evidenceRevision`), on top of `306e3dc` (main, 9 October 2026). The renders were made on `a5dee01`; on the
@@ -212,7 +383,7 @@ A local review (another Claude session, at the user's request) reproduced the fi
 
 What the gates mean and where they stop:
 
-- **Zipper**: `verify_knob_clicks.py`'s census, copied into the gate because importing it selects the rig
+- **Zipper** (see the 0.1.2 section for what one alignment misses): `verify_knob_clicks.py`'s census, copied into the gate because importing it selects the rig
   fixture: a 438.75 Hz tone at 0.3 FS, each continuous knob jumped from 20 to 110 and back, then turned
   one step every two blocks; the block-locked step energy must stay under −70 dBFS or within 6 dB of the
   knob held still. Every knob reads −140 (nothing measurable) in all three windows, first with the

@@ -3,7 +3,7 @@ import { handleGithubCommand } from './github-commands'
 import type { Database, Env } from './platform'
 import { HttpError } from './security'
 import { communityModule } from '../src/community/modules'
-import { CONFIGURATION_REPORT_MAX_OWNERS, configurationOwners, configurationSummary } from '../src/community/configuration-report'
+import { configurationSummary } from '../src/community/configuration-report'
 import { profilePath } from '../src/community/forum-links'
 import { FLASH_STATES, type IssueContext } from '../src/community/issue-context'
 import { REPORT_CLOSURE_REASONS, REPORT_COMMANDS, type ReportClosureReason } from '../src/community/report-closure'
@@ -94,14 +94,14 @@ export function logBlock(text: string, room: number) {
 
 export function issueMarkdown(issue: MirroredIssue, app?: string) {
   const configuration = issue.scope === 'configuration', context = issue.context
-  const owners = [...new Set(issue.owners.filter(login => GITHUB_LOGIN.test(login)).map(login => '@' + login))].slice(0, configuration ? CONFIGURATION_REPORT_MAX_OWNERS : undefined)
+  const owners = [...new Set(issue.owners.filter(login => GITHUB_LOGIN.test(login)).map(login => '@' + login))]
   const reporter = issue.reporter ? inert(issue.reporter) : 'a Modwerk member', profile = issue.reporter && app ? new URL(profilePath(issue.reporter), app).href : null
   const site = appLink(app, '') ?? 'https://modwerk.app/', { device, version, steps, expected, actual } = issue.details
   const modules = configuration ? issue.details.modules ?? [] : []
   const report = ['Reported on [Modwerk](' + site + ') for ' + (configuration ? 'the **whole configuration**' : '**`' + issue.module_id + '`**') + ' by ' + (profile ? '[' + reporter + '](' + profile + ')' : reporter) + (owners.length ? ' · ' + owners.join(' ') : ''), '',
     '| | |', '| --- | --- |', '| Device | ' + cell(device) + ' |', configuration ? '| Configuration | ' + configurationSummary(modules.length) + ' |' : '| Module version | ' + cell(version) + ' |',
     ...(context ? ['| Firmware | ' + cell(FLASH_STATES[context.flash].replace('an Octamod', 'a Modwerk')) + ' |', '| Build fingerprint | ' + (context.build ? '`' + context.build + '`' : 'Not recorded') + ' |'] : []), '',
-    ...(configuration ? ['### Modules in this configuration', '', ...modules.map(module => '- `' + module.id + '` ' + inert(module.version)), '', 'Reported for the whole configuration: the cause may be one module or how they combine. Reply here to narrow it down.', ''] : []),
+    ...(configuration ? ['### Modules in this configuration', '', ...modules.map(module => '- `' + module.id + '` ' + inert(module.version)), '', 'Reported for the whole configuration: the cause may be one module or how they combine. Reply here to narrow it down, then mention the author of the module at fault.', ''] : []),
     ...(!configuration && context ? ['### Configuration', '', ...(context.modules.length ? context.modules.map(module => '- `' + module.id + '` ' + inert(module.version)) : ['No modules recorded.']), ''] : []),
     ...([['Steps to reproduce', steps], ['Expected', expected], ['Actual', actual]] as const).filter(([, text]) => text).flatMap(([heading, text]) => ['### ' + heading, '', quote(text), ''])]
   const rest = ['---',
@@ -171,7 +171,8 @@ export async function mirrorIssue(db: Database, env: Env, id: string, stale = fa
   if (!await db.prepare("UPDATE issues SET github_state='syncing',github_error='' WHERE id=? AND github_state IN " + claimable + " RETURNING id").bind(id).first()) return { state: row.github_state as 'synced' | 'syncing' }
   try {
     const moduleIds = row.scope === 'configuration' ? (await db.prepare('SELECT module_id FROM issue_modules WHERE issue_id=? ORDER BY rowid').bind(id).all<{ module_id: string }>()).results.map(item => item.module_id) : undefined
-    const owners = moduleIds ? configurationOwners(moduleIds.map(moduleId => ({ id: moduleId }))) : (communityModule(row.module_id)?.maintainers ?? [])
+    // A configuration report mentions no one: its cause is unknown, so it is narrowed down before any author is pinged.
+    const owners = moduleIds ? [] : (communityModule(row.module_id)?.maintainers ?? [])
     const details = JSON.parse(row.public_json) as PublicBugDetails
     // Only reporters who agreed to publish them get their configuration and log on GitHub.
     const log = details.full ? (await db.prepare('SELECT text FROM issue_logs WHERE issue_id=?').bind(id).first<{ text: string }>())?.text : undefined

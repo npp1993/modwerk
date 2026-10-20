@@ -356,12 +356,12 @@
     "order": 60,
     "name": "Syntakt",
     "status": "research",
-    "summary": "OS 1.40A and 1.42 files documented and rebuilt byte-identical; modified builds boot on a unit and the stock 1.42 file returns it to stock. No shared core yet.",
+    "summary": "OS 1.40, 1.40A and 1.42 documented; 1.40A and 1.42 rebuilt byte-identical; modified builds boot on a unit. Core started: a boot probe links and verifies locally; no SDRAM for mods yet.",
     "steps": {
       "format": "done",
       "rebuild": "done",
       "boot": "done",
-      "core": "open",
+      "core": "started",
       "mods": "open"
     },
     "art": {
@@ -372,6 +372,15 @@
     },
     "firmware": {
       "releases": [
+        {
+          "version": "1.40",
+          "files": [
+            {
+              "name": "Syntakt_OS1.40.syx",
+              "sha256": "7781245917cd3b0334e85da252846c0dc81a676ec0873b735cf51d9029e88ebf"
+            }
+          ]
+        },
         {
           "version": "1.40A",
           "files": [
@@ -403,7 +412,7 @@
       {
         "label": "Synthack-OS",
         "url": "https://github.com/Angelo-politek/Synthack-OS",
-        "note": "MIT mods for OS 1.41 as patch.json with expected-byte hashes, plus modarea/vparams infrastructure. The project states seven mods run on hardware, and it documents recovery over MIDI DIN. No firmware hosted."
+        "note": "MIT mods for OS 1.41 as patch.json with expected-byte hashes, plus modarea/vparams infrastructure. The project states seven mods run on hardware, documents recovery over MIDI DIN, and its issue #4 reports runtime page writes above the BSS on a unit."
       },
       {
         "label": "Synthack-OS 1.42 port",
@@ -414,6 +423,11 @@
         "label": "digiemu Syntakt port",
         "url": "https://github.com/irpina/digiemu/pull/33",
         "note": "Emulator boots OS 1.40A to the live UI with the second ColdFire rendering its digital machines; analog tracks and the FPGA are not modelled. Open PR."
+      },
+      {
+        "label": "Modwerk Syntakt OS research",
+        "url": "https://github.com/repeat98/modwerk/blob/main/docs/SYNTAKT_OS_RESEARCH.md",
+        "note": "Static analysis of the owner's 1.40 and 1.42 files: boot chain, memory ownership with verdicts, hook sites with guards, cross-release diff, the boot-probe core. Nothing run on a unit."
       }
     ]
   },
@@ -618,12 +632,12 @@
     "id": "analog-keys",
     "order": 120,
     "name": "Analog Keys",
-    "status": "open",
-    "summary": "Analog Four voices with a keyboard. No public firmware research yet.",
+    "status": "research",
+    "summary": "OS 1.56 is an ELE2 image whose MAIN OS section rebuilds byte-identically. A modified OS boots: ours in rytm-emu, and a third party's on A4/Keys MK1 hardware, 2026-10-17.",
     "steps": {
-      "format": "open",
-      "rebuild": "open",
-      "boot": "open",
+      "format": "done",
+      "rebuild": "done",
+      "boot": "done",
       "core": "open",
       "mods": "open"
     },
@@ -631,7 +645,39 @@
       "body": "keys",
       "encoders": 10,
       "trigs": 16
-    }
+    },
+    "firmware": {
+      "releases": [
+        {
+          "version": "1.56",
+          "files": [
+            {
+              "name": "Analog-Four_Analog-Keys_OS1.56.syx",
+              "sha256": "cda4459d14bfba40635440ad9dfa8fc183e5317e5e3ffa7116704f307fdf7010"
+            }
+          ]
+        }
+      ],
+      "flash": "Elektron Transfer over USB: set MIDI IN and OUT to the device, drop the .syx and press YES on the unit. Or from the STARTUP menu: hold FUNC at power-on, choose OS UPGRADE with TRIG 4, and send the .syx from Transfer's LEGACY OS UPGRADE mode over MIDI DIN.",
+      "recovery": "Hold FUNC at power-on to reach the STARTUP menu and send the owner's stock .syx over MIDI DIN; the startup menu does not enumerate USB, so the DIN path is required. Do not power the unit off until it has finished the bootstrap upgrade that follows the first restart after some upgrades. Elektron states the Analog Keys cannot be downgraded below OS 1.1."
+    },
+    "research": [
+      {
+        "label": "elektron-firmware-tool",
+        "url": "https://github.com/mischa85/elektron-firmware-tool",
+        "note": "MIT. Reads, verifies, extracts and rewrites this image's ELE2 container and Adler-32 section checksum unchanged; a verbatim section repack is byte-identical to stock OS 1.56. No firmware hosted."
+      },
+      {
+        "label": "AE-analog-four-mods",
+        "url": "https://github.com/hugz202/AE-analog-four-mods",
+        "note": "Mods for the Analog Four / Keys MK1 on OS 1.56: verified symbol map, free-space registry, byte-checked build, and a modded OS booted on MK1 hardware on 2026-10-17. Supplies the boot step's evidence. No firmware hosted."
+      },
+      {
+        "label": "rytm-emu",
+        "url": "https://github.com/trigcondition/rytm-emu",
+        "note": "MIT. Boots stock OS 1.56 for the Analog Four MKI and the Analog Keys to its main screen, headless or in a window. Our local branch adds DTEMU_PROFILE to run a modified image by name; nothing pushed."
+      }
+    ]
   },
   {
     "schemaVersion": 1,

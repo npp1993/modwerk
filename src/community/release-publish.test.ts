@@ -10,7 +10,7 @@ import type { Env } from '../../server/platform'
 
 const issuer = 'https://token.actions.githubusercontent.com'
 const target = 'https://api.example.test/api/module-releases/sync'
-const release = (version = '10.0.0') => ({ id: 'miniverb', version, name: 'Mini Verb', href: '#module/miniverb', notes: { announce: true, version, date: '2026-10-09', changes: ['Improve playback.'] } })
+const release = (version = '10.0.0') => ({ id: 'miniverb', version, name: 'Mini Verb', href: '#module/miniverb', notes: { version, date: '2026-10-09', changes: ['Improve playback.'] } })
 const inventory = (version = '10.0.0') => JSON.stringify({ format: 'modwerk-module-releases-v1', modules: [release(version)] })
 let keys: Awaited<ReturnType<typeof generateKeyPair>>, otherKeys: typeof keys, jwk: Awaited<ReturnType<typeof exportJWK>>
 const databases: DatabaseSync[] = []
@@ -71,17 +71,14 @@ async function fixture() {
 describe('frontend publication notifications', () => {
   beforeEach(() => { vi.spyOn(console, 'error').mockImplementation(() => {}) })
 
-  it('keeps a signed deployment quiet when the published version has no announcement opt-in', async () => {
-    const f = await fixture(), quiet = release()
-    const notes: { announce?: boolean } = quiet.notes
-    delete notes.announce
-    const live = JSON.stringify({ format: 'modwerk-module-releases-v1', modules: [quiet] })
+  it.each([undefined, false])('queues a signed deployment without announcement opt-in (%s)', async announce => {
+    const f = await fixture(), published = { ...release(), notes: { ...release().notes, ...(announce === undefined ? {} : { announce }) } }
+    const live = JSON.stringify({ format: 'modwerk-module-releases-v1', modules: [published] })
     f.setLive(live)
-    expect(await (await f.call(await signed(), { inventorySha256: await digest(live) })).json()).toEqual({ checked: 1, notified: 0 })
-    expect(f.count()).toBe(0)
+    expect(await (await f.call(await signed(), { inventorySha256: await digest(live) })).json()).toEqual({ checked: 1, notified: 5 })
+    expect(f.count()).toBe(5)
     expect(f.mails).toEqual([])
     expect(f.db.prepare('SELECT version FROM module_release_state').get()!.version).toBe('10.0.0')
-    expect(f.db.prepare('SELECT COUNT(*) AS count FROM announcements').get()!.count).toBe(0)
   })
 
   it('queues followers immediately, never sends mail from publication, and keeps digest preferences', async () => {

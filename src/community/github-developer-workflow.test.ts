@@ -31,7 +31,7 @@ async function fixture(moduleId = 'sidechain-compressor') {
   let live = true, failPatch = false, dropPost = false
   vi.stubGlobal('fetch', vi.fn(async (value: string | URL, init: RequestInit = {}) => {
     const url = String(value), method = init.method ?? 'GET', body = init.body ? JSON.parse(String(init.body)) : undefined
-    if (url === f.env.APP_URL + 'module-releases.json') return Response.json({ format: 'modwerk-module-releases-v1', modules: [{ id: module.id, name: module.name, version: live ? module.version : '0.0.0', href: module.href, ...(live ? { notes: { ...moduleChangelogs[module.id].find(entry => entry.version === module.version), announce: true } } : {}) }] })
+    if (url === f.env.APP_URL + 'module-releases.json') return Response.json({ format: 'modwerk-module-releases-v1', modules: [{ id: module.id, name: module.name, version: live ? module.version : '0.0.0', href: module.href, ...(live ? { notes: { ...moduleChangelogs[module.id].find(entry => entry.version === module.version) } } : {}) }] })
     if (method === 'GET') return Response.json(comments)
     writes.push({ method, body })
     if (method === 'POST') {

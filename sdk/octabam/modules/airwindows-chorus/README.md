@@ -69,6 +69,8 @@ hardware waiver; its software renders match the tested version.
 
 ## Compatibility and limitations
 
+Not offered beside Sidechain Compressor. Air Chorus declares its whole 16K FX2 slot. On T3 and T7 the last 514 words of that slot are Sidechain Compressor's cross-core key window, so the two stay apart until Air Chorus declares a smaller extent that stops short of it.
+
 - Target: original Octatrack OS 1.40C, MKI/MKII architecture;
   a 50-minute MKII functional test was reported for the earlier image.
   Fresh hardware testing of the initialization update is explicitly owner-waived. Use only the exact private image

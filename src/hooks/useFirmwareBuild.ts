@@ -30,7 +30,6 @@ export function useFirmwareBuild(client: RefObject<FirmwareClient | null>, activ
   useEffect(() => {
     const controller=operation, engine=client.current
     const current = ++controller.current
-    if(!memberId)return
     if (!firmware || !ids.length || configurationError) return
     void engine?.validate(ids, keepStock, active?.usbAudio, betaAccess, startup).then(report => {
       if (operation.current === current) setView({ key, state: 'valid', report })
@@ -38,10 +37,10 @@ export function useFirmwareBuild(client: RefObject<FirmwareClient | null>, activ
     return () => { ++controller.current; if (building.current) { building.current = false; engine?.cancelBuild() } }
   // The key captures every firmware/configuration input, including chooser options.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, client, memberId])
+  }, [key, client])
   const current: BuildView = configurationError ? {key,state:'error',error:configurationError} : view.key === key ? view : { key, state: firmware && ids.length ? 'validating' : 'empty' }
   async function build() {
-    if (!memberId || !firmware || !ids.length || !client.current || current.state !== 'valid') return
+    if (!firmware || !ids.length || !client.current || current.state !== 'valid') return
     const request = ++operation.current
     building.current = true; setView({ key, state: 'building', report: current.report, phase: 'composing' })
     let started = false

@@ -104,13 +104,18 @@ function blockText(node: Node, indent = ''): string {
 }
 
 /** Same scriptless, image-free shell as the welcome news and account emails. */
-export function renderNewsEmail(campaign: { subject: string; body: string }, urls: { app: string; settings: string }, cta?: string) {
+export function renderNewsEmail(campaign: { subject: string; body: string }, urls: { app: string; settings: string; unsubscribe?: string }, cta?: string) {
   const tree = parseNews(campaign.body), children = tree.children ?? []
   const subject = campaign.subject.replace(/[\r\n]+/g, ' ').trim().slice(0, 150)
   const preheader = (children.find(node => node.type === 'paragraph') ? plain(children.find(node => node.type === 'paragraph')!) : subject).replace(/\s+/g, ' ').trim().slice(0, 140)
-  const footer = 'You’re receiving this because you opted in to Modwerk news. You can turn news emails off in your account settings at any time.'
+  const footer = urls.unsubscribe
+    ? 'You’re receiving this because you follow module updates on Modwerk. You can change your follows or turn off update emails in account settings.'
+    : 'You’re receiving this because you opted in to Modwerk news. You can turn news emails off in your account settings at any time.'
+  const footerHtml = urls.unsubscribe
+    ? `${escape(footer)} <a href="${escape(urls.settings)}" style="color:#b9bdd7;text-decoration:underline;">Account settings</a> · <a href="${escape(urls.unsubscribe)}" style="color:#b9bdd7;text-decoration:underline;">Unsubscribe from activity email</a>`
+    : `You’re receiving this because you opted in to Modwerk news. You can turn news emails off in your <a href="${escape(urls.settings)}" style="color:#b9bdd7;text-decoration:underline;">account settings</a> at any time.`
   const body = children.map(node => blockText(node)).filter(Boolean).join('\n\n')
-  const text = [subject, '', body, '', footer, urls.settings, '', `Modwerk · ${urls.app}`, `Need help? ${SUPPORT_EMAIL}`].join('\n')
+  const text = [subject, '', body, '', footer, urls.settings, ...(urls.unsubscribe ? ['Unsubscribe from activity email: ' + urls.unsubscribe] : []), '', `Modwerk · ${urls.app}`, `Need help? ${SUPPORT_EMAIL}`].join('\n')
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escape(subject)}</title></head>
 <body style="margin:0;padding:0;background-color:#171719;color:#ededf2;font-family:Arial,Helvetica,sans-serif;">
@@ -126,7 +131,7 @@ export function renderNewsEmail(campaign: { subject: string; body: string }, url
 ${blocks(children, false, cta)}
 </td></tr>
 <tr><td style="padding:24px 8px 8px;color:#90909e;font-size:12px;line-height:21px;">
-<p style="margin:0 0 8px;">You’re receiving this because you opted in to Modwerk news. You can turn news emails off in your <a href="${escape(urls.settings)}" style="color:#b9bdd7;text-decoration:underline;">account settings</a> at any time.</p>
+<p style="margin:0 0 8px;">${footerHtml}</p>
 <p style="margin:0;">Modwerk · <a href="${escape(urls.app)}" style="color:#b9bdd7;text-decoration:underline;">modwerk.app</a> · Need help? <a href="mailto:${escape(SUPPORT_EMAIL)}" style="color:#b9bdd7;text-decoration:underline;">Contact support</a></p>
 </td></tr></table>
 <!--[if mso]></td></tr></table><![endif]-->

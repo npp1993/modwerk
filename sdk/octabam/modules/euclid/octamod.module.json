@@ -328,7 +328,7 @@
       "name": "MIX",
       "default": 127,
       "count": 128,
-      "doc": "Dry/wet; zero is exact passthrough",
+      "doc": "Dry/wet; zero is exact passthrough, 127 fully wet (the input through the pulsed filter or amp)",
       "labels": null
     }
   ],

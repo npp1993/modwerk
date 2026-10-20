@@ -89,10 +89,12 @@ MANAGER_UNIT = r'''
 #include <stdint.h>
 static uint32_t auto_serial = 0x80000000u;
 static unsigned observed_valid;
+static uint8_t observed[16]; /* the refusal note reads it (the native build has no observer) */
 static uint8_t last[16];
 uint32_t test_bank = 0x400e21e0u;
 uint8_t dl_journal_test_live[16];
 uint8_t test_qb, test_qp, test_parts[4][16];
+unsigned test_parts_used = 0xfu; /* the Parts the bank's patterns play (part_mask): all four unless a mode says */
 #include "manager.c"
 struct dl_package dl_catalog[MODWERK_FX_IDS];
 struct code dl_codes[2][MODWERK_FX_IDS];
@@ -114,6 +116,10 @@ int test_target(unsigned c, unsigned p) { return allocator.phase && allocator.ta
 unsigned test_active(unsigned i) { return allocator.active[i]; }
 unsigned test_words(unsigned p) { return dl_catalog[p].resident ? 0u : dl_catalog[p].words; }
 unsigned test_phase(void) { return phase; }
+uint32_t test_trims(void) { return dl_trims; }
+uint32_t test_unloads(void) { return dl_unloads; }
+unsigned test_observed_valid(void) { return observed_valid; }
+void test_set_observed_valid(unsigned v) { observed_valid = v; }
 /* dl_move (dsp.c's compaction), whether a core's dispatch of p is the stub, and the owned job the manager last waited for. */
 int test_move(unsigned c, unsigned p, unsigned offset) { return dl_move(c, p, offset); }
 int test_stubbed(unsigned c, unsigned p) { return fx_in(stubbed[c], p); }
@@ -167,6 +173,11 @@ int test_target(unsigned c, unsigned p);
 unsigned test_active(unsigned i);
 unsigned test_words(unsigned p);
 unsigned test_phase(void);
+uint32_t test_trims(void);
+uint32_t test_unloads(void);
+unsigned test_observed_valid(void);
+void test_set_observed_valid(unsigned v);
+extern unsigned test_parts_used;
 int test_move(unsigned c, unsigned p, unsigned offset);
 int test_stubbed(unsigned c, unsigned p);
 uint32_t test_owned_seen(void);
@@ -509,16 +520,18 @@ int main(int argc, char **argv)
         ids[4] = 3; memcpy(test_parts[0], ids, 16);
         assert(test_select(ids, pump) == 1 && test_live(0, 3) == (int)(sc - 900u));
     } else if (mode == 4) {
-        /* The bank's Part union: four stock effects of 400 words fit the whole arena (1,600 of 1,936 words) but not
-         * under Sidechain's engine (1,548): refused, so that no Part switch has to load code because of it. */
+        /* Everything on demand: four stock effects the bank's Parts name, none running, fit the whole arena (1,600 of
+         * 1,936 words) but not under Sidechain's engine (1,548). Only what runs must fit: admitted and placed, and a
+         * switch to one of those Parts loads its effect under the engine then. */
         memset(test_parts, 0, sizeof test_parts);
         test_parts[0][4] = 5; test_parts[1][5] = 6; test_parts[2][6] = 7; test_parts[3][7] = 8;
-        assert(refused(pkg_sc, sizeof pkg_sc) == RUNTIME_MEMORY);
-        assert(!dl_engine_reserved(0) && !mw_engines_jobs);
-        test_parts[3][7] = 0; /* three of them: 1,200 words */
         assert(install(pkg_sc, sizeof pkg_sc) == MU_APPLIED);
         run(200);
         assert(slot_for(SC, MW_CTL_ACTIVE)); placed_at(0, 1, sc);
+        uint8_t ids[16];
+        memcpy(ids, test_parts[3], 16);
+        assert(test_select(ids, pump) == 1 && test_live(0, 8) >= 0 && (unsigned)test_live(0, 8) + 400u <= test_capacity(0));
+        assert(test_capacity(0) == sc); placed_at(0, 1, sc);
     } else if (mode == 5) {
         /* Rollback part way: core B's engine WRITE is refused. Its span goes back, core A stays placed; nothing is
          * reset or enabled anywhere; the removal unplaces core A and frees it. */
@@ -690,27 +703,20 @@ int main(int argc, char **argv)
         assert(slot_for(SC, MW_CTL_ACTIVE) && dl_engine_evacuations == 1 && test_live(0, 3) == (int)(moved));
         placed_at(0, 1, sc); placed_at(1, 1, sc);
     } else if (mode == 14) {
-        /* The bank's Part union no longer fits under the engine even with the effect moved: refused at admission and on
-         * the tick, nothing moved. A Part names module 40 (700 words) beside the running 900-word effect: 1,600 > 1,548. */
+        /* Only what runs must fit under the engine: a Part names module 40 (700 words, never loaded) beside the running
+         * 900-word effect (1,600 > 1,548). Admitted, the effect moved below the region, placed; a switch to that Part
+         * then loads 40 under the engine in the running effect's place. */
         big_at_top(0);
         test_fx(40, 700);
         test_parts[1][4] = 40;
-        unsigned from = trails[0], from1 = trails[1];
-        assert(refused(pkg_sc, sizeof pkg_sc) == RUNTIME_MEMORY && dl_engine_why[0] == 3);
-        run(100);
-        assert(trails[0] == from && trails[1] == from1 && !mw_engines_jobs && !dl_engine_evacuations && test_live(0, 3) == (int)(top - 900u));
-        assert(!dl_engine_reserved(0) && test_capacity(0) == top);
-        /* A smaller module (600) fits under the engine from scratch, but not beside the effect where it would move to
-         * (136-1,036, clear of its old copy): still refused, so no Part switch to it would have to move code. */
-        test_fx(40, 600);
-        assert(refused(pkg_sc, sizeof pkg_sc) == RUNTIME_MEMORY && dl_engine_why[0] == 3);
-        run(50);
-        assert(trails[0] == from && !dl_engine_evacuations);
-        /* Without that Part's module it fits: moved, placed. */
-        test_parts[1][4] = 0;
         assert(install(pkg_sc, sizeof pkg_sc) == MU_APPLIED);
         run(400);
         assert(slot_for(SC, MW_CTL_ACTIVE) && dl_engine_evacuations == 1 && test_live(0, 3) == (int)(moved));
+        placed_at(0, 1, sc);
+        uint8_t ids[16];
+        memcpy(ids, test_parts[1], 16);
+        assert(test_select(ids, pump) == 1 && test_live(0, 40) >= 0 && (unsigned)test_live(0, 40) + 700u <= test_capacity(0));
+        assert(test_capacity(0) == sc); placed_at(0, 1, sc);
     } else if (mode == 15) {
         /* The new copy's upload is refused part way: no BIND was sent, the effect runs its old copy, the new span is
          * free again, the claim is refused and that core evacuates nothing more this boot. */
@@ -882,6 +888,109 @@ int main(int argc, char **argv)
         placed_at(0, 1, sc); placed_at(1, 1, sc);
         assert(dl_residency_rollbacks == rollbacks && dl_residency_failures == failures);
         assert(dispatch[0][5] == 64u + (unsigned)test_live(0, 5) + 1u && dispatch[0][6] == 64u + (unsigned)test_live(0, 6) + 1u);
+    } else if (mode == 29) {
+        /* Cached code never blocks a pick (beta finding 54): Part 1's four effects (1,600 words) stay loaded for the
+         * bank's union while Part 2 runs none of them; a pick there of a 900-word effect fits the arena but not beside
+         * them, so the manager retires them first, in a transaction of its own that writes nothing, then loads it. */
+        memset(test_parts, 0, sizeof test_parts);
+        test_parts[0][4] = 5; test_parts[0][5] = 6; test_parts[0][6] = 7; test_parts[0][7] = 8;
+        uint8_t ids[16];
+        memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);
+        memset(ids, 0, 16);
+        assert(test_select(ids, pump) == 1); /* Part 2: nothing runs, the union stays loaded */
+        assert(test_live(0, 5) >= 0 && test_live(0, 6) >= 0 && test_live(0, 7) >= 0 && test_live(0, 8) >= 0);
+        unsigned from = trails[0], trims = test_trims();
+        ids[4] = 3;
+        assert(test_select(ids, pump) == 1);
+        assert(test_trims() == trims + 1 && test_idle() && test_live(0, 3) >= 0);
+        assert(test_live(0, 5) < 0 && test_live(0, 6) < 0 && test_live(0, 7) < 0 && test_live(0, 8) < 0);
+        assert(trail[0][from].op == 5u || trail[0][from].op == 6u);             /* the retirement first, no WRITE in it */
+        assert(count_ops(0, from, 5) + count_ops(0, from, 6) >= 4 && first_op(0, from, 3, 0, 0) > from + 3);
+        /* The same pick again changes nothing and trims nothing. */
+        trims = test_trims();
+        assert(test_select(ids, pump) == 1 && test_trims() == trims);
+    } else if (mode == 30) {
+        /* Nothing cached, the running code itself blocks: a 700-word effect on T8 FX1 fits from scratch (1,900) but not
+         * beside the running four (2,300). The slot's old effect is unloaded first (the slot runs the stub meanwhile), and
+         * the hole it leaves joins the free top of the arena, so the pick loads; the other three stay where they are. */
+        test_fx(11, 700);
+        memset(test_parts, 0, sizeof test_parts);
+        test_parts[0][4] = 5; test_parts[0][5] = 6; test_parts[0][6] = 7; test_parts[0][7] = 8;
+        uint8_t ids[16];
+        memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);
+        unsigned from = trails[0], trims = test_trims(), unloads = test_unloads();
+        ids[7] = 11;
+        assert(test_select(ids, pump) == 1);
+        assert(test_trims() == trims && test_unloads() == unloads + 1 && test_idle());
+        assert(test_live(0, 11) >= 0 && test_live(0, 8) < 0 && test_live(0, 5) == 0 && test_live(0, 6) == 400 && test_live(0, 7) == 800);
+        assert(trail[0][from].op == 6u && trail[0][from].w4 == 8u && count_ops(0, from, 6) == 1); /* 8's unload alone, first */
+        assert(first_op(0, from, 3, 0, 0) > from);
+    } else if (mode == 31) {
+        /* Every selected effect stays loaded while the bank fits (1,600 of 1,936), whatever the patterns play. Short of
+         * room (900 + 3 x 400), the Parts the patterns play (and the current one) are held, then only the target. */
+        memset(test_parts, 0, sizeof test_parts);
+        test_parts[0][4] = 5; test_parts[1][5] = 6; test_parts[2][6] = 7; test_parts[3][7] = 8;
+        test_parts_used = 0x1u;
+        uint8_t ids[16];
+        memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);
+        assert(test_live(0, 5) >= 0 && test_live(0, 6) >= 0 && test_live(0, 7) >= 0 && test_live(0, 8) >= 0);
+        test_parts[0][4] = 3; memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);                                        /* Part 1 played: its 900 only */
+        assert(test_live(0, 3) >= 0 && test_live(0, 6) < 0 && test_live(0, 7) < 0 && test_live(0, 8) < 0);
+        test_parts_used = 0x3u;
+        assert(test_select(ids, pump) == 1);                                        /* Part 2 played too */
+        assert(test_live(0, 3) >= 0 && test_live(0, 6) >= 0 && test_live(0, 7) < 0 && test_live(0, 8) < 0);
+        test_parts_used = 0xfu;
+        assert(test_select(ids, pump) == 1);                                        /* all played, none fit: the target */
+        assert(test_live(0, 3) >= 0 && test_live(0, 6) < 0 && test_live(0, 7) < 0 && test_live(0, 8) < 0);
+    } else if (mode == 32) {
+        /* Past the arena from scratch (2,100 of 1,936): refused as before, nothing retired, nothing sent, idle after. */
+        memset(test_parts, 0, sizeof test_parts);
+        test_parts[0][4] = 5; test_parts[0][5] = 6; test_parts[0][6] = 7; test_parts[0][7] = 8;
+        uint8_t ids[16];
+        memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);
+        unsigned from = trails[0], trims = test_trims(), unloads = test_unloads();
+        ids[4] = 3;
+        assert(test_select(ids, pump) == DL_SELECT_MEMORY);
+        assert(test_trims() == trims && test_unloads() == unloads && test_idle() && trails[0] == from && test_live(0, 5) >= 0);
+    } else if (mode == 33) {
+        /* Both in turn: Part 2's 400-word effect (loaded for the bank, no slot runs it) is retired first; the 600-word
+         * pick still does not fit beside the slot's own 600 words at the arena's top, so that is unloaded too, then the
+         * pick loads into its place. */
+        test_fx(11, 600); test_fx(12, 600);
+        memset(test_parts, 0, sizeof test_parts);
+        test_parts[0][4] = 12; test_parts[0][5] = 3; test_parts[1][6] = 5;
+        uint8_t ids[16];
+        memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);
+        assert(test_live(0, 5) == 0 && test_live(0, 3) == 436 && test_live(0, 12) == 1336); /* 1,900 of 1,936 */
+        unsigned from = trails[0], trims = test_trims(), unloads = test_unloads();
+        ids[4] = 11;
+        assert(test_select(ids, pump) == 1);
+        assert(test_trims() == trims + 1 && test_unloads() == unloads + 1 && test_idle());
+        assert(test_live(0, 11) == 1336 && test_live(0, 3) == 436 && test_live(0, 5) < 0 && test_live(0, 12) < 0);
+        unsigned gone5 = first_op(0, from, 6, 5, 0), gone12 = first_op(0, from, 6, 12, 0), load = first_op(0, from, 3, 0, 0);
+        assert(gone5 < gone12 && gone12 < load && load < trails[0]);
+    } else if (mode == 34) {
+        /* A request unloaded for, then dropped (another pick replaced it): its slot runs the stub on its old id, so the
+         * observer is nudged to load that back; the manager ends idle with the request's code never loaded. */
+        test_fx(10, 500);
+        memset(test_parts, 0, sizeof test_parts);
+        test_parts[0][4] = 5; test_parts[0][5] = 6; test_parts[0][6] = 7; test_parts[0][7] = 8;
+        uint8_t ids[16];
+        memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);
+        test_set_observed_valid(1);
+        struct dl_selection s;
+        memset(&s, 0, sizeof s); memcpy(s.target, ids, 16); s.target[4] = 10;
+        assert(dl_selection_prepare(&s, 99) == DL_SELECT_WAIT && test_unloads() == 1 && test_phase());
+        dl_selection_cancel(99);
+        for (unsigned n = 0; n < 4000 && test_phase(); ++n) { pump(); test_advance(); }
+        assert(test_idle() && !test_observed_valid() && test_live(0, 5) < 0 && test_live(0, 10) < 0 && test_live(0, 6) >= 0);
     } else if (mode == 27) {
         /* The wait is bounded per owned job: two jobs in a row hold core A for 800 frames, and the switch completes after
          * them; one reservation that never ends refuses the switch after 600 refused starts, as before the wait; once it
@@ -915,6 +1024,70 @@ int main(int argc, char **argv)
         assert(test_select(ids, table_pump) == 1 && in_tables >= 50 && !dl_owned_holder(1) && test_owned_seen() == held);
         assert(test_table_matches(1, 0) && first_op(1, from, 7, 0, 0) < trails[1] && test_live(0, 5) >= 0);
         assert(dl_residency_rollbacks == rollbacks && dl_residency_failures == failures);
+    } else if (mode == 35 || mode == 36) {
+        /* The claim retires cached code first. Part 1 runs 5, Parts 2-4 name 6, 7 and 8: all four stay loaded for the
+         * bank (1,600 of 1,936), 8 reaching into Sidechain's region (1,548). Mode 35: all four Parts played, only the
+         * running 5 fits beside the engine, so 6, 7 and 8 go in a trim of their own (no WRITE in it, their ids on the
+         * stub), then the engine is placed with nothing to move. Mode 36: Parts 1-2 played, so 6 stays beside 5. */
+        memset(test_parts, 0, sizeof test_parts);
+        test_parts[0][4] = 5; test_parts[1][5] = 6; test_parts[2][6] = 7; test_parts[3][7] = 8;
+        if (mode == 36) test_parts_used = 0x3u;
+        uint8_t ids[16];
+        memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);
+        assert(test_live(0, 5) == 0 && test_live(0, 6) == 400 && test_live(0, 7) == 800 && test_live(0, 8) == 1200);
+        unsigned trims = test_trims(), from = trails[0];
+        assert(install(pkg_sc, sizeof pkg_sc) == MU_APPLIED);
+        run(400);
+        assert(slot_for(SC, MW_CTL_ACTIVE) && test_capacity(0) == sc && !dl_engine_evacuations && test_trims() == trims + 1);
+        placed_at(0, 1, sc); placed_at(1, 1, sc);
+        assert(test_live(0, 5) == 0 && (mode == 36 ? test_live(0, 6) == 400 : test_live(0, 6) < 0) && test_live(0, 7) < 0 && test_live(0, 8) < 0);
+        assert(dispatch[0][5] == 64u + 1u && dispatch[0][7] == 0 && dispatch[0][8] == 0 && (mode == 36 || dispatch[0][6] == 0));
+        unsigned gone = first_op(0, from, 6, 8, 0), engine = trails[0];
+        for (unsigned i = from; i < trails[0]; ++i) if (trail[0][i].op == 3u) { engine = i; break; }
+        assert(gone < engine && engine < trails[0]); /* the trim first, the engine's WRITE after */
+        /* A switch to Part 4 loads 8 under the engine (the bank gives way); the engine stays. */
+        memcpy(ids, test_parts[3], 16);
+        assert(test_select(ids, pump) == 1 && test_live(0, 8) >= 0 && (unsigned)test_live(0, 8) + 400u <= sc);
+        placed_at(0, 1, sc);
+    } else if (mode == 37) {
+        /* A pick of a module no Part holds (45, 900 words) beside the modules Part 1 names (41-44, 1,600, loaded for the
+         * bank, no slot runs them): it fits the arena alone, not beside them. They give way (a trim), and it loads;
+         * before, modules stayed firm and this was DSP MEMORY FULL. */
+        for (unsigned p = 41; p <= 44; ++p) test_fx(p, 400);
+        test_fx(45, 900);
+        memset(test_parts, 0, sizeof test_parts);
+        test_parts[0][4] = 41; test_parts[0][5] = 42; test_parts[0][6] = 43; test_parts[0][7] = 44;
+        uint8_t ids[16];
+        memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);
+        memset(ids, 0, 16);
+        assert(test_select(ids, pump) == 1); /* Part 2: nothing runs, the modules stay loaded */
+        assert(test_live(0, 41) >= 0 && test_live(0, 44) >= 0);
+        unsigned trims = test_trims();
+        ids[4] = 45;
+        assert(test_select(ids, pump) == 1);
+        assert(test_trims() == trims + 1 && test_idle() && test_live(0, 45) >= 0);
+        for (unsigned p = 41; p <= 44; ++p) assert(test_live(0, p) < 0 && dispatch[0][p] == 0);
+        /* Back to Part 1: its modules load again in 45's place. */
+        memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);
+        for (unsigned p = 41; p <= 44; ++p) assert(test_live(0, p) >= 0);
+    } else if (mode == 38) {
+        /* The refusal box blames the core that overflows: a switch whose first changed slot (T2 FX1) asks for 10 (500
+         * words, not loaded) on core B, which fits, while T5-T7 need 2,200 of core A's 1,936 words names T5 FX1 (900
+         * words, not loaded), not T2. */
+        extern volatile uint32_t dl_refusal[8];
+        test_fx(10, 500); test_fx(11, 700); test_fx(12, 600);
+        memset(test_parts, 0, sizeof test_parts);
+        test_parts[0][0] = 5; test_parts[0][4] = 6;
+        uint8_t ids[16];
+        memcpy(ids, test_parts[0], 16);
+        assert(test_select(ids, pump) == 1);
+        memset(ids, 0, 16);
+        ids[0] = 5; ids[1] = 10; ids[4] = 3; ids[5] = 11; ids[6] = 12;
+        assert(test_select(ids, pump) == DL_SELECT_MEMORY);
+        assert(dl_refusal[0] == 2u && dl_refusal[1] == 4u && dl_refusal[2] == 3u && dl_refusal[5] == 900u);
     } else assert(0);
     return 0;
 }
@@ -938,6 +1111,10 @@ def generated(work, units):
             text = resident_engines.transport(resident_driver.transport(text))
         elif name == 'transfer.h':
             text = resident_driver.transport_header(text)
+        if name == 'manager.c':  # the refusal box's note, as build_core.py applies it (status.c's box is not built here)
+            for old, new in core.REFUSAL_EDITS['manager.c']:
+                assert text.count(old) == 1, old[:60]
+                text = text.replace(old, new)
         if name in zero_state.UNITS:
             text = zero_state.unit(name, text, reference)
         if name == 'transfer.c':
@@ -948,7 +1125,11 @@ def generated(work, units):
                              ('unsigned qb=*(volatile uint8_t *)0x800065bfu,qp=*(volatile uint8_t *)0x800065c0u,qpart=4u;',
                               'extern uint8_t test_qb,test_qp,test_parts[4][16];unsigned qb=test_qb,qp=test_qp,qpart=4u;'),
                              (': bank ? *(volatile uint8_t *)(uintptr_t)(bank+0x8ed80u+n*6322u+i) : 255u;',
-                              ': bank ? test_parts[n][i] : 255u;')):
+                              ': bank ? test_parts[n][i] : 255u;'),
+                             ('    unsigned part=*(volatile uint8_t *)0x80000003u,m=part<4u ? 1u<<part : 0u;\n'
+                              '    for(unsigned p=0;bank && p<16u;++p) { unsigned q=*(volatile uint8_t *)(uintptr_t)(bank+p*0x8ed8u+0x8e57u); if(q<4u) m|=1u<<q; }\n'
+                              '    return m;',
+                              '    extern unsigned test_parts_used;(void)bank;return test_parts_used;')):
                 assert text.count(old) == 1, old
                 text = text.replace(old, new)
         (work / name).write_text(text)
@@ -987,7 +1168,7 @@ def build(work):
 
 @unittest.skipUnless(shutil.which('cc'), 'host C compiler unavailable')
 class ResidentEnginesBoard(unittest.TestCase):
-    MODES = 29
+    MODES = 39
 
     def test_place_switch_run_disable_unswitch_free_and_their_refusals(self):
         with tempfile.TemporaryDirectory() as temp:

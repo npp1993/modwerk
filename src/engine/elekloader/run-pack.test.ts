@@ -29,6 +29,6 @@ describe('the base .run stored packed', () => {
     const data = new Uint8Array(52000)
     data.set(base)
     for (let k = 0; k < 3; k++) data.set(base.subarray(1000, 5000), 40000 + 4000 * k)
-    expect(sha(packSection(data))).toBe('1b161af63586858f2e73e73e9fbefab7c2e92fccd0fc50f89ea8143f6786f515')
+    expect(sha(packSection(data))).toBe('5b6b45e7041999bafc6b033b54293555634303df90ce3fb8cfa39e0f52951eb3')
   })
 })

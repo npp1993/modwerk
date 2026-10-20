@@ -80,13 +80,20 @@ export async function developerApi(request:Request,db:Database,user:User|null,ad
       throw new HttpError(405,'Choose a supported notification action.')
     }
     if (path === '/api/developer/modules' && request.method === 'GET') {
-      const candidates=developerModules(member.github_login)
-      const grants=(await db.prepare('SELECT module_id,revoked FROM module_maintainers WHERE user_id=?').bind(member.id).all<{module_id:string;revoked:number}>()).results
-      return response(await Promise.all(candidates.map(async module => ({...module,claimed:modules.some(value=>value.id===module.id),blocked:grants.some(grant=>grant.module_id===module.id&&grant.revoked===1),
-        reports:modules.some(value=>value.id===module.id)?await db.prepare("SELECT COUNT(*) AS total,SUM(CASE WHEN status='open' THEN 1 ELSE 0 END) AS open FROM issues WHERE (module_id=? OR id IN(SELECT issue_id FROM issue_modules WHERE module_id=?)) AND maintainer_sharing=1 AND public_sharing=0").bind(module.id,module.id).first():{total:0,open:0},
-        ratings:await db.prepare('SELECT COUNT(*) AS count,AVG(value) AS average FROM ratings WHERE module_id=?').bind(module.id).first(),
-        threads:(await db.prepare('SELECT COUNT(*) AS count FROM forum_threads WHERE module_id=? AND hidden=0').bind(module.id).first<{count:number}>())?.count ?? 0,
-      }))))
+      const candidates=developerModules(member.github_login),ids=JSON.stringify(candidates.map(module=>module.id)),claimedIds=JSON.stringify(modules.map(module=>module.id))
+      // One grouped query per count instead of three per module. json_each keeps the bound parameters at one.
+      const [grants,reports,ratings,threads]=await Promise.all([
+        db.prepare('SELECT module_id,revoked FROM module_maintainers WHERE user_id=?').bind(member.id).all<{module_id:string;revoked:number}>(),
+        // A configuration report counts for every module it contains; UNION counts a report once per module.
+        db.prepare("SELECT module_id,COUNT(*) AS total,SUM(status='open') AS open FROM (SELECT id,module_id,status FROM issues WHERE maintainer_sharing=1 AND public_sharing=0 UNION SELECT i.id,m.module_id,i.status FROM issues i JOIN issue_modules m ON m.issue_id=i.id WHERE i.maintainer_sharing=1 AND i.public_sharing=0) WHERE module_id IN (SELECT value FROM json_each(?)) GROUP BY module_id").bind(claimedIds).all<{module_id:string;total:number;open:number}>(),
+        db.prepare('SELECT module_id,COUNT(*) AS count,AVG(value) AS average FROM ratings WHERE module_id IN (SELECT value FROM json_each(?)) GROUP BY module_id').bind(ids).all<{module_id:string;count:number;average:number}>(),
+        db.prepare('SELECT module_id,COUNT(*) AS count FROM forum_threads WHERE hidden=0 AND module_id IN (SELECT value FROM json_each(?)) GROUP BY module_id').bind(ids).all<{module_id:string;count:number}>(),
+      ])
+      return response(candidates.map(module => ({...module,claimed:modules.some(value=>value.id===module.id),blocked:grants.results.some(grant=>grant.module_id===module.id&&grant.revoked===1),
+        reports:reports.results.find(row=>row.module_id===module.id)??{total:0,open:0},
+        ratings:ratings.results.find(row=>row.module_id===module.id)??{count:0,average:null},
+        threads:threads.results.find(row=>row.module_id===module.id)?.count ?? 0,
+      })))
     }
     if (path === '/api/developer/issues' && request.method === 'GET') {
       const ids = requested ? [requested] : modules.map(module => module.id), status = url.searchParams.get('status') ?? 'open'

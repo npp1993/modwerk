@@ -1,23 +1,26 @@
 # E-Verb
 
-Version: 0.1.1-experimental · author: [@user1303836](https://github.com/user1303836)
+Version: 0.1.2-experimental · author: [@user1303836](https://github.com/user1303836)
 
 A modulated feedback delay network reverb for the Octatrack's FX2 slot, modelled after Tom Erbe's
 Erbe-Verb: a space you can shrink to a two-millisecond box or stretch to a hall, decay past 100 % into a
 saturating drone, absorb or diffuse, swirl with a chorus, smear with random grains or lift with octave
 shimmer, reverse, and tilt dark or bright. Original code, written from Erbe's published paper.
 
-**Status: experimental release** (`sdk/octabam/modules/everb/`). 0.1.1 gives SIZE, DCY, ABSB and SPD
-the FUNC + turn stops MIX and DPTH already had: 0, the centre (64) and 127
-([#438](https://github.com/repeat98/modwerk/issues/438)). Nothing else changes; the DSP code is
-byte-identical to 0.1.0. The owner reports a positive functional audition of 0.1.0 on MKII using the
-exact private EVRB01T01 build; see [evidence/owner-hardware.md](evidence/owner-hardware.md) for actual
-statements and coverage limits. 0.1.1 has been measured on the emulator only.
+**Status: experimental release** (`sdk/octabam/modules/everb/`). 0.1.2 stops E-Verb's delay ring at
+15,870 words, so on T3 and T7 it no longer overlaps Sidechain Compressor's cross-core key window in the
+last 514 words of the FX2 buffer ([#696](https://github.com/repeat98/modwerk/issues/696)). The words come
+off the top of the pre-delay: PRE 124 to 127 now all give 227 ms instead of rising to 250 ms. Below PRE
+124 nothing changes. 0.1.1 gave SIZE, DCY, ABSB and SPD the FUNC + turn stops at 0, 64 and 127
+([#438](https://github.com/repeat98/modwerk/issues/438)). The owner reports a positive functional
+audition of 0.1.0 on MKII using the exact private EVRB01T01 build; see
+[evidence/owner-hardware.md](evidence/owner-hardware.md) for actual statements and coverage limits. 0.1.1
+and 0.1.2 have been measured on the emulator only.
 
 ## Overview
 
 The track's left and right inputs are summed and decimated to 22.05 kHz by an elliptic halfband filter.
-They pass a pre-delay (7 to 250 ms), which can also play backwards, and enter a four-line feedback delay
+They pass a pre-delay (7 to 227 ms), which can also play backwards, and enter a four-line feedback delay
 network. Each line runs an allpass for diffusion, a modulated delay, an absorbing low-pass, the decay gain
 with a soft cubic saturation, and a 4×4 Hadamard matrix that feeds every line back into the others. Two
 stereo taps mix the line outputs with the allpass outputs (the early reflections). The wet signal is
@@ -65,7 +68,7 @@ SETUP page (FUNC + FX2), set per Part like a stock effect's SETUP page:
 | Knob | Default | Range | What it does |
 |---|---|---|---|
 | A TILT | 64 (0) | −64..+63 | Wet tone around the mids. Left warms: lows below 250 Hz up to +12 dB, highs down (about −14 dB at 9 kHz at the end). Right brightens: highs above 2 kHz up to +24 dB at 9 kHz; the lows dip only 3 to 5 dB, as the first-order high shelf rises from far below 2 kHz. 0 is flat. |
-| B PRE | 25 | 0–127 | Pre-delay, 7 ms at 0, 42 ms at 64, 250 ms at 127 (about 14 ms at 25). With REV on, it is the reverse window (at least 42 ms). |
+| B PRE | 25 | 0–127 | Pre-delay, 7 ms at 0, 42 ms at 64, 227 ms from 124 to 127 (about 14 ms at 25). With REV on, it is the reverse window (at least 42 ms). Before 0.1.2 it rose to 250 ms at 127. |
 | C REV | OFF | OFF/ON | Plays the pre-delay buffer backwards in crossfaded windows: swells instead of attacks. A change ducks the pre-delay output, switches while it is silent and reopens, so it does not click. |
 | D EDCY | 64 (0) | −64..+63 | The reverb's envelope into DCY. Left reins the tail in as it gets loud (a gated or self-limiting room); right lets loud passages ring longer, up to the decay of DCY 95, but never into sustain: only DCY itself goes there, so from DCY 96 up turning EDCY right changes nothing. 0 is off. |
 | E ESIZ | 64 (0) | −64..+63 | The reverb's envelope into SIZE. Left shrinks the space as it gets loud; right grows it, bending the pitch of the tail with the dynamics. 0 is off. |
@@ -101,14 +104,20 @@ holds the chord for that step.
 ## Compatibility and limitations
 
 - **Octatrack MKI and MKII, OS 1.40C**, FX2 of any audio track, all eight tracks (four instances per DSP
-  core). FX2 only: the effect needs the 16K-word delay buffer that the OS gives FX2 instances. Effect ID
-  0x1b (27).
+  core). FX2 only: the effect needs the 16K-word delay buffer that the OS gives FX2 instances. It uses
+  the first 15,870 words and never writes or reads the last 514 (+$3DFE..+$3FFF), where Sidechain
+  Compressor keeps its cross-core key window on T3 and T7 ([#696](https://github.com/repeat98/modwerk/issues/696)).
+  Effect ID 0x1b (27).
+- **Projects saved with 0.1.1** store the same knob values, so they should sound the same unless PRE
+  is 124 or higher: those settings now play 227 ms (they gave 230 to 250 ms). Reloading a 0.1.1
+  project into 0.1.2 is not tested.
 - **Hardware report:** the owner reports a positive MKII functional audition of 0.1.0 on EVRB01T01.
   Detailed coverage and unreported tests remain explicit in [the hardware report](evidence/owner-hardware.md).
-  0.1.1 has not run on hardware: it changes four editor words in E-Verb's FX2 page descriptor and
-  nothing on the DSP. MKI, full-load chip timing and broader hardware acceptance are not established.
+  0.1.1 and 0.1.2 have not run on hardware. 0.1.1 changed four editor words in E-Verb's FX2 page
+  descriptor; 0.1.2 changes the ring length and the top of the pre-delay range on the DSP. MKI,
+  full-load chip timing and broader hardware acceptance are not established.
 - **What a build with E-Verb gives up.** The site builds stock DSP code in, so a module's code takes the
-  space of stock effects listed on neither menu. E-Verb's 1,588 words take the space of two of the
+  space of stock effects listed on neither menu. E-Verb's 1,602 words take the space of two of the
   FX2-only stock reverbs. On its own it gives up **SPRING REV and DARK REV**: they are missing from the FX2
   chooser, and a saved project that uses either on FX2 plays that slot dry, as NONE. PLATE REV, DELAY and
   every other stock effect stay. Other modules in the same build can change which reverbs are given up;
@@ -157,25 +166,27 @@ holds the chord for that step.
 
 [TESTING.md](TESTING.md) has every command and result. In short:
 
-- **Render gates** (`python3 modules/everb/verify.py` from the native SDK, all 27
+- **Render gates** (`python3 modules/everb/verify.py` from the native SDK, all 28
   passing): the source and init rules; static cycles; placement in a real native image; every knob's
   FUNC editor in the built descriptor; exact dry at MIX 0 with knobs moving and trig splits; the
   pre-delay, decay and stereo laws; settling after the input stops. Also eight instances isolated
   under `dsp_host -guard 0x4000 -guard-shared -dirty`, garbage
   start, no zipper on any continuous knob, trig splits, REV switching without clicks, DPTH locked between
-  shimmer and chorus every 70 ms, and EDCY unable to hold a loud tail.
+  shimmer and chorus every 70 ms, EDCY unable to hold a loud tail, and on T3 and T7 no write or read of
+  Sidechain Compressor's key window (#696). The zipper and DPTH-lock gates each read one alignment or noise
+  seed; TESTING.md shows where they would flag 0.1.1 too.
 - **Performance** ([evidence/performance.json](evidence/performance.json)): 468 cycles/sample static per
   instance; 381.7 instructions/sample measured at the dearest settings with trig splits, against the
-  stock effects run through the same cases. The stress run was 32 s with eight instances behind DJ EQ on
-  every FX1, three LFOs and 16 slots changing every step on every track, and trig splits: no clobber, no
-  hang.
+  stock effects run through the same cases, unchanged in 0.1.2. The stress run had eight instances behind
+  DJ EQ on every FX1, three LFOs and 16 slots changing every step on every track, and trig splits: no
+  clobber, no hang (32 s on 0.1.0, 2 s on 0.1.2).
 - **Sound** (`npm run fx:audit`): every −12 dBFS tone is clean at the defaults; the tables, the loud-tone
   limits and the same audit of the stock reverbs are in TESTING.md.
 - **FUNC stops** (`python3 modules/everb/func_stops.py`): the firmware's own panel code on the ColdFire
   emulator, FUNC held, quick turns on each main-page knob: every knob steps 0, 64 and 127. On 0.1.0 the
   same run fails on SIZE, DCY, ABSB and SPD (0 and 127 only), which reproduces #438.
 - **Hardware**: owner-reported MKII functional audition of 0.1.0; see the exact-build report and its
-  limits. 0.1.1 is not tested on hardware.
+  limits. 0.1.1 and 0.1.2 are not tested on hardware.
 
 ## Authorship and licences
 

@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { issueMarkdown, issueTitle, type MirroredIssue } from '../../server/github'
 import { DEVICES_BY_ID } from '../devices/registry'
-import { catalogModules, CONFIGURATION_MODULES_REQUIRED, CONFIGURATION_REPORT_MAX_OWNERS, configurationOwners, configurationSummary, validateConfigurationReportContext } from './configuration-report'
+import { catalogModules, CONFIGURATION_MODULES_REQUIRED, configurationSummary, validateConfigurationReportContext } from './configuration-report'
 import { IssueInputError, type IssueContext } from './issue-context'
 import { ModuleIssueCard } from './ModuleIssues'
 import { communityModule } from './modules'
@@ -44,11 +44,7 @@ describe('which modules a configuration report is about', () => {
     expect(() => validateConfigurationReportContext(base, log.summary)).toThrow('structured reports only')
   })
 
-  it('names each current maintainer once, ignoring case, in configuration order', () => {
-    expect(configurationOwners([{ id: 'sidechain-compressor' }, { id: 'miniverb' }, { id: 'repitch' }, { id: 'unknown' }])).toEqual(['Zac-Kyoti', 'repeat98'])
-    expect(configurationOwners([{ id: 'miniverb' }, { id: 'synth' }, { id: 'sidechain-compressor' }])).toEqual(['repeat98', 'timhastie', 'Zac-Kyoti'])
-    expect(configurationOwners([{ id: 'cc-map' }, { id: 'recorder-loop-fix' }, { id: 'spectrum' }])).toEqual([])
-    expect(configurationOwners([{ id: 'cc-map' }, { id: 'miniverb' }, { id: 'recorder-loop-fix' }])).toEqual(['repeat98'])
+  it('counts the modules', () => {
     expect(configurationSummary(1)).toBe('1 module')
     expect(configurationSummary(3)).toBe('3 modules')
   })
@@ -56,11 +52,7 @@ describe('which modules a configuration report is about', () => {
 
 describe('the public GitHub issue for a configuration', () => {
   const issue = (owners: string[]): MirroredIssue => ({ id: 'r', module_id: 'miniverb', scope: 'configuration', moduleIds: ['miniverb', 'synth'], title: 'Freeze', reporter: 'someone', owners, details: { device: 'Octatrack MKII · OS 1.40C', version: '2 modules', steps: '', expected: '', actual: 'It freezes', modules: [{ id: 'miniverb', name: 'Mini Verb', version: '0.2.0' }, { id: 'synth', name: 'FM Synth', version: '0.1.2' }] } })
-  it('mentions at most the cap of handles and drops anything that is not a GitHub login', () => {
-    const owners = Array.from({ length: 40 }, (_, index) => 'author' + index)
-    const markdown = issueMarkdown(issue([...owners, 'not a login']), 'https://modwerk.app/')
-    expect(markdown.match(/@author\d+/g)).toHaveLength(CONFIGURATION_REPORT_MAX_OWNERS)
-    expect(markdown).not.toContain('not a login')
+  it('is titled for the whole configuration', () => {
     expect(issueTitle(issue([]))).toBe('[configuration] Freeze')
   })
   it('puts a module report’s issue unchanged: module id title, one version row and the plain resolve command', () => {

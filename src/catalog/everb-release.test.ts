@@ -18,9 +18,10 @@ import chooserMetadata from '../engine/assets/chooser-metadata.json'
 const folder = resolve('sdk/octabam/modules/everb')
 
 describe('E-Verb experimental release', () => {
-  it('publishes 0.1.1 as an owner-approved update through the shared catalog, with 0.1.0 hardware evidence only', async () => {
+  it('publishes 0.1.2 as an owner-approved update through the shared catalog, with 0.1.0 hardware evidence only', async () => {
     const document = parseModuleDocument(release)
-    // 0.1.1 changes four FX2 descriptor words (#438) and has not run on hardware; the owner's MKII report is 0.1.0's.
+    // 0.1.1 changed four FX2 descriptor words (#438) and 0.1.2 the ring length (#696); neither has run on hardware.
+    // The owner's MKII report is 0.1.0's.
     expect(document.tests.hardwareStatus).toBe('historical')
     expect(document.tests.qualification).toBeUndefined()
     await expect(requireFolderQualification(folder, document, parseQualificationBaseline(baseline))).resolves.toBe('owner-approved-update')
@@ -38,6 +39,18 @@ describe('E-Verb experimental release', () => {
     const editor = (slot: number) => recipe.integers.filter(field => field.offset === 0x12a + 4 * slot && field.width === 4).at(-1)?.value
     for (const slot of [0, 1, 2, 3, 4, 5, 6, 7, 9, 10]) expect(editor(slot), `slot ${slot}`).toBe(0x400328e4)
     expect(editor(8)).toBe(0)
+  })
+
+  it('keeps its ring clear of Sidechain Compressor\'s key window on T3 and T7 (#696)', async () => {
+    // Sidechain Compressor keeps a cross-core key window in the last 514 words (+$3DFE..) of the bank-track-3 FX2 slots.
+    // 0.1.1's ring was modulo 16,384 and wrote it; verify.py's window gate proves the fix on the emulator, this keeps the
+    // source from drifting back: every modulo register E-Verb sets is linear or wraps at 15,870 words.
+    const asm = await readFile(resolve(folder, 'everb.asm'), 'utf8')
+    const modifiers = [...asm.matchAll(/move\s+#>\$([0-9a-f]+),m[0-7]/g)].map(match => parseInt(match[1], 16))
+    expect(modifiers.length).toBeGreaterThan(0)
+    for (const value of modifiers) expect([0xffffff, 0x3dfd]).toContain(value)
+    expect(modifiers).toContain(0x3dfd)
+    expect(await readFile(resolve(folder, 'manifest.py'), 'utf8')).toContain('buffer_words=15870')
   })
 
   it('carries a complete tutorial, gauges and real monochrome captures of this version', async () => {

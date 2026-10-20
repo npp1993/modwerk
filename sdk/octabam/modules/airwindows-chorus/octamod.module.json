@@ -56,7 +56,9 @@
     "firmware": "1.40C",
     "effectId": 30,
     "location": "FX2",
-    "conflicts": [],
+    "conflicts": [
+      "sidechain-compressor"
+    ],
     "limitations": [
       "FX2 only; stale FX1 dispatch passes dry without writing its buffer.",
       "About 16-bit delay-buffer precision; dry bypass retains 24 bits.",

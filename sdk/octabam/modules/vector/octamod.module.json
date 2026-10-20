@@ -161,7 +161,8 @@
       "The DRAM loader reserves 1,707 audio pages (10,487,808 bytes) shared across DRAM modules.",
       "ColdFire resource pricing is a conditional static model, not measured chip timing. See TESTING.md for event-rate and memory-service assumptions.",
       "Part/project save-reload, fresh saved-project load and battery-RAM-only restart pass in the ColdFire emulator with two distinct instances. Physical reboot, working audio after transitions and mixed-module audio stress remain unverified under the owner exception for this version.",
-      "Keeps existing S2 version 1/2 saved settings. Already reset projects cannot be reconstructed; restore a known-good project/card backup."
+      "Keeps existing S2 version 1/2 saved settings. Already reset projects cannot be reconstructed; restore a known-good project/card backup.",
+      "Open (#596, from the source, not yet reproduced): switching a VECTOR track back to STATIC/FLEX leaves settings bytes that, with SPAN 8 or higher, can empty the bank after a save and reboot. Set SPAN to 7 or lower before switching back, or keep the track on VECTOR."
     ]
   },
   "resources": {

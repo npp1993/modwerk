@@ -1,13 +1,13 @@
 {
   "kind": "owner-approved-update",
   "id": "everb",
-  "version": "0.1.1-experimental",
+  "version": "0.1.2-experimental",
   "approvedBy": "repeat98",
-  "approvedOn": "2026-10-12",
+  "approvedOn": "2026-10-19",
   "waived": [
     "current-build-hardware"
   ],
-  "sourceSha256": "c06251e3744d0d9f66bc0d9622bf5ca3d00c8a69a52aedffdb49577d5bf2990a",
-  "ownerStatement": "Merged PR #441 (E-Verb 0.1.1-experimental, merge de866009) on 2026-10-12 without fresh hardware evidence; that PR requested this record.",
-  "reason": "Drafted by the module author's agent from the owner's merge of #441, which asked for exactly this record; merging this follow-up is the owner's approval of this exact native source with only current-build hardware waived. 0.1.1 changes four FX2 descriptor words (FUNC + turn stops, #438); both DSP memory images are byte-identical to 0.1.0, so 0.1.0's cycle and memory bounds (evidence/release-bounds.md) still hold. Verified on the ColdFire emulator only: hardware status stays historical (the owner's MKII report covers 0.1.0), and physical hardware, MKI and chip timing remain unverified for 0.1.1. Issue #438 stays open until the live download is verified and the reporter confirms."
+  "sourceSha256": "f2d97d9fb04bc8963a08e4d393b64c45e6e69cd2fc9b281c16a2265f88c5e385",
+  "ownerStatement": "The owner reviewed E-Verb 0.1.2-experimental (pull request #697) on 19 October 2026 and chose to merge it without current-build hardware testing, on emulator-only evidence.",
+  "reason": "Drafted by the module author's agent so that the owner's merge publishes without a follow-up; merging is the owner's approval of this exact native source with only current-build hardware waived. 0.1.2 stops the DSP ring at 15,870 words so it no longer writes or reads Sidechain Compressor's key window on T3 and T7, and caps the pre-delay at 227 ms from PRE 124; every tested setting below PRE 124 renders bit-identically to 0.1.1. The frame loop's instructions are unchanged, the per-call bound recomputes to the same 47,680 cycles/core/block (evidence/release-bounds.md), the program grows by 14 words, and the matched benchmark reproduces 0.1.1's figures. Verified on the DSP and ColdFire emulators only: hardware status stays historical (the owner's MKII report covers 0.1.0), and physical hardware, MKI and chip timing remain unverified for 0.1.2."
 }

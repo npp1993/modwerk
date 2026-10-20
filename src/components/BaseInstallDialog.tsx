@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { DEVELOPMENT_DISCORD_URL } from '../config/development-discord'
 import { saveFirmware } from '../config/firmware-filename'
+import { BETA_RECOVERY_NOTICE } from '../firmware-notices'
 import { finishBaseInstall, pendingBaseInstall, waitForBaseInstall } from '../config/octatrack-progress'
-import type { OctatrackLink } from '../engine/elekloader/octatrack-link'
+import type { BaseUpdateStep, OctatrackLink } from '../engine/elekloader/octatrack-link'
+import { unitForPrompt } from '../hooks/useBaseInstallPrompt'
 import { useOctatrackLink } from '../hooks/useOctatrackLink'
 import { RiskAcceptance } from './ConfigurationLayout'
 import { Icon, type IconName } from './Icon'
@@ -11,6 +13,15 @@ import './octatrack-link.css'
 export interface BaseImage { buffer: ArrayBuffer; sha256: string; base: string }
 /** The release prompt holds this long before it can be put off. */
 const LAUNCH_HOLD_SECONDS = 10
+/** The update over USB, step by step, as the link reports it (updateBase). */
+const USB_STEPS: Record<BaseUpdateStep, string> = {
+  staging: 'Sending the new base to your Octatrack',
+  starting: 'Your Octatrack restarts on the new base, from memory. Nothing is written yet',
+  started: 'The new base runs and answers. Writing it to the Octatrack now',
+  writing: 'Writing the new base. Keep the power and the cable on',
+  restarting: 'Written and checked. Your Octatrack restarts on it',
+  done: 'Done. Your Octatrack runs the new base.',
+}
 // What the beta prompt promises: only what the base does today. Cross-compatibility,
 // automatic stress tests and bug reports are still to be built (docs/OCTATRACK_ELEKLOADER_MIGRATION.md).
 const ALSO_NEW: [IconName, string, string, boolean?][] = [
@@ -107,6 +118,8 @@ export function BaseInstallDialog({ link, launch = false, firmwareReady, firmwar
   const state = useOctatrackLink(link)
   const [hold, setHold] = useState(launch ? LAUNCH_HOLD_SECONDS : 0)
   const [accepted, setAccepted] = useState(false)
+  const [usb, setUsb] = useState<{ step: BaseUpdateStep; fraction?: number } | { error: string } | null>(null)
+  const [card, setCard] = useState(false)
   const [pending, setPending] = useState(pendingBaseInstall)
   const [download, setDownload] = useState<'idle' | 'building' | 'done' | 'failed'>(pending ? 'done' : 'idle'), [failure, setFailure] = useState('')
   const [view, setView] = useState<'intro' | 'steps'>(launch && !pending ? 'intro' : 'steps')
@@ -114,9 +127,13 @@ export function BaseInstallDialog({ link, launch = false, firmwareReady, firmwar
   const stages = ['download', 'copy', 'install', 'connect'] as const
   const stageIndex = stages.indexOf(stage)
   const found = !!pending && state.status === 'ready' && !!state.identity?.canSubmit && state.identity.base === pending.expectedBase
-  const canClose = hold === 0 || found
-  // A unit already on a Modwerk base is updated, not installed (the hub sends it here when its base is older).
-  const older = !pending && state.status === 'ready' ? state.identity?.base : undefined
+  const updating = !!usb && 'step' in usb && usb.step !== 'done'
+  const canClose = (hold === 0 || found) && !updating
+  // A unit already on an older Modwerk base is updated, not installed (the hub and the update prompt send it here).
+  const older = !pending && unitForPrompt(state) === 'older'
+  // Over USB from any older base (every base RAM-boots the new one, which writes itself: flash.c); the card stays for
+  // the first install and as the fallback after an error.
+  const overUsb = stage === 'download' && !card && (usb !== null || older)
   useEffect(() => {
     if (!pending || !found || finished.current) return
     finished.current = true; finishBaseInstall(); onReady()
@@ -133,6 +150,14 @@ export function BaseInstallDialog({ link, launch = false, firmwareReady, firmwar
     return () => window.clearTimeout(timer)
   }, [hold])
   function finish() { finished.current = true; onClose(true) }
+  async function updateOverUsb() {
+    setUsb({ step: 'staging' })
+    try {
+      const image = await buildBase!()
+      await link.updateBase(new Uint8Array(image.buffer), image.base, (step, fraction) => setUsb({ step, fraction }))
+      setUsb({ step: 'done' }); finished.current = true; onReady()
+    } catch (error) { console.error(error); setUsb({ error: error instanceof Error ? error.message : 'The update did not finish.' }) }
+  }
   async function downloadBase() {
     setDownload('building')
     try {
@@ -149,18 +174,29 @@ export function BaseInstallDialog({ link, launch = false, firmwareReady, firmwar
     {view === 'intro' ? <>
       <LinkHero />
       <h2 id="base-install-title" className="link-title" tabIndex={-1}>Sync to Octatrack <span className="module-beta-badge">Beta</span></h2>
-      <p id="base-install-intro" className="base-install-intro">Install the Modwerk base once from the card. After that, modules go straight from this page to your Octatrack, without the card and without a reboot. It’s a beta, so please tell me in the <a href={DEVELOPMENT_DISCORD_URL} target="_blank" rel="noreferrer">development Discord</a> what goes wrong.</p>
+      <p id="base-install-intro" className="base-install-intro">Install the Modwerk base once from the card. After that, modules go straight from this page to your Octatrack, without the card and without a reboot. It’s a beta, so please tell me in <strong>#beta-testers</strong> on the <a href={DEVELOPMENT_DISCORD_URL} target="_blank" rel="noreferrer">development Discord</a> what goes wrong, not through the report forms on this site.</p>
       <ul className="link-promises">{ALSO_NEW.map(([icon, lead, rest, explainOnPhone]) => <li key={lead}><span className="link-feature-icon" aria-hidden="true"><Icon name={icon} size={18} /></span><span><strong>{lead}</strong><span className={explainOnPhone ? undefined : 'link-feature-rest'}>{rest}</span></span></li>)}</ul>
-      <p className={'link-needs' + (state.status === 'unsupported' ? ' is-missing' : '')}>You need an Octatrack MKII, your OS 1.40C file, a USB cable and Chrome or Edge on a computer.</p>
+      <p className={'link-needs' + (state.status === 'unsupported' ? ' is-missing' : '')}>You need an Octatrack MKII, your OS 1.40C file, a USB cable, Chrome or Edge on a computer, and a CompactFlash card reader in case USB stops working.</p>
       {state.status === 'unsupported' && <p className="file-error" role="alert">This browser can’t talk to USB devices. Open this page in Chrome or Edge on a computer.</p>}
     </> : <>
     <header className="base-install-header"><h2 id="base-install-title" tabIndex={-1}>{older ? 'Update' : 'Install'} the Modwerk base <span className="module-beta-badge">Beta</span></h2></header>
-    <p id="base-install-intro" className="base-install-intro">{older ? <>Your Octatrack runs an older Modwerk base (<code>{older.slice(0, 8)}</code>). Install the current one from the card, the same way as the first time.</> : 'A one-time install from your Octatrack’s card.'}</p>
-    <ol className="base-install-progress" aria-label="Installation progress">{stages.map((item, index) => <li key={item} aria-current={stage === item ? 'step' : undefined} className={index < stageIndex ? 'is-past' : undefined}><span aria-hidden="true">{index < stageIndex ? <Icon name="check" size={13}/> : index + 1}</span>{['Download', 'Copy', 'Install', 'Connect'][index]}</li>)}</ol>
+    <p id="base-install-intro" className="base-install-intro">{older ? <>Your Octatrack runs an older Modwerk base{state.identity && <> (<code>{state.identity.base.slice(0, 8)}</code>)</>}. {overUsb ? 'I’ll send the current one over USB; the card is only for the first install.' : 'Install the current one from the card, the same way as the first time.'}</> : 'A one-time install from your Octatrack’s card.'}</p>
+    {!overUsb && <ol className="base-install-progress" aria-label="Installation progress">{stages.map((item, index) => <li key={item} aria-current={stage === item ? 'step' : undefined} className={index < stageIndex ? 'is-past' : undefined}><span aria-hidden="true">{index < stageIndex ? <Icon name="check" size={13}/> : index + 1}</span>{['Download', 'Copy', 'Install', 'Connect'][index]}</li>)}</ol>}
     <section className="base-install-stage" aria-labelledby="base-stage-title">
-    {stage === 'download' && <>
+    {overUsb && <>
+      <h3 id="base-stage-title" data-stage-title tabIndex={-1}>Update over USB</h3>
+      <p>I’ll build the current base in your browser from your original OS 1.40C file and send it over USB. Your Octatrack starts it from memory first, without writing anything; only once it runs and answers does it write it and restart. Keep the power and the cable on while it writes.</p>
+      <p className="base-install-warning" role="note"><Icon name="warn" size={18}/><span><strong>{BETA_RECOVERY_NOTICE}</strong> Keep the original OS 1.40C .bin and .syx on your computer. <a href="#faq" target="_blank" rel="noreferrer">Recovery in the FAQ</a></span></p>
+      <input ref={fileRef} type="file" accept=".bin" hidden aria-label="Choose your original OS 1.40C file" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) onChooseFirmware(file) }}/>
+      {firmwareReady ? <><p className="base-file-ready"><Icon name="check" size={18}/>Your OS 1.40C file is ready.</p>{!usb && <RiskAcceptance checked={accepted} onChange={setAccepted}/>}</> : <a className="text-button" href="#faq" target="_blank" rel="noreferrer">Where do I get the original OS file? <Icon name="arrow" size={14}/></a>}
+      {firmwareError && <p className="file-error" role="alert">{firmwareError}</p>}
+      {usb && 'step' in usb && <p className="base-install-note" role="status">{USB_STEPS[usb.step]}{usb.fraction !== undefined && usb.fraction < 1 ? ` (${Math.round(100 * usb.fraction)} %)` : ''}{usb.step === 'done' ? '' : '…'}</p>}
+      {usb && 'error' in usb && <p className="file-error" role="alert">{usb.error} {state.status === 'ready' ? 'You can try again, or update from the card.' : 'Once it is connected again you can try again, or update from the card.'}</p>}
+    </>}
+    {stage === 'download' && !overUsb && <>
       <h3 id="base-stage-title" data-stage-title tabIndex={-1}>Download the base</h3>
       <p>I’ll build it in your browser from your original OS 1.40C file. Your firmware stays on your computer.</p>
+      <p className="base-install-warning" role="note"><Icon name="warn" size={18}/><span><strong>{BETA_RECOVERY_NOTICE}</strong> Keep the original OS 1.40C .bin and .syx on your computer. <a href="#faq" target="_blank" rel="noreferrer">Recovery in the FAQ</a></span></p>
       <input ref={fileRef} type="file" accept=".bin" hidden aria-label="Choose your original OS 1.40C file" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) onChooseFirmware(file) }}/>
       {firmwareReady ? <><p className="base-file-ready"><Icon name="check" size={18}/>Your OS 1.40C file is ready.</p><RiskAcceptance checked={accepted} onChange={setAccepted}/></> : <a className="text-button" href="#faq" target="_blank" rel="noreferrer">Where do I get the original OS file? <Icon name="arrow" size={14}/></a>}
       {firmwareError && <p className="file-error" role="alert">{firmwareError}</p>}
@@ -183,7 +219,7 @@ export function BaseInstallDialog({ link, launch = false, firmwareReady, firmwar
         <li><strong>Keep the power on while it updates</strong><p>Wait until startup finishes, or the Octatrack explicitly asks you to restart.</p></li>
         <li><strong>Follow the restart prompt, if shown</strong><p>Only then switch the Octatrack off and on again. Leave the USB cable connected.</p></li>
       </ol>
-      <details className="base-install-recovery"><summary>If the Octatrack doesn’t start</summary><p>The original OS can be installed again. Follow <a href="#faq" target="_blank" rel="noreferrer">recovery in the FAQ</a>.</p></details>
+      <details className="base-install-recovery"><summary>If the Octatrack doesn’t start or connect</summary><p>The original OS can be installed again: from the card with a CompactFlash card reader, or as the .syx through a MIDI interface and the startup menu. Follow <a href="#faq" target="_blank" rel="noreferrer">recovery in the FAQ</a>, and tell me in #beta-testers on Discord.</p></details>
     </>}
     {stage === 'connect' && <>
       <h3 id="base-stage-title" data-stage-title tabIndex={-1}>Waiting for your Octatrack</h3>
@@ -198,7 +234,9 @@ export function BaseInstallDialog({ link, launch = false, firmwareReady, firmwar
     <footer className="base-install-footer">
       {view === 'intro' ? <><p className="link-hint">You’ll find this guide under Octatrack.</p><div className="base-install-actions"><button type="button" className="button button-quiet" disabled={!canClose} onClick={finish}>{hold ? `Later (${hold})` : 'Later'}</button><button type="button" className="button button-primary" onClick={() => setView('steps')}>Show me how<Icon name="arrow" size={16}/></button></div></> : <>
         <button type="button" className="button button-quiet" disabled={stageIndex === 0 && !canClose || download === 'building'} onClick={() => stageIndex ? setStage(stages[stageIndex - 1]) : finish()}>{stageIndex ? 'Back' : 'Close'}</button>
-        {stage === 'download' && (firmwareReady ? <button type="button" className="button button-primary" disabled={!buildBase || !accepted || download === 'building'} onClick={() => void downloadBase()}><Icon name="download" size={16}/>{download === 'building' ? 'Building the base…' : 'Download base .bin'}</button> : <button type="button" className="button button-primary" onClick={() => fileRef.current?.click()}><Icon name="file" size={16}/>Choose OS 1.40C file</button>)}
+        {overUsb && usb && 'error' in usb && <button type="button" className="button button-quiet" onClick={() => { setUsb(null); setCard(true) }}>Update from the card</button>}
+        {overUsb && (firmwareReady ? <button type="button" className="button button-primary" disabled={!buildBase || !accepted || updating || state.status !== 'ready'} onClick={() => void updateOverUsb()}><Icon name="arrow" size={16}/>{updating ? 'Updating…' : usb && 'error' in usb ? 'Try again' : 'Update over USB'}</button> : <button type="button" className="button button-primary" onClick={() => fileRef.current?.click()}><Icon name="file" size={16}/>Choose OS 1.40C file</button>)}
+        {stage === 'download' && !overUsb && (firmwareReady ? <button type="button" className="button button-primary" disabled={!buildBase || !accepted || download === 'building'} onClick={() => void downloadBase()}><Icon name="download" size={16}/>{download === 'building' ? 'Building the base…' : 'Download base .bin'}</button> : <button type="button" className="button button-primary" onClick={() => fileRef.current?.click()}><Icon name="file" size={16}/>Choose OS 1.40C file</button>)}
         {stage === 'copy' && <button type="button" className="button button-primary" onClick={() => setStage('install')}>File copied <Icon name="arrow" size={16}/></button>}
         {stage === 'install' && <button type="button" className="button button-primary" onClick={() => setStage('connect')}>Octatrack has started <Icon name="arrow" size={16}/></button>}
         {stage === 'connect' && state.status !== 'unsupported' && <button type="button" className={'button ' + (pending ? 'button-primary' : 'button-quiet')} disabled={state.status === 'connecting' || found} onClick={() => void link.retry()}>{state.status === 'connecting' ? 'Connecting…' : 'Connect Octatrack'}</button>}

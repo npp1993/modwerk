@@ -7,17 +7,23 @@ import type { DiagnosticPreference } from '../community/octatrack-diagnostics'
 afterEach(() => { vi.unstubAllGlobals(); vi.resetModules() })
 
 describe('beta tester note', () => {
-  it('names the channel and the tester, warns, and offers only Leave beta or Join Discord, both locked at first', async () => {
+  it('names the channel and the tester, requires a recovery path, keeps reports off the site, and offers only Leave beta or an accepted Join Discord, both locked at first', async () => {
     const { OwnerNote } = await import('./OwnerNote')
     const html = renderToStaticMarkup(createElement(OwnerNote, { username: 'tester_1', onJoin() {}, onLeave() {} }))
-    expect(html).toContain('#beta-tester')
+    expect(html).toContain('#beta-testers')
     expect(html).toContain('@tester_1')
     expect(html).toContain('pass your place on to someone else')
-    expect(html).toContain('as they happen')
-    expect(html).toContain('roll back to the stock firmware')
+    expect(html).toContain('right when you run into them')
+    expect(html).toContain('recover without USB')
+    expect(html).toContain('CompactFlash card reader')
+    expect(html).toContain('MIDI interface')
+    expect(html).toContain('don&#x27;t use the report forms on this site')
+    expect(html).not.toContain('you can always roll back')
+    expect(html).toMatch(/<input type="checkbox"\/><span>I&#x27;ve read this\./)
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Leave beta<\/button>/)
-    expect(html).toMatch(new RegExp(`<a[^>]*href="${DEVELOPMENT_DISCORD_URL}"[^>]*aria-disabled="true"[^>]*>.*Join Discord \\(10\\)</a>`))
-    expect(html.match(/<button|<a /g)).toHaveLength(2)
+    expect(html).toMatch(new RegExp(`<a[^>]*href="${DEVELOPMENT_DISCORD_URL}"[^>]*aria-disabled="true"[^>]*>.*Accept &amp; join Discord \\(15\\)</a>`))
+    expect(html.match(/<button|<a /g)).toHaveLength(3)
+    expect(html).toContain('<a href="#faq"')
   })
 
   it('asks for diagnostics afterwards unless sharing is already on or unavailable', async () => {
@@ -27,6 +33,17 @@ describe('beta tester note', () => {
     expect(askForDiagnostics({ ...preference, enabled: true }, false)).toBe(false)
     expect(askForDiagnostics({ ...preference, available: false }, false)).toBe(false)
     expect(askForDiagnostics(preference, true)).toBe(false)
+  })
+
+  it('asks again after a new consent version, but not a tester who turned sharing off under the current one', async () => {
+    const { diagnosticsLapsed } = await import('./OwnerNote')
+    const preference = { accountId: 'm1', ready: true, available: true, enabled: false, hasChoice: false } as DiagnosticPreference
+    expect(diagnosticsLapsed(preference, 'm1', false)).toBe(true)
+    expect(diagnosticsLapsed({ ...preference, hasChoice: true }, 'm1', false)).toBe(false)
+    expect(diagnosticsLapsed({ ...preference, enabled: true }, 'm1', false)).toBe(false)
+    expect(diagnosticsLapsed({ ...preference, ready: false }, 'm1', false)).toBe(false)
+    expect(diagnosticsLapsed(preference, 'm2', false)).toBe(false)
+    expect(diagnosticsLapsed(preference, 'm1', true)).toBe(false)
   })
 
   it('shows once per browser, and once per visit when storage is blocked', async () => {

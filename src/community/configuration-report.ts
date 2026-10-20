@@ -3,15 +3,13 @@
 /**
  * Reports about a whole configuration, shared by the report dialog and the Worker. A module report names one
  * module and goes to its current maintainers. A configuration report is for a problem in the combination, where no single
- * module is known to be at fault, so it goes to the current maintainers of every catalog module in it.
+ * module is known to be at fault, so it is listed on every catalog module in it but mentions none of their maintainers.
  */
 import { validateDigiIssueContext } from './digi-issue-context'
 import { IssueInputError, validateIssueContext, type IssueContext } from './issue-context'
-import { communityModule, machineModules } from './modules'
+import { machineModules } from './modules'
 import type { OtLogSummary } from './ot-log'
 
-/** GitHub handles mentioned on one report. Every current maintainer keeps full access on Modwerk whatever this cap leaves out. */
-export const CONFIGURATION_REPORT_MAX_OWNERS = 25
 export const CONFIGURATION_MODULES_REQUIRED = 'Choose a configuration with at least one catalog module.'
 
 export type ReportedModule = { id: string; moduleId: string; name: string; version: string }
@@ -19,7 +17,7 @@ type LogConfiguration = Pick<OtLogSummary, 'version' | 'modules' | 'os' | 'stock
 
 const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value)
 
-/** The catalog modules among a machine's native module ids, by community id, at the versions given. Modules the catalog no longer lists have no maintainer to notify and are left out. */
+/** The catalog modules among a machine's native module ids, by community id, at the versions given. Modules the catalog no longer lists are left out. */
 export function catalogModules(machine: string, modules: readonly { id: string; version: string }[]): ReportedModule[] {
   const catalog = machineModules(machine)
   return modules.flatMap(item => {
@@ -38,19 +36,6 @@ export function validateConfigurationReportContext(value: unknown, log: LogConfi
   const modules = reportedModules(context)
   if (!modules.length) throw new IssueInputError(CONFIGURATION_MODULES_REQUIRED)
   return { context, modules }
-}
-
-/** Current maintainers of every reported module, once each, in the order the configuration lists them. */
-export function configurationOwners(modules: readonly Pick<ReportedModule, 'id'>[]): string[] {
-  const seen = new Set<string>(), owners: string[] = []
-  for (const { id } of modules) {
-    const module = communityModule(id)
-    for (const login of module?.maintainers ?? []) {
-      const key = login.toLowerCase()
-      if (!seen.has(key)) { seen.add(key); owners.push(login) }
-    }
-  }
-  return owners
 }
 
 export const configurationSummary = (count: number) => count + (count === 1 ? ' module' : ' modules')

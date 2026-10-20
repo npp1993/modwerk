@@ -135,6 +135,7 @@ describe('the Octatrack page', () => {
     expect(open().querySelector<HTMLButtonElement>('.samples-actions button')?.disabled).toBe(false)
     await act(() => root.render(createElement(OctatrackHub, { ...props, view: 'setup', link: null, sets: [], header: null, grid: null, card: createElement('p', null, 'Card route') })))
     expect(open().textContent).toContain('This browser can’t use USB'); expect(open().textContent).toContain('Card route')
+    expect(open().textContent).not.toContain('Can’t connect?')
     await act(() => root.render(createElement(OctatrackHub, { ...props, view: 'set', link: null, sets: [], header: null, grid: null, card: null })))
     await act(() => button('New module set').click())
     expect(props.onNew).toHaveBeenCalledOnce(); expect(props.onSync).not.toHaveBeenCalled(); expect(props.onInstall).not.toHaveBeenCalled()
@@ -146,6 +147,12 @@ describe('link results outside the sync dialog', () => {
     await act(() => root.render(createElement(OctatrackHub, { ...callbacks(), view: 'status', link, sets: [], header: null, grid: null, card: null })))
     expect(container.querySelector('.hub-hero [role=status]')?.textContent).toContain('Chrome couldn’t open the Octatrack')
     expect([...container.querySelectorAll('.hub-hero button')].map(item => item.textContent)).toEqual(['Connect'])
+  })
+  it('gives Linux and Windows their own connection steps in Setup', async () => {
+    await act(() => root.render(createElement(OctatrackHub, { ...callbacks(), view: 'setup', link: unit({ status: 'idle' }), sets: [], header: null, grid: null, card: null })))
+    expect(open().textContent).toContain('Can’t connect?')
+    expect(open().querySelector('.hub-code')?.textContent).toContain('ATTR{idVendor}=="1935", TAG+="uaccess"')
+    expect(open().textContent).toContain('only once it runs the Modwerk base')
   })
   it('does not repeat a result the sync dialog already showed, and still shows one that arrives on this page', async () => {
     let state: LinkState = { ...ready, notice: { tone: 'success', text: 'Kept. Live stays on your Octatrack, also after a restart.' } }

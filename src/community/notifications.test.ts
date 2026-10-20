@@ -177,4 +177,17 @@ describe('activity notifications', () => {
     // The bell keeps working.
     expect((await (await call('/notifications/unread', 'GET', undefined, author.session)).json()).unread).toBe(2)
   })
+
+  it('spaces digest requests below the mail provider\u2019s two per second', async () => {
+    const { call, member, digests } = await fixture(), author = await member('authorone'), follower = await member('followone'), other = await member('othertwo')
+    const { id } = await (await call('/forum/threads', 'POST', thread, author.session)).json()
+    await call('/forum/threads/' + id + '/follow', 'POST', { enabled: true }, follower.session)
+    await call('/forum/threads/' + id + '/replies', 'POST', { body: 'Try a short decay.' }, other.session)
+    const times: number[] = []
+    vi.stubGlobal('fetch', vi.fn(async () => { times.push(Date.now()); return new Response('{}', { status: 200 }) }))
+    expect((await digests()).sent).toBe(2)
+    expect(times).toHaveLength(2)
+    // The first request is not delayed; the second waits out the provider window (timers may fire a few ms early).
+    expect(times[1] - times[0]).toBeGreaterThanOrEqual(500)
+  })
 })

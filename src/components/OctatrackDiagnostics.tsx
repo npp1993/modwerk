@@ -26,7 +26,7 @@ export function OctatrackDiagnosticsSettings({username}: {username?: string | nu
       : 'Use the same name on Discord, so I can match your messages to them.'}</p>}
     {!state.enabled && <button type="button" className="button button-quiet" aria-haspopup="dialog" onClick={()=>setInvitation(true)}>About sharing diagnostics</button>}
     <DiagnosticDetails/>
-    {state.ready && (state.hasChoice || state.error) && <button className="text-button" disabled={state.busy} onClick={()=>void changeDiagnosticSharing(false)}>Stop sharing and delete</button>}
+    {state.ready && (state.saved || state.error) && <button className="text-button" disabled={state.busy} onClick={()=>void changeDiagnosticSharing(false)}>Stop sharing and delete</button>}
     {state.notice && <p className="link-hint" role="status">{state.notice}</p>}
     {state.lastSent && <p className="link-hint" role="status">Last diagnostic received: {new Date(state.lastSent).toLocaleTimeString()}</p>}
     {privacy && <p className="link-hint">Your browser requests privacy, so automatic diagnostics stay off here.</p>}

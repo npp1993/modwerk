@@ -27,28 +27,39 @@ beforeEach(() => {
 })
 afterEach(async () => { await act(() => root.unmount()); container.remove(); vi.useRealTimers(); vi.unstubAllGlobals() })
 
-it('opens for a unit on the original OS', async () => {
+it('opens the install prompt for a unit on the original OS', async () => {
   await render(unit({ status: 'stock' }).link)
   await act(() => vi.advanceTimersByTimeAsync(1500))
-  expect(prompt.open).toBe(true); expect(mocked.post).not.toHaveBeenCalled()
+  expect(prompt.open).toBe(true); expect(prompt.update).toBe(false); expect(mocked.post).not.toHaveBeenCalled()
 })
-it('waits while the unit is read, then records itself as done once the current base answers', async () => {
+it('stays closed without a unit once the member has had a base', async () => {
+  mocked.api.mockResolvedValue({ show: false })
+  await render(unit({ status: 'idle' }).link)
+  await act(() => vi.advanceTimersByTimeAsync(6000))
+  expect(prompt.open).toBe(false); expect(mocked.post).not.toHaveBeenCalled()
+})
+it('waits while the unit is read, records the current base, and stays closed after it is unplugged', async () => {
   const device = unit({ status: 'connecting' })
   await render(device.link)
   await act(() => vi.advanceTimersByTimeAsync(6000)); expect(prompt.open).toBe(false)
   await act(async () => device.update({ status: 'ready', identity: { base: baseBinding.identity, canSubmit: true, model: 'OT' } }))
   await act(() => vi.advanceTimersByTimeAsync(6000))
   expect(prompt.open).toBe(false); expect(mocked.post).toHaveBeenCalledWith('/auth/base-install-prompt', {})
+  await act(async () => device.update({ status: 'idle' }))
+  await act(() => vi.advanceTimersByTimeAsync(6000))
+  expect(prompt.open).toBe(false); expect(mocked.post).toHaveBeenCalledTimes(1)
 })
-it('opens for an older Modwerk base and never records it, closed or not', async () => {
+it('records an older base as installed and opens the update prompt, even when the install prompt is not due', async () => {
   await render(unit({ status: 'ready', identity: { base: 'a'.repeat(64), canSubmit: true, model: 'OT' } }).link)
   await act(() => vi.advanceTimersByTimeAsync(1500))
-  expect(prompt.open).toBe(true)
+  expect(prompt.open).toBe(true); expect(prompt.update).toBe(true); expect(mocked.post).toHaveBeenCalledTimes(1)
   await act(async () => prompt.close())
-  expect(prompt.open).toBe(false); expect(mocked.post).not.toHaveBeenCalled()
+  await act(() => vi.advanceTimersByTimeAsync(6000))
+  expect(prompt.open).toBe(false)
 })
-it('counts an older base this page cannot talk to as installed', async () => {
+it('opens the update prompt for a base this page cannot talk to', async () => {
+  mocked.api.mockResolvedValue({ show: false })
   await render(unit({ status: 'ready' }).link)
-  await act(() => vi.advanceTimersByTimeAsync(3000))
-  expect(prompt.open).toBe(false); expect(mocked.post).toHaveBeenCalledTimes(1)
+  await act(() => vi.advanceTimersByTimeAsync(1500))
+  expect(prompt.open).toBe(true); expect(prompt.update).toBe(true); expect(mocked.post).not.toHaveBeenCalled()
 })

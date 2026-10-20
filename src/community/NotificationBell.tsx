@@ -6,6 +6,7 @@ import { NotificationList } from './NotificationList'
 import { notificationLines, type NotificationLine } from './notification-text'
 import type { BellItem } from './notification-contract'
 import { accountHref } from './member-access'
+import { noteRemoteSessionDue } from './remote-session-signal'
 
 const POLL_MS = 60000
 export function NotificationBell({ next = 'library' }: { next?: string }) {
@@ -16,7 +17,7 @@ export function NotificationBell({ next = 'library' }: { next?: string }) {
 function NotificationBellContent({ member, next }: { member: boolean; next: string }) {
   const [unread, setUnread] = useState(0), [open, setOpen] = useState(false), [items, setItems] = useState<BellItem[] | null>(null), [error, setError] = useState('')
   const root = useRef<HTMLDivElement>(null), button = useRef<HTMLButtonElement>(null)
-  const count = useCallback(() => { void api<{ unread: number }>('/notifications/unread').then(value => setUnread(value.unread)).catch(() => {}) }, [])
+  const count = useCallback(() => { void api<{ unread: number; remoteSession?: boolean }>('/notifications/unread').then(value => { setUnread(value.unread); noteRemoteSessionDue(value.remoteSession) }).catch(() => {}) }, [])
   useEffect(() => {
     if (!member) return
     count()

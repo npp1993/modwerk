@@ -51,6 +51,7 @@ class FakeLink {
   }
   liveLoad = async () => ({ ticks: 120, frames: 1000, cpu: 123, tracks1to4: 234, tracks5to8: 345, peak1to4: 456, peak5to8: 567 })
   savedBackup = async () => savedSnapshots()
+  deviceLog = async () => ({ nonce: 77, boot: 3, seq: 9, loads: [{ seq: 9, boot: 3, minute: 5, cpu: [100, 200], dsp5to8: [1, 2], dsp1to4: [3, 4], samples: 300, playing: 1 }], incidents: [] })
   subscribeDiagnostics = listener => { this.listeners.add(listener); return () => this.listeners.delete(listener) }
   selftest = async () => {
     if (this.finalReading) for (const listener of this.listeners) listener({ event: 'selftest', reading: structuredClone(this.finalReading) })
@@ -361,5 +362,55 @@ describe('frontend MCP reviewed device transactions', () => {
     expect(link.updates).toHaveLength(0)
     expect(link.keeps).toBe(0)
     expect(link.undos).toBe(0)
+  })
+})
+
+describe('frontend MCP remote sessions', () => {
+  let folder, service, calls, relay
+  const id = '0f0e0d0c-0b0a-4908-8706-050403020100'
+  const reply = (path, init = {}) => {
+    calls.push({ path, method: init.method ?? 'GET', origin: new Headers(init.headers).get('Origin'), body: init.body && JSON.parse(init.body) })
+    if (path === '/admin/remote-sessions') return Response.json({ session: { id, status: 'pending' } }, { status: 201 })
+    if (path.endsWith('/ticket')) return Response.json({ ticket: 'f'.repeat(64), endsAt: '2026-10-20T12:30:00.000Z' })
+    if (init.method === 'DELETE') return Response.json({ ok: true })
+    return Response.json({ session: { id, status: 'active' } })
+  }
+  const open = (options = {}) => createFrontendTools({ dataDir: folder, allowApiWrites: true, site: 'https://modwerk.app/', ...options }, { ...frontend, apiFetch: async (path, init) => reply(path, init) }, {
+    openLink: async () => new FakeLink(),
+    openRemote: url => { relay = { url, said: [], ended: false, ready: Promise.resolve(), state: () => ({ member: true, unit: true, ended: relay.ended ? 'operator' : null }), say: text => relay.said.push(text), end: () => { relay.ended = true } }; return relay },
+  })
+  beforeEach(async () => { folder = await mkdtemp(join(tmpdir(), 'modwerk-mcp-remote-test-')); calls = []; relay = undefined; service = await open() })
+  afterEach(async () => { await service?.close(); await rm(folder, { recursive: true, force: true }) })
+
+  it('asks only with the API write opt-in and confirmation, naming the trusted site', async () => {
+    await expect(service.call('remote_session_request', { username: 'member', reason: 'Read the log.', confirm: false })).rejects.toThrow(/confirm=true/)
+    expect(await service.call('remote_session_request', { username: 'member', reason: 'Read the log.', minutes: 15, confirm: true })).toMatchObject({ session: { id, status: 'pending' } })
+    expect(calls).toEqual([{ path: '/admin/remote-sessions', method: 'POST', origin: 'https://modwerk.app', body: { username: 'member', reason: 'Read the log.', minutes: 15 } }])
+    await service.close(); service = await open({ allowApiWrites: false })
+    await expect(service.call('remote_session_request', { username: 'member', reason: 'Read the log.', confirm: true })).rejects.toThrow(/allow-api-writes/)
+  })
+  it('reads the member’s unit through an accepted session and refuses every write', async () => {
+    await expect(service.call('device_status')).rejects.toThrow(/remote session/)
+    expect(await service.call('remote_session_connect', { session: id })).toMatchObject({ connected: true, member: true, unit: true })
+    expect(relay.url).toBe('ws://127.0.0.1:8788/api/remote-sessions/' + id + '/socket?ticket=' + 'f'.repeat(64))
+    expect(calls.at(-1)).toMatchObject({ path: `/admin/remote-sessions/${id}/ticket`, method: 'POST' })
+    expect(await service.call('device_status')).toMatchObject({ state: { status: 'ready', identity: { base } } })
+    expect(await service.call('device_load')).toMatchObject({ base, supported: true })
+    const { log } = await service.call('device_log')
+    expect(log).toMatchObject({ boot: 3, seq: 9, loads: [{ minute: 5 }] })
+    expect(log.nonce).toBeUndefined()
+    await expect(service.call('device_saved_backup')).rejects.toThrow(/read-only/)
+    await expect(service.call('device_trial', { review: 'x' })).rejects.toThrow(/read-only/)
+    await expect(service.call('device_keep', { trial: 'x' })).rejects.toThrow(/read-only/)
+    await service.call('remote_session_say', { text: 'Please plug the Octatrack back in.' })
+    expect(relay.said).toEqual(['Please plug the Octatrack back in.'])
+    expect(await service.call('remote_session_end')).toEqual({ ended: id })
+    expect(relay.ended).toBe(true)
+    expect(calls.at(-1)).toMatchObject({ path: `/admin/remote-sessions/${id}`, method: 'DELETE' })
+    await expect(service.call('device_status')).rejects.toThrow(/remote session/)
+  })
+  it('refuses a malformed session id before calling the API', async () => {
+    await expect(service.call('remote_session_connect', { session: '../auth' })).rejects.toThrow(/session id/)
+    expect(calls).toEqual([])
   })
 })
