@@ -1,5 +1,7 @@
 # LOFI2 0.1.0-experimental: hardware report
 
+> **Previous source.** Everything below was run on the source pinned to octabam `21f6de90` (the unsquared SHIFT coefficients): the card image `3d63406d…` and the USB package `7ee9277f…`. On 20 October 2026 the module was re-pinned to octabam `8250be0c` for Bryan T's SHIFT fix (`153063d8`). That source differs only in sixteen DSP coefficient words (TESTING.md, re-pin), and these reports do not bind it: its own run on a unit is pending. They are kept as the previous source's history.
+
 A functional report, as the tester gave it. It is reported evidence, not a measured stress qualification.
 
 - **Unit:** Octatrack MKII.

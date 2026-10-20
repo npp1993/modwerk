@@ -90,7 +90,7 @@
       "name": "LOFI2",
       "module": "d7bf66ce",
       "bytes": 6300,
-      "sha256": "7ee9277f3510988366912a0b7ed4e7ca0b5523503b48844e94af7b7ff33fe976",
+      "sha256": "4f794ebcb6ebe69f4c66412463f7cef41952551b2b2484cebf2cbfe004e5662c",
       "path": "octatrack-modules/lofi2/0.1.0-experimental.mwrm"
     },
     {
