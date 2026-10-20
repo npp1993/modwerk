@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "kind": "source-packages",
-  "sourceCommit": "203edb598ff8edc3c0842c0dbae962e44720a06a",
+  "sourceCommit": "aacd46c3a36418c910226df216d0265a4f693800",
   "nativeRevision": "b8deefc88b2c3e5f3c6158e364eb741df1924e1d",
-  "sourceTreeSha256": "31b7cd81ea0a797b3e1167fdd17b11c0e39ded36684e66627c1a062f2728fd79",
-  "compilerSha256": "270df5cf8dcef3eef2c5758e6239dd6e9ef4de291b0f1efb96e1da16531d0b30",
+  "sourceTreeSha256": "60e0c9c0d5d1cf65b6e5296ba7b899b5e61d6c5eca1eb96c0490f7cc866964e6",
+  "compilerSha256": "2766adbb1b5531ceb8868fd6016b02c0748d772f6271fc01bf185eeec8f1d4fd",
   "moduleVersions": {
     "spectrum": "0.1.1-experimental",
     "modulation": "0.1.1-experimental",
@@ -17,6 +17,7 @@
     "airwindows-chorus": "0.1.2-experimental",
     "everb": "0.1.2-experimental",
     "bbd": "0.1.1-experimental",
+    "lofi2": "0.1.0-experimental",
     "analog-bassdrum": "0.1.5-experimental",
     "midi-scenes": "0.2.5-experimental",
     "usb-audio-out-tracks-main-cue": "0.2.0-experimental",
@@ -34,48 +35,48 @@
   },
   "files": {
     "dsp-packages.json": {
-      "bytes": 74965,
-      "sha256": "393aae3809a7fd1729dc419e5e5a7685f0aed52ac86d8ea004e4bfa06939a4a2"
+      "bytes": 84301,
+      "sha256": "23d6025de23c60fdde6755138d140467405d64a2fa846b46f023709ba9ddba80"
     },
     "resident-dsp.json": {
-      "bytes": 24965,
-      "sha256": "22fe1fbed6d3b466711310941f750c8e3ac158a0ee8f1e68783225bf48026887"
+      "bytes": 25000,
+      "sha256": "41ffa9609b14420dc03a77a5ff7eec8ae35dd84b05d60f1cf18d98159f545941"
     },
     "coldfire-packages.json": {
-      "bytes": 353200,
-      "sha256": "0e0e254dfc5ef1560877f135f8a481ad7732859d2a8720a35dae8d9623c5080b"
+      "bytes": 353235,
+      "sha256": "3b8467103fdb12771f095c720af782927bd92b57db069ed6a099692eb24d9312"
     },
     "rom-packages.json": {
-      "bytes": 25351,
-      "sha256": "0bb7af9740e78f12df6ed4b8ef631a7eecdf6c55b1b0c72818f2477c3bfa90a0"
+      "bytes": 25386,
+      "sha256": "cb561c935e4608075057776211dcc3a03a10b5f5edf1e11f8558837205d8dbeb"
     },
     "bootstrap-package.json": {
-      "bytes": 3699,
-      "sha256": "041bb4398363d7ec7b6712b33b2e5c453f8fc4212eb46b0ccd4d4657985b1231"
+      "bytes": 3734,
+      "sha256": "c91110b9d8a1450b47d84276e127a06e89363f97868f03ae74e2edf841d712f6"
     },
     "menu-recipes.json": {
-      "bytes": 34507,
-      "sha256": "51fd037d5f88aa6d34dfcd4b11e65a2c8aabbd2aaf5a9081e04d0d8f1023da56"
+      "bytes": 35901,
+      "sha256": "c938c316ba9ff5d190be32696bd5dc882e1787b4d5b549e3e1baf4e0acc421e6"
     },
     "descriptor-recipes.json": {
-      "bytes": 71916,
-      "sha256": "297432a92d50e9b313f65d6624c46a59823ed38e9e22473836ff74c5ef6fac41"
+      "bytes": 78059,
+      "sha256": "fa3e021f3a0b388915d798de4b3071a60c27ea4c8fab8b8a2c23a35fa9508d37"
     },
     "platform-writes.json": {
-      "bytes": 17641,
-      "sha256": "0979092f0c9b49cac0a0e02f948dbab4574ce2882924597865cfb834761b87fd"
+      "bytes": 17676,
+      "sha256": "603d358729790f063db43a0d67dce2349810936843768548eb1edd9a627a6ee1"
     },
     "requested-packages.json": {
-      "bytes": 1069265,
-      "sha256": "12552938d738d227307be6393dd799624f0ce3438b968d3b6a3cc6fe82acb07f"
+      "bytes": 1069300,
+      "sha256": "530f4c1f95a5547bd72b3037bd7f41b8b65063b56faf3f0ce56794f435a1d87e"
     },
     "utility-packages.json": {
-      "bytes": 12827,
-      "sha256": "c01466717ec81faf72ffd28269929687a762434c18eaed9d70c29261aa54f15e"
+      "bytes": 12862,
+      "sha256": "479ceb132f5f59d4043b98c0a8a7dcea63636928b7b728b5f5e3751309364184"
     },
     "usb-audio-packages.json": {
-      "bytes": 737469,
-      "sha256": "7f5d352c0dc8785bab1352ad07335f5de728fa932dff3e74e5c374697645acb0"
+      "bytes": 737504,
+      "sha256": "70e26b91e301ec324762851f41c0b311588a5fa0cb2037e6e3cf572a9a765f54"
     }
   },
   "approval": null,
