@@ -10,7 +10,7 @@ Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 - An MKI panel in the emulator; a project loaded from a real card; grid recording; MIDI tracks; the gesture with no project loaded.
 - Chip timing, frame-interrupt load and any stress run (see Performance).
-- Loading over USB onto the Modwerk base: the base's loader cannot yet carry a ColdFire module with stock-code hooks.
+- Over USB: Part or project reload with the module installed, and stock [REC] + [PLAY] behaviour after its removal (see Hardware report).
 
 ## Hardware report (MKII, 13 October 2026)
 
@@ -116,26 +116,23 @@ Counted on QLRTEST03's MAIN OS; each invert executes one instruction more than i
 
 188 bytes of ROM for the unit (code and two strings; position independent, so the same anywhere) and two six-byte detours over stock instructions: 200 bytes. No RAM of its own, no DSP memory, no heap. It reads stock's [REC]-held and live-recording flags and the notification handle, and writes the stock setting word and its battery copy, then calls stock's checksum routine as the PERSONALIZE menu does.
 
-## Native comparison and listing dry run
+## Native comparison and listing
 
-Re-run on 15 October 2026 for the current 188-byte unit, on a scratch commit of main `d3ad0bdf` with the module listed (catalogue entry, licence component, changelog file, `tests.qualification`, packages built in the isolated toolchain container and imported, `npm run module:verify -- quantize-live-rec-toggle --os <OS 1.40C update file>`). None of it is committed; the comparison record and the diff it makes are kept outside the repository.
+Recorded on 20 October 2026 on main `e370b78e` with the module listed: packages built in the isolated toolchain container and imported, then `npm run module:verify -- quantize-live-rec-toggle --os <OS 1.40C update file>` (record: `sdk/native-comparisons/quantize-live-rec-toggle.json`).
 
-- **130 selections: 46 built and identical to native octabam (20 outright, 26 outside the platform writes), 84 matching refusals, 0 mismatches.** Native pair checks: 25 modules, 300 pairs in 3 contexts, 4 refused.
-- It still needs the shared-code changes of 12 October: this module in the hard-coded lists of `scripts/build-module-packages.py` and `src/engine/compose-os.ts`, and its ROM unit placed after the utility and replacing modules in `src/engine/requested-modules.ts`, with the Recorder Loop Fix cave refused where native refuses it; plus this module in the two release-scope tests.
-- `npm run modules:generate` passes, including Tape Echo's retained evidence (since repeat98/modwerk#592 it compares only Tape Echo's own files and package rows), so that binding no longer stands in the way. `src/catalog/native-metadata.json` is 15 KB on this main, so the 142 MB it once reached is no longer a limit.
-- For that run the record's top-level image was set to the hardware report's (QLRTEST02), because the listing contract requires the two to match; the current card image QLRTEST03 has not run on a unit (see What listing still needs).
-- `module:verify` adds this module to `src/engine/assets/chooser-metadata.json`, which the Octatrack base hashes as a build input, so `octatrack-base.test.ts` fails until the committed base is rebuilt. On 12 October the module built to the same bytes without that entry.
+- **130 selections: 46 built and identical to native octabam (20 outright, 26 outside the platform writes), 84 matching refusals, 0 mismatches.** Native pair checks: 25 modules, 300 pairs in 3 contexts, 10 refused.
+- Shared-code changes the listing needs: this module in the hard-coded lists of `scripts/build-module-packages.py` and `src/engine/compose-os.ts`, its ROM unit placed after the utility and replacing modules in `src/engine/requested-modules.ts` (`LATE_ROM`), and this module in the release-scope and module-set tests. Recorder Loop Fix's floating cave keeps main's overflow fallback, which native follows since repeat98/modwerk#682.
+- `module:verify` adds this module to `src/engine/assets/chooser-metadata.json`, which the Octatrack base hashes as a build input, so the committed beta base is rebuilt with it (`24b25c39`, lease symbols unchanged) and the base-bound packages name it; their bytes are unchanged.
+- `npm run module:doctor -- quantize-live-rec-toggle`: every line passes but the two performance rows (Performance, above).
 
 What listing still needs:
 
-1. A hardware record that the listing contract accepts for the current source: its MKII report is over USB (package `026464de…`), but the record binds a card image, and the card image QLRTEST03 has not run on a unit. Either a card run of QLRTEST03 or the owner's word on how a USB report binds.
+1. The owner's word on the hardware record binding the USB package `026464de…` that ran on the MKII, rather than a card image: the card image QLRTEST03 has not run on a unit.
 2. The owner's decision on the two performance rows that were not measured (Performance, above).
-3. The committed Octatrack base rebuilt with this module's chooser-metadata entry, once repeat98/modwerk#657 restores the beta base's flags on main (its committed base did not reproduce here before it).
-4. Then: move the folder to `sdk/octabam/modules/`, add the catalogue entry, the licence component and the changelog file, apply the shared-code changes above, build and import the packages, and run `module:verify`.
 
-## USB package (private, 15 October 2026)
+## USB package (15 October 2026)
 
-Built from this source on main `b058d41e` with `sdk/runtime/loader/build.py --octabam quantize-live-rec-toggle --name "Quant Live Rec"` from a scratch tree with this folder placed under `sdk/octabam/modules/` (nothing committed): ABI 7, module id `7d0747d4`, 188 bytes of code and data, no relocations, hooks or stock copies, and two stock-code sites, the `jmp` detours at `0x40061778` and `0x4004883a` with the manifest's guard hashes; `0x400522ca` is not touched. 356 bytes, SHA-256 `026464deb27c8178d44ad1fd5866b754478b11c114561e73000cdca3b44f86e8`. The same build with `--stock` (the guards checked against the original OS 1.40C) gives the same bytes. Neither site meets one of the beta base's sites or a site of `sdk/machines/octatrack/events.json`. The package stays private, outside Git.
+Built from this source on main `b058d41e` with `sdk/runtime/loader/build.py --octabam quantize-live-rec-toggle --name "Quant Live Rec"` from a scratch tree with this folder placed under `sdk/octabam/modules/` (nothing committed): ABI 7, module id `7d0747d4`, 188 bytes of code and data, no relocations, hooks or stock copies, and two stock-code sites, the `jmp` detours at `0x40061778` and `0x4004883a` with the manifest's guard hashes; `0x400522ca` is not touched. 356 bytes, SHA-256 `026464deb27c8178d44ad1fd5866b754478b11c114561e73000cdca3b44f86e8`. The same build with `--stock` (the guards checked against the original OS 1.40C) gives the same bytes. Neither site meets one of the beta base's sites or a site of `sdk/machines/octatrack/events.json`. `npm run octatrack:module-packages` builds the same bytes from this source on main `e370b78e`; they are published as `public/octatrack-modules/quantize-live-rec-toggle/0.1.0-experimental.mwrm`.
 
 - Both strict stock-free scans pass: `module_packages.runs` finds no run of 12 seed bytes shared with stock (it refused the 186-byte unit's package on two 12-byte runs: the setting's store followed by its battery copy, and the checksum call followed by the redraw call), and `check_stock_free.stock_runs` (16 bytes) finds none.
 - Emulator, the beta base built for a RAM boot (`npm run octatrack:base` with the beta options and `--out`, on main `86e0dfb8`; it matches the committed base): `scripts/octatrack-emulator/run-sites.sh` passed (both sites hold the module's jumps while it is live, and their earlier bytes once it is removed), and a trial rolled back without Keep (Undo) left both sites as they were before. The emulator was `scripts/octatrack-emulator/build.py` against upstream Octabam at the pinned `67e5ea3`; the local Octabam checkout's emulator stopped at the base's boot gate (`unrecognised spin`), which the pinned one passes.
