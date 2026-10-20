@@ -26,6 +26,8 @@ The author then flashed the same base from the card (browser-built `.bin` `ca8b4
 
 **Display issue after the power cycle:** the track's LEV box first showed stock's split bars (half MAIN level, half CUE) instead of Output Matrix's solid bar; pressing CUE redrew it as MNL with a solid full-width bar. Likely cause, not yet confirmed: the base restores the saved module set after the first screen is drawn, and nothing redraws the page once the module's patches are in. A static build has the module from the first draw.
 
+Follow-up, pending hardware verification (20 Oct 2026): the cause is confirmed in the stock code. CUE's press handler (`0x4004e978`) only calls the track screen's drawer `0x4004d948(-1)`, and nothing calls it after the base's restore. Base `2f575d3e…` makes that call itself from the UI tick once the installed modules change; the Output Matrix package is unchanged. This has been checked only in the emulator. The record above stays as observed on `3e3e3de1`.
+
 ## Limitations
 
 - No project save and reload or Part reload on this version over USB; one power cycle, with the display issue above.

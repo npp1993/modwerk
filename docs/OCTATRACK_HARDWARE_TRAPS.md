@@ -497,6 +497,19 @@ changed (Sidechain's KFLT 64 became 1). To recover a bank lost this way, do not
 save or edit: power-cycle once more, or PROJECT > RELOAD the last save from the
 card.
 
+**Stock redraws a page only on its own events.** A module that patches how stock
+draws a page is seen at the next key that redraws it, so a set restored about
+3 s after the first draw left stale pixels: Output Matrix's LEV box kept stock's
+split bars until CUE was pressed (owner's MKII, flashed `3e3e3de1`, 16 October
+2026; audio was right). The track screen's drawer is `0x4004d948(-1)`, which is
+all CUE does (`0x4004e978`) and which marks the display for the UI loop's flush
+(`0x46c7c72c`). It writes the screen's plane and globals, so call it only from
+the UI task (`ev_tick`, key and encoder handlers), never from the engine task
+that installs or from an interrupt. The base now calls it on the UI tick after
+the live modules change (`runtime.c`, base `2f575d3e`; not yet checked on the
+unit). A RAM boot runs the same restore, so it reproduces this without a power
+cycle.
+
 **A RAM boot can come back without USB.** On 19 October 2026 one RAM boot of a
 dev twin (`82b9bef4`) ran for over 15 minutes (its log has loads) but never
 enumerated on the Mac: no Elektron device at all, not a dead bridge handle.
