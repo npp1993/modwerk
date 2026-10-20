@@ -76,7 +76,8 @@ export async function authentication(request:Request,env:Env,path:string):Promis
    : discordInvitationClaim(db,member.id)).run()
   return response({show:body.alreadyShown!==true&&claimed.meta.changes===1,...(body.campaign===undefined?{}:{campaign:DISCORD_INVITE_CAMPAIGN})})
  }
- // Asked for on each visit while due; recorded only once the member closes or completes it, so a reload cannot skip it.
+ // Due until the member's unit has reported any Modwerk base; the site records it then. Base updates are prompted from the
+ // connected unit (src/hooks/useBaseInstallPrompt.ts), not from this record, so a new base needs no migration.
  // Due only to beta testers and verified administrators while USB loading is a beta (src/engine/protocol.ts USB_LINK).
  if(path==='/api/auth/base-install-prompt'){
   const member=needMember(await accountUser(request,env,db))
@@ -87,15 +88,16 @@ export async function authentication(request:Request,env:Env,path:string):Promis
  }
  // Shown until the member closes it, then never again on any browser or device. A new note needs a new id here and in src/components/OwnerNote.tsx.
  if(path==='/api/auth/owner-note'){
-  const OWNER_NOTE='2026-10-15-beta-2',member=needMember(await accountUser(request,env,db))
+  const OWNER_NOTE='2026-10-16-beta-3',member=needMember(await accountUser(request,env,db))
   if(request.method==='GET')return response({show:!await db.prepare('SELECT 1 FROM member_owner_notes WHERE user_id=? AND note=?').bind(member.id,OWNER_NOTE).first()})
   if(request.method!=='POST')throw new HttpError(405,'Use GET or POST for the note.')
   await db.prepare('INSERT OR IGNORE INTO member_owner_notes(user_id,note) VALUES(?,?)').bind(member.id,OWNER_NOTE).run()
   return response({ok:true})
  }
  if(path==='/api/auth/build-access'&&request.method==='POST'){
-  const member=needMember(await accountUser(request,env,db)),body=await jsonBody(request)
-  const betaAccess=memberBetaAccess(member)||await isAdmin(request,env,db)
+  // Guests can build too; beta-only modules still need a verified beta member.
+  const user=await accountUser(request,env,db),body=await jsonBody(request)
+  const betaAccess=(!!user&&memberBetaAccess(user))||await isAdmin(request,env,db)
   if(body.moduleIds!==undefined){
    if(!Array.isArray(body.moduleIds)||body.moduleIds.length>64||!body.moduleIds.every(id=>typeof id==='string'))throw new HttpError(400,'Choose valid module IDs.')
    let error:string

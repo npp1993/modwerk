@@ -273,7 +273,7 @@ const SECTIONS: FaqSection[] = [
         title: 'Do I need an account? How do I report a module issue?',
         keywords: 'guest comments likes working reports email sign in bug author community github contribution',
         answer: <>
-          <p>Browsing and the configurator work without an account. To post in the forum, comment, like, confirm a module works or use <strong>Report an issue</strong>, register and verify your email. Your email address stays private. New issue reports become public GitHub issues, where the module developers track and fix bugs. You don’t need a GitHub account: their replies and fixes appear in your notifications. When the problem comes from a combination of modules, use <strong>Report a problem</strong> on your configuration: every module’s developers see it. Manage private configuration details and logs in <a href="#account">Your account</a>.</p>
+          <p>Browsing and the configurator work without an account. To post in the forum, comment, like, confirm a module works or use <strong>Report an issue</strong>, register and verify your email. Your email address stays private. New issue reports become public GitHub issues, where the module developers track and fix bugs. You don’t need a GitHub account: their replies and fixes appear in your notifications. When the problem comes from a combination of modules, use <strong>Report a problem</strong> on your configuration: once it is narrowed down to one module, that module’s developer is brought in. Manage private configuration details and logs in <a href="#account">Your account</a>.</p>
           <p>Describe the module, your machine and model, the displayed OS version and how to reproduce the problem. Never attach firmware. Module contributions and updates go through GitHub pull requests and owner review; see <a href="#submit">Start developing</a>.</p>
         </>,
       },
@@ -308,7 +308,7 @@ const SEARCH_TEXT = new Map(SECTIONS.flatMap(section => section.questions.map(qu
   (section.title + ' ' + question.title + ' ' + question.keywords + ' ' + answerText(question.answer)).toLowerCase(),
 ])))
 
-export function FaqPage({ previewGuide = false }: { previewGuide?: boolean }) {
+export function FaqPage({ previewGuide = false, open }: { previewGuide?: boolean; open?: string }) {
   const [query, setQuery] = useState('')
   const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean)
   const searching = terms.length > 0
@@ -332,7 +332,7 @@ export function FaqPage({ previewGuide = false }: { previewGuide?: boolean }) {
     {searching && <p className="faq-results" role="status">{count} {count === 1 ? 'answer' : 'answers'} found</p>}
     {sections.map(section => <section className="faq-section" key={section.title} aria-label={section.title}>
       <h2>{section.title}</h2>
-      <div className="faq-questions">{section.questions.map(question => <details className="faq-question" key={question.id + (searching ? '-search' : '')} open={previewGuide || searching || question.id === 'base-firmware'}>
+      <div className="faq-questions">{section.questions.map(question => <details className="faq-question" key={question.id + (searching ? '-search' : '')} open={previewGuide || searching || question.id === 'base-firmware' || question.id === open} id={'faq-' + question.id}>
         <summary>{question.title}<Icon name="plus" size={17} /></summary>
         <div className="faq-answer">{question.answer}</div>
       </details>)}</div>

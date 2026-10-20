@@ -14,8 +14,10 @@ import baseBinding from '../../sdk/machines/octatrack/base-binding.json' with { 
 export const FAKE_BASE: string = baseBinding.identity
 const ascii = (text: string) => Array.from(text, char => char.charCodeAt(0))
 /** IDENTIFY as sdk/runtime/upload/vendor.c sends it: version 1, can submit, limits, base, model. */
-const identity = Uint8Array.from([...ascii('MWUI'), 1, 1, 0, 1, 0x10, 0x34, 0, 0x98, 0, 0, 0, 0,
-  ...Array.from({ length: 32 }, (_, i) => parseInt(FAKE_BASE.slice(2 * i, 2 * i + 2), 16)), ...ascii('OCTATRACK MKII'), 0, 0, ...new Array(8).fill(0)])
+const identityBytes = (base: string) => Uint8Array.from([...ascii('MWUI'), 1, 1, 0, 1, 0x10, 0x34, 0, 0x98, 0, 0, 0, 0,
+  ...Array.from({ length: 32 }, (_, i) => parseInt(base.slice(2 * i, 2 * i + 2), 16)), ...ascii('OCTATRACK MKII'), 0, 0, ...new Array(8).fill(0)])
+/** The base a RAM boot image stands for here: its hash (a real base's identity is its build's). */
+export const fakeBaseOf = (image: Uint8Array) => sha(image)
 
 type Listener = (event: { device: LinkDevice }) => void
 export interface FakeUnit {
@@ -27,6 +29,11 @@ export interface FakeUnit {
   playing: boolean
   /** The kept set's digest; the base's own while nothing is loaded. */
   active: string
+  /** The base the unit runs (IDENTIFY), and the one in its NOR: a RAM boot changes the first, a USB base update both. */
+  base: string
+  flashed: string
+  /** The base writes its own container to NOR over USB (capability feature bit 8, flash.c). */
+  updatesBase: boolean
   /** What the unit has, and what a staged load would make it (taken on Keep). */
   installed: Inventory
   pending?: Inventory
@@ -34,6 +41,8 @@ export interface FakeUnit {
   project?: { id: string; name: string }[]
   /** A transaction a session left staged when its reply went missing: only a session that adopts it can cancel it. */
   staged?: boolean
+  /** A published candidate whose page closed during its trial (its digest): only a session that adopts it can roll it back. */
+  orphan?: string
   /** Previews only: a passed self-test with the set saved on the card, and live meters (requests 21 and 30). */
   status?: boolean
   /** The loader refuses the next load with this reason (loader.h runtime_refusal), as the base's record reports it. */
@@ -64,7 +73,12 @@ export function fakeUnit(kind: 'base' | 'stock' | 'none' = 'base'): FakeUnit {
       async releaseInterface() {},
       async controlTransferOut() { return { status: 'stall', bytesWritten: 0 } },
       async controlTransferIn(setup: { request: number; value: number }) {
-        if (setup.request === 3) return { status: 'ok', data: new DataView(identity.buffer.slice(0)) }
+        if (setup.request === 3) return { status: 'ok', data: new DataView(identityBytes(unit.base).buffer) }
+        if (setup.request === 29) { // CAPABILITIES, MWCP v1: loader ABI 8, the feature bits, 24 sites, 8 copies
+          const caps = new DataView(new ArrayBuffer(12)); caps.setUint32(0, 0x4d574350); caps.setUint8(4, 1); caps.setUint8(5, 8)
+          caps.setUint16(6, 128 | (unit.updatesBase ? 256 : 0)); caps.setUint16(8, 24); caps.setUint16(10, 8)
+          return { status: 'ok', data: caps }
+        }
         if (setup.request === 14 && unit.project) {
           const page = unit.project.filter(item => !unit.installed.moduleIds.includes(item.id)).slice(setup.value, setup.value + 13)
           const data = new Uint8Array(4 + 24 * page.length), view = new DataView(data.buffer)
@@ -105,6 +119,7 @@ export function fakeUnit(kind: 'base' | 'stock' | 'none' = 'base'): FakeUnit {
   let device: LinkDevice | undefined = kind === 'none' ? undefined : make(kind === 'base')
   const unit: FakeUnit = {
     taken: false, playing: false, installed: { moduleIds: [], removedStockFx: [] }, active: FAKE_BASE, modules: [], kept: [],
+    base: FAKE_BASE, flashed: FAKE_BASE, updatesBase: true,
     usb: {
       async requestDevice() { if (!device) throw new DOMException('No device selected.', 'NotFoundError'); return device },
       async getDevices() { return device ? [device] : [] },
@@ -121,8 +136,9 @@ export function fakeUnit(kind: 'base' | 'stock' | 'none' = 'base'): FakeUnit {
 export function fakeSession(unit: FakeUnit, delay = 0) {
   const wait = () => new Promise(resolve => setTimeout(resolve, delay))
   return async (): Promise<LinkSession> => {
-    let status: UploadStatus = { command: 'hello', transaction: 0, result: 'ok', phase: unit.staged ? 'receiving' : 'normal', activeKnown: true, generation: 0,
-      lastTransaction: 0, currentTransaction: 0, received: 0, capacity: 262144, base: FAKE_BASE, session: '00'.repeat(32), active: unit.active }
+    let status: UploadStatus = { command: 'hello', transaction: 0, result: 'ok', phase: unit.staged ? 'receiving' : unit.orphan ? 'trial' : 'normal', activeKnown: true, generation: unit.orphan ? 1 : 0,
+      lastTransaction: unit.orphan ? 7 : 0, currentTransaction: unit.orphan ? 7 : 0, received: 0, capacity: 262144, base: unit.base, session: '00'.repeat(32),
+      active: unit.orphan ?? unit.active }
     let staged = unit.active, owned = false, data: Uint8Array | undefined
     const step = async (phase: UploadPhaseName, refuse?: UploadResultName) => {
       await wait()
@@ -145,13 +161,24 @@ export function fakeSession(unit: FakeUnit, delay = 0) {
         return step('verified')
       },
       activate: async () => {
-        if (!unit.publishRefusal) return step('pending')
-        await wait(); throw new UploadDeviceError(status = { ...status, phase: 'ready', result: 'backend' }) // the package dropped
+        if (unit.publishRefusal) { await wait(); throw new UploadDeviceError(status = { ...status, phase: 'ready', result: 'backend' }) } // the package dropped
+        const published = await step('pending')
+        // A RAM boot image (boot.c): the unit restarts half a second on. Only the flashed base's gate reads the mailbox, so
+        // armed from a base running out of RAM it comes back on the flashed one; from that one, on the image's base.
+        if (data && data.length >= 4 && new DataView(data.buffer, data.byteOffset).getUint32(0) === 0x4fefffe4) {
+          const next = unit.base === unit.flashed ? fakeBaseOf(data) : unit.flashed
+          setTimeout(() => { unit.base = unit.active = next; unit.unplug(); unit.plug('base') }, delay)
+        }
+        return published
       },
       startTrial: async () => status = { ...await step('trial'), active: staged },
       holdTrial: () => step('pending', unit.playing ? 'unsafe' : undefined),
       accept: async () => {
         await step('ready'); unit.active = status.active!; unit.installed = unit.pending ?? unit.installed; unit.pending = undefined
+        if (data && String.fromCharCode(...data.subarray(0, 4)) === 'ELEK') { // the base wrote its own container to NOR (flash.c): it restarts on it
+          setTimeout(() => { unit.flashed = unit.base; unit.active = unit.base; unit.unplug(); unit.plug('base') }, delay)
+          return status
+        }
         if (data && String.fromCharCode(...data.subarray(0, 4)) === 'MWRM') { // a runtime package: its module in or out
           const view = new DataView(data.buffer, data.byteOffset), id = view.getUint32(28).toString(16).padStart(8, '0')
           const removes = !view.getUint32(8) && !view.getUint32(20) && !view.getUint32(24) && (view.getUint16(4) < 5 || !view.getUint32(32))
@@ -161,9 +188,10 @@ export function fakeSession(unit: FakeUnit, delay = 0) {
       },
       rollback: async () => {
         if (unit.stuck && unit.stuck-- > 0) return step('recovery', 'needs-recovery')
-        unit.pending = undefined; return status = { ...await step('ready'), active: unit.active }
+        if (unit.orphan && !owned) throw new Error('This client does not own a staged transaction.')
+        unit.orphan = undefined; unit.pending = undefined; return status = { ...await step('ready'), active: unit.active }
       },
-      adopt: () => owned ||= status.phase === 'receiving',
+      adopt: () => owned ||= ['receiving', 'pending', 'trial', 'recovery'].includes(status.phase),
       cancel: async () => {
         if (unit.staged && !owned) throw new Error('This client does not own a staged transaction.')
         unit.staged = false; return step('normal')

@@ -46,5 +46,8 @@
       "bucket_name": "modwerk-forum-media"
     }
   ],
+  // One relay per remote debug session (server/remote-relay.ts); the site's Pages Functions have none and answer 503.
+  "durable_objects": { "bindings": [{ "name": "REMOTE_SESSIONS", "class_name": "RemoteSessionRelay" }] },
+  "migrations": [{ "tag": "remote-sessions-1", "new_sqlite_classes": ["RemoteSessionRelay"] }],
   "main": "worker.ts"
 }

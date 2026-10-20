@@ -67,6 +67,9 @@ describe('member roles', () => {
     expect((await access()).status).toBe(403)
     expect((await startup()).status).toBe(200)
     expect((await f.call('/auth/build-access', 'POST', { moduleIds: ['repitch'] }, tester.session)).status).toBe(200)
+    // Guests build without an account, but not beta-only modules.
+    expect((await f.call('/auth/build-access', 'POST', { moduleIds: ['repitch'] })).status).toBe(200)
+    expect((await f.call('/auth/build-access', 'POST', { moduleIds: ['airwindows-chorus'] })).status).toBe(403)
     expect((await f.call(beta, 'PUT', { betaTester: true, reason: 'Beta invitation' }, tester.session)).status).toBe(403)
     f.db.prepare("UPDATE users SET role='developer' WHERE id=?").run(tester.id)
     expect((await f.call(beta, 'PUT', { betaTester: true, reason: 'Beta invitation' }, '', admin)).status).toBe(200)

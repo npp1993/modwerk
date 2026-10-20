@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DiagnosticsInvitation, DiagnosticsInvitationGate } from './DiagnosticsInvitation'
 import type { LinkState, OctatrackLink } from '../engine/elekloader/octatrack-link'
 const mocked = vi.hoisted(() => ({
-  state: { accountId: 'member' as string | null, available: true, enabled: false, ready: true, busy: false, error: '', notice: '', hasChoice: false, lastSent: null },
+  state: { accountId: 'member' as string | null, available: true, enabled: false, ready: true, busy: false, error: '', notice: '', hasChoice: false, saved: false, lastSent: null },
   listeners: new Set<() => void>(), share: vi.fn(), privacy: false,
 }))
 vi.mock('../community/octatrack-diagnostics', () => ({
@@ -23,7 +23,7 @@ const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 beforeEach(() => {
   vi.clearAllMocks(); vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true); mocked.privacy = false
   linkState = { status: 'ready', identity }; linkListeners.clear()
-  mocked.state = { accountId: 'member', available: true, enabled: false, ready: true, busy: false, error: '', notice: '', hasChoice: false, lastSent: null }
+  mocked.state = { accountId: 'member', available: true, enabled: false, ready: true, busy: false, error: '', notice: '', hasChoice: false, saved: false, lastSent: null }
   mocked.share.mockResolvedValue(true); localStorage.clear()
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
   HTMLDialogElement.prototype.close = function () { this.removeAttribute('open') }
@@ -125,6 +125,10 @@ describe('diagnostics invitation without collection side effects', () => {
     expect(() => button('Not now')).toThrow()
     await act(async () => { container.querySelector('dialog')!.dispatchEvent(new Event('cancel', { cancelable: true })); await flush() })
     expect(onClose).not.toHaveBeenCalled()
+    // Chrome closes it on a second Escape anyway; it opens again.
+    const dialog = container.querySelector('dialog')!
+    await act(async () => { dialog.close(); dialog.dispatchEvent(new Event('close')); await flush() })
+    expect(dialog.open).toBe(true); expect(onClose).not.toHaveBeenCalled()
     await act(async () => button('Leave beta').click())
     expect(onLeave).toHaveBeenCalledTimes(1); expect(mocked.share).not.toHaveBeenCalled()
     await act(async () => { button('Share diagnostics').click(); await flush() })

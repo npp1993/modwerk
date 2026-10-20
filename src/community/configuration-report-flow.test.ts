@@ -31,7 +31,7 @@ async function fixture({ github = true }: { github?: boolean } = {}) {
   let live = true
   vi.stubGlobal('fetch', vi.fn(async (value: string | URL, init: RequestInit = {}) => {
     const url = String(value), method = init.method ?? 'GET', body = init.body ? JSON.parse(String(init.body)) : undefined
-    if (url === f.env.APP_URL + 'module-releases.json') return Response.json({ format: 'modwerk-module-releases-v1', modules: ['miniverb', 'repitch', 'sidechain-compressor'].map(id => { const module = communityModule(id)!; return { id, name: module.name, version: live ? module.version : '0.0.0', href: module.href, ...(live ? { notes: { ...moduleChangelogs[id].find(entry => entry.version === module.version), announce: true } } : {}) } }) })
+    if (url === f.env.APP_URL + 'module-releases.json') return Response.json({ format: 'modwerk-module-releases-v1', modules: ['miniverb', 'repitch', 'sidechain-compressor'].map(id => { const module = communityModule(id)!; return { id, name: module.name, version: live ? module.version : '0.0.0', href: module.href, ...(live ? { notes: { ...moduleChangelogs[id].find(entry => entry.version === module.version) } } : {}) } }) })
     requests.push({ url, method, body })
     if (method === 'GET') return Response.json(comments)
     if (method === 'POST' && url.endsWith('/issues')) return Response.json({ number: 321, html_url: 'https://github.com/repeat98/modwerk/issues/321' }, { status: 201 })
@@ -64,18 +64,18 @@ async function fixture({ github = true }: { github?: boolean } = {}) {
   return { ...f, session, request, post, hook, row, requests, comments, developer, offline: () => { live = false } }
 }
 describe('a report about a whole configuration', () => {
-  it('opens one public GitHub issue that names every module and mentions each author once', async () => {
+  it('opens one public GitHub issue that names every module and mentions no author', async () => {
     const f = await fixture()
     const response = await f.post(report(['sidechain-compressor', 'miniverb', 'repitch']))
     expect(response.status).toBe(201)
-    expect(await response.json()).toMatchObject({ github: 'synced', githubUrl: 'https://github.com/repeat98/modwerk/issues/321', modules: 3, owners: ['Zac-Kyoti', 'repeat98'] })
+    expect(await response.json()).toMatchObject({ github: 'synced', githubUrl: 'https://github.com/repeat98/modwerk/issues/321', modules: 3 })
     const [created] = f.requests.filter(item => item.method === 'POST')
     expect(created.body!.title).toBe('[configuration] Freeze with both loaded')
     expect(created.body!.labels).toEqual(['issue-report', 'configuration', 'module:sidechain-compressor', 'module:miniverb', 'module:repitch'])
     const markdown = String(created.body!.body)
     expect(markdown).toContain('for the **whole configuration** by [reporter]')
-    expect(markdown).toContain('· @Zac-Kyoti @repeat98')
-    expect(markdown.match(/@repeat98/g)).toHaveLength(1)
+    expect(markdown).not.toContain('@Zac-Kyoti')
+    expect(markdown).not.toContain('@repeat98')
     expect(markdown).toContain('| Configuration | 3 modules |')
     for (const id of ['sidechain-compressor', 'miniverb', 'repitch']) expect(markdown).toContain('- `' + id + '` ' + version(id))
     expect(markdown).toContain('`/modwerk resolve <module-id> <published-version> verified-download`')
@@ -176,7 +176,7 @@ describe('a report about a whole configuration', () => {
     for (const id of ['sidechain-compressor', 'miniverb']) expect(statistics.find(item => item.module_id === id)).toMatchObject({ openIssues: 0, lastIssueAt: null })
   })
 
-  it('goes into the forum thread and one developer notification when GitHub is not configured', async () => {
+  it('goes into the forum thread without notifying developers when GitHub is not configured', async () => {
     const f = await fixture({ github: false })
     f.db.prepare("INSERT INTO users(id,display_name,github_id,github_login) VALUES('maker','Maker','67785539','repeat98')").run()
     for (const id of ['miniverb', 'repitch']) f.db.prepare("INSERT INTO module_maintainers(module_id,user_id,github_login,revoked) VALUES(?,'maker','repeat98',0)").run(id)
@@ -186,8 +186,8 @@ describe('a report about a whole configuration', () => {
     expect(forumThreadId).toEqual(expect.any(String))
     expect(f.db.prepare("SELECT category,module_id FROM forum_threads WHERE id=?").get(forumThreadId)).toEqual({ category: 'issues', module_id: 'miniverb' })
     expect(f.db.prepare('SELECT body FROM forum_posts WHERE thread_id=?').get(forumThreadId)!.body).toMatch(/^Configuration \(2 modules\): .+\n\nActual:/)
-    expect(f.db.prepare("SELECT user_id FROM notifications WHERE kind='bug_report'").all()).toEqual([{ user_id: 'maker' }])
-    expect(f.db.prepare('SELECT COUNT(*) AS count FROM forum_follows WHERE thread_id=? AND user_id=?').get(forumThreadId, 'maker')).toEqual({ count: 1 })
+    expect(f.db.prepare("SELECT COUNT(*) AS count FROM notifications WHERE kind='bug_report'").get()).toEqual({ count: 0 })
+    expect(f.db.prepare('SELECT COUNT(*) AS count FROM forum_follows WHERE thread_id=? AND user_id=?').get(forumThreadId, 'maker')).toEqual({ count: 0 })
   })
 
   it('is removed with the report', async () => {
@@ -214,6 +214,9 @@ describe('maintainers of every module in the configuration', () => {
     expect(await (await f.request('/developer/issues', 'GET', undefined, '', tim)).json()).toEqual([])
     const modules = await (await f.request('/developer/modules', 'GET', undefined, '', repeat)).json()
     expect(modules.find((item: { id: string }) => item.id === 'miniverb').reports).toMatchObject({ total: 1, open: 1 })
+    // A module with no ratings or reports still answers with zero counts, not missing fields.
+    expect(modules.find((item: { id: string }) => item.id === 'miniverb')).toMatchObject({ ratings: { count: 0, average: null }, claimed: true, blocked: false })
+    expect(modules.find((item: { id: string }) => item.id === 'miniverb').threads).toEqual(expect.any(Number))
   })
 
   it('can close the report from Modwerk, with the reporter told once', async () => {

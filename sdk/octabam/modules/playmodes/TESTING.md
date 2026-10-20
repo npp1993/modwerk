@@ -161,7 +161,8 @@ captures are recorded below when completed. No firmware is committed.
   the platform writes, 56 matching refusals, zero mismatches. Changed stock
   input is refused. Record: `sdk/native-comparisons/playmodes.json`.
 - Authored runtime, engine, test and generation files match Octaplay
-  `41dbdaa` byte for byte; `sdk/imports/playmodes-41dbdaa.json` records them.
+  `41dbdaa` byte for byte; `sdk/imports/playmodes-41dbdaa.json` recorded them
+  (replaced in 0.2.0 by `sdk/imports/playmodes-73d5f89.json`).
 
 Owner exception, 8 October 2026: “Approve scoped exception and release.”
 Applies only to Play Modes 0.1.1-experimental and native source
@@ -169,3 +170,62 @@ Applies only to Play Modes 0.1.1-experimental and native source
 Waives fresh physical reboot, Part/project restore after unsaved edits,
 distinct-track isolation and stock/flood performance tests. Retain the
 author's MKII functional report; missing checks stay unverified.
+
+## Modwerk 0.2.0 (STEP REPEAT) validation
+
+The imported runtime is devilfish707's build 24 plus STEP REPEAT by
+pgstath: Octaplay `73d5f89` on `pgstath/Octaplay` `step-repeat` (a fork of
+devilfish707/Octaplay, proposed upstream as devilfish707/Octaplay#2).
+`sdk/imports/playmodes-73d5f89.json` records every authored file byte for
+byte. The Modwerk-side native manifest adds one detour, `0x40060cfc` (the
+trig-key dispatcher's tail call into `0x400501d8`, reached only with GRID
+REC off), guarded by its six stock bytes. The project/battery table layout
+is unchanged; REPEAT is stored as digit / nibble 6, which 0.1.x reads as
+NORMAL.
+
+- `python3 verify.py` (Homebrew python 3.12, m68k-elf-gcc 16.2.0): both
+  host suites and the generated ColdFire unit pass. New cases: the held
+  steps in step order, round and round; steps past a track's length left
+  out; keys pressed or let go mid-loop; the second page; look-ahead and
+  LEDs naming the repeated step; release to the stock step; stopped, keys
+  busy and a release of a key stock pressed left to stock; PER TRACK; MIDI
+  tracks; the REPEAT digit in the project line and battery RAM. Planted
+  defects fail them (7 engine / 11 adapter failures for a wrong comparison
+  in `pm_repeat_next`, 37 adapter failures with the repeat call removed).
+  `playmodes.s` regenerated from unchanged `41dbdaa` is byte-identical with
+  this compiler.
+- ColdFire port (`ot_emu` at Modwerk `c0f513b9`, native remix of Play Modes
+  and the 14 stock effects, the contributor's own project on a staged card
+  with clock and transport receive off, SCALE MODE NORMAL, 16 steps, 1X,
+  about 152 BPM; `--live-script` key events, `--watch-mem` on `pm_hist`,
+  the held keys and the stock flags). Port evidence only:
+
+  | case | result |
+  |---|---|
+  | boot | to the RTOS handoff; loader ran once, fatal hang never (`verify_dram_boot`); its runtime-bytes line reports 87 bytes of `pm_state` that the runtime initialises itself, the same on unchanged 0.1.1 |
+  | TRACK 1 + DOWN × 6 | REVERSED, PINGPONG, PINGPONG 2, RANDOM, SHUFFLE, REPEAT |
+  | T1, hold TRIG 5 + 8 during stock step 6 | 5 8 5 8 … for 20 steps while the stock counter ran 7..16, 1..10 |
+  | let go during stock step 10 | the next step plays 11, then 12, 13 … |
+  | MIDI mode (M1), the same hold | M1 and T1 both loop 5 8 and both go on at 11 |
+  | GRID REC on / LIVE REC / trig mode 1 poked (CHROMATIC) / stopped | no key taken, every step stock's |
+
+  The stock SET DATE/TIME popup opens after the load on a card without a
+  set date and takes UP / DOWN; the scripts dismiss it with NO first.
+- Instruction counts (`evidence/cycles.md`, Octaplay harness at `346d9c3`):
+  worst one-track step 1,969 measured (SHUFFLE, len 33), bound 4,746;
+  REPEAT with keys held 1,474; one trig-key event 153; stack 124 bytes. The
+  original harness on unchanged 0.1.1 reproduces every 0.1.1 figure, so the
+  differences are the code's (about +90 instructions per track step).
+  Memory (`evidence/memory.md`): 16,060 bytes (0.1.1: 14,876).
+  `npm run perf:audit -- check`: record and cycles pass (1% of the step
+  budget); the stock benchmark and the flood stress fail for missing
+  measurements, as for 0.1.1.
+- UI captures (`media/capture.json`, image `9d91395f…`): ALL REVERSED and
+  ALL PINGPONG 2 byte-identical to 0.1.1's, and ALL REPEAT, reviewed by eye.
+
+Not run for 0.2.0 yet: any unit (MKI or MKII), audio and MIDI out (note
+lengths over repeated steps), PER TRACK and patterns longer than 16 steps
+under the port, micro-timing / conditions / slides on repeated steps, the
+stress project and the stock-load benchmark, chip timing. Physical reboot,
+Part/project reload after unsaved edits and distinct-track isolation remain
+unverified, as for 0.1.1.

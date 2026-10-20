@@ -11,6 +11,7 @@ import { buildAndSave } from './firmware-download.mjs'
 import { loadPreparedModules } from './frontend-mcp-prepared.mjs'
 import { assertMcpPrivateHost } from './frontend-mcp-private-host.mjs'
 import { saveSavedBackup } from './frontend-mcp-saved-backup.mjs'
+import { openRemoteUnit } from './frontend-mcp-remote.mjs'
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url))
 let activeWorkspace = false
@@ -49,12 +50,18 @@ const TOOLS = [
   tool('firmware_download', 'Build from exact deployed public inputs using local private stock, save files privately and return only a hash/identity receipt. Never sends firmware to MCP.', { request: { type: 'object' } }, ['request'], true),
   tool('device_status', 'Read the connected base identity, inventory, missing modules and bounded diagnostic status through the real site USB client.'),
   tool('device_load', 'Read one cached CPU/DSP meter snapshot through the real frontend client. Read-only; never runs a self-test. Older bases report unsupported.'),
+  tool('device_log', 'Read the unit’s own log (five-minute load records and incidents with what it was doing) through the real frontend client. Read-only; older bases report unsupported.'),
   { ...tool('device_saved_backup', 'Read only /MODWERK0.SET and /MODWERK1.SET through the frontend client, save verified bytes in the startup-selected private workspace and return only a metadata receipt. No card writes, memory access, arbitrary paths or recovery qualification. Older bases report unsupported.'),
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false } },
   tool('device_review', 'Review a requested set against exact connected base, active digest and verified packages. Returns a short-lived plan; no device changes.', { moduleIds: strings }, ['moduleIds']),
   tool('device_trial', 'Execute a reviewed set through the real frontend link and self-test. A trial requires --allow-device-writes; never accepts automatically.', { review: string }, ['review'], true),
   tool('device_keep', 'Explicitly accept the current successful self-tested trial and save it on the card. Requires --allow-device-writes.', { trial: string }, ['trial'], true),
   tool('device_undo', 'Undo the current trial and restore its exact reviewed previous packages.', { trial: string }, ['trial'], true),
+  tool('remote_session_request', 'Ask a member, by username, for a read-only remote debug session on their Octatrack. They see who asks and why, and must accept in their browser. Administrators only; needs --allow-api-writes and confirm=true.', { username: string, reason: string, minutes: { type: 'number' }, confirm: { type: 'boolean' } }, ['username', 'reason', 'confirm'], true),
+  tool('remote_session_status', 'Read a remote session request: pending, declined, active (with its end time), ended or expired, and the relay state when connected.', { session: string }, ['session']),
+  tool('remote_session_connect', 'Connect the device tools to an accepted remote session. Until it ends, device_status and device_load read the member’s Octatrack through their browser; writes and saved-file backups are refused.', { session: string }, ['session']),
+  tool('remote_session_say', 'Show a short line to the member in their session banner, for example to ask them to power-cycle the unit.', { text: string }, ['text'], true),
+  tool('remote_session_end', 'End the connected remote session at once; the member’s banner says so.', {}, [], true),
 ]
 
 export function validateApiPath(path) {
@@ -129,17 +136,29 @@ export async function createFrontendTools(options, injected, dependencies = {}) 
       globalThis.localStorage.setItem((key === 'session' ? 'octamod.community.session:' : 'modwerk.developer.session:') + api.href, value)
     }
   }
-  let bench, link, release, trial, closed = false
+  let bench, link, release, trial, closed = false, remote
+  // Remote sessions call admin routes; the Worker checks Origin on writes, so name the site it trusts (--site).
+  const adminApi = async (path, method = 'GET', body) => {
+    const response = await frontend.apiFetch(path, { method, redirect: 'error', signal: AbortSignal.timeout(30000), headers: { Origin: deployment.origin, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) })
+    let value; try { value = await response.json() } catch { throw new Error('The API did not return JSON (HTTP ' + response.status + ').') }
+    if (!response.ok) throw new Error(value?.error ?? 'HTTP ' + response.status)
+    return value
+  }
+  const sessionId = value => { if (typeof value !== 'string' || !/^[0-9a-f-]{36}$/.test(value)) throw new Error('Give the remote session id.'); return value }
+  const readOnlyRemote = () => { if (remote) throw new Error('Remote sessions are read-only: no trial, Keep, Undo or saved-file backup.') }
+  const dropLink = () => { release?.(); bench?.socket.destroy(); link = undefined; release = undefined; bench = undefined; trial = undefined; reviews.clear() }
   const clock = dependencies.now ?? Date.now
   const reviews = new Map()
   async function connected() {
-    if (!options.deviceSocket) throw new Error('Device tools require an explicitly selected --device-socket.')
+    if (!options.deviceSocket && !remote) throw new Error('Device tools require an explicitly selected --device-socket or a connected remote session (remote_session_connect).')
+    if (remote?.relay.state().ended) { remote = undefined; dropLink(); throw new Error('The remote session has ended.') }
     if (link && ['idle', 'disconnected', 'unavailable', 'error'].includes(link.getState().status)) {
       release?.(); bench?.socket.destroy(); link = undefined; release = undefined; bench = undefined; trial = undefined; reviews.clear()
     }
     if (!link) {
       try {
       if (dependencies.openLink) link = await dependencies.openLink()
+      else if (remote) { link = new frontend.OctatrackLink(remote.relay.usb, undefined, 3000, frontend.tabLocks()); release = link.start(); await link.connect() }
       else {
       bench = new Bench(options.deviceSocket, { timeoutMs: 10000 }); await bench.ready()
       // A timed-out reply cannot be associated safely with a later request.
@@ -185,7 +204,7 @@ export async function createFrontendTools(options, injected, dependencies = {}) 
     return { review: catalogue.review(target, current, args.capabilities, args.base), changes: prepared.changes.map(change => ({ module: change.module, bytes: change.data.length, sha256: hash(change.data), undoSha256: change.undo && hash(change.undo) })) }
   }
   const handlers = {
-    site_features: async () => ({ beta: true, tools: TOOLS.map(item => item.name), coverage: ['instrument/module catalogue, search and module guides', 'card compatibility and USB package preflight/Undo', 'isolated set CRUD/import/export/current versions', 'community API with normal permissions', 'saved public firmware download receipts', 'real site USB review/trial/self-test/Keep/Undo', 'cached live load and fixed saved-module-file backup receipts'], limits: ['Domain/API tests do not measure CSS pixels or audible output.', 'OAuth/browser sign-in and upload file selection use their separate existing workflows.', 'No raw memory, key injection, whole-OS flash or automatic Keep.', 'Local sources and private workspace are distinct from a live signed-in browser.', 'A saved-module-file backup does not qualify recovery or permit Keep over foreign saved files.'] }),
+    site_features: async () => ({ beta: true, tools: TOOLS.map(item => item.name), coverage: ['instrument/module catalogue, search and module guides', 'card compatibility and USB package preflight/Undo', 'isolated set CRUD/import/export/current versions', 'community API with normal permissions', 'saved public firmware download receipts', 'real site USB review/trial/self-test/Keep/Undo', 'cached live load and fixed saved-module-file backup receipts', 'read-only remote sessions on a member’s unit through their browser, after they accept'], limits: ['Domain/API tests do not measure CSS pixels or audible output.', 'OAuth/browser sign-in and upload file selection use their separate existing workflows.', 'No raw memory, key injection, whole-OS flash or automatic Keep.', 'Local sources and private workspace are distinct from a live signed-in browser.', 'A saved-module-file backup does not qualify recovery or permit Keep over foreign saved files.'] }),
     site_catalogue: async args => {
       const machine = args.machine ?? 'all', octa = frontend.availableModules(!!args.beta).map(module => ({ ...module, machine: 'octatrack', usb: catalogue.ids.includes(module.id) })), digi = frontend.digiModules.map(module => ({ ...module, name: module.title, description: module.summary, machine: module.device }))
       return { machines: frontend.machines, ...preparedModules ? { privatePreparation: preparedModules.info } : {}, modules: [...octa, ...digi].filter(module => (machine === 'all' || module.machine === machine) && (!args.category || (module.libraryCategory ?? module.category) === args.category) && (!args.query || (module.name + ' ' + module.description).toLowerCase().includes(args.query.toLowerCase()))) }
@@ -226,7 +245,15 @@ export async function createFrontendTools(options, injected, dependencies = {}) 
       if (after.status !== 'ready' || after.identity?.base !== before.identity.base || after.active !== before.active) throw new Error('The device changed during the load read.')
       return { base: after.identity.base, supported: reading !== undefined, reading: reading ?? null }
     },
+    device_log: async () => {
+      const unit = await connected(), before = unit.getState()
+      if (before.status !== 'ready' || !/^[0-9a-f]{64}$/.test(before.identity?.base ?? '')) throw new Error('The Octatrack must be idle with a verified base identity.')
+      const log = await unit.deviceLog()
+      // The log's nonce identifies the unit's log across connections; like the site's diagnostics, it stays out.
+      return { base: before.identity.base, supported: log !== undefined, log: log ? { boot: log.boot, seq: log.seq, loads: log.loads, incidents: log.incidents } : null }
+    },
     device_saved_backup: async () => {
+      readOnlyRemote()
       if (trial) throw new Error('Finish the current trial before backing up saved files.')
       const before = await snapshot(), unit = await connected()
       const snapshots = await unit.savedBackup(), after = await snapshot()
@@ -251,6 +278,7 @@ export async function createFrontendTools(options, injected, dependencies = {}) 
       return { review, expiresInSeconds: 60, base: before.state.identity.base, active: before.state.active, changes: prepared.changes.map(change => ({ module: change.module, sha256: hash(change.data), undoAvailable: !!change.undo })) }
     },
     device_trial: async args => {
+      readOnlyRemote()
       if (!options.allowDeviceWrites) throw new Error('Device writes require --allow-device-writes.')
       if (trial) throw new Error('Finish the current trial first.')
       const plan = reviews.get(args.review); reviews.delete(args.review)
@@ -274,8 +302,38 @@ export async function createFrontendTools(options, injected, dependencies = {}) 
     },
     device_keep: async args => finish(args, true),
     device_undo: async args => finish(args, false),
+    remote_session_request: async args => {
+      if (!options.allowApiWrites || args.confirm !== true) throw new Error('Asking a member needs --allow-api-writes and confirm=true.')
+      return adminApi('/admin/remote-sessions', 'POST', { username: args.username, reason: args.reason, ...(args.minutes === undefined ? {} : { minutes: args.minutes }) })
+    },
+    remote_session_status: async args => ({ ...await adminApi('/admin/remote-sessions/' + sessionId(args.session)), relay: remote?.id === args.session ? remote.relay.state() : null }),
+    remote_session_connect: async args => {
+      const id = sessionId(args.session)
+      if (trial) throw new Error('Finish the current trial first.')
+      const { ticket } = await adminApi('/admin/remote-sessions/' + id + '/ticket', 'POST', {})
+      const url = new URL(api.href + '/remote-sessions/' + id + '/socket')
+      url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'; url.searchParams.set('ticket', ticket)
+      remote?.relay.end(); dropLink()
+      const relay = (dependencies.openRemote ?? openRemoteUnit)(url.href, { socket: target => new WebSocket(target, { headers: { Origin: deployment.origin } }) })
+      remote = { id, relay }
+      try { await relay.ready } catch (error) { relay.end(); remote = undefined; throw error }
+      return { connected: true, ...relay.state() }
+    },
+    remote_session_say: async args => {
+      if (!remote) throw new Error('No remote session is connected.')
+      if (args.text.length > 300) throw new Error('Keep the message under 300 characters.')
+      remote.relay.say(args.text); return { sent: true }
+    },
+    remote_session_end: async () => {
+      if (!remote) throw new Error('No remote session is connected.')
+      const { id, relay } = remote
+      relay.end(); remote = undefined; dropLink()
+      await adminApi('/admin/remote-sessions/' + id, 'DELETE').catch(() => {})
+      return { ended: id }
+    },
   }
   async function finish(args, keep) {
+    readOnlyRemote()
     if (!options.allowDeviceWrites || !trial || args.trial !== trial.id) throw new Error('No matching authorized device trial.')
     if (link.getState().status !== 'trial' || link.getState().identity.base !== trial.base || link.getState().active !== trial.active) throw new Error('Trial identity changed; reconnect and recover.')
     if (keep && trial.before.diagnostics?.saved === 4) throw new Error('Keep would replace saved files from another base. Their backup and exact recovery must be verified first; Undo remains available.')
@@ -307,7 +365,7 @@ export async function createFrontendTools(options, injected, dependencies = {}) 
       running = true
       try { return await handlers[name](args) } finally { running = false }
     },
-    async close() { if (closed) return; closed = true; try { if (trial) { try { await link.undo() } catch { /* Unaccepted trials also recover through device timeout. */ } } release?.(); bench?.socket.destroy() } finally { activeWorkspace = false; await rm(lease, { recursive: true, force: true }) } },
+    async close() { if (closed) return; closed = true; try { if (trial) { try { await link.undo() } catch { /* Unaccepted trials also recover through device timeout. */ } } remote?.relay.end(); release?.(); bench?.socket.destroy() } finally { activeWorkspace = false; await rm(lease, { recursive: true, force: true }) } },
   }
   } catch (error) { activeWorkspace = false; await rm(lease, { recursive: true, force: true }); throw error }
 }

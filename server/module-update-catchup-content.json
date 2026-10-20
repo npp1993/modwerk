@@ -1,0 +1,5 @@
+{
+  "subject": "A few updates from me",
+  "body": "Hey guys,\n\nthe update mails stopped going out for a bit. That was down to a setting I got wrong, so here’s a quick catch-up.\n\n{{followed_updates}}\n\nBBD Delay is now on Modwerk: a bucket-brigade delay with pitch-bending repeats and freeze. Play Modes has a new Step Repeat mode too: hold trig keys to loop a few steps, then let go to carry on with the pattern. That mode still needs hardware testing.\n\nI’ve also been working on the Octatrack beta. You can load modules over USB and run a self stress-test with the modules you installed. The status page now shows CPU load and both DSP chips, with a graph of the last few minutes.\n\nI’m spending a lot of time on the DSP side. Effects on the same chip share one copy of their code, and engines only take up memory when they’re needed.\n\nFeature requests have votes now, so you can help choose what gets worked on next. I’d love to hear what you’re making with the modules, and what you’d like to see added.\n\n[Have a look on Modwerk](https://modwerk.app/)\n\nThank you,\\\nJannik",
+  "image": "/news/octatrack-beta-october.png"
+}

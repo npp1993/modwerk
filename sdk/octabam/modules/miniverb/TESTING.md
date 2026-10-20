@@ -1,26 +1,33 @@
-# Mini Verb 0.2.2-experimental testing
+# Mini Verb 0.2.3-experimental testing
 
-This update only lowers DSP cost. Two `move #>…,y1` coefficient reloads in the
-input diffusers (173 and 449 samples) loaded the value `y1` already held from
-the diffuser before them, with only reads of `y1` in between. They are removed.
-Disassembly of both programs differs in exactly those two instructions (four
-words); the sample loop's `do` end word moves by four and every relative branch
-keeps its encoding. No new instruction form is used. Controls, defaults, the
-native manifest, FX ID 0x17, the 16K ring and the X:(r7+$20..$3f) block are
-unchanged. The exact published 0.2.1 source is preserved as
-[upstream/miniverb-0.2.1.asm](upstream/miniverb-0.2.1.asm).
+This update keeps Mini Verb out of Sidechain Compressor's key window. Its delay
+ring was modulo 16,384 (`m4 = m5 = $3fff`), so the write head passed over every
+word of its FX2 slot although its lines end at ring position 13,749. On T3 and
+T7 the last 514 words of that slot (+$3DFE..+$3FFF) are Sidechain's cross-core
+key window, so a card build with both corrupted each other. The ring now wraps
+at 15,870 words (`m4 = m5 = $3dfd`); FX2 slot bases are 16K-aligned, which the
+16K ring already relied on. Start-up keeps 0.2.2's 128 dry calls: the first four
+clear nothing, the last 124 clear 128 words each under the ring's modulus (the
+first of them wraps two words to the ring start), and `m4` goes back to linear
+before that path returns. `manifest.py` declares `buffer_words=15870`.
+
+Six program words are added, all outside the sample loop (a compare and a
+branch for the empty calls, and the restored `m4`). No line, tap, delay,
+control, default, FX ID or X state changes. The exact published 0.2.2 source is
+preserved as [upstream/miniverb-0.2.2.asm](upstream/miniverb-0.2.2.asm).
 
 No physical device was flashed, played or rebooted for this source. Earlier
-records keep their versions: [0.2.1](evidence/testing-0.2.1.md) (the mixer fix,
+records keep their versions: [0.2.2](evidence/testing-0.2.2.md) (two redundant
+coefficient reloads removed), [0.2.1](evidence/testing-0.2.1.md) (the mixer fix,
 #428 and its owner approval) and [0.2.0](evidence/testing-0.2.0.md).
 
 ## Three cost measures, kept apart
 
-| Measure | 0.2.0 | 0.2.1 | 0.2.2 | Source |
-| --- | ---: | ---: | ---: | --- |
-| Modeled cycles/sample: static sample-loop word span (`tools/build/cycle_count.py`) | 411 | 415 | **411** | verify.py |
-| Executed instructions/sample, worst matched single instance, both cores | 360.75 | 364.75 | **362.75** | benchmark.py |
-| Chip cycles/sample on hardware | 665 (core 1) | not measured | **not measured** | owner's MKII, 11 Oct 2026 |
+| Measure | 0.2.0 | 0.2.1 | 0.2.2 | 0.2.3 | Source |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Modeled cycles/sample: static sample-loop word span (`tools/build/cycle_count.py`) | 411 | 415 | 411 | **411** | verify.py |
+| Executed instructions/sample, worst matched single instance, both cores | 360.75 | 364.75 | 362.75 | **362.75** (loop unchanged, not re-run) | benchmark.py |
+| Chip cycles/sample on hardware | 665 (core 1) | not measured | not measured | **not measured** | owner's MKII, 11 Oct 2026 |
 
 The modeled figure counts words: a two-word instruction (a long immediate, an
 absolute address) counts two, and memory contention and pipeline stalls are not
@@ -35,7 +42,7 @@ The hardware figure is the 0.2.0 row of "Measured on the owner's MKII
 idle-pass meters, FX2 on T1 against NONE, the dearest of three knob settings.
 It is 1.62 times 0.2.0's modeled 411 and 1.84 times its executed 360.75, so an
 executed-instruction claim for Mini Verb would be undercharged by the 7/4 rule;
-keep the modeled claim. It is not a measurement of 0.2.1 or 0.2.2.
+keep the modeled claim. It is not a measurement of 0.2.1, 0.2.2 or 0.2.3.
 
 ## Matched comparison with worst-case SPRING REV
 
@@ -45,7 +52,9 @@ identical tone/transient input, the null stub's peak subtracted per split and
 core, trigger splits 0 to 15. SPRING REV runs fixed at defaults, at each TYPE,
 and with the moving schedule (minima, maxima, ramps, endpoint jumps, every
 TYPE); Mini Verb fixed at defaults, TONE 0 and TONE 127, and moving. Statistics
-are in [evidence/stock-comparison-0.2.2.json](evidence/stock-comparison-0.2.2.json).
+are in [evidence/stock-comparison-0.2.2.json](evidence/stock-comparison-0.2.2.json). It was not
+re-run for 0.2.3: the sample loop is the same, and the eight-instance renders below
+execute exactly 0.2.2's instructions per block.
 
 | Effect | Unsplit worst | Worst over splits | Worst case | Ratio to SPRING |
 | --- | ---: | ---: | --- | ---: |
@@ -62,11 +71,12 @@ stock SPRING REV measured 299 / 288 chip cycles/sample (core 1 / core 0), so the
 near one cycle per instruction and Mini Verb did not. That gap is unexplained
 by these runs.
 
-## Bit-identity with 0.2.1 and native DSP regression — 13 October 2026
+## Bit-identity with 0.2.2, the window and native DSP regression — 20 October 2026
 
-All **75 checks passed** in [verify.py](verify.py); exact source hashes and
-verdicts are in [evidence/dsp-regression-0.2.2.json](evidence/dsp-regression-0.2.2.json).
-The new gates compare 0.2.2 with the assembled published 0.2.1 program:
+All **76 checks passed** in [verify.py](verify.py); exact source hashes and
+verdicts are in [evidence/dsp-regression-0.2.3.json](evidence/dsp-regression-0.2.3.json).
+The identity gates compare 0.2.3 with the assembled published 0.2.2 program,
+from the first block, start-up included:
 
 - eight instances, four per core, moving controls, mixed splits 1/3/7/15:
   bit-identical;
@@ -74,25 +84,29 @@ The new gates compare 0.2.2 with the assembled published 0.2.1 program:
 - 0.9 FS 733 Hz input, MIX 32, TONE 0, 64 and 127, split 7, both cores:
   bit-identical.
 
-Separately, Modwerk's builder-path bench (`sdk/machines/octatrack/elekloader/dspbench`,
-Elekloader's `dsp_assemble`, scratch X:$20-$FF clobbered before every call)
-found both builds bit-identical over 6,000 blocks of noise with every knob
-moving, at splits 0, 1, 7 and 15.
+The window: `dsp_host -guard 15870 -guard-shared` allows each instance to write
+only the first 15,870 words of its allocation, in core-private Y and in the
+shared window where T3's and T7's slots lie. Eight moving instances, the
+dirty-memory start and the 30-second moving render write nothing past it (0
+stray write regions on every instance). The same guard on published 0.2.2
+reports 770 stray write regions on every instance, so the gate catches the
+fault it is for. Over dirty memory, all eight instances stay silent after init,
+so nothing reads the unused tail. Until this version the guard gates counted
+the text `0 stray write regions`, which `770 stray write regions` also contains;
+they now match the whole number.
 
-Every earlier gate still passes with the same values as 0.2.1: exact dry at
-MIX 0, neutral voice within 4 LSB of 0.2.0, the raw-wet mixer regression
-(0.9 FS: 468.25 LSB against 0.2.0's 1,737,799.75), Tone endpoint spectra,
-eight-instance isolation, dirty X/Y state and the 30-second guarded moving
-render. Sound quality (`npm run fx:audit`: aliasing, DC, clipping, idle) was not
-tested for this source; its output is bit-identical to 0.2.1, which was not
-audited either.
+Every earlier gate still passes with the same values as 0.2.2: exact dry at
+MIX 0, neutral voice within 4 LSB of 0.2.0, the raw-wet mixer regression, Tone
+endpoint spectra, eight-instance isolation and dirty X/Y state. Sound quality
+(`npm run fx:audit`) was not tested; output is bit-identical to 0.2.2, which was
+not audited either.
 
-| Measurement | 0.2.2 | 0.2.1 |
+| Measurement | 0.2.3 | 0.2.2 |
 | --- | ---: | ---: |
-| Assembled program | 532 words | 536 |
-| Eight moving instances, four per core, mixed splits | 23,488 instructions/core/block | 23,616 |
-| Eight neutral instances | 21,220 instructions/core/block | 21,348 |
-| 30-second moving eight-instance guarded render | 82,688 blocks, 23,488 peak; zero clipping or guard violations | 23,616 |
+| Assembled program | 538 words | 532 |
+| Eight moving instances, four per core, mixed splits | 23,488 instructions/core/block | 23,488 |
+| Eight neutral instances | 21,220 instructions/core/block | 21,220 |
+| 30-second moving eight-instance guarded render | 82,688 blocks, 23,488 peak; zero clipping or guard violations | 82,688 blocks, 23,488 peak |
 
 Reproduce with the developer's private original MAIN OS, a disposable Octabam
 tree (this checkout's `sdk/octabam` with the patched `vendor/` and
@@ -103,12 +117,13 @@ tree (this checkout's `sdk/octabam` with the patched `vendor/` and
 ```sh
 DSP_HOST=/abs/dsp_host python3 -B sdk/octabam/modules/miniverb/verify.py \
   --sdk /abs/disposable/octabam --stock /abs/private/section_3_MAIN_OS.bin \
-  --output /abs/private/miniverb-0.2.2-results
+  --output /abs/private/miniverb-0.2.3-results
 DSP_HOST=/abs/dsp_host python3 -B sdk/octabam/modules/miniverb/benchmark.py \
-  --sdk /abs/disposable/octabam --output /abs/private/miniverb-0.2.2-bench \
+  --sdk /abs/disposable/octabam --output /abs/private/miniverb-0.2.3-bench \
   --asm 'MINIVERB 0.2.0=/abs/upstream/miniverb-0.2.0.asm' \
   --asm 'MINIVERB 0.2.1=/abs/upstream/miniverb-0.2.1.asm' \
-  --asm 'MINIVERB 0.2.2=/abs/miniverb.asm'
+  --asm 'MINIVERB 0.2.2=/abs/upstream/miniverb-0.2.2.asm' \
+  --asm 'MINIVERB 0.2.3=/abs/miniverb.asm'
 ```
 
 The stock MAIN OS SHA-256 is
@@ -118,37 +133,36 @@ inputs, meters and WAVs stay private; only statistics are committed.
 ## Software resource bounds
 
 The audited loop is 411 modeled cycles/sample. Two split process calls per
-16-sample block cost 6,576 loop cycles, plus twice all 121 outside-loop words,
+16-sample block cost 6,576 loop cycles, plus twice all 127 outside-loop words,
 twice 128 ring-clear stores, 32 initialization stores and a 256-cycle setup,
-branch and return allowance: **7,362 modeled cycles**, rounded up to **8,192
+branch and return allowance: **7,374 modeled cycles**, rounded up to **8,192
 modeled cycles/instance/block** as before. Four instances per core with the
 inherited 1,415 cycles/sample stock reserve total 55,408 of the arithmetic
 72,560/core/block. This conditional model excludes chip memory contention.
 
-Per instance: 49,920 logical bytes (full inherited X block and the 16K Y ring).
-Shared: both programs 1,064 words (3,192 bytes) and the 384-byte hardware stack
-capacity. Eight instances: **402,936 logical bytes**. No new ColdFire code,
+Per instance: 49,920 logical bytes (full inherited X block and the 16K Y
+allocation, of which the ring uses 15,870 words). Shared: both programs 1,076
+words (3,228 bytes) and the 384-byte hardware stack capacity. Eight instances:
+**402,972 logical bytes**. No new ColdFire code,
 table, CPU RAM or allocation.
 
 ## Not yet done for this source
 
 - Native/browser composition parity (`npm run module:verify -- miniverb --os …`),
-  the isolated Docker package build and its import, and the regenerated Analog BD
-  companion proof.
-- The USB loader package: once the package import carries 0.2.2, set Mini Verb's
-  `cycles` in `src/engine/assets/octatrack-module-packages.json` (and the
-  elekloader README command) from 0.2.1's 415 to 411 and run
-  `npm run octatrack:module-packages`.
-- LCD captures: the committed ones are from 0.2.1; 0.2.2 changes no page.
+  the isolated Docker package build and its import, the USB package and the
+  regenerated Analog BD companion proof.
 - Owner approval of this exact source. Hardware, chip timing, played
   automation, Part/project persistence, physical reboot, maximum load and the
   original #428 noise remain unverified.
+- Over USB the base still keeps Mini Verb off T3 and T7 while Sidechain
+  Compressor is installed: it has no reviewed buffer size for any custom FX2
+  effect, so it assumes the whole slot.
 
-## Hardware steps for a private 0.2.2 build
+## Hardware steps for a private 0.2.3 build
 
-Follow the 0.2.1 steps in [evidence/testing-0.2.1.md](evidence/testing-0.2.1.md)
-with the 0.2.2 image, and in addition: load Mini Verb over USB with seven
-stock effects on the other slots of core 0 (T5–T8 FX1/FX2) and check it is
-admitted; read PROJ > MODWERK > MODULE LOAD and the LOAD meters with TONE 0 on
-T1 and T5 and record the measured chip cycles per sample. Report failures and
-untested steps.
+1. Card build with Mini Verb and Sidechain Compressor. Put Mini Verb on T7's
+   FX2 with T7 empty, play a loud sample on T5, and listen to T7 and MAIN: 0.2.2
+   played a ghost of T5 there, 0.2.3 must not. Repeat with T3 and T1. Then set
+   a COMPRESSOR keyed from another core and check the key still follows it.
+2. Then follow the 0.2.1 steps in [evidence/testing-0.2.1.md](evidence/testing-0.2.1.md)
+   with the 0.2.3 image. Report failures and untested steps.

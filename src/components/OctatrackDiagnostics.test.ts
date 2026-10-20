@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DiagnosticPreference } from '../community/octatrack-diagnostics'
 
-const preference: DiagnosticPreference = { accountId: 'member', available: true, enabled: true, ready: true, busy: false, error: '', notice: '', hasChoice: true, lastSent: null }
+const preference: DiagnosticPreference = { accountId: 'member', available: true, enabled: true, ready: true, busy: false, error: '', notice: '', hasChoice: true, saved: true, lastSent: null }
 vi.mock('../community/octatrack-diagnostics', () => ({ diagnosticPreference: () => preference, subscribeDiagnosticPreference: () => () => {}, changeDiagnosticSharing: vi.fn(), collectOctatrackDiagnostics: vi.fn() }))
 vi.mock('./DiagnosticsInvitation', () => ({ DiagnosticDetails: () => null, DiagnosticsInvitation: () => null }))
 const { OctatrackDiagnosticsSettings } = await import('./OctatrackDiagnostics')

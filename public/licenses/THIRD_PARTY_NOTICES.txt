@@ -54,6 +54,7 @@ src/community/notification-text.ts
 src/community/octatrack-diagnostics-contract.ts
 src/community/ot-log.ts
 src/community/profile-links.ts
+src/community/remote-session-contract.ts
 src/community/report-closure.ts
 src/community/usage-contract.ts
 src/community/usage-pages.ts
@@ -3052,7 +3053,7 @@ SPDX: GPL-3.0-or-later
 Used in: vendor/elekloader/kit; Digitakt/Digitone browser builder
 Notice source: vendor/elekloader/kit/NOTICE
 Notice source: vendor/elekloader/kit/LICENSE
-Notice source: https://github.com/irpina/elekloader/tree/3acac10ea86882a2ea51c9377ac6bd58fc4fec57/js
+Notice source: https://github.com/irpina/elekloader/tree/7b5b5b8ea969eb23f25a68e5c245294f3085bf90/js
 
 elekloader
 Copyright (C) 2026 irpina and contributors
@@ -3101,7 +3102,7 @@ octabam
 Facts about the Octatrack come from sambanks/octabam
 (https://github.com/sambanks/octabam, MIT, (c) 2026 Sam Banks), and are
 marked "octabam" where they are used (elekloader/devices/octatrack.py).
-mods/core-ot makes the same 28 arena writes as octabam's platform, for the
+mods/core-ot makes the same 27 arena writes as octabam's platform, for the
 same reservation. elekloader/sdk/octabam.py reads octabam's module manifests
 from a checkout the user supplies, and copies their sources into the mod
 folders it writes, with octabam's licence beside them. No octabam code is

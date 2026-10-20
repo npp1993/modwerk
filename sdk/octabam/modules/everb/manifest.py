@@ -37,7 +37,7 @@ MODULE = Module(
         Param(b"SPD", 64, 128, True, doc="modulation speed 0.5..256 Hz: cyclic rate, ergodic grain rate", **K),
         Param(b"MIX", 51, 128, True, doc="equal-power dry/wet; 0 is exactly the dry signal", **K),
         Param(b"TILT", 64, 128, True, B, doc="wet tone: left warms (lows +12 dB), right brightens (highs +24 dB)"),
-        Param(b"PRE", 25, 128, True, doc="pre-delay 7..250 ms; with REV on, the reverse window (at least 42 ms)", **K),
+        Param(b"PRE", 25, 128, True, doc="pre-delay 7..227 ms; with REV on, the reverse window (at least 42 ms)", **K),
         Param(b"REV", 0, 2, True, S, labels=("OFF", "ON"), doc="reverse the pre-delay buffer; switches under a short duck"),
         Param(b"EDCY", 64, 128, True, B, doc="envelope into DCY: left reins the tail in, right swells it, no sustain"),
         Param(b"ESIZ", 64, 128, True, B, doc="reverb envelope into SIZE: the space shrinks or grows with level"),
@@ -46,7 +46,9 @@ MODULE = Module(
     dsp=DspSection(asm="modules/everb/everb.asm", priority=18,
                    bus_role=BusRole.NONE, ybase=YBase.NEVER,
                    r7_latch_slot=None, gate_label=None),
-    claims=Claims(stock_instance_buffer=True, buffer_words=16384),
+    # The ring stops at +$3DFD of the 16K FX2 slot: Sidechain Compressor keeps its cross-core
+    # key window in the last $202 words of the bank-track-3 slots (issue #696).
+    claims=Claims(stock_instance_buffer=True, buffer_words=15870),
     harness=Harness(layout_char="E", is_server=False),
     gates=(Gate("modules/everb/verify.py", remix_arg=False),),
     # The dearest settings for the pricer, the pressure render and fx:audit, measured

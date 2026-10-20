@@ -10,6 +10,8 @@ import { createPortal } from 'react-dom'
 import type { useFirmwareBuild } from '../hooks/useFirmwareBuild'
 import { BuildProgressIndicator } from './BuildProgressIndicator'
 import { FirmwareDownloadDialog } from './FirmwareDownloadDialog'
+import { RecoveryNotice } from './RecoveryNotice'
+import { DEVICES_BY_ID } from '../devices/registry'
 import { Icon } from './Icon'
 import { useSetWords } from '../community/beta-ui'
 // Only the FX2-only reverbs give up their space selectively; any other omission is the compact FX2 menu.
@@ -22,8 +24,10 @@ export function FirmwareBuildPanel({build,available,downloadsEnabled,firmwareRea
   const {followDownloads,followNotice}=useDownloadFollows()
   const progress=build.phase==='packing'?'Packing your firmware…':build.phase==='verifying'?'Verifying the finished file…':'Composing your selected modules…'
   const ready=build.state==='valid',finished=build.state==='built'&&!!build.result
+  // ticked for this exact file: a build that gives other bytes asks again
+  const [recoveryKnown,setRecoveryKnown]=useState(''),knowsRecovery=finished&&recoveryKnown===build.result!.sha256
   function downloadFirmware() {
-    if (!finished || !downloadsEnabled || !riskAccepted || !pendingDownload || pendingDownload !== build.result) return
+    if (!finished || !downloadsEnabled || !riskAccepted || !knowsRecovery || !pendingDownload || pendingDownload !== build.result) return
     saveFirmware(pendingDownload.buffer,configurationName,pendingDownload.sha256)
     setPendingDownload(undefined)
     setDownloadedKey(build.key)
@@ -35,14 +39,14 @@ export function FirmwareBuildPanel({build,available,downloadsEnabled,firmwareRea
     {build.report?.startupFallback&&<p className="service-note"><strong>Classic startup</strong> · The docking startup could not be added to this selection, so this firmware keeps the classic startup.</p>}
     {!downloadsEnabled&&<aside className="risk-note" role="note"><strong>Firmware downloads are paused</strong><p>Downloads remain paused while the updated firmware build is reviewed. Local compatibility checks remain available. Firmware files will be offered after verification.</p></aside>}
     <section className="build-section" aria-labelledby="build-title" aria-busy={build.state==='building'||build.state==='validating'}>
-      <div><h2 id="build-title">{finished?'Firmware ready':'Build firmware'}</h2><p id="engine-status" role={build.state==='error'?'alert':'status'}>{message}</p>{(build.state==='building'||finished)&&<BuildProgressIndicator phase={build.phase} finished={finished}/>}<span className="subtle">{'No firmware upload. Local validation does not qualify this '+w.set+' on hardware.'}</span></div>
+      <div><h2 id="build-title">{finished?'Firmware ready':'Build firmware'}</h2><p id="engine-status" role={build.state==='error'?'alert':'status'}>{message}</p>{(build.state==='building'||finished)&&<BuildProgressIndicator phase={build.phase} finished={finished}/>}<span className="subtle">{'No firmware upload. Local validation does not qualify this '+w.set+' on hardware.'}</span>{finished&&downloadsEnabled&&<RecoveryNotice machine="octatrack" steps={DEVICES_BY_ID.octatrack?.firmware?.recovery} checked={knowsRecovery} onChange={checked=>setRecoveryKnown(checked?build.result!.sha256:'')}/>}</div>
       <div className="build-actions">
-        {build.state==='building'?<button className="button button-quiet" onClick={build.cancel}>Cancel build</button>:finished&&!downloadsEnabled?null:finished?<button className="button button-primary" disabled={!riskAccepted} aria-describedby="engine-status" aria-haspopup="dialog" onClick={()=>setPendingDownload(build.result)}><Icon name="download" size={16}/>Download .bin</button>:<button className="button button-primary" disabled={!available||!downloadsEnabled||!ready||!riskAccepted} onClick={()=>void build.build()} aria-describedby="engine-status"><Icon name="sliders" size={16}/>Build firmware</button>}
+        {build.state==='building'?<button className="button button-quiet" onClick={build.cancel}>Cancel build</button>:finished&&!downloadsEnabled?null:finished?<button className="button button-primary" disabled={!riskAccepted||!knowsRecovery} aria-describedby="engine-status" aria-haspopup="dialog" onClick={()=>setPendingDownload(build.result)}><Icon name="download" size={16}/>Download .bin</button>:<button className="button button-primary" disabled={!available||!downloadsEnabled||!ready||!riskAccepted} onClick={()=>void build.build()} aria-describedby="engine-status"><Icon name="sliders" size={16}/>Build firmware</button>}
         {build.state==='error'&&build.canRetry&&<button className="button button-quiet" onClick={build.retry}>Check again</button>}
         <button className="button button-quiet" onClick={onExport}><Icon name="download" size={16}/>{'Export '+w.set}</button><p className="export-note" aria-live="polite">{exported?w.Set+' exported as JSON.':'JSON backup · no firmware included'}</p>
       </div>
     </section>
-    {finished&&downloadsEnabled&&riskAccepted&&pendingDownload&&pendingDownload===build.result&&<FirmwareDownloadDialog onDownload={downloadFirmware} onClose={()=>setPendingDownload(undefined)}/>}
+    {finished&&downloadsEnabled&&riskAccepted&&knowsRecovery&&pendingDownload&&pendingDownload===build.result&&<FirmwareDownloadDialog onDownload={downloadFirmware} onClose={()=>setPendingDownload(undefined)}/>}
     {/* The build card stays in the page's sticky column; what follows a build reads in the main column. */}
     {results&&createPortal(<>
     {build.report&&<div className="build-facts"><span>FX1 <strong>{build.report.fx1Rows} {build.report.fx1Rows===1?'effect':'effects'}</strong></span><span>FX2 <strong>{build.report.fx2Rows} {build.report.fx2Rows===1?'effect':'effects'}</strong></span>{build.report.omittedStockFx2.length>0&&<span>Not in FX2 <strong>{omittedLabel(build.report.omittedStockFx2)}</strong></span>}<span>OS image <strong>{(build.report.osBytes/1024).toFixed(1)} KB</strong></span>{finished&&<span>Finished file <strong>{(build.result!.buffer.byteLength/1024).toFixed(1)} KB</strong></span>}</div>}

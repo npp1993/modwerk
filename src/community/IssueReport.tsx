@@ -1,4 +1,4 @@
-import { BugReportNotice, BugReportSuccess, ExistingIssues } from './BugReportNotice'
+import { BetaReportReminder, BugReportNotice, BugReportSuccess, ExistingIssues } from './BugReportNotice'
 import { ReportNotifications } from './ReportNotifications'
 import { refreshModuleIssues, useIssueTracker, type BugReportResult } from './issue-tracker'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -93,6 +93,7 @@ export function IssueReport({id,author,openRequest=0,embedded=false,workspaceCon
    <BugReportSuccess report={sent} onReportAnother={reportAnother}/>
   </div>:!session.user?.verified?<MemberPrompt/>:
   <form key={formKey} className="community-form" aria-busy={busy} onSubmit={event=>{event.preventDefault();void send(event.currentTarget)}}>
+   <BetaReportReminder/>
    {!embedded&&<ExistingIssues id={id} tracker={tracker}/>}
    {draft&&<DiscussionIssueDraft body={draft.body}/>}
    <label>Title<input ref={title} name="title" required maxLength={160} defaultValue={draft?.title??''} placeholder="What went wrong, in one line"/></label>

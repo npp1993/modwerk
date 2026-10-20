@@ -14,7 +14,7 @@ import run_pack
 UPSTREAM = Path(os.environ.get('ELEKLOADER_UPSTREAM', Path.home() / '.cache/modwerk-upstream/elekloader'))
 LOAD, RUN, START = 0x40000400, 0x40112830, 0x40a955e0
 DST = START + run_pack.UNCACHED
-PARITY = '1b161af63586858f2e73e73e9fbefab7c2e92fccd0fc50f89ea8143f6786f515'
+PARITY = '5b6b45e7041999bafc6b033b54293555634303df90ce3fb8cfa39e0f52951eb3'
 
 
 def gamma(value, trailer=None):

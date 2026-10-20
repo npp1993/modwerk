@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { Icon } from '../components/Icon'
 import { DEVICES_BY_ID } from '../devices/registry'
 import { post } from './api'
-import { BugReportSuccess } from './BugReportNotice'
+import { BetaReportReminder, BugReportSuccess } from './BugReportNotice'
 import { catalogModules, configurationSummary } from './configuration-report'
 import { useCommunity } from './context'
 import { FLASH_STATES, OT_MODELS, type FlashState, type IssueContext, type OtModel } from './issue-context'
@@ -15,9 +15,8 @@ import { REPORT_OS, useWorkspaceReportContext } from './report-context'
 import { useOtLogFile } from './useOtLogFile'
 
 /**
- * Report a problem with a whole saved configuration, for when no single module is known to be at fault. It reaches
- * the authors and maintainers of every module in the configuration; a problem with one module belongs on that
- * module's own page.
+ * Report a problem with a whole saved configuration, for when no single module is known to be at fault. No author is
+ * pinged until it is narrowed down; a problem with one module belongs on that module's own page.
  */
 export function ConfigurationReportDialog({ machine, configurationId, onClose }: { machine: string; configurationId: string; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null), heading = useId(), success = useRef<HTMLDivElement>(null), logHelp = useId()
@@ -79,6 +78,7 @@ export function ConfigurationReportDialog({ machine, configurationId, onClose }:
       <footer className="configuration-report-footer"><div className="dialog-actions"><button type="button" className="button button-primary" onClick={onClose}>Close</button></div></footer>
     </> : !session.user?.verified ? <div className="configuration-report-body"><MemberPrompt /></div> : <form className="community-form configuration-report-form" aria-busy={busy} onSubmit={event => void send(event)}>
       <div className="configuration-report-body">
+        <BetaReportReminder />
         <p className="configuration-report-intro">For a problem in the combination, or when you do not know which module is to blame. If one module clearly misbehaves, report it on that module’s page.</p>
         <section className="configuration-report-config" aria-label="Configuration">
           <div className="configuration-report-config-head"><span>Configuration</span><strong>{file.log ? 'Read from ' + OT_LOG_NAME : resolved.name || 'Not saved'}</strong><small>{count}</small></div>
@@ -113,7 +113,7 @@ export function ConfigurationReportDialog({ machine, configurationId, onClose }:
         </div>
       </div>
       <footer className="configuration-report-footer">
-        <p className="configuration-report-notice">Posts publicly on GitHub for the developers of {catalogued.length === 1 ? 'this module' : 'all ' + count}, under your username: title, description, device, the module list with versions, build fingerprint and any log. Leave out firmware and personal information.</p>
+        <p className="configuration-report-notice">Posts publicly on GitHub under your username: title, description, device, the module list with versions, build fingerprint and any log. Leave out firmware and personal information.</p>
         {error && <p className="file-error" role="alert">{error}</p>}
         <div className="configuration-report-submit">
           <label className="risk-accept"><input type="checkbox" name="notifyUpdates" defaultChecked />Follow new releases of {catalogued.length === 1 ? 'this module' : 'these ' + count}</label>

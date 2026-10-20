@@ -515,6 +515,12 @@ h2 { font-size: 16px; letter-spacing: -.15px; font-weight: 600; }
 .risk-acceptance summary { color: var(--accent); font-size: 12px; cursor: pointer; }
 .risk-acceptance details p { margin-top: 8px; }
 .risk-acceptance .risk-accept { margin-top: 14px; }
+/* After a build: how to get back to stock, ticked before the download. */
+.recovery-notice { margin-top: 18px; padding: 13px 14px 12px; border: 1px solid var(--line); border-left: 3px solid var(--issue-confirmed); border-radius: 8px; background: var(--field); }
+.recovery-notice h3 { margin: 0 0 6px; color: var(--text); font-size: 13px; line-height: 1.45; }
+.recovery-notice p { margin: 6px 0; color: #b5b2c2; font-size: 12px; line-height: 1.7; }
+.recovery-notice a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.recovery-notice .risk-accept { margin-top: 10px; font-size: 12px; }
 /* One column: compatibility leads, the build card closes the page and build results follow it. */
 @media (max-width: 1100px) {
   .configuration-layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
@@ -645,8 +651,11 @@ select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .owner-note-warning svg { flex-shrink: 0; margin-top: 4px; }
 .owner-note .owner-note-warning strong { color: #ffe0b8; }
 .owner-note-sign { margin-top: 22px; }
+.owner-note .owner-note-warning a { color: #ffe0b8; text-decoration: underline; }
+.app-dialog .owner-note-accept { flex-direction: row; align-items: flex-start; gap: 12px; margin-top: 22px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-size: 14px; line-height: 1.6; }
+.app-dialog .owner-note-accept input { width: 20px; height: 20px; padding: 0; }
 .owner-note-actions { display: flex; align-items: center; gap: 10px; padding: 16px 32px; border-top: 1px solid var(--line); }
-.owner-note-close { margin-right: auto; padding: 8px 4px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.owner-note-close { margin-right: auto; padding: 8px 4px; border: 0; background: none; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 .owner-note-close:not(:disabled):hover { color: var(--text); }
 .button-danger { background: #6a3734; border-color: #96514a; color: #ffe1dc; }
 .app-dialog.firmware-download-dialog { background: #2b2023; border-color: #a95757; max-height: calc(100dvh - 32px); overflow-y: auto; }
@@ -839,6 +848,9 @@ h1 { font-size: 28px; }
 .community-form legend { padding: 0 7px; font-weight: 600; font-size: 15px; color: #dddde9; }
 .form-two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .service-note { color: #a7a7b9; font-size: 13px; line-height: 1.75; margin: 12px 0 18px; }
+.beta-report-reminder { display: flex; gap: 10px; margin: 0 0 16px; padding: 12px 14px; border: 1px solid #715235; border-radius: 8px; background: #382d23; color: #f0c792; font-size: 13px; line-height: 1.6; }
+.beta-report-reminder svg { flex-shrink: 0; margin-top: 2px; }
+.beta-report-reminder strong, .beta-report-reminder a { color: #ffe0b8; }
 .service-banner { display: flex; align-items: center; justify-content: space-between; gap: 18px; background: #292933; border: 1px solid #424251; border-radius: 8px; padding: 17px; color: #c2c2d4; font-size: 13px; line-height: 1.6; margin-bottom: 25px; }
 .success-note { border: 1px solid #456354; background: #25332c; border-radius: 7px; color: #bcd7c5; padding: 15px; font-size: 13px; line-height: 1.7; margin: 18px 0; }
 .media-empty { display: flex; align-items: center; gap: 16px; padding: 24px; background: var(--surface); border: 1px dashed #494955; border-radius: 8px; }
@@ -1245,6 +1257,9 @@ h1 { font-size: 28px; }
 .faq-section > h2 { margin-bottom: 13px; }
 .faq-questions { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 .faq-question + .faq-question { border-top: 1px solid var(--line); }
+/* #faq/<id> scrolls to its answer, clear of the phone's sticky toolbar. */
+.faq-question { scroll-margin-top: 24px; }
+@media (max-width: 600px) { .faq-question { scroll-margin-top: calc(72px + env(safe-area-inset-top)); } }
 .faq-question summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; padding: 17px 20px; border-radius: 8px; color: #dddde7; font-size: 14px; font-weight: 500; line-height: 1.6; cursor: pointer; list-style: none; }
 .faq-question summary::-webkit-details-marker { display: none; }
 .faq-question summary:hover { background: var(--surface-hover); }
@@ -1667,6 +1682,8 @@ button.signal-tile[aria-pressed="true"] > svg { fill: currentColor; }
 .login-prompt-notice p + p { margin-top: 12px; }
 .login-prompt-notice strong { color: #e3ddff; font-weight: 600; }
 .login-prompt-dialog #login-prompt-privacy { margin-top: 16px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.login-prompt-skip { display: block; margin: 14px auto 0; color: var(--muted); }
+.login-prompt-skip:enabled:hover { color: var(--text); }
 .login-prompt-dialog .dialog-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 24px; }
 .login-prompt-dialog .dialog-actions .button { min-height: 44px; padding: 9px 8px; }
 @media (max-width: 600px) {

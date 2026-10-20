@@ -11,6 +11,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import struct
 import subprocess
 import sys
@@ -43,7 +44,7 @@ from remix.schema import Remix  # noqa: E402
 registry.remix = lambda _: Remix(name='miniverb-tone-test', doc='Private DSP regression.', modules=('MINIVERB',), fallback='NONE')
 import build_bus  # noqa: E402
 assert [p.name.decode() for p in candidate.params[:6]] == ['DECAY', 'DAMP', 'TONE', 'MOD', 'RATE', 'MIX']
-report = {'moduleVersion': '0.2.2-experimental', 'sampleRate': 44100,
+report = {'moduleVersion': '0.2.3-experimental', 'sampleRate': 44100,
           'framesPerBlock': 16, 'hardware': 'not tested', 'checks': [], 'loads': [],
           'sources': {name: hashlib.sha256((folder / name).read_bytes()).hexdigest()
                       for name in ('miniverb.asm', 'manifest.py', 'verify.py')},
@@ -78,7 +79,7 @@ def assembled(name, path):
 
 old = assembled('baseline', baseline_asm)
 new = assembled('candidate', folder / 'miniverb.asm')
-published_asm = folder / 'upstream/miniverb-0.2.1.asm'
+published_asm = folder / 'upstream/miniverb-0.2.2.asm'
 pub = assembled('published', published_asm)
 import cycle_count  # noqa: E402
 for name, path in (('baseline', baseline_asm), ('published', published_asm), ('candidate', folder / 'miniverb.asm')):
@@ -98,23 +99,24 @@ def render(mod, mems, tag, blocks, values=None, **kw):
 def knobs(tone=64, mix=127):
     p = bench.knobs(candidate); p[2] = tone; p[5] = mix; return p
 
-# 0.2.2 only drops two coefficient reloads whose register already holds the value; the published 0.2.1
-# program is the oracle, so every output must be bit-identical: eight moving instances on both cores,
-# every trig split on both cores, and the hot mixer input at each Tone endpoint.
+# 0.2.3 only wraps the ring at 15,870 words instead of 16,384 (reads end at 13,749) and clears that span in
+# the same 128 dry calls; the published 0.2.2 program is the oracle, so every output must be bit-identical:
+# eight moving instances on both cores, every trig split on both cores, and the hot mixer input at each
+# Tone endpoint.
 splits = [1, 3, 7, 15, 15, 7, 3, 1]
 cases = [('eight', dict(split=splits))] + [(f'split{s}', dict(instances=2, positions=[0, 4], split=[s, s])) for s in range(16)]
 for tag, kw in cases:
     ins = [bench.source(2048, k) for k in range(kw.get('instances', 8))]
     _, x = bench.run(candidate, new, 'ident_new_' + tag, 2048, automate=True, inputs=ins, **kw)
     _, y = bench.run(candidate, pub, 'ident_pub_' + tag, 2048, automate=True, inputs=ins, **kw)
-    gate(f'moving controls, {tag}: bit-identical to published 0.2.1', x == y, instances=len(x))
+    gate(f'moving controls, {tag}: bit-identical to published 0.2.2', x == y, instances=len(x))
 hot = bench.raw(output / 'ident_hot.raw', [round(.9 * 8388607 * math.sin(2 * math.pi * 733 * n / 44100)) for n in range(4096 * 16)])
 for tone in (0, 64, 127):
     p = knobs(tone, 32)
     kw = dict(instances=2, inputs=[hot, hot], positions=[0, 4], split=[7, 7], extra=['-audio', '0'])
     _, x = render(candidate, new, f'ident_hot_new_{tone}', 4096, [(0, p)], **kw)
     _, y = render(candidate, pub, f'ident_hot_pub_{tone}', 4096, [(0, p)], **kw)
-    gate(f'0.9 FS, MIX 32, TONE {tone}, both cores: bit-identical to published 0.2.1', x == y)
+    gate(f'0.9 FS, MIX 32, TONE {tone}, both cores: bit-identical to published 0.2.2', x == y)
 
 
 # Low-level neutral audio retains the tank and differs only by the bounded
@@ -209,10 +211,17 @@ for hz in (70, 4000):
 splits = [1, 3, 7, 15, 15, 7, 3, 1]
 row, together = bench.run(candidate, new, 'eight_moving', 2048, automate=True,
                           inputs=[bench.source(2048, k) for k in range(8)], split=splits,
-                          extra=['-guard', '16384', '-guard-shared'])
+                          extra=['-guard', '15870', '-guard-shared'])
 report['loads'].append(row)
 gate('eight instances: private and shared Y/program bounds',
-     (output / 'miniverb_eight_moving.log').read_text().count('0 stray write regions, 0 CLOBBERING') == 8)
+     len(re.findall(r'\b0 stray write regions, 0 CLOBBERING', (output / 'miniverb_eight_moving.log').read_text())) == 8)
+# Control: published 0.2.2's ring and clear covered all 16,384 words, Sidechain Compressor's key window
+# (+$3dfe..+$3fff) included, so the same 15,870-word guard must catch it on every instance.
+bench.run(candidate, pub, 'published_guard', 2048, automate=True,
+          inputs=[bench.source(2048, k) for k in range(8)], split=splits,
+          extra=['-guard', '15870', '-guard-shared'])
+gate('control: the same guard catches published 0.2.2 writing past +$3dfd',
+     len(re.findall(r'\b[1-9][0-9]* stray write regions', (output / 'miniverb_published_guard.log').read_text())) == 8)
 for k in range(8):
     _, solo = bench.run(candidate, new, f'solo_{k}', 2048, instances=1, automate=True,
                        inputs=[bench.source(2048, k)], positions=[k], split=[splits[k]])
@@ -226,7 +235,7 @@ _, skew = bench.run(candidate, new, 'skew', 2048, automate=True,
                    inputs=[bench.source(2048, k) for k in range(8)], split=splits, extra=['-skew', '97'])
 gate('interleaved cores preserve all eight outputs', skew == together)
 _, quiet = bench.run(candidate, new, 'dirty_silent', 1024, automate=True, mask=0,
-                    extra=['-dirty', '56300', '-guard', '16384', '-guard-shared'])
+                    extra=['-dirty', '56300', '-guard', '15870', '-guard-shared'])
 gate('dirty delay buffers: all eight silent after init', not any(v for channel in quiet for v in channel))
 # Explicitly dirty all scalars, including both new tone histories.
 dirty = []
@@ -253,10 +262,10 @@ report['loads'].append(row)
 # test. Every continuous control moves, and bounds remain armed for all 30 s.
 row, _ = bench.run(candidate, new, 'stress_30s', math.ceil(30 * 44100 / 16), automate=True,
                    split=splits, inputs=[bench.source(math.ceil(30 * 44100 / 16), k) for k in range(8)],
-                   extra=['-dirty', '56300', '-guard', '16384', '-guard-shared'])
+                   extra=['-dirty', '56300', '-guard', '15870', '-guard-shared'])
 report['loads'].append(row)
 gate('30 seconds: eight moving instances, dirty init and all buffer guards',
-     (output / 'miniverb_stress_30s.log').read_text().count('0 stray write regions, 0 CLOBBERING') == 8
+     len(re.findall(r'\b0 stray write regions, 0 CLOBBERING', (output / 'miniverb_stress_30s.log').read_text())) == 8
      and row['clipped_samples'] == 0, blocks=row['blocks'], peak=max(c['peak_block'] for c in row['cores']))
 
 # Review audio: same deterministic percussion at all three colors, preserving

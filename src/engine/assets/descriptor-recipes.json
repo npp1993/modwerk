@@ -1147,7 +1147,7 @@
           "value": "MIX"
         }
       ],
-      "sourceSha256": "e18af286c50d9778cb60ddbe8b9348c4b4a71c04cb45171419d4d2a6681cc31c"
+      "sourceSha256": "42e2dde8b2005fb0c41ca02c6b898f1ffb2b6c441b9d4cda1022a8eefbc73724"
     },
     {
       "id": "modulation",
@@ -2878,7 +2878,7 @@
       "donorSha256": "3b3f9b15f2f6addfea9fc281f5b9fdf054bf305778059b8d43db41d390f0401f",
       "fx2Slot": 1074618440,
       "slotSha256": "79bc740214b4d029e385d06d21e224d04e8f91b53fb26ea08ffa4e5d70964b7a",
-      "sourceSha256": "75e05aa32e0160f76b81f4d60ad1ed2cdd89148691129e9dee1118d77a528363",
+      "sourceSha256": "657103ed759afecbe86b6be4388619f01e1f4ffda820cee83a5427eb58dd4592",
       "integers": [
         {
           "offset": 3,
@@ -3745,18 +3745,18 @@
       ]
     }
   ],
-  "sourceCommit": "6512b6516e26f94e9159b48a6678acaad01d1c6b",
+  "sourceCommit": "203edb598ff8edc3c0842c0dbae962e44720a06a",
   "moduleVersions": {
     "spectrum": "0.1.1-experimental",
     "modulation": "0.1.1-experimental",
     "character": "0.1.1-experimental",
-    "miniverb": "0.2.2-experimental",
+    "miniverb": "0.2.3-experimental",
     "tapeecho": "0.1.5-experimental",
     "euclid": "0.1.4-experimental",
     "repitch": "0.2.0-experimental",
     "tapehead": "0.1.2-experimental",
     "airwindows-chorus": "0.1.2-experimental",
-    "everb": "0.1.1-experimental",
+    "everb": "0.1.2-experimental",
     "bbd": "0.1.1-experimental",
     "analog-bassdrum": "0.1.5-experimental",
     "midi-scenes": "0.2.5-experimental",
@@ -3767,11 +3767,10 @@
     "cc-map": "0.1.2-experimental",
     "sidechain-compressor": "0.1.2-experimental",
     "vector": "0.2.4-experimental",
-    "playmodes": "0.1.1-experimental",
+    "playmodes": "0.2.0-experimental",
     "mute-modes": "0.2.1-experimental",
     "recorder-loop-fix": "0.1.0-experimental",
     "poly8": "0.3.0-experimental",
-    "output-matrix": "0.1.0-experimental",
-    "quantize-live-rec-toggle": "0.1.0-experimental"
+    "output-matrix": "0.1.1-experimental"
   }
 }

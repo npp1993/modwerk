@@ -9,6 +9,7 @@ in [sdk/octabam/AGENTS.md](../sdk/octabam/AGENTS.md); the long record with
 every run is [OCTATRACK_ELEKLOADER_MIGRATION.md](OCTATRACK_ELEKLOADER_MIGRATION.md).
 
 Each entry: what you see, why, the rule, and the build it was observed on.
+Entries reported from other units, rather than seen on the owner's, say so.
 
 ## USB and EP0
 
@@ -173,6 +174,23 @@ same base before and after, its identity answers before the reset fires.
 Wait for a failed request, then for HELLO (the engine refuses SUBMIT for a
 moment after the restart).
 
+## Writing NOR over USB
+
+**Stock's OS UPGRADE reads the whole card file into RAM, then erases and programs NOR from there** (1.40C:
+the sector erase at `0x40020628`, the 256-byte page program at `0x400206f4`, the 37 sector starts at `0x400a95c0`,
+8 KB boot sectors from `0x4000` then 64 KB to `0x1f0000`). Both routines unlock, command and poll the chip
+themselves and mask interrupts only around the command bytes, so calling them from the engine task keeps the
+frame interrupt within its limit. The file buffer stock uses (`0x46147b2c`, its length at `0x46147b28`) is not
+free in normal operation (a 28-byte-record list lives there too): the base copies the container into its own
+reserve instead (`flash.c`). The bootloader depacks NOR from `0x4012`, the section header, and checks nothing: an
+image that does not boot is recovered over DIN MIDI only, so the base writes only a container that depacks to the
+base it is itself running (`sdk/machines/octatrack/elekloader/README.md`, "Updating the base over USB").
+
+**Not yet seen on a unit (20 October 2026):** the USB write is host-tested against a NOR model and the stock
+routines are read, not run; the first hardware run is the owner's call, with a MIDI interface at hand. Qualify
+the written base after a sustained power-off too, not only the soft restart that follows the write (a tester reported a base stalling at the logo only after minutes
+powered off, 18 October 2026).
+
 ## Simulating the user
 
 **Never post key event records to stock's queues directly.** It crashed the
@@ -245,6 +263,18 @@ How it hit the loader:
 
 Any other code that masks at level 5 or above must stay well under 200 µs.
 
+**A switch's masked span grows with the module's stock-code sites.** The loader used to check, write and read back
+every site byte through the uncached alias inside the mask, about 6.5 µs a site: Play Modes (35 sites) held frames
+229 µs, FM Synth (24) 203 µs, Euclid (3) 25 µs (development twins of `99336d35`, 16 October 2026). With both in a set,
+a sync's self-test and a power-on restore each stopped the DSPs once ([finding 46](OCTATRACK_BETA_TEST_PLAN.md#findings-log)).
+Now only the writes are masked, a word at a time, and the checks run under the lock: 69 µs for the same set. To
+measure, read `modwerk_masked_max` with `mem` on a development base (the outermost masked span since boot, in
+132 MHz counts); recording `__builtin_return_address(0)` in `modwerk_machine_unmask` beside it names the caller.
+
+**The DSP watchdog only sees stopped frames while a loader job waits.** `modwerk_dsp_stalled` counts only while a
+transfer or a job (a meter PEEK, a pick) is in flight, so the record is taken at the next such job, not when the
+frames stopped.
+
 **A RAM boot does not rescue a stalled DSP; it hangs at the logo.** The soft reset parks both DSP cores first, and a
 hung core does not park. After a DSP stall only a power cycle helps.
 
@@ -287,10 +317,13 @@ Static E-Verb and dynamic E-Verb share effect id 27, so installing E-Verb
 started an upload at once on a project that already used it. Test the loader
 on a blank project first.
 
-**dsp_asm writes a backward `brclr` target absolute.** The chip reads that word as a displacement (stock's
-self-wait at P:$57 is `0cd341 000000`); dsp_asm emitted `0cd341 001000` for a branch back to $1000. Loop
-with `do forever` and `brkcs` instead (core 1's counted wait), and keep labels from being parts of other
-labels (dsp_asm substitutes label text anywhere: `c1wait` inside `c1waited` stopped the build).
+**dsp_asm writes a `brclr` label target absolute, forward or back.** The chip reads that word as a displacement
+(stock's self-wait at P:$57 is `0cd341 000000`); dsp_asm emitted `0cd341 001000` for a branch back to $1000, and
+the label's address for a forward branch too (a branch four words ahead at P:$1098 went to P:$2134 and core 0
+ran off the end of P memory, reported 16 October 2026). An assemble-and-decode roundtrip does not catch it: a
+decoded label matches any number. Loop with `do forever` and `brkcs` instead (core 1's counted wait), or write
+the displacement as a number and check it against the listing. Keep labels from being parts of other labels
+(dsp_asm substitutes label text anywhere: `c1wait` inside `c1waited` stopped the build).
 
 **Don't use `rep` in DSP code that runs every frame; use a DO loop.**
 A calibration build spending 2,000 more cycles a frame with `rep` on both cores
@@ -349,6 +382,14 @@ record MAIN with SRC3 = MAIN; leaked frames are the muted audio. Sweeping a knob
 through a heavy mode and back flipped the stuck states. The emulator models
 neither contention nor interrupt latency, so neither shows there.
 
+*The data cache and module memory (cached modules):* the pool is cached copy-back, so code written through the
+cached alias sits dirty in the data cache until CPUSHL pushes each line. CPUSHL names a line by set and way, and this
+cache has more sets than address bits 12:4 name: a push that walked `0x2000` bytes of sets "once for the whole cache"
+left half of a 17 KB extent in the cache while memory still held the BSS zeros, and the first call into it hit an
+illegal instruction (`ori.b`, beta finding 60). Push every line of a range by its own address. The crash record
+reads the PC's bytes both cached and through the uncached alias so this is visible: equal bytes mean a wrong jump or
+a stale instruction cache, zeros or other bytes uncached mean the push did not happen.
+
 ## Patching stock code
 
 **A detour returns after the whole span it displaced, never into it.** The
@@ -358,6 +399,46 @@ CARD then stopped on stock's exception screen (`VEC:04`, illegal
 instruction, `ADDR:400888CC`) and USB went away until a power cycle, with the
 project file half-written (`dsp3-R4`). The build now refuses any absolute
 jump in the base's assembly that lands strictly inside a patched site.
+
+**Stock can branch into the middle of a span a detour displaced.** That
+build check covers the base's own jumps, not stock's. A scale quantizer's
+eight-byte detour at `0x400449b8` displaced a stack push that a second
+stock path (MIDI TRACK > CHROMATIC) enters directly at `0x400449be`. Audio
+CHROMATIC worked through the detour; the MIDI path skipped the push, the
+formatter popped four bytes too many and returned into the LCD surface
+(`VEC:04` at `0x400bf10a`). Reported from a tester's MKII, 15 October 2026,
+and reproduced on the ColdFire emulator. Before taking a span, look for
+stock branches to every instruction after its first; shorten the detour
+and keep a shared target stock (Quantizer 0.1.3, its TESTING.md).
+
+**One copy of the arena base literal is not the arena.** The sample arena's
+stock base address is the operand of 23 instructions. 22 of them are the
+arena. The 23rd, at `0x400254f8`, ends PURGE SAMPLES' walk over the 16
+sample banks, and holds the same value only because the banks end where the
+arena starts. Moved with the base, the walk runs past the banks, reads off
+the end of RAM and the unit freezes on PURGE SAMPLES. Reported from a
+tester's MKII, 16 October 2026, and reproduced on the ColdFire emulator.
+Anything that moves the arena base leaves that operand (`0x400254fa`)
+stock. Elekloader's core-ot does from 0.3.1; check every other list of
+arena writes, such as `src/engine/assets/platform-writes.json` and
+`sdk/octabam/tools/remix/arena.py`, the same way.
+
+**`movem.l …,(%sp)` writes over the caller's frame.** `(%sp)` is plain
+indirect (mode 2): it stores at sp and leaves sp where it was, so a
+register save without a reserved frame overwrites the return address and
+whatever lies above it, and the restore reads it back. The ColdFire has no
+predecrement `movem`, so reserve first: `lea -N(%sp),%sp`, `movem.l
+…,(%sp)`, and the reverse on the way out, as `hooks.s` and `rom_gate.s` do.
+GCC's own output always reserves; hand-written saves are the risk. Reported
+from a USB module's control-transfer handler, 19 October 2026.
+
+**A non-zero popup pointer does not mean FX SETUP is open.** `0x460d175c`
+points at a popup object shared by MIXER, TEMPO and other dialogs. Check its
+open flag and SETUP's geometry before calling the FX window's draw. A
+lock-byte or memory check can pass while the screen stays stale: stock's
+trig-down redraws the main page only, and that redraw does not repaint the
+SETUP popup, so refresh the FX window yourself after an edit. Reported 16
+October 2026; verify page edits on the decoded LCD, not in memory alone.
 
 **Base seams must leave catalogue modules' sites alone.** The runtime loader
 patches only over the exact stock bytes a package expects, so a base site on
@@ -403,7 +484,124 @@ reads STATIC with stock defaults, no track is ever bound (renderer slots stay
 the battery copy. A module whose Part bytes stock would reject must be kept
 from the validator by the base itself, before the module is installed (beta
 finding 24: Analog BD; reproduced on `ot_emu` with `--cs1-in --no-post`, twin
-`43fe3fc4`).
+`43fe3fc4`). That includes a module that gives a stock effect's slots new
+meanings: Sidechain Compressor's KEY, KFLT and KGN in COMPRESSOR's page-2 slots
+8-11 wiped testers' current banks at every power-on (finding 47; a RAM boot of
+the owner's MKII twin of `a1471aeb` did the same). The restore also runs a
+pattern validator (`0x4009a670`, not hooked) on all 16 patterns, so pattern
+bytes a module writes need the same care. To test a module for this, set it up
+in a scratch project's current bank and RAM-boot: the restore and both
+validators run as at power-up. A refused restore has already written its fixes
+into the battery copy, so the next boot restores the bank with those values
+changed (Sidechain's KFLT 64 became 1). To recover a bank lost this way, do not
+save or edit: power-cycle once more, or PROJECT > RELOAD the last save from the
+card.
+
+**Stock redraws a page only on its own events.** A module that patches how stock
+draws a page shows only at the next key that redraws it. On the Output Matrix
+author's MKII (20 October 2026, RAM-booted `b5fae2ae` and `3e3e3de1`), installing
+Output Matrix over USB with OUT CFG on MATRIX left the LEV box with stock's LEV
+label and split bars until CUE was pressed (audio was right). After a power cycle
+on flashed `3e3e3de1` (16 October) the restored set looked the same. A RAM-boot
+restore did not reproduce it on either base: the screen redrew as the module
+loaded and the MODULES LOADED dialog appeared. The track screen's drawer is
+`0x4004d948(-1)`. CUE's handler (`0x4004e978`) does nothing more, and the drawer
+marks the display for the UI loop's flush (`0x46c7c72c`). It writes the screen's
+plane and globals, so call it only from the UI task (`ev_tick`, key and encoder
+handlers), never from the engine task that installs or from an interrupt. The
+base calls it on the UI tick once the live modules change (`runtime.c`). On the
+same MKII the fix base `2f575d3e` showed Output Matrix's own label right after the
+install. That build was made before a rebase onto newer main code; the same
+`runtime.c` is now in base `6650236a`. After a RAM-boot restore `2f575d3e` showed MNL with a solid bar that CUE left
+unchanged. A PROJECT menu stayed intact through an install and a removal. Flashed
+`6650236a` (same MKII, 20 October 2026): an install, the first boot's restore and a
+power cycle with six modules kept each left MNL with a solid bar, no key pressed.
+
+**A RAM boot can come back without USB.** On 19 October 2026 one RAM boot of a
+dev twin (`82b9bef4`) ran for over 15 minutes (its log has loads) but never
+enumerated on the Mac: no Elektron device at all, not a dead bridge handle.
+Only a power cycle brought USB back. The same image had RAM-booted cleanly
+before and did again after.
+
+## ColdFire and DSP load
+
+Measured with `stats` on the owner's MKII, dev twin `82b9bef4`, 19 October
+2026, in a scratch project (trigs on T1-T5). The ColdFire figure moves by
+several points with the page on screen, so compare only readings taken on the
+same page.
+
+- **Bare base:** about 42-47 % CPU, nothing installed. No stock-OS reference
+  has been measured on this unit yet.
+- **ColdFire cost of an installed module**, from removing modules one at a time
+  with nothing in use:
+  - FM Synth: about 8 points while installed, even when no track uses it, and
+    about 5 more while a track plays it.
+  - Repitch: about 2 points.
+  - BBD, Tape Echo, TapeHead, E-Verb, Mini Verb: 0.5 points or less each.
+  - Air Chorus: within noise.
+- **DSP cost of a module effect** is on its core: BBD picked on T6 took core
+  T5-8 from about 44 % to 54 %, with no ColdFire change.
+- **DSP FULL:** with FM Synth on T1 and Mini Verb, E-Verb and Tape Echo on
+  T2/T3/T5, TapeHead on T4 and Air Chorus on T8 were refused.
+- **Testers' layout** (FM Synth plus four module effects, a tester's
+  "sluggish knobs" report): about 65 % CPU stopped, about 73 % playing. The
+  unit's own log shows a 100 % peak in every five-minute window, as testers'
+  logs do even on the bare base.
+
+**The base's own CPU cost, measured** (owner's MKII, 20 October 2026, development twins with the profile below;
+stopped, nothing installed, no page of ours open): the tick hooks 843 µs a tick (5.1 % of the CPU), the draw hooks
+28 µs a composition (0.2 %), `dl_frame` 1.1 µs a frame (0.3 %), `mw_ui_tick` 18 µs (0.1 %): about 5.7 % in all. Of
+the tick, `modwerk_fxmap_generation` took 410-446 µs on its own: the fx map's 3 KB checksum in battery RAM, every
+tick (fixed: 8 µs, the whole sum once in 60 calls). With that and the Part-union scan every fourth tick, the tick
+hooks cost 311 µs (1.9 %) and the base about 2.5 %. With FM Synth and five effects installed the tick hooks cost
+530-550 µs: `controller_tick` 170-180 µs (it derives every installed module's trust binding each tick) and
+`dsp_tick` 240-250 µs (the compaction planner plans both cores each idle tick); both fixed: the binding is derived
+again only when the runtime's owners change (or one waits), the planner holds off until a commit, a rollback or an
+arena change. Then: 175 µs a tick idle (1.1 %), 280 µs with that layout (1.7 %); the base about 1.7 % in all. A page
+of ours that is open costs
+its drawing on every composition: MISSING MODULES 818 µs (4.9 %), the STATUS page about 1 ms. No stock-OS baseline
+exists yet: the meter's 41 % idle is stock's own tasks.
+
+*The profile* (development bases only): `modwerk_cost[24]` (diag.h) accumulates DTIM3 counts between stamps at
+each hook's entry and some exits; read it over `mem` twice some seconds apart and divide by 132 for µs (`modwerk_cost[15]`
+counts ticks, `[13]` compositions, `[11]` frames, `[19]` fx map checks). A tester base has none of it.
+
+*Reading the battery-RAM log (diag.c):* an OS upgrade leaves the same trace as a hang. Stock halts the DSPs for the
+upgrade while the loader may still have a job open, so the next boot logs a `stall` (reason 1, frames stopped) after a
+`hot` record at 100 % CPU whose last keys are the PROJECT > SYSTEM > OS UPGRADE walk (PROJ, arrows, YES). Seen on the
+owner's MKII flashing `a0dd21c4` (20 October 2026) and in every tester stall of the 16-20 October pull. Until the start
+record carries the base id, read a stall followed by a start on another base as an upgrade.
+
+*The DSP peak meter:* a core's peak (status.c, the diag log's five-minute windows) is the busiest single frame of a
+1,024-frame receiver window. A self-test that runs DSP modules, or a sync, leaves the window at 99.7-99.8 % although
+the mean stays flat and the audio is fine; a stock effect load does not. Read the self-test's longest frame for
+overload, not the peak (finding 59 in the beta test plan).
+
+## Cold starts and card writes
+
+**A cold start can stall at the logo where a quick restart does not.** An
+early-startup change passed emulator boots and quick power cycles on a
+tester's MKII, then stalled at the logo after several minutes powered off
+(reported 18 October 2026). Moving the small activation helper into the
+resident OS image fixed repeated cold starts on that unit; the module itself
+still runs from RAM. The mechanism is not known: it does not show a defect
+in RAM execution, the loader or the cache. Keep startup gates and activation
+helpers resident where you can, publish a callback only once its runtime is
+ready, and qualify a startup change after a sustained power-off as well as
+a quick restart. The emulator models neither cache, reset settling nor RAM
+retention.
+
+**A card-write completion interrupt can run before the bookkeeping it
+reads.** Stock's first-sector PIO write lowers the interrupt mask again
+before it sends the 256 data words and before it advances the buffer pointer
+and the remaining-sector count. If the engine task is preempted after the
+last word, the completion interrupt sees the old count, polls for a data
+request the card has already finished, and spins for ever; the engine never
+resumes to fix the count. Seen only on the ColdFire emulator, as a gate hang
+(15 October 2026); whether real card timing opens the window is not
+measured. When a hang follows card writes, ask what an interrupt handler
+reads while the producer is mid-update before chasing parsers, names or
+card latency.
 
 ## The emulator and the tools
 

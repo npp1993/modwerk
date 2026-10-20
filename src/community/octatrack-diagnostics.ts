@@ -7,10 +7,12 @@ import { browserRequestsPrivacy, countOctatrackAction } from './usage'
 import { OCTATRACK_DIAGNOSTICS_VERSION, DIAGNOSTIC_USB_EVENTS, DEVICE_LOG_INCIDENTS, DEVICE_LOG_LOADS, type SiteDiagnosticEvent, type DiagnosticConsent, type DiagnosticLive, type OctatrackDiagnostic } from './octatrack-diagnostics-contract'
 import { subscribeSiteDiagnosticEvents, collectBrowserDiagnosticEvents } from './site-diagnostic-events'
 
-export interface DiagnosticPreference { accountId: string | null; available: boolean; enabled: boolean; ready: boolean; busy: boolean; error: string; notice: string; hasChoice: boolean; lastSent: string | null }
+export interface DiagnosticPreference { accountId: string | null; available: boolean; enabled: boolean; ready: boolean; busy: boolean; error: string; notice: string; hasChoice: boolean; saved: boolean; lastSent: string | null }
 const listeners = new Set<() => void>()
 const locallyStopped = new Set<string>()
-let snapshot: DiagnosticPreference = {accountId:null,available:false,enabled:false,ready:false,busy:false,error:'',notice:'',hasChoice:false,lastSent:null}
+/** `hasChoice`: a choice under the current text that hasn't expired, so the invitation stays away. `saved`: any earlier choice, whose reports can still be deleted. */
+const choice = (saved: DiagnosticConsent) => ({ hasChoice: saved.version === OCTATRACK_DIAGNOSTICS_VERSION && !!saved.changedAt && Date.parse(saved.expiresAt ?? '') > Date.now(), saved: !!saved.changedAt })
+let snapshot: DiagnosticPreference = {accountId:null,available:false,enabled:false,ready:false,busy:false,error:'',notice:'',hasChoice:false,saved:false,lastSent:null}
 let owner: string | null = null, blocked = false, expires = 0
 let preferenceRevision = 0
 let generation = 0, accountApi: ReturnType<typeof scopedApi> | undefined
@@ -31,7 +33,7 @@ export async function changeDiagnosticSharing(enabled: boolean) {
     if (saved.accountId !== member || !enabled && saved.enabled || enabled && (!saved.enabled || saved.version !== OCTATRACK_DIAGNOSTICS_VERSION || !(Date.parse(saved.expiresAt ?? '') > Date.now()))) throw new Error('Your sign-in or diagnostic choice changed in another tab. Refresh and try again.')
     if (enabled && saved.enabled) locallyStopped.delete(member)
     blocked = !saved.enabled; expires = Date.parse(saved.expiresAt ?? '')
-    publish({enabled:saved.enabled,ready:true,available:true,hasChoice:saved.version === OCTATRACK_DIAGNOSTICS_VERSION && !!saved.changedAt,notice:saved.enabled?'Diagnostics sharing is on.':'Sharing stopped. Your shared diagnostics were deleted.',...(!saved.enabled ? {lastSent:null} : {})})
+    publish({enabled:saved.enabled,ready:true,available:true,...choice(saved),notice:saved.enabled?'Diagnostics sharing is on.':'Sharing stopped. Your shared diagnostics were deleted.',...(!saved.enabled ? {lastSent:null} : {})})
     return true
   } catch (error) {
     if (current()) publish({error:enabled ? error instanceof Error ? error.message : 'Couldn’t enable diagnostics.' : 'Sharing stopped on this page. I couldn’t confirm deletion on the server; please try Stop sharing and delete again.'})
@@ -47,7 +49,7 @@ export function collectOctatrackDiagnostics(memberId: string, link: OctatrackLin
   const requests = new AbortController()
   const currentGeneration = ++generation, client = accountApi = scopedApi(), busy = snapshot.busy
   owner = memberId; blocked = locallyStopped.has(memberId); expires = 0
-  publish({accountId:memberId,available:false,enabled:false,ready:false,busy,error:'',notice:'',hasChoice:false,lastSent:null})
+  publish({accountId:memberId,available:false,enabled:false,ready:false,busy,error:'',notice:'',hasChoice:false,saved:false,lastSent:null})
   const current = () => !stopped && generation === currentGeneration && owner === memberId && client.current()
   const allowed = () => current() && snapshot.enabled && !blocked && expires > Date.now() && !browserRequestsPrivacy()
   let siteCleanup: (() => void) | undefined
@@ -68,7 +70,7 @@ export function collectOctatrackDiagnostics(memberId: string, link: OctatrackLin
       if (!current() || snapshot.busy || preferenceRevision !== revision) return false
       if (saved.accountId !== memberId) { publish({enabled:false,ready:false,error:'Your sign-in changed. Refresh this page to manage diagnostics.'}); return false }
       expires = Date.parse(saved.expiresAt ?? '')
-      publish({enabled:saved.enabled && saved.version === OCTATRACK_DIAGNOSTICS_VERSION && !blocked,ready:true,available:true,hasChoice:saved.version === OCTATRACK_DIAGNOSTICS_VERSION && !!saved.changedAt})
+      publish({enabled:saved.enabled && saved.version === OCTATRACK_DIAGNOSTICS_VERSION && !blocked,ready:true,available:true,...choice(saved)})
       if (!saved.enabled) { transfer?.abort(); healthRead?.abort() }
       return true
     } catch { if (current() && preferenceRevision === revision && !snapshot.busy) publish({enabled:false,ready:true,available:false}) }
@@ -94,7 +96,7 @@ export function collectOctatrackDiagnostics(memberId: string, link: OctatrackLin
         const data = queue.shift()!, controller = transfer = new AbortController()
         sent++
         try {
-          const result = await client.fetch('/octatrack/diagnostics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:OCTATRACK_DIAGNOSTICS_VERSION,data}),signal:controller.signal})
+          const result = await client.fetch('/octatrack/diagnostics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:OCTATRACK_DIAGNOSTICS_VERSION,data}),signal:controller.signal,keepalive:true})
           if (!current() || controller.signal.aborted) break
           if (result.status === 403) { publish({enabled:false}); break }
           if (result.ok) {
@@ -113,6 +115,7 @@ export function collectOctatrackDiagnostics(memberId: string, link: OctatrackLin
     else if (activeSync && ['kept','undone','sync_failed','disconnected'].includes(event.event)) {
       countOctatrackAction(event.event === 'kept' ? 'usb_sync_kept' : event.event === 'undone' ? 'usb_sync_undone' : 'usb_sync_failed'); activeSync = false
     }
+    if (['sync_started','kept','undone','sync_failed','disconnected'].includes(event.event)) flushLoad()
     void send(event)
   })
   const unit = () => { const state = link!.getState(); return {phase:state.status,...(state.identity ? {base:state.identity.base} : {}),...(state.active ? {active:state.active} : {})} }
@@ -128,7 +131,7 @@ export function collectOctatrackDiagnostics(memberId: string, link: OctatrackLin
   }
   /* The live meters, read with the status every 30 s: a summary every five minutes, at once (at most every ten minutes)
    * when the CPU reaches 90 %, and `unresponsive` when reads fail twice (usb) or the UI tick stands still (ui). */
-  let samples: LoadReading[] = [], lastTicks: number | undefined, failures = 0, stuck = false, hotAt = 0, logAt = 0
+  let samples: LoadReading[] = [], sampledUnit: ReturnType<typeof unit> | undefined, lastTicks: number | undefined, failures = 0, stuck = false, hotAt = 0, logAt = 0
   const live = (): DiagnosticLive => {
     const meter = (pick: (reading: LoadReading) => number | null, peak = pick) => {
       const values = samples.map(pick).filter((value): value is number => value !== null), peaks = samples.map(peak).filter((value): value is number => value !== null)
@@ -136,6 +139,11 @@ export function collectOctatrackDiagnostics(memberId: string, link: OctatrackLin
     }
     const cpu = meter(reading => reading.cpu), dsp1to4 = meter(reading => reading.tracks1to4, reading => reading.peak1to4), dsp5to8 = meter(reading => reading.tracks5to8, reading => reading.peak5to8)
     return {samples:samples.length,...(cpu ? {cpu} : {}),...(dsp1to4 ? {dsp1to4} : {}),...(dsp5to8 ? {dsp5to8} : {})}
+  }
+  /** The readings so far, with the unit as it was when they were read: every ten readings, and before a sync, after it and when the connection or page ends. */
+  function flushLoad() {
+    if (!samples.length || !sampledUnit) return
+    send({event:'load',...sampledUnit,live:live()}); samples = []
   }
   async function sample(signal: AbortSignal) {
     try {
@@ -146,10 +154,10 @@ export function collectOctatrackDiagnostics(memberId: string, link: OctatrackLin
       lastTicks = reading.ticks
       if (still && !stuck) send({event:'unresponsive',...unit(),reason:'ui',live:live()})
       stuck = still
-      samples.push(reading)
+      samples.push(reading); sampledUnit = unit()
       const hot = reading.cpu !== null && reading.cpu >= 900 && Date.now() - hotAt >= 600_000
       if (hot) hotAt = Date.now()
-      if (hot || samples.length >= 10) { send({event:'load',...unit(),live:live()}); samples = [] }
+      if (hot || samples.length >= 10) flushLoad()
     } catch (error) {
       // The link's LinkBusyError (retry: true), checked by shape so this chunk doesn't load the USB link's code.
       const transfer = error instanceof Error && (error as { retry?: boolean }).retry === true && error.cause instanceof Error && error.cause.name !== 'AbortError'
@@ -173,6 +181,11 @@ export function collectOctatrackDiagnostics(memberId: string, link: OctatrackLin
         const seqs = [...group.loads, ...group.incidents].map(record => record.seq)
         send({event:'device_log',...unit(),log:group}, eventId(await digest(scope + ':' + seqs.join(','))), keep(Math.max(...seqs)))
       }
+      /* The crash and stall records (log version 2), once per count: the id makes a resend a duplicate. */
+      if (log.crash || log.stall) {
+        const id = await digest(scope + ':records:' + (log.crash?.count ?? 0) + ':' + (log.stall?.count ?? 0))
+        send({event:'device_log',...unit(),log:{loads:[],incidents:[],...(log.crash ? {crash:log.crash} : {}),...(log.stall ? {stall:log.stall} : {})}}, eventId(id), () => {})
+      }
     } catch { /* Busy or an older base; the next round asks again. */ }
   }
   async function tick() {
@@ -190,7 +203,9 @@ export function collectOctatrackDiagnostics(memberId: string, link: OctatrackLin
   }
   void refresh()
   const timer = setInterval(() => { void tick() }, 30_000)
-  return () => { stopped = true; requests.abort(); clearInterval(timer); unsubscribe?.(); stopPreference(); siteCleanup?.(); if (generation === currentGeneration) { transfer?.abort(); healthRead?.abort(); owner = null; accountApi = undefined; publish({accountId:null,available:false,enabled:false,ready:false}) } }
+  // shortcut: a report still sending when the tab closes holds the readings back, so they are lost; a queue on disk would keep them.
+  globalThis.addEventListener?.('pagehide', flushLoad)
+  return () => { stopped = true; requests.abort(); clearInterval(timer); globalThis.removeEventListener?.('pagehide', flushLoad); unsubscribe?.(); stopPreference(); siteCleanup?.(); if (generation === currentGeneration) { transfer?.abort(); healthRead?.abort(); owner = null; accountApi = undefined; publish({accountId:null,available:false,enabled:false,ready:false}) } }
 }
 
 const chunks = <T>(items: T[], size: number) => Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, (i + 1) * size))

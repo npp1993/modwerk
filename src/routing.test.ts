@@ -61,6 +61,12 @@ describe.each(['https://modwerk.app/', 'https://example.github.io/octamod/'])('m
     expect(routeFromUrl(new URL('#remixes', appUrl), appUrl)).toBe('module-sets')
     expect(routeFromUrl(new URL('#remix/miniverb-solo', appUrl), appUrl)).toBe('module-set/miniverb-solo')
   })
+  it('links to one FAQ answer on a hash, while the old audio preview answer still redirects', () => {
+    const entry = new URL('#faq/digi-recovery', appUrl)
+    expect(routeFromUrl(entry, appUrl)).toBe('faq/digi-recovery')
+    expect(canonicalRouteUrl(entry, appUrl, moduleIds).href).toBe(entry.href)
+    expect(routeFromUrl(new URL('#faq/audio-previews', appUrl), appUrl)).not.toMatch(/^faq/)
+  })
   it('keeps unknown legacy modules on the app missing-page route', () => {
     const url = new URL('#module/octakit', appUrl)
     expect(canonicalRouteUrl(url, appUrl, moduleIds).href).toBe(url.href)

@@ -137,6 +137,8 @@ static int safe(void *u) { return modwerk_runtime_backend.safe(u); }
 static int leave(void *u) { return modwerk_runtime_backend.leave(u); }
 const struct mu_backend modwerk_boot_backend = {0, enter, safe, leave, prepare, discard, publish, restore, retire};
 
+/* flash.c: restart on NOR half a second on, with no mailbox armed (the gate boots the flashed image). */
+void modwerk_boot_restart(void) { armed = 2; countdown = BOOT_DELAY_TICKS; due = 0; }
 int modwerk_boot_tick(void)
 {
     if (!countdown || --countdown) return 0;
@@ -147,7 +149,7 @@ void modwerk_boot_service(void)
 {
     if (!due) return;
     due = 0;
-    if (!armed || stage()->mailbox[0] != BOOT_MAGIC) return;
+    if (!armed || (armed == 1 && stage()->mailbox[0] != BOOT_MAGIC)) return;
     modwerk_boot_quiesce();
     modwerk_boot_reset();
 }

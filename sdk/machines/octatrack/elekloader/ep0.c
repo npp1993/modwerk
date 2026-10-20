@@ -23,11 +23,18 @@
 #include "usb_base.h"
 #include "runtime.h"
 #include "boot.h"
+#include "flash.h"
 #ifdef MODWERK_RUNTIME_VOLATILE_JOURNAL
 #include "volatile_service.h"
 #endif
 #ifdef MODWERK_SAVED_SET_EXPORT
 #include "saved_set_session.h"
+#endif
+#ifdef MODWERK_DEV
+void modwerk_cost_stamp(unsigned k); /* diag.c: the development profile of the base's hooks */
+#define MW_STAMP(k) modwerk_cost_stamp(k)
+#else
+#define MW_STAMP(k) ((void)0)
 #endif
 
 #define UNCACHED(p) ((void *)((uintptr_t)(p) + 0x08000000u))
@@ -307,7 +314,9 @@ uint32_t modwerk_ep0_dispatch(void)
     if (r.action == MV_STALL && SETUP[0] == MV_RESULT_TYPE && SETUP[1] == 29 && !SETUP[2] && !SETUP[3] &&
         SETUP[4] == MODWERK_VENDOR_INTERFACE && !SETUP[5] && SETUP[6] == 12u && !SETUP[7]) {
         modwerk_ep0_reply = out;
-        return modwerk_runtime_capabilities(out);
+        unsigned n = modwerk_runtime_capabilities(out);
+        out[6] |= 1u; /* feature bit 8: this base writes its own container to NOR over USB (flash.c) */
+        return n;
     }
     /* INVENTORY (0xC1, bRequest 27, wValue the first entry, wLength 316): the installed modules (loader.c
      * modwerk_runtime_list), so the site can make the unit match a module set; 13 a page, so a host asks on from
@@ -458,8 +467,14 @@ void modwerk_ep0_bus_reset(void)
 /* Sys task, core-ot's 60 Hz ev_tick: a host silent for 10 s while an upload
  * or trial is open is handled as unplugged (mv_tick). */
 #define HOST_TIMEOUT_TICKS 600u
+int modwerk_modset_due(void); /* modset.c: a kept set waits for its save */
 void modwerk_ep0_tick(void);
+static void ep0_tick(void);
 void modwerk_ep0_tick(void)
+{
+    MW_STAMP(2); ep0_tick(); MW_STAMP(3);
+}
+static void ep0_tick(void)
 {
 #ifdef MODWERK_RUNTIME_VOLATILE_JOURNAL
     if(volatile_started && modwerk_volatile_tick(VOLATILE_SERVICE,modwerk_runtime_ticks)) wake();
@@ -478,6 +493,14 @@ void modwerk_ep0_tick(void)
     if (started && controller_started && mv_tick(vendor(), controller.phase != MU_NORMAL, HOST_TIMEOUT_TICKS)) wake();
     if (modwerk_boot_tick()) wake(); /* an armed RAM boot is due */
     if (held) held = 0, wake(); /* the engine runs only when woken; an idle unit sends it nothing else */
+    /* A kept set the card gate held back (playing, the card busy) or a failed write whose retry is due: twice a
+     * second. Only an OUT frame wakes the engine, and a host waiting for the save only reads, so without this the
+     * set stayed unsaved until the host's next command (owner's MKII, 20 October 2026: 20 s after a Keep). */
+    static uint8_t save_wait;
+    if (controller_started && ++save_wait >= 30u) {
+        save_wait = 0;
+        if (modwerk_modset_due()) wake();
+    }
     /* A data stage that completes inside the ISR after its poll, while stock's completion loop runs, can lose its
      * interrupt to that loop: no status stage, and the host's transfer times out (owner's MKII, 11 October 2026, a
      * chunk now and then). Look again here with USB held off. A data stage can also stop half way: 64 bytes of a 120-byte frame came on the owner's MKII and the rest never
@@ -557,7 +580,7 @@ void modwerk_engine_idle(void)
         mu_sha256((const uint8_t *)seed, sizeof seed, session);
         session[0] |= 1u;
         if (!mu_init(&controller, modwerk_boot_staging(), BOOT_IMAGE_BYTES,
-                     modwerk_base_digest, session, modwerk_base_digest, 0, &modwerk_boot_backend)) return;
+                     modwerk_base_digest, session, modwerk_base_digest, 0, &modwerk_flash_backend)) return;
         controller_started = 1;
     }
 #ifdef MODWERK_RUNTIME_VOLATILE_JOURNAL
@@ -575,5 +598,6 @@ void modwerk_engine_idle(void)
      * cached digest before a host reads it; ISR reads do no hashing. */
     modwerk_volatile_service(VOLATILE_SERVICE,modwerk_runtime_ticks);
 #endif
+    modwerk_modset_service(); /* a set this pass accepted is saved now: the one above ran before the host's command */
     modwerk_boot_service(); /* an armed RAM boot, once due (boot.c): does not return then */
 }

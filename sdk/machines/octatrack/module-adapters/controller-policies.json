@@ -2,7 +2,7 @@
  {
   "module": "sidechain-compressor",
   "moduleId": 2513434262,
-  "packageSha256": "fdfddb9d93a28c2c8d8c83a9c430dab1a09f0df2e416a24a4b37c7e23d6f5227",
+  "packageSha256": "a9e6a2e503391d08bcbc88637f655428aae0284855abbaec30db6cda9e361f4e",
   "sourcePolicySha256": "4294f9cea4bf6fd179093dbf7834979d8373bc8e8de87088473ada56ab1b7142",
   "revisions": [
    1,
@@ -21,8 +21,8 @@
  {
   "module": "output-matrix",
   "moduleId": 3404814517,
-  "packageSha256": "4589b10b10842bda55b34607460257f9a2f9c317f75a253b2d5c3e6c9191ebad",
-  "sourcePolicySha256": "df589505c87f72735bc230661711af764e57ec5e73f1470d7af2eafb81dc3751",
+  "packageSha256": "9f97f3bdb354ea86337e660567f57d0f4ec9969f0288f63161b9a926f159a44b",
+  "sourcePolicySha256": "0994f291fc10c4b89c827cf60802e30ba152bf49c6572027e9edc0a22524a232",
   "revisions": [
    1,
    1,
@@ -31,17 +31,17 @@
   "feature": 2,
   "requiredCores": 1,
   "version": 1,
-  "imageBytes": 2248,
+  "imageBytes": 2316,
   "entryName": "page_levels",
-  "entry": 1564,
-  "beginReturn": 1656,
-  "endReturn": 1706
+  "entry": 1632,
+  "beginReturn": 1724,
+  "endReturn": 1774
  },
  {
   "module": "output-matrix",
   "moduleId": 3404814517,
-  "packageSha256": "4589b10b10842bda55b34607460257f9a2f9c317f75a253b2d5c3e6c9191ebad",
-  "sourcePolicySha256": "df589505c87f72735bc230661711af764e57ec5e73f1470d7af2eafb81dc3751",
+  "packageSha256": "9f97f3bdb354ea86337e660567f57d0f4ec9969f0288f63161b9a926f159a44b",
+  "sourcePolicySha256": "0994f291fc10c4b89c827cf60802e30ba152bf49c6572027e9edc0a22524a232",
   "revisions": [
    1,
    1,
@@ -50,17 +50,17 @@
   "feature": 2,
   "requiredCores": 1,
   "version": 1,
-  "imageBytes": 2248,
+  "imageBytes": 2316,
   "entryName": "matrix_leave",
-  "entry": 1780,
-  "beginReturn": 1814,
-  "endReturn": 1864
+  "entry": 1848,
+  "beginReturn": 1882,
+  "endReturn": 1932
  },
  {
   "module": "output-matrix",
   "moduleId": 3404814517,
-  "packageSha256": "4589b10b10842bda55b34607460257f9a2f9c317f75a253b2d5c3e6c9191ebad",
-  "sourcePolicySha256": "df589505c87f72735bc230661711af764e57ec5e73f1470d7af2eafb81dc3751",
+  "packageSha256": "9f97f3bdb354ea86337e660567f57d0f4ec9969f0288f63161b9a926f159a44b",
+  "sourcePolicySha256": "0994f291fc10c4b89c827cf60802e30ba152bf49c6572027e9edc0a22524a232",
   "revisions": [
    1,
    1,
@@ -69,16 +69,16 @@
   "feature": 2,
   "requiredCores": 1,
   "version": 1,
-  "imageBytes": 2248,
+  "imageBytes": 2316,
   "entryName": "matrix_enter",
-  "entry": 1936,
-  "beginReturn": 1970,
-  "endReturn": 2020
+  "entry": 2004,
+  "beginReturn": 2038,
+  "endReturn": 2088
  },
  {
   "module": "analog-bassdrum",
   "moduleId": 2883261509,
-  "packageSha256": "20211430d3c9eafd3253a50ebf936357ae6847420ac41717b8bcea28eec9f1ac",
+  "packageSha256": "549ce7e280eec366ce8fd3eae04e6fd6e155d2b192e126d110e8f1a801d95106",
   "sourcePolicySha256": "82e2dc2630775fdca07b8b3901a1b36f286e0a3100189312c0827861e078e6bc",
   "revisions": [
    1,

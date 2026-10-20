@@ -1,5 +1,51 @@
 # Verification record
 
+## Mini Verb 0.2.3-experimental — 20 October 2026
+
+Mini Verb's ring now wraps at 15,870 words (`m4 = m5 = $3dfd`), so on T3 and T7 it no longer writes the last 514 words of its FX2 slot, Sidechain Compressor's cross-core key window. Start-up keeps 128 dry calls; the last 124 clear inside the ring. Owner-approved update without hardware testing, bound to native source `6ccdb685…` (`sdk/miniverb-build-approval.json`).
+- **DSP (verify.py, 76 checks):** run with this checkout's pinned dsp56300 and `dsp_host` (`27257a3e…`) on the owner's original MAIN OS. Output is bit-identical to published 0.2.2 from the first block: eight moving instances, every trigger split on both cores, hot input at TONE 0, 64 and 127. `-guard 15870 -guard-shared` sees no stray write in the eight-instance, dirty-memory and 30-second renders; the same guard reports 770 stray write regions per instance on 0.2.2. The guard gates had matched the text `0 stray write regions`, which `770 stray write regions` contains; they now match the whole number. Executed instructions equal 0.2.2's (23,488 per core per block, eight moving instances).
+- **Native/browser (`module:verify miniverb`):** 126 selections, 48 matching images (18 identical outright, 30 outside the platform writes), 78 matching refusals, 0 mismatches. Its chooser-metadata reorder (POLY8 only, no entry changed) was dropped.
+- **Packages:** compiled in the isolated toolchain image and imported; the USB package (2,770 bytes, buffer 15,870) is stock-free. It was built alone through `module_packages.build`, because the full `octatrack:module-packages` run stops on Tape Echo's, Euclid's and Play Modes' standalone recipes, which on main still name the Elekloader files from before kit 0.6.0.
+- **Analog BD companion proofs:** re-exported natively in the toolchain image (`export-composition-proofs.py --suite analog-bd`, 8 shards merged in the committed order): the 76 selections with Mini Verb change, the other 136 are identical, no refusal flips, and only `moduleSourceTreeSha256` moves in the header. `verify-analog-bd-native.mjs` passes: 162 native OS and GNU bootloader comparisons, 50 matching refusals, 6 complete firmware round trips.
+- **Not tested:** any hardware, Mini Verb beside Sidechain Compressor on one unit, chip timing, persistence and reboot. Over USB the base still keeps every custom FX2 effect off T3 and T7 while Sidechain is installed (its buffer policy table is empty).
+
+## Input Pre-Fader Sends 0.1.0-experimental — 20 October 2026
+
+New Digitakt I module by draadpiraat for OS 1.54 on Core 2.1: SETTINGS > INPUT SENDS PRE takes IN L and IN R's delay and reverb sends before their External Mixer LEV. The source-only package from commit `56dcead65f658a063d59ad53a44223b6dc20785a` (`input-prefader-0.1.0-experimental-os1.54.elemod`, sha256 `a30dc255…f28f54f`) is pinned through `npm run elekloader:update -- --overlay sdk/imports/elekloader-input-prefader-2026-10-19.json`; kit 0.6.0 is unchanged and the catalogue now holds 40 mods.
+- **Package:** built in the pinned Docker toolchain (`build-elemod-isolated.sh`), byte for byte the package built with GCC 16.2 on the author's Mac and flashed for the hardware tests.
+- **Links:** the vendored kit's `link()` and `linkMods` give the same MAIN image alone and with Digi Health and Digi EQ; `modules:check` finds no overlap with any Digitakt module.
+- **Emulator (pinned digiemu `c1b5735`):** both mixer sites equal stock in every register over 20,000 random states when unticked; in running firmware the inputs' sends are 0 at LEV 0 unticked and full ticked, also from Digi Health's FAST AUDIO SRAM copy. Load +392 mean, +469 worst cycles of 166,666 per block (about 0.2% and 0.3%).
+- **Hardware:** the author reports both builds working on their Digitakt I, OS 1.54, about 5 minutes each (2026-10-19); project save/load and sampling from the inputs not tested. Details: [TESTING.md](../sdk/digitakt/modules/input-prefader/TESTING.md).
+- **Checks:** `npm run pr:ready` Ready on macOS (one unrelated test fixture needed Apple clang's `-Wnewline-eof` silenced; fixed separately in #716). Firmware, linked images and emulator state stayed local.
+
+## elekloader kit 0.6.0 — 19 October 2026
+
+The vendored kit moved from 0.5.0 (`3acac10`) to 0.6.0 (`7b5b5b8`), elekloader's [kit-v0.6.0](https://github.com/irpina/elekloader/releases/tag/kit-v0.6.0) pre-release, with `npm run elekloader:update -- elekloader-kit-0.6.0.zip --sha256 <the release's>`. The catalog is unchanged (`a46e75f`; upstream `0da420d`).
+- **The zip:** `elekloader-kit-0.6.0.zip`, sha256 `1317770d150f409d137da46dc00fec47718cf9ec0c10723c43c0c29c7635673d`, the release's own, built by elekloader's kit-build workflow from `7b5b5b8` with Node 24.19 (rebuilt locally from that commit: the same bytes).
+- **What changed:** 16 of 32 vendored files. The kit's worker, client, build steps, build log and protocol (1) are unchanged. `prepare` and `planBuild` now take the newest core whose RAM holds the selection (`Mod` gains the optional `ram_bound` and `ram_area`); with this catalog's cores (Digitakt 2.1, Digitone 2.0a and 2.2) that is the core taken before, for every OS. The engine also gained the 4.0 cores' RAM areas, the Digitone's sound-slot claims and Model:Cycles, Model:Samples and Analog Rytm MKII device profiles, which no module of the library uses. The lock, the elekloader licence entry and both notices name `7b5b5b8`. The kit's worker bundle is 95.95 kB (92.0 kB with 0.5.0).
+- **Every Digitakt and Digitone file's bytes change** ([elekloader#88](https://github.com/irpina/elekloader/pull/88), for [elekloader#59](https://github.com/irpina/elekloader/issues/59)): the packed main OS is now stored padded to 4 bytes, as Elektron's own files are, and the packer's matches stop at 2048 bytes (were 4096), as Elektron's streams do. The Octatrack's ELEK main OS stays unpadded, so `formats.packMain` now takes the device: `octatrack-base.ts` passes it, and the Octatrack base's bytes can change only where its packed `.run` repeats more than 2048 bytes.
+- **The packer pin moved.** `run-pack.test.ts` and `sdk/tests/test_run_pack.py` pin `5b6b45e7…f52951eb3` in place of `1b161af6…6786f515`: the kit and elekloader's Python at `7b5b5b8` (the checkout `npm run upstream:tools` takes for this kit) give that digest for the same stream, so the browser and native Octatrack builds stay equal. `python -B -m unittest sdk/tests/test_run_pack.py` passes 8 tests against that checkout. The vendor README's update steps now say to move both pins together.
+- **Builds:** every selection of the library, each module alone and every pair, on Digitakt 1.53 (18 modules) and 1.54 (17) and Digitone 1.43 (2) (327; Digitone 1.44 has none), planned and built in Node through the kit's own client, `prepare` and build, by the 0.5.0 kit and by the 0.6.0 kit on this catalog: for all 327 the same core and mods; 51 refusals with the same text; 276 builds, every one with other bytes, as above. Each of the 276 0.6.0 files is byte for byte the one elekloader's Python at `7b5b5b8` (`patch.build`) makes from the same stock file and mods.
+- **Browser** (local dev server with a stand-in community API, run on request): Digitakt 1.53, digihealth + NEIGHBOR + DIGISLICER built `b7649466…b43d7879` with core 2.1. That is the Python CLI's file for the same mods, and the file identity names elekloader `7b5b5b8`. Adding SOPHIE is refused, its sites overlapping NEIGHBOR's and DIGISLICER's. Digitone 1.43, digihealth + digitables built `6759a8d3…8442da6` with core-dn1 2.2, the matrix's and the Python CLI's file.
+- **Checks (Node 24, Windows 11):** `elekloader:check`, `licenses:check`, `modules:check`, `machines:check`, `lint` on the changed files, `typecheck` and the production build pass; `licenses:generate`, `machines:generate` and `modules:generate` change nothing. Vitest: the same 44 fail as on main `a59677e` on this PC (local API, MCP device, page generator, python3 and module-source tests) and everything else passes, the moved packer pin included; `author-update-git.test.mjs` timed out once in a full run and passes alone (15 tests). Not run: `modules:pairs` (no python3 here), firmware, DSP or hardware tests. Stock files and builds stayed local and temporary.
+
+## Syntakt boot probe on OS 1.40 and 1.42 — 16 October 2026
+
+Source: `sdk/syntakt/core`, `src/engine/elektron/syntakt.ts`, `src/engine/elektron/stock-writes.ts`, from the static research in [SYNTAKT_OS_RESEARCH.md](SYNTAKT_OS_RESEARCH.md). Nothing below ran on a unit or in an emulator.
+
+**Firmware-free (CI).** `src/engine/elektron/stock-writes.test.ts` proves the checker on synthetic NOP images: declared code change accepted, change outside a site refused, bad or missing guard refused, overlapping sites refused, protected range refused, tail over budget or without its hook refused, partial-instruction and PC-relative code sites refused, every problem reported at once. `src/engine/elektron/syntakt.test.ts` proves the profile: both releases bound by hash, no SDRAM area, protected map consistent with the probe site, the boot stub decodes as eight whole ColdFire instructions ending in the continuation jump (Ghidra 12.1.4's Coldfire decoder agreed locally), the probe links against a stand-in image with the `jmp`/`nop` site and relocated continuation, and any mod with `.run`, `.bss` or `.fast` is refused.
+
+**Local (owner's files, `node scripts/verify-syntakt-core-probe.mjs`).** For each stock file the probe linked with one site (0x400004b2, 8 bytes) and a 48-byte tail, the stock-write checker reported exactly that change, and the rebuilt container passed `verifyEle3Build` (sections other than 3 byte-identical, 16-aligned layout, checksums, version `MW01`):
+
+| Release | Stock `.syx` | Build `.syx` | Linked image | Stored main | Container | In-place margin (stock → build) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1.42 | `ded3c59f…37c1` | `f8493da70c09706337b20be1911eb8c77ca584f00d314e8d9052ec84d49f059f` | `041903b65fedbf885195c94f71e58dbb4371e84966b80f552507028e6bb095f6` | 1,363,181 B (stock 1,442,812) | 1,949,760 B (stock 2,029,392) | 96,357 → 16,679 B |
+| 1.40 | `77812459…88ebf` | `5c7a5ac2714462f434b717188d223f924164634cae06613fbdbd07b326218c08` | `e46d4a52870eb44fdec3db7f281dc90f6f61f33e022ecf5fdc0c662aea2d44b6` | 1,332,261 B (stock 1,409,140) | 1,815,408 B (stock 1,892,288) | 160,989 → 84,063 B |
+
+The repository's packer stores section 3 about 80 KB more densely than Elektron's, which narrows the in-place depack margin; the tail budget is 16 KB and every build is checked exactly.
+
+**Not verified.** That the unit's bootstrap accepts a recompressed section 3 rests on public reports (Synthack-OS builds on 1.41 and 1.42); that the hook runs and the OS reaches the live UI; the SRAM signature; persistence; the FUNC + TRIG 4 recovery path on the owner's unit. The hardware steps are in the report's §10.
+
 ## Six Digitakt mods by sumedho on Core 2.1 — 14 October 2026
 
 Source: `sdk/digitakt/dependencies/{machine-pages,dt-support}` and
@@ -1431,6 +1477,43 @@ E-Verb is in none of them.
 
 No hardware result exists for 0.1.1; the owner's MKII report covers 0.1.0.
 Publication needs the owner's approval of this exact source.
+
+## Play Modes 0.2.0-experimental — 19 October 2026
+
+Play Modes 0.2.0-experimental (STEP REPEAT by pgstath, #706) was merged without its owner approval, so `modules:check` and the release-notes test stopped both deploys. The owner approved this exact native source (`sdk/playmodes-build-approval.json`, `da8e028b…`) with hardware testing waived. `npm run module:verify -- playmodes` on the owner's original 1.40C: 60 native module-owned images match the browser builder, 66 refusals match, 0 mismatches, of 126 selections. Play Modes is not in Analog BD's proof matrix; only that file's module source-tree hash moved with the rebuilt packages. Not played on a unit.
+
+## E-Verb ring clear of Sidechain's key window — 18 October 2026
+
+E-Verb 0.1.2-experimental answers #696. Sidechain Compressor keeps its
+cross-core key window in the last 514 words of the bank-track-3 FX2 slots
+(T7 and T3), and E-Verb's ring was modulo 16,384: on those tracks it wrote and
+read the whole window, and Sidechain's tap wrote into its delay lines. The ring
+now wraps at 15,870 words (m4 = m5 = `$3dfd`; the FX2 slot bases are
+16K-aligned), and the start-up clear stays inside it while keeping 0.1.1's
+128 dry calls. The 499 words come off the top of the pre-delay: PRE keeps its
+law and is clamped at 227 ms, so PRE 124 to 127 change (they rose to 250 ms).
+The native manifest and the runtime package declare 15,870 buffer words.
+
+A new render gate marks the window on both cores and runs the dearest settings
+for 2.5 turns of the ring, with REV off and on and at full cyclic depth: 0.1.1
+writes all 514 words, 0.1.2 writes none, its frame loop reaches the last ring
+word, and it renders bit-identically with the window filled. Every tested
+setting with PRE at 123 or below renders bit-identically to 0.1.1, and the
+other 27 gates print 0.1.1's output except the placement lines and PRE 127's
+onset. The matched
+benchmark reproduces 0.1.1's figures; the per-call bound is still 47,680
+modeled cycles per core per block.
+
+The native/browser matrix has 126 selections: 42 matching module-owned images
+(20 identical outright, 22 outside platform writes), 84 matching refusals and
+zero mismatches. E-Verb with Sidechain Compressor builds with and without the
+stock FX2 effects. No selection shared with 0.1.1's record changed between
+built and refused, and every DSP-space refusal overruns by 61 words or more, so
+none comes from the 14 added program words. The Analog BD composition proofs,
+re-exported natively, are identical apart from the source-tree pin.
+
+No hardware result exists for 0.1.1 or 0.1.2; the owner's MKII report covers
+0.1.0. Publication needs the owner's approval of this exact source.
 
 ## Mini Verb DSP cost — 13 October 2026
 

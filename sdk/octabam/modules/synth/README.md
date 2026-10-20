@@ -27,6 +27,8 @@ The dedicated machine plays without a sample. This experimental version has emul
 
 AMP ATK, HOLD and REL are inherited Part values and shape the engine’s own gain envelope. First selection initializes the twelve SRC main/setup bytes and preserves them on reselection. It retains the other existing Part controls. LFO3’s speed and depth become VOIC/CHRD; its depth contribution is muted. Four voices share the track’s filtering and envelope path. The original [author documentation](upstream/synth/README.md) describes chord shapes, MIDI, keyboard recording and envelope details; those broader paths have not been qualified for this adaptation.
 
+With ATK at 0 and a short HOLD or REL, a voice starts and stops abruptly and can click on every trig, as stock machines can. Raise ATK a few steps or lengthen REL to soften it ([#557](https://github.com/repeat98/modwerk/issues/557)).
+
 ## Usage
 
 Start with one audio track and a simple trig pattern; the tutorial below selects the machine, shapes its sound and stops it.
@@ -49,6 +51,8 @@ OS 1.40C only. Parts store internal FLEX kind 1 plus `FM/1` in unused NEIGHBOR b
 The matching quantizer is bundled privately because FM shares its mailbox and scale accessor. Do not combine with the public Scale Quantizer or Analog BD: their hooks/caves overlap. The shared builders agree across 110 current configurations (31 built, 79 refused), including compatible companion modules. Only standalone FM playback is audio-tested; mixed builds have byte-parity evidence, not audio stress evidence. Legacy marker recognition remains in the upstream engine, but the verified route uses the dedicated chooser.
 
 One-track mono/four-voice playback and MIDI selector recovery pass in emulation. Eight simultaneous audio tracks, modulation, external MIDI note/CC traffic, parameter locks, neighbouring sample playback, Part/pattern changes, save/reload and real hardware are not tested. Do not infer real-time headroom or project persistence from the UI/storage smoke.
+
+LFO1 and LFO2 list FLEX's destination names on an FM SYNTH track, because the machine's SRC page is a copy of FLEX's. Each name stands for the SRC knob in the same position: STRT is RATO, LEN is INDX, RATE is FINE, RTRG is FDBK and RTIM is DEC; PTCH is PTCH ([#589](https://github.com/repeat98/modwerk/issues/589)). Whether an LFO on these destinations changes the FM sound is not tested.
 
 ## Tests and measurements
 

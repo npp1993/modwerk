@@ -1,6 +1,8 @@
 ; CYCLES_FORWARD_BRANCHES
 ; Mini Verb v4: four branches, eight in-loop allpass diffusers, 44.1 kHz.
-; Own 16K allocator buffer and r7+$20..$3f. No global writable state.
+; Own 16K allocator buffer, used as a 15,870-word ring (m = $3dfd): the slot's
+; last $202 words, Sidechain Compressor's key window on T3 and T7, are never
+; touched. r7+$20..$3f. No global writable state.
 ; Four input allpasses, two interpolated/modulated in-loop allpasses.
 ; Orthogonal Householder feedback. INIT resets all state, preserves r1/n1/m1.
 ; 20 base,21 head,22 clear;24..27 targets;28..2a smooth decay/damp/mix;
@@ -24,6 +26,7 @@
 ; delay: 9454..11667
 ; AP: 11668..12387
 ; AP: 12388..13749
+; 13750..15869 unused; the ring wraps at 15870.
 
 init:
         move    #>$ffffff,m4
@@ -44,23 +47,29 @@ mv_zero:
         rts
 
 proc:
-; Bounded clearing: 128 words per call, dry until the entire ring is clean.
+; Bounded clearing: 128 dry calls, so the start-up timing is unchanged. The
+; first four clear nothing; the last 124 clear 128 words each under the ring's
+; modulus, the first of them wrapping two words to the ring start.
 ; Unconditional init resets every persistent scalar, even from dirty RAM.
         move    x:(r7+$22),a
         tst     a
         beq     mv_ready
         sub     #>$1,a
         move    a,x:(r7+$22)
+        cmp     #>$00007c,a
+        bge     mv_clrx
         asl     #$7,a,a
         move    x:(r7+$20),x0
         add     x0,a
         move    a,r4
-        move    #>$ffffff,m4
+        move    #>$3dfd,m4
         clr     a
         do      #128,>mv_clear
         move    a,y:(r4)+
 mv_clear:
         nop
+        move    #>$ffffff,m4
+mv_clrx:
         rts
 mv_ready:
 ; feedback .65 + .32 * knob/128, bounded at .9675.
@@ -116,8 +125,8 @@ mv_glide:
         move    a,n2
         move    #>$ffffff,m2
         move    x:(r7+$37),r2
-        move    #>$3fff,m4
-        move    #>$3fff,m5
+        move    #>$3dfd,m4
+        move    #>$3dfd,m5
         move    x:(r7+$21),r5
         move    #>$1,n0
         do      n7,>mv_end

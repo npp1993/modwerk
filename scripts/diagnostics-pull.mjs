@@ -15,6 +15,8 @@ const ROOT = new URL('..', import.meta.url)
 const SERVICE = 'modwerk-diagnostics-read'
 const API = process.env.MODWERK_API_URL ?? 'https://octamod-community.octamod.workers.dev/api'
 const OUT = join(homedir(), '.cache/modwerk-local/diagnostics')
+/** Module ids (the package's `module`, 8 hex digits) to names, for the unit's `set` records. */
+const MODULE_NAMES = new Map((() => { try { return JSON.parse(readFileSync(new URL('src/engine/assets/octatrack-module-packages.json', ROOT), 'utf8')).packages.map(p => [p.module, p.name ?? p.id]) } catch { return [] } })())
 const PAGE = 500
 const PROBLEMS = ['sync_failed', 'build_failed', 'browser_error', 'unhandled_rejection', 'unresponsive']
 
@@ -42,26 +44,38 @@ const line = ({ createdAt, username, data }) => [when(createdAt), '@' + username
   data.live?.cpu && 'cpu ' + data.live.cpu.map(percent).join('/'), data.modules?.map(module => module.id + '@' + module.catalogVersion).join(',')].filter(Boolean).join(' ')
 function percent(permille) { return (permille / 10).toFixed(1) + '%' }
 /** An incident from the unit's own log (diag.c): when in its session, what, and what the unit was doing. */
+const ids = r => [...r.machines, ...r.fx, ...r.keys].slice(0, 4 * r.a).map((b, i, all) => i % 4 ? '' : all.slice(i, i + 4).map(x => x.toString(16).padStart(2, '0')).join('')).filter(Boolean)
 const incident = r => `#${r.seq} start ${r.boot} +${Math.floor(r.second / 60)}m${r.second % 60}s ${r.kind}` +
+  (r.kind === 'base' ? ` ${r.a.toString(16).padStart(8, '0')}` : r.kind === 'set' ? ` ${r.a} installed: ${ids(r).map(id => MODULE_NAMES.get(id) ?? id).join(', ') || 'none'}` : '') +
   (r.kind === 'freeze' ? (r.a ? ` ${(r.a * 16 / 44100).toFixed(1)} s` : ' until a restart') : r.kind === 'hot' ? ` (${r.a} half-seconds at 90 %+)` : r.kind === 'crash' ? ` pc 0x${r.a.toString(16)}` : r.kind === 'stall' ? ` reason ${r.a}` : '') +
   (r.kind === 'crash' || r.kind === 'stall' ? '' : `, cpu ${percent(r.cpu)} T1-4 ${percent(r.dsp1to4)} T5-8 ${percent(r.dsp5to8)}, ${r.playing ? 'playing' : 'stopped'} at ${(r.tempo24 / 24).toFixed(1)} BPM, screen 0x${r.screen.toString(16)}` +
     `, keys ${r.keys.filter(k => k !== 255).map(k => k.toString(16)).join(' ') || '-'}, fx ${r.fx.map(f => f.toString(16)).join(' ')}, machines ${r.machines.join(' ')}`)
 
-/** Each member's records in order: the bases, restarts, the last finished self-test and the event counts. */
+/** The base's saved-set result (modset.c) as a reading's `saved` reports it; 1-6 are what a boot's restore found. */
+const SAVED = ['', 'RESTORED', 'nothing saved', 'skipped (FUNC held)', 'another base’s set', 'damaged', 'refused', 'saved', 'save failed', 'too big']
+
+/** Each member's records in order: the bases, set reloads, the last finished self-test and the event counts. */
 export function members(events) {
   const found = new Map()
   for (const { username, createdAt, data } of [...events].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
-    const member = found.get(username) ?? { last: '', kinds: {}, bases: [], restarts: [], active: '', selftest: undefined }
+    const member = found.get(username) ?? { last: '', kinds: {}, bases: [], reloads: [], selftest: undefined }
     member.last = createdAt
     member.kinds[data.event] = (member.kinds[data.event] ?? 0) + 1
     if (data.base && member.bases.at(-1) !== data.base) member.bases.push(data.base)
-    // A plain reconnect keeps the running set's identity; only a restart brings the unit back on the bare base.
-    if (data.event === 'connected' && data.active === data.base && member.active && member.active !== data.base) member.restarts.push(createdAt)
-    if (data.active) member.active = data.active
+    // A connection's first reading says what the boot's restore did, until a save replaces it (7, 8, 9).
+    if (data.event === 'connected') member.connected = true
+    else if (member.connected && data.reading) {
+      member.connected = false
+      const { saved, savedCount, live } = data.reading, last = member.reloads.at(-1)
+      if (saved >= 1 && saved <= 6 && !(last && last.saved === saved && last.savedCount === savedCount && last.live === live))
+        member.reloads.push({ at: createdAt, saved, savedCount, live })
+    }
     if (data.event === 'load' && data.live) member.live = { ...data.live, at: createdAt }
     // The unit's log arrives in pieces and can arrive twice: keep each record once, by its start and seq.
     for (const r of data.log?.incidents ?? []) (member.incidents ??= new Map()).set(r.boot + '/' + r.seq, r)
     for (const r of data.log?.loads ?? []) (member.loads ??= new Map()).set(r.boot + '/' + r.seq, r)
+    if (data.log?.crash) member.crash = data.log.crash
+    if (data.log?.stall) member.stall = data.log.stall
     if (data.event === 'selftest' && data.reading?.state >= 2) {
       member.selftest = data.reading
       // Peaks are measured only while DSP modules run; a test without them leaves zeros.
@@ -82,10 +96,19 @@ export function reportsByMember(issues) {
   return found
 }
 
+/** Restarts as the unit's own log counts them: each start after the first it still holds. */
+function restarts(member) {
+  const boots = [...member.incidents?.values() ?? []].filter(r => r.kind === 'start').map(r => r.boot).sort((a, b) => a - b)
+  return boots.length > 1 ? [`  restarts ${boots.length - 1} (the unit's log, starts ${boots[0]}-${boots.at(-1)})`] : []
+}
+
 export function summary({ events, counts }, { base = '', reports = new Map() } = {}) {
   const found = members(events)
-  const problems = events.filter(({ data }) => PROBLEMS.includes(data.event) || data.error || (data.result && data.result !== 'ok'))
+  // The configuration page checks the card build on every module change: a refused selection is not a failure.
+  const selection = ({ data }) => data.event === 'build_failed' && data.error === 'selection'
+  const problems = events.filter(entry => !selection(entry) && (PROBLEMS.includes(entry.data.event) || entry.data.error || (entry.data.result && entry.data.result !== 'ok')))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const checks = Object.entries(Object.groupBy(events.filter(selection), entry => entry.username)).sort((a, b) => b[1].length - a[1].length)
   const days = Map.groupBy(counts, row => row.day)
   const baseName = hash => hash.slice(0, 8) + (!base ? '' : hash === base ? ' (the site’s current base)' : ' (older than the site’s ' + base.slice(0, 8) + ')')
   return [
@@ -93,16 +116,21 @@ export function summary({ events, counts }, { base = '', reports = new Map() } =
     ...[...found].sort((a, b) => b[1].last.localeCompare(a[1].last)).flatMap(([name, member]) => [
       '', `@${name}  last ${when(member.last)}` + (member.bases.length ? '  base ' + member.bases.map(baseName).join(' → ') : ''),
       ...(reports.get(name) ?? []).map(issue => `  report #${issue.number} ${issue.state.toLowerCase()}: ${issue.title}`),
-      ...member.restarts.length ? [`  restarts ${member.restarts.length}: ${member.restarts.map(when).join(', ')} (came back on the bare base)`] : [],
+      ...restarts(member),
+      ...member.reloads.length ? ['  set reloads at boot: ' + member.reloads.map(r => `${when(r.at)} ${SAVED[r.saved]}` + (r.saved === 1 ? ` ${r.live}/${r.savedCount}` : '')).join(', ')] : [],
       ...member.selftest ? [`  last self-test ${member.selftest.state === 2 ? 'passed' : 'failed (bits ' + member.selftest.failed + ')'}` + (member.selftest.ran ? '' : ', no DSP module ran')] : [],
       ...member.peak ? [`  highest self-test peaks ${when(member.peak.at)}: CPU ${percent(member.peak.cpu)}, DSP T1-4 ${percent(member.peak.tracks1to4)}, T5-8 ${percent(member.peak.tracks5to8)}`] : [],
       ...member.live ? [`  live load ${when(member.live.at)}: CPU ${member.live.cpu?.map(percent).join(' mean, ') ?? '-'} peak, T1-4 ${member.live.dsp1to4?.map(percent).join('/') ?? '-'}, T5-8 ${member.live.dsp5to8?.map(percent).join('/') ?? '-'} (${member.live.samples} readings)`] : [],
       ...member.loads?.size ? [`  unit's load log: ${member.loads.size} five-minute records, CPU peak ${percent(Math.max(...[...member.loads.values()].map(r => r.cpu[1])))}, mean ${percent([...member.loads.values()].reduce((a, r) => a + r.cpu[0], 0) / member.loads.size)}`] : [],
+      ...(member.loads && [...member.loads.values()].some(r => r.frameGap !== undefined) ? [`  longest frame gap ${Math.max(...[...member.loads.values()].map(r => r.frameGap ?? 0))} us (frames are 363, DSPs starve past about 515), longest UI-tick gap ${Math.max(...[...member.loads.values()].map(r => r.tickGap ?? 0))} frames (freeze at 13,781)`] : []),
+      ...member.crash ? [`  crash record ${member.crash.count}: vector ${member.crash.vector} pc 0x${member.crash.pc.toString(16)} code ${member.crash.code.map(w => w.toString(16).padStart(8, '0')).join(' ')} uncached ${member.crash.memory.map(w => w.toString(16).padStart(8, '0')).join(' ')}`] : [],
+      ...member.stall ? [`  stall record ${member.stall.count}: reason ${member.stall.reason} (1 frames stopped, 2 eDMA refused) at tick ${member.stall.ticks}`] : [],
       ...[...member.incidents?.values() ?? []].filter(r => r.kind !== 'start').sort((a, b) => a.boot - b.boot || a.seq - b.seq).slice(-12).map(r => '  unit: ' + incident(r)),
       '  ' + Object.entries(member.kinds).map(([kind, n]) => kind + ' ' + n).join(', '),
     ]),
     '', 'Self-test peaks are measured only while DSP modules run. Live load comes from the site while connected; the unit\'s log covers the time without it. Screen codes are stock input layers, keys stock key codes.',
     '', `Problems (${problems.length}, newest first, up to 30):`, ...problems.slice(0, 30).map(entry => '  ' + line(entry)),
+    ...checks.length ? ['', 'Card-build checks that refused a selection (on every module change; not failures): ' + checks.map(([name, rows]) => `@${name} ${rows.length}`).join(', ')] : [],
     '', 'Daily USB sync counts (everyone, sharing or not):',
     ...[...days].map(([day, rows]) => '  ' + day + '  ' + rows.map(row => row.event.replace('usb_sync_', '') + ' ' + row.count).join(', ')),
   ].join('\n')
@@ -140,7 +168,11 @@ async function main() {
   const file = join(OUT, 'latest.json')
   writeFileSync(file, JSON.stringify({ pulledAt: new Date().toISOString(), ...data }, null, 2), { mode: 0o600 })
   chmodSync(file, 0o600)
-  const base = JSON.parse(readFileSync(new URL('sdk/machines/octatrack/base-binding.json', ROOT), 'utf8')).identity
+  // The site serves main's base; a checkout on an older commit would name current bases older.
+  let binding
+  try { binding = execFileSync('git', ['show', 'origin/main:sdk/machines/octatrack/base-binding.json'], { cwd: fileURLToPath(ROOT), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }) }
+  catch { binding = readFileSync(new URL('sdk/machines/octatrack/base-binding.json', ROOT), 'utf8') }
+  const base = JSON.parse(binding).identity
   let reports = new Map(), note = ''
   try {
     reports = reportsByMember(JSON.parse(execFileSync('gh', ['issue', 'list', '--label', 'issue-report', '--state', 'all', '--limit', '300',

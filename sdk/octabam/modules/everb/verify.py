@@ -19,7 +19,7 @@ Gates:
                and 127, issue #438) and REV the plain select editor; the editor's own code and stop
                table are stock's (func_stops.py turns the knobs on ot_emu)
   dry          MIX 0 is the input sample for sample, with every other knob moving and trig splits
-  reverb       an impulse, fully wet: the onset follows PRE (7, 42 and 250 ms), the tail decays
+  reverb       an impulse, fully wet: the onset follows PRE (7, 42 and 227 ms), the tail decays
                faster at lower DCY and smaller SIZE, and the two channels are decorrelated
   idle         after a noise burst at the defaults the output settles to within one LSB
   isolation    eight instances, four per core, each with its own knobs and input, under
@@ -38,6 +38,9 @@ Gates:
                gliding while the cyclic depth rises must never read ahead of its line)
   envelope     EDCY at +63 after a loud burst lengthens the decay but cannot hold the tail: it
                falls by more than 40 dB within 20 s
+  window       on T7 and T3 (FX2 at bank position 3 of each core), at the dearest settings with REV
+               off and on and at full cyclic depth, E-Verb never writes or reads the last 514 words of its slot, where Sidechain
+               Compressor keeps its cross-core key window (issue #696), and its frame loop reaches +$3DFD
 """
 import array
 import contextlib
@@ -79,7 +82,7 @@ NAMES = [p.name.decode() if p.name else '' for p in MOD.params]
 DONORS = ('SPRING REV', 'DARK REV')         # the site's default for E-Verb alone: the fewest, Spring first
 PLATE_HELPER = (974, 93)                    # PLATE REV calls these words of DARK REV's code (docs/VERIFICATION.md)
 FR = 16
-WARM = 256                                  # blocks of silence before a signal: the ring clears in 128 calls
+WARM = 256                                  # blocks of silence before a signal: 128 dry calls clear the ring
 FS = 8388607
 STOCK_FX2 = [m.key for m in KNOWN.values() if m.is_stock and m.menu is not None]
 
@@ -341,7 +344,7 @@ def energy(x, t0, t1):
 def gate_reverb(g, host, work):
     lags = []
     for pre in (0, 64, 127):
-        want_ms = 154 * 2 ** (5.16 * pre / 127) / 22.05          # the PRE law, at the tank rate
+        want_ms = min(154 * 2 ** (5.16 * pre / 127), 5008) / 22.05   # the PRE law, at the tank rate, clamped at 227 ms (#696)
         L, R = impulse_render(host, work, PRE=pre, ABSB=38)
         onset = next((i for i, (l, r) in enumerate(zip(L, R)) if max(abs(l), abs(r)) > FS * 1e-3), None)
         lags.append((pre, want_ms, onset / 44.1 if onset is not None else float('nan')))
@@ -656,6 +659,38 @@ def gate_envelope(g, host, work):
             f'{early:.1f} dBFS RMS at 0.5-1.5 s, {late:.1f} dBFS at 19-20 s (DCY 80, MIX 127, 0.5 s burst at 0.8 FS)')
 
 
+# Sidechain Compressor keeps its cross-core key window in the last $202 words of each core's
+# bank-track-3 FX2 slot (T7 on core 0, T3 on core 1; its manifest.py claims Y +$3DFE..+$3FFF).
+# 0.1.1's ring was modulo 16,384 and wrote all of it (issue #696).
+SC_WINDOW = (0x3dfe, 0x4000)
+
+
+def gate_window(g, host, work):
+    blocks = 5000                                       # 80,000 frames, 40,000 ticks: 2.5 turns of the ring
+    rnd = random.Random(696)
+    loud = write_raw(work / 'w_in.raw', [(rnd.uniform(-0.9, 0.9), rnd.uniform(-0.9, 0.9)) for _ in range(blocks * FR)])
+    lo, hi = SC_WINDOW
+    rows, ok = [], True
+    for core in (0, 1):
+        for rev, dpth in ((0, 127), (1, 127), (0, 0)):              # grains with shimmer, reverse, full cyclic depth
+            inst = dict(core=core, pos=2, knobs=knobs(SIZE=127, DCY=100, ABSB=90, DPTH=dpth, SPD=127, MIX=127, PRE=127, REV=rev))
+            text, (plain,) = host.run([inst], blocks, [loud])
+            base = int(re.search(r'base = Y:0x([0-9a-f]+)', text).group(1), 16)
+            mark = ','.join('%x=%x' % (base + o, 0x5a5a5a) for o in range(lo - 1, hi))
+            dump = work / 'w_y.bin'
+            _, (marked,) = host.run([inst], blocks, [loud], ('-pokey', mark, '-dumpcore', str(core),
+                                                             '-dumpy', '%x,%x,%s' % (base + lo - 1, base + hi, dump)))
+            words = [w & 0xffffff for w in struct.unpack('<%dI' % (hi - lo + 1), dump.read_bytes())]
+            dump.unlink()
+            written = sum(w != 0x5a5a5a for w in words[1:])
+            reached = words[0] not in (0x5a5a5a, 0)                 # the clear writes 0 there; audio is the frame loop's
+            ok &= written == 0 and reached and marked == plain
+            rows.append(f'T{7 if core == 0 else 3} (Y:${base:05x}) REV {rev} DPTH {dpth - 64:+d}: {written} of {hi - lo} window words written, '
+                        f'+$3DFD {"holds audio" if reached else "never reached by the frame loop"}, '
+                        f'output {"unchanged" if marked == plain else "CHANGED"} with the window filled')
+    g.check('window: Sidechain Compressor\'s key window on T3 and T7 is never written or read', ok, '; '.join(rows))
+
+
 def main():
     import send_probe
     g = Gates()
@@ -674,7 +709,7 @@ def main():
         gate_func_stops(g, image, log)
         host = Host(mems, work)
         for gate in (gate_dry, gate_reverb, gate_idle, gate_isolation, gate_garbage, gate_zipper, gate_splits, gate_reverse,
-                     gate_depth_locks, gate_envelope):
+                     gate_depth_locks, gate_envelope, gate_window):
             gate(g, host, work)
     print(f"== everb: {'all gates pass' if not g.failed else str(len(g.failed)) + ' failed: ' + ', '.join(g.failed)}")
     return 1 if g.failed else 0

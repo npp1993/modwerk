@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.1.2-experimental",
+    "date": "2026-10-18",
+    "changes": [
+      "On T3 and T7, E-Verb's delay ring overlapped Sidechain Compressor's cross-core key window, which lives in the last 514 words of those tracks' FX2 delay buffer. In a card build with both, each could write over the other's data: the reverb could play back audio from other tracks, and the compressor's key could be corrupted ([#696](https://github.com/repeat98/modwerk/issues/696); the reporter heard the ghost on hardware through Mini Verb, which fills its buffer the same way). The ring now stops 514 words short and never writes or reads them. In the DSP emulator, 0.1.1 wrote all 514 window words on both cores; 0.1.2 writes none, and its output does not change when the window is filled.",
+      "The 499 words come off the top of the pre-delay: PRE 124 to 127 now all give 227 ms, where they rose to 250 ms; with REV on the reverse window tops out at 227 ms too. Below PRE 124 nothing changes: in the emulator every tested setting with PRE at 123 or below renders bit-identically to 0.1.1, including the defaults and moving knobs. Projects saved with 0.1.1 store the same knob values and should sound the same unless PRE is 124 or higher; reloading one into 0.1.2 is not tested.",
+      "The frame loop and the cycle bound are unchanged; the program grows by 14 words (1,602 per core).",
+      "Measured on the DSP emulator only: 0.1.2 has not run on hardware. The owner's MKII report (two distinct simultaneous T1/T5 instances, Part/project save and reload, physical reboot) is for 0.1.0 on EVRB01T01. MKI, full-load chip timing and broader hardware coverage remain unverified."
+    ]
+  },
+  {
     "version": "0.1.1-experimental",
     "date": "2026-10-11",
     "changes": [

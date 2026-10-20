@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { accountAuth, withAccountAuth } from '../../server/accounts'
 import { schemaCheckFor } from '@better-auth/core/db/internal'
-import { ensureModuleThreads } from '../../server/module-threads'
+import { ensureModuleThreadsOnce } from '../../server/module-threads'
 import { COMMUNITY_RULES_VERSION } from '../legal/policy'
 import { testServer } from './test-server'
 
@@ -85,9 +85,10 @@ describe('community request database budgets',()=>{
    clearTimeout(timer);release();await Promise.all([first,next])
   }
  })
- it('returns correct member statistics with at most seven queries and no schema inspection',async()=>{
+ it('returns correct member statistics with at most six queries and no schema inspection',async()=>{
   const {env,db,call,token}=await member()
-  await ensureModuleThreads(env.DB!)
+  // Steady state: the once-per-process thread check has already run, so it costs this request nothing.
+  await ensureModuleThreadsOnce(env.DB!)
   const id=(db.prepare('SELECT id FROM users WHERE username=?').get('performance_member') as {id:string}).id
   db.prepare('INSERT INTO ratings(module_id,user_id,value) VALUES(?,?,?)').run('digitakt-digihealth',id,4)
   db.prepare('INSERT INTO likes(module_id,user_id) VALUES(?,?)').run('digitakt-digihealth',id)
@@ -96,7 +97,7 @@ describe('community request database budgets',()=>{
   const prepare=vi.spyOn(env.DB!,'prepare')
   const data=await (await call('/modules/digitakt-digihealth','GET',undefined,token)).json()
   expect(data).toMatchObject({ratings:{average:4,count:1},ownRating:4,likes:1,liked:true,downloads:0,downloadsStarted:'2026-10-01T00:00:00Z',discussionCount:1})
-  expect(prepare.mock.calls.length).toBeLessThanOrEqual(7)
+  expect(prepare.mock.calls.length).toBeLessThanOrEqual(6)
   expect(prepare.mock.calls.some(([sql])=>sql.includes('sqlite_master'))).toBe(false)
   const anonymous=await (await call('/modules/digitakt-digihealth')).json()
   expect(anonymous).toMatchObject({ratings:{average:4,count:1},ownRating:0,likes:1,liked:false})

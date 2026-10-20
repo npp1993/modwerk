@@ -243,6 +243,41 @@ class RuntimeSlotTests(unittest.TestCase):
     def test_ram_boot_backend_on_the_host(self):
         self.host_test('test_boot.c', 'loader.c', 'runtime.c')
 
+    def test_usb_base_update_on_the_host(self):
+        """flash.c (the base writing its own container to NOR) against an image the kit's own codec packed
+        (vendor/elekloader/kit codec/aplib.ts, run through Node): test_flash.c reads the fixture."""
+        import pathlib, random, shutil, struct, subprocess, tempfile
+        node = shutil.which('node')
+        if not node:
+            self.skipTest('no node')
+        here = pathlib.Path(__file__).resolve().parent
+        kit = here.parents[3] / 'vendor/elekloader/kit/src/codec/aplib.ts'
+        rng = random.Random(7)
+        os_first, os_veroff, run_off = 0x4fefffe4, 0xde648, 0xe2000
+        bootloader = (0x400de1e0 - 0x40000400, 0x400e21e0 - 0x40000400)
+        run = bytes(rng.getrandbits(8) for _ in range(4096))
+        image = bytearray((i * 7) & 0xff for i in range(run_off + 8 + len(run) + 20))
+        for off in range(0, run_off, 65536):  # something for the packer to match and to leave literal
+            image[off + 256:off + 4352] = bytes(rng.getrandbits(8) for _ in range(4096))
+        image[0:4] = struct.pack('>I', os_first)
+        image[bootloader[0]:bootloader[1]] = bytes((i * 13 + 5) & 0xff for i in range(bootloader[1] - bootloader[0]))
+        image[os_veroff:os_veroff + 2] = b'\x04\x08'  # inside the bootloader copy, as on the unit
+        image[run_off:run_off + 8 + len(run)] = struct.pack('>II', len(run), sum(run) & 0xffffffff) + run
+        with tempfile.TemporaryDirectory() as temp:
+            raw, section = pathlib.Path(temp, 'image.raw'), pathlib.Path(temp, 'section.bin')
+            raw.write_bytes(image)
+            pack = ("import { readFileSync, writeFileSync } from 'node:fs'; import { pathToFileURL } from 'node:url';"
+                    "const [kit, src, dst] = process.argv.slice(1); const { packSection } = await import(pathToFileURL(kit).href);"
+                    "writeFileSync(dst, packSection(new Uint8Array(readFileSync(src))))")
+            packed = subprocess.run([node, '--input-type=module', '-e', pack, '--', str(kit), str(raw), str(section)], capture_output=True, text=True)
+            if packed.returncode:
+                self.skipTest('node cannot run the kit codec: ' + packed.stderr.strip()[-200:])
+            container = b'ELEK0178' + b'1.40C'.rjust(10, b' ') + section.read_bytes()
+            container += bytes(-len(container) % 4)
+            fixture = pathlib.Path(temp, 'fixture.bin')
+            fixture.write_bytes(struct.pack('>II', len(image), run_off) + bytes(image) + struct.pack('>I', len(container)) + container)
+            self.host_test('test_flash.c', 'loader.c', 'runtime.c', defines=('-DMODWERK_FLASH_FIXTURE="%s"' % fixture,))
+
     def test_dsp_effect_glue_on_the_host(self):
         self.host_test('test_dsp.c')
 
@@ -254,6 +289,12 @@ class RuntimeSlotTests(unittest.TestCase):
 
     def test_fx_pages_on_the_host(self):
         self.host_test('test_fxpage.c')
+
+    def test_cached_modules_on_the_host(self):
+        # build_core.py --cached-modules: the trampolines and the FX pages' formatter pushes.
+        for test in ('test_runtime.c', 'test_fxpage.c'):
+            with self.subTest(test):
+                self.host_test(test, defines=('-DMODWERK_CACHED_MODULES',))
 
     def test_module_set_on_the_host(self):
         self.host_test('test_modset.c')

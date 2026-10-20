@@ -38,6 +38,14 @@ async function delayedBody() {
   return finish
 }
 describe('regular-member collector consent and account boundaries', () => {
+  it('asks again after a new consent text or expiry but keeps the delete button for earlier reports', async () => {
+    version = '2026-10-12.2'; await collect()
+    expect(store.diagnosticPreference()).toMatchObject({ enabled: false, hasChoice: false, saved: true })
+    version = (await import('./octatrack-diagnostics-contract')).OCTATRACK_DIAGNOSTICS_VERSION
+    mocked.request.mockResolvedValueOnce({ ...consent(), enabled: false, expiresAt: new Date(Date.now() - 1).toISOString() })
+    vi.resetModules(); store = await import('./octatrack-diagnostics'); await collect()
+    expect(store.diagnosticPreference()).toMatchObject({ hasChoice: false, saved: true })
+  })
   it('sends exact site fields without inventory access or USB metadata when no device is connected', async () => {
     const inventory = await collect()
     emit(); await flush()

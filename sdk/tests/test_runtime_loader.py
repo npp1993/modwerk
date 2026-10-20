@@ -30,7 +30,9 @@ class LoaderTests(unittest.TestCase):
         cc = shutil.which('cc')
         if not cc:
             self.skipTest('no host C compiler')
-        for defines in ((), ('-DRUNTIME_MODULES=128u', '-DRUNTIME_POOL_BYTES=786432u')):  # the default, the Octatrack's
+        octatrack = ('-DRUNTIME_MODULES=128u', '-DRUNTIME_POOL_BYTES=786432u')
+        # the default, the Octatrack's, and both with build_core.py --cached-modules
+        for defines in ((), octatrack, ('-DMODWERK_CACHED_MODULES',), octatrack + ('-DMODWERK_CACHED_MODULES',)):
             with self.subTest(defines), tempfile.TemporaryDirectory() as temp:
                 subprocess.run([cc, '-std=c99', '-Wall', '-Wextra', '-Werror', '-pedantic', *defines, '-I', LOADER,
                                 '-I', ROOT / 'sdk/runtime/upload', LOADER / 'tests/host_test.c', '-o', temp + '/t'],
@@ -87,13 +89,13 @@ class LoaderTests(unittest.TestCase):
     def test_dsp_effect_package(self):
         import json
         pkg = next(p for p in json.loads((ROOT / 'src/engine/assets/dsp-packages.json').read_text())['packages'] if p['id'] == 'everb')
-        dsp = build.dsp_section(pkg, 'fx2', 382, 'executed', 132, 16384, 'E-Verb', 2)
-        self.assertEqual((len(dsp['words']), dsp['relocations'], dsp['effect'], dsp['slots'], dsp['kind']), (1588, [5, 66, 683], 27, 2, 1))
+        dsp = build.dsp_section(pkg, 'fx2', 382, 'executed', 132, 15870, 'E-Verb', 2)
+        self.assertEqual((len(dsp['words']), dsp['relocations'], dsp['effect'], dsp['slots'], dsp['kind']), (1602, [5, 70, 697], 27, 2, 1))
         data = build.package(b'', 0, [], [], name='everb', dsp=dsp)
         self.assertEqual(data[:8], b'MWRM\0\6\0\0')
-        self.assertEqual(struct.unpack_from('>IHBBHHHBBH', data, 32), (1588, 3, 27, 2, 0, 51, 382, 1, 132, 16384))
+        self.assertEqual(struct.unpack_from('>IHBBHHHBBH', data, 32), (1602, 3, 27, 2, 0, 51, 382, 1, 132, 15870))
         self.assertEqual((data[50:66], struct.unpack_from('>H', data, 66)[0]), (b'E-Verb' + b'\0' * 10, 2)) # ABI 6: name, layout
-        self.assertEqual(len(data), 68 + 4 * 1588 + 2 * 3)
+        self.assertEqual(len(data), 68 + 4 * 1602 + 2 * 3)
         self.assertEqual(struct.unpack_from('>I', data, 68)[0], dsp['words'][0])
         self.assertEqual(verify_static.unpack(data), (b'', (), []))
         for broken in ({'proofs': [{'base': 4096, 'sha256': '0' * 64}] * 2}, {'proofs': []}, {'sha256': '0' * 64}):

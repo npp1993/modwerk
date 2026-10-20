@@ -1,4 +1,5 @@
 import { notePresence } from './presence'
+import { remoteSessionDue } from './remote-sessions'
 import { MENTION_SOURCE } from '../src/community/forum-contract'
 import type { Database, Env, Statement, User } from './platform'
 import { needMember, throttle } from './auth'
@@ -110,7 +111,8 @@ export async function notificationRoutes(request: Request, env: Env, db: Databas
     // The bell polls this every minute while a tab is visible, which makes it the member's presence signal.
     await notePresence(db, member.id)
     const row = await db.prepare(`SELECT COUNT(*) AS unread FROM (${ITEM_SQL} WHERE n.user_id IN (${RECIPIENTS}) AND n.seen=0 AND ${VISIBLE})`).bind(member.id, member.id).first<{ unread: number }>()
-    return response({ unread: (row?.unread ?? 0) + await announcementUnread(db, member.id) })
+    // `remoteSession` brings a waiting remote debug request (or a running session) to the site within a minute.
+    return response({ unread: (row?.unread ?? 0) + await announcementUnread(db, member.id), ...(await remoteSessionDue(db, member.id) ? { remoteSession: true } : {}) })
   }
   if (path === '/api/notifications' && request.method === 'GET') {
     const rows = (await db.prepare(`${ITEM_SQL} WHERE n.user_id IN (${RECIPIENTS}) AND ${VISIBLE} ORDER BY n.created_at DESC,n.rowid DESC LIMIT 50`).bind(member.id, member.id).all<Row>()).results

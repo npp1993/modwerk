@@ -9,8 +9,9 @@ runtime is resident-runtime/resident_engines.c; docs/OCTATRACK_RESIDENT_ENGINES_
   relocation buffer sized to the largest. Authored module code only, a private build input like the permanent
   block; never stock bytes, never committed.
 - `manager(text)`: the engines' region at the top of each core's arena (the FX allocator's capacity is lowered
-  to the lowest engine), the claim's dry run of the bank's Part union, and the evacuation that moves live FX code
-  out of the region first (a transaction of its own, phase 10).
+  to the lowest engine), the claim's dry run (what runs, plus as much of the bank's Parts as fits; the rest is
+  retired first in a trim), and the evacuation that moves live FX code out of the region first (a transaction of
+  its own, phase 10).
 - `transport(text)`: the owned transport's validator accepts PLACE (op 10, word 7 = 1).
 - `status(text)`, `dsp(text)`: the STATUS page, the box after a pick and the host's ARENA word use the lowered
   arena; `dsp` also tells the evacuation when code may move (`modwerk_dsp_moves_idle`).
@@ -207,11 +208,36 @@ static void engine_swap(unsigned c,uint16_t to[DL_PACKAGES]) {
     for(unsigned p=0;p<DL_PACKAGES;++p)
         if(to[p]!=0xffffu) { uint16_t at=allocator.live[c][p].offset; allocator.live[c][p].offset=to[p]; to[p]=at; }
 }
+/* Live code on core c that `keep` does not hold leaves the plan and the dry run (show 0), and comes back (show 1). */
+static void engine_hide(unsigned c,fx_set keep,fx_set *hidden,unsigned show) {
+    for(unsigned p=0;p<DL_PACKAGES;++p)
+        if(show ? fx_in(*hidden,p) : allocator.live[c][p].present && !fx_in(keep,p)) {
+            allocator.live[c][p].present=show ? 1u : 0u;
+            if(!show) *hidden=fx_with(*hidden,p);
+        }
+}
+/* The claim's trim (make_room's, with no request behind it): core c keeps `keep` and what runs, the other all it has. */
+static unsigned engine_trimmed[2];
+static void engine_trim(unsigned c,fx_set keep) {
+    uint8_t now[16];
+    running(now);
+    for(unsigned k=0;k<2;++k) {
+        trim_keep[k]=(fx_set){{0}};
+        for(unsigned p=0;p<DL_PACKAGES;++p)
+            if(allocator.live[k][p].present && (k!=c || fx_in(keep,p))) trim_keep[k]=fx_with(trim_keep[k],p);
+    }
+    trimmed_for=0; trim_stage=0;
+    if(++auto_serial==0) auto_serial=0x80000000u;
+    begin(now,auto_serial,1); trimming=1;
+    dl_trims=dl_trims+1;
+}
 /* Room for `reserve` words at the top of core c's arena: 1 yes (taken when commit), 0 not now (the manager is busy, an
- * evacuation runs or waits: ask again), -1 no. Only while the manager is idle. Live code in the region must move
- * below it first (commit 2: start that evacuation now; 1: wait), and the bank's Part union must still fit under it,
- * the region's code at its new place: the firm modules, plus the stock effects if they fit before the claim. So no
- * Part switch ever has to load code because an engine came. */
+ * evacuation or a trim runs or waits: ask again), -1 no. Only while the manager is idle. Everything on the DSP loads
+ * on demand (owner, 20 October 2026): what the tracks run must fit under the engine, its code in the region moved
+ * below it first (commit 2: start that evacuation now; 1: wait). Of the bank's Parts as much stays beside it as fits:
+ * all four, else those the patterns play (and the current and queued one), else none; the code that goes is retired
+ * first, in a trim of its own (no slot runs it, so nothing is heard; its ids go to the stub). A Part switch to that
+ * code loads it then. */
 int dl_engine_claim(unsigned c,unsigned reserve,int commit) {
     if(c>1) return -1;
     if(reserve>engine_arena(c)) { dl_engine_why[c]=5; return -1; }
@@ -226,33 +252,54 @@ int dl_engine_claim(unsigned c,unsigned reserve,int commit) {
     }
     for(unsigned k=0;k<2;++k)
         if(!allocator.capacity[k] && engine_arena(k)>engine_reserved[k]) allocator.capacity[k]=(uint16_t)(engine_arena(k)-engine_reserved[k]);
-    unsigned low=engine_arena(c)-reserve,moving=0;
+    unsigned low=engine_arena(c)-reserve,o=1u-c,moving=0,planned=0,chosen=3;
     uint16_t to[DL_PACKAGES];
-    if(!engine_plan(c,low,to)) { dl_engine_why[c]=2; return -1; }
+    uint8_t now[16];
+    fx_set firm[2],named[2],soft[2],played[2],run[2]={{{0}},{{0}}},saved[2]={allocator.keep[0],allocator.keep[1]};
+    running(now);
+    parts(now,firm,named,soft,played);
+    for(unsigned i=0;i<16;++i) {                     /* what runs now, in every tier */
+        unsigned p=now[i],k=(i&7)<4 ? 1:0;
+        if(p<DL_PACKAGES && !dl_catalog[p].resident && (dl_catalog[p].slots&(i<8 ? 1u:2u))) run[k]=fx_with(run[k],p);
+    }
+    fx_set tier[3]={fx_or(fx_or(firm[c],soft[c]),run[c]),fx_or(played[c],run[c]),run[c]};
+    int r=DL_ALLOC_MEMORY;
+    for(unsigned t=0;t<3 && chosen==3;++t) {
+        if(t && fx_same(tier[t],tier[t-1])) continue;
+        fx_set hidden={{0}},keep[2];
+        engine_hide(c,tier[t],&hidden,0);
+        if(engine_plan(c,low,to)) {
+            uint16_t before=allocator.capacity[c];
+            keep[c]=tier[t]; keep[o]=run[o]; planned=1;
+            allocator.capacity[c]=(uint16_t)low;
+            engine_swap(c,to);
+            r=engine_dry_run(keep);
+            engine_swap(c,to);
+            allocator.capacity[c]=before;
+            if(r==DL_ALLOC_OK) chosen=t;
+        }
+        engine_hide(c,tier[t],&hidden,1);
+        if(planned && r!=DL_ALLOC_OK && r!=DL_ALLOC_MEMORY && r!=DL_ALLOC_TRANSITION) break; /* inconclusive */
+    }
+    allocator.keep[0]=saved[0]; allocator.keep[1]=saved[1];
+    if(chosen==3) {
+        engine_trimmed[c]=0;
+        dl_engine_why[c]=!planned ? 2 : r==DL_ALLOC_MEMORY || r==DL_ALLOC_TRANSITION ? 3 : 4;
+        return dl_engine_why[c]==4 ? 0 : -1;
+    }
+    unsigned drop=0;
+    for(unsigned p=0;p<DL_PACKAGES;++p) if(allocator.live[c][p].present && !fx_in(tier[chosen],p)) drop=1;
+    if(drop) {
+        if(!commit) { dl_engine_why[c]=0; return 1; }
+        if(commit==1) { dl_engine_why[c]=7; return 0; } /* asked again each tick until code may go */
+        if(engine_trimmed[c]) { engine_trimmed[c]=0; dl_engine_why[c]=3; return -1; } /* the last trim made no room */
+        engine_trimmed[c]=1; engine_trim(c,tier[chosen]); dl_engine_why[c]=9;
+        return 0;
+    }
+    engine_trimmed[c]=0;
     for(unsigned p=0;p<DL_PACKAGES;++p) if(to[p]!=0xffffu) moving=1;
     if(moving && evac_closed[c]) { dl_engine_why[c]=8; return -1; }
-    if(moving && commit==1) { dl_engine_why[c]=7; return 0; } /* asked again each tick until it may move: no dry run yet */
-    uint8_t now[16];
-    fx_set firm[2],named[2],soft[2],both[2],saved[2]={allocator.keep[0],allocator.keep[1]};
-    running(now);
-    parts(now,firm,named,soft);
-    for(unsigned i=0;i<16;++i) {                     /* what runs now counts too */
-        unsigned p=now[i],k=(i&7)<4 ? 1:0;
-        if(p<DL_PACKAGES && !dl_catalog[p].resident && (dl_catalog[p].slots&(i<8 ? 1u:2u))) firm[k]=fx_with(firm[k],p);
-    }
-    both[0]=fx_or(firm[0],soft[0]); both[1]=fx_or(firm[1],soft[1]);
-    uint16_t before=allocator.capacity[c];
-    int r=engine_dry_run(both);
-    const fx_set *use=r==DL_ALLOC_OK ? both : firm;
-    allocator.capacity[c]=(uint16_t)low;
-    engine_swap(c,to);
-    r=engine_dry_run(use);
-    engine_swap(c,to);
-    allocator.capacity[c]=before; allocator.keep[0]=saved[0]; allocator.keep[1]=saved[1];
-    if(r!=DL_ALLOC_OK) {
-        dl_engine_why[c]=r==DL_ALLOC_MEMORY || r==DL_ALLOC_TRANSITION ? 3 : 4;
-        return dl_engine_why[c]==3 ? -1 : 0;
-    }
+    if(moving && commit==1) { dl_engine_why[c]=7; return 0; } /* asked again each tick until it may move */
     if(moving) {
         if(!commit) { dl_engine_why[c]=0; return 1; }
         uint32_t token=auto_serial+1; if(!token) token=0x80000000u;

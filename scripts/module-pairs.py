@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Native declaration checks for the card builder, one pair at a time.
+"""Native declaration checks for the card builder, one pair at a time, plus slot_tail_meetings below.
 
     npm run modules:pairs                  # check src/catalog/compatibility-pairs.json, the proof and the flags
     npm run modules:pairs -- --write       # regenerate it (a module or the ledger changed)
@@ -31,6 +31,39 @@ from pathlib import Path
 APP = Path(__file__).resolve().parents[1]
 TABLE = APP / 'src/catalog/compatibility-pairs.json'
 GUIDE = 'docs/module-guides/README.md#flag-every-incompatibility'
+SLOT = 0x4000  # one allocator FX2 slot, in words
+
+
+def slot_tail_meetings(selected):
+    """An allocator effect's FX2 buffer meeting a range another module declares in the same shared-window slot.
+
+    The ledger takes a slot's tail as free, which holds for stock effects (written no further than +$3DA2) but not for
+    one that fills its slot: Sidechain Compressor's key window is the last 514 words of the bank-track-3 slots. Card
+    builds have no run-time arbiter, so the pair is refused here. Over USB the base refuses such a buffer on that
+    block itself (mw_hook_buffer_permitted, sdk/machines/octatrack/module-adapters/resident-runtime/)."""
+    from remix.dsp_ranges import payloads
+    from remix.schema import HALF_BASE
+    out = set()
+    for a in selected:
+        c = getattr(a, 'claims', None)
+        if c is None or not c.stock_instance_buffer or c.fx1_only:
+            continue
+        extent = c.buffer_words or SLOT  # undeclared: the whole slot
+        slots = [base for q in sorted(payloads(a)) for base in (HALF_BASE[q], HALF_BASE[q] + SLOT)]
+        for b in selected:
+            if b is a or getattr(b, 'claims', None) is None:
+                continue
+            for r in b.claims.dsp_ranges:
+                for p in sorted(payloads(b)):
+                    domain, start, end = r.resolve(p)
+                    if domain != 'shared':
+                        continue
+                    for base in slots:
+                        if start < base + extent and base < end:
+                            out.add(f"FX2 buffer meets a declared range: {a.name}'s FX2 buffer (+$0..+${extent - 1:x}) "
+                                    f"and {b.name}'s {r.what} both claim shared 0x{max(start, base):05x}.."
+                                    f"0x{min(end, base + extent) - 1:05x}")
+    return sorted(out)
 
 
 def ledger_check():
@@ -48,7 +81,8 @@ def ledger_check():
         # USB Audio Out brings USB MIDI, as the build does.
         keys = tuple(byid[i].key for i in ids) + (('USB MIDI',) if 'usb-audio-out-tracks-main-cue' in ids else ())
         remix = registry.with_platform(Remix(name='pairs', doc='Declaration check only.', modules=keys, fallback='NONE'), known)
-        return ledger.check(registry.selected(remix))
+        selected = registry.selected(remix)
+        return ledger.check(selected) + slot_tail_meetings(selected)
     # POLY8's composition reads which machines are selected; a module FM Synth supplies loses its claims beside it.
     supplied_by = sorted({g['suppliedBy'] for g in machine_composition.POLICY['groups'] if g.get('suppliedBy')})
     return check, set(byid), supplied_by

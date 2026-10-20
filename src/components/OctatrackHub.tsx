@@ -163,6 +163,13 @@ export function OctatrackHub({ view, link, inventory, sets, selectedId, needs, u
             {usb && <button type="button" className={'button ' + (status === 'stock' || needsBase || status === 'ready' && !connected ? 'button-primary' : 'button-quiet')} onClick={onInstall}><Icon name="download" size={16} />{needsBase ? 'Install latest base' : status === 'stock' ? 'Install the base' : 'Install the base again'}</button>}
             <p className="link-hint">Going back to the original OS works from the card: <a className="text-button" href="#faq">FAQ & flashing guide</a></p>
           </section>
+          {usb && <section className="hub-section" aria-labelledby="setup-connect-title">
+            <h3 id="setup-connect-title">Can’t connect?</h3>
+            <p><strong>Linux:</strong> Chrome needs permission to use the Octatrack. Add this rule, then unplug the Octatrack and plug it back in:</p>
+            <pre className="hub-code">{'echo \'SUBSYSTEM=="usb", ATTR{idVendor}=="1935", TAG+="uaccess"\' | sudo tee /etc/udev/rules.d/70-octatrack.rules\nsudo udevadm control --reload-rules'}</pre>
+            <p>Chromium from the Snap Store also needs <code>sudo snap connect chromium:raw-usb</code>.</p>
+            <p><strong>Windows:</strong> Chrome can open the Octatrack only once it runs the Modwerk base. With the original OS, install the base from the card first.</p>
+          </section>}
           {card}
           <OctatrackDiagnosticsSettings username={username} />
         </>)}

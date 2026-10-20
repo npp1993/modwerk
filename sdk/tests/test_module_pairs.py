@@ -22,6 +22,19 @@ class PairTests(unittest.TestCase):
         found = pairs.maximal_cliques(['a', 'b', 'c', 'd'], lambda x, y: frozenset((x, y)) not in refused)
         self.assertEqual(sorted(found), [['a', 'c', 'd'], ['b', 'd']])
 
+    def test_an_fx2_buffer_meets_a_range_declared_in_its_slot_tail(self):
+        import sys
+        from types import SimpleNamespace as Mod
+        sys.path.insert(0, str(ROOT / 'sdk/octabam/tools'))
+        from remix.schema import Claims, DspRange
+        # Sidechain Compressor's key window: the last 514 words of the bank-track-3 FX2 slot on each core.
+        holder = Mod(name='holder', dsp=None, claims=Claims(dsp_ranges=(DspRange('y', 0x3dfe, 0x202, 'key window', half_relative=True),)))
+        effect = lambda **c: Mod(name='effect', dsp=None, claims=Claims(stock_instance_buffer=True, **c))
+        self.assertEqual(len(pairs.slot_tail_meetings([holder, effect(buffer_words=16384)])), 2)  # T7 on core A, T3 on core B
+        self.assertTrue(pairs.slot_tail_meetings([effect(), holder]))                            # undeclared: the whole slot
+        self.assertFalse(pairs.slot_tail_meetings([holder, effect(buffer_words=15870)]))         # stops at +$3dfd
+        self.assertFalse(pairs.slot_tail_meetings([holder, effect(fx1_only=True, buffer_words=2048)]))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -18,7 +18,12 @@ import sys
 FT = 22050.0                      # tank rate
 L = [3163, 2659, 2237, 1889]      # line maxima at SIZE 127 (primes), tank samples
 A = [281, 239, 199, 163]          # in-loop allpass maxima at SIZE 127 (primes)
-PRE = 5512                        # 250 ms
+PRE = 5512                        # the PRE law's scale (0.1.1's)
+PRE_MAX = 5013                    # the pre-delay segment: with the lines and allpasses below, the ring is exactly RING
+D_MAX = PRE_MAX - 5               # D clamps here (227 ms), a few samples inside the segment
+RING = 0x3dfe                     # ring words: the slot below Sidechain Compressor's key window (+$3DFE..)
+CLR_CALLS = -(-RING // 128)       # 128-word clearing calls
+CLR_WAIT = 128                    # 0.1.1's start-up: 128 dry calls, the first four clear nothing
 HB = [0.160421, 0.496365, 0.830509]   # interpolator: elliptic halfband n=3 (39 dB from 13 kHz): path 0 = c0, c2; path 1 = c1
 HD = [0.287369, 0.765357]             # decimator: n=2 (31 dB from 14 kHz): path 0 = c0, path 1 = c1
 EXP = [0.99988026, 0.69016736, 0.2276436, 0.03729821]  # 2^v, v in [-1.125, 0]
@@ -36,6 +41,7 @@ KENV = 1.0 / 1024
 PRE_OCT = math.log2(PRE / 154.0)
 W_MIN = 926
 U_WMIN = math.log2(W_MIN / 154.0) / PRE_OCT
+U_DMAX = math.log2(D_MAX / 154.0) / PRE_OCT
 ONE = 0.99999988
 
 
@@ -55,11 +61,11 @@ def fq(xv):
 
 seg = {}
 off = 0
-for name, maxd in [('pre', PRE)] + [('ap%d' % i, a) for i, a in enumerate(A)] + [('ln%d' % i, l) for i, l in enumerate(L)]:
+for name, maxd in [('pre', PRE_MAX)] + [('ap%d' % i, a) for i, a in enumerate(A)] + [('ln%d' % i, l) for i, l in enumerate(L)]:
     seg[name] = off
     off -= maxd + 3
 RING_USED = -off
-assert RING_USED <= 16384
+assert RING_USED <= RING
 
 X = {}
 def xa(name, addr):
@@ -212,10 +218,11 @@ e('; allpass outputs (early reflections), then three-band tilt and wet gain.')
 e('; Even frames (A) read the tank, odd frames (B) write it: the two arms are a')
 e('; MODEFORK, so cycle_count.py prices each frame at the dearer arm.')
 e(';')
-e('; Ring: the 16K Y allocator buffer, one head r5 (m5 = 16383), segments below it:')
+e('; Ring: the first %d words of the 16K Y allocator buffer, one head r5 (m5 = %d),' % (RING, RING - 1))
+e('; segments below it:')
 for k, v in seg.items():
     e(';   %-5s writes at r5%+6d' % (k, v))
-e(';   %d of 16384 words.' % RING_USED)
+e(';   %d of %d words.' % (RING_USED, RING))
 e('; X block r7+0..%d, every word cleared by init:' % LAST)
 row = ''
 for k, v in sorted(X.items(), key=lambda kv: kv[1]):
@@ -241,7 +248,7 @@ mv('x:>$213', 'r4', "this instance's allocator entry")
 mv('x:(r4)', 'a')
 mv('a', m('base'))
 mv('a', m('head'))
-mv('#>$80', 'a', '128 calls of 128 words clear the ring')
+mv('#>%s' % hx(CLR_WAIT), 'a', '%d dry calls, the last %d clear 128 words each' % (CLR_WAIT, CLR_CALLS))
 mv('a', m('clr'))
 mv('#>%s' % fq(0.95), 'a', 'quadrature oscillator amplitude')
 mv('a', m('cy'))
@@ -331,16 +338,20 @@ op('tst', 'a')
 op('beq', 'ev_ready')
 op('sub', '#$1,a')
 op('move', 'a,%s' % m('clr'))
+op('cmp', '#>%s,a' % hx(CLR_CALLS))
+op('bge', 'ev_clrx', comment='a dry call that clears nothing')
 op('asl', '#$7,a,a')
 op('move', '%s,x0' % m('base'))
 op('add', 'x0,a')
 op('move', 'a,r4')
-op('move', '#>$ffffff,m4')
+op('move', '#>%s,m4' % hx(RING - 1), comment='the first clearing call wraps two words to the ring start')
 op('clr', 'a')
 op('do', '#128,>ev_clrd')
 op('move', 'a,y:(r4)+')
 lab('ev_clrd')
 op('nop')
+op('move', '#>$ffffff,m4')
+lab('ev_clrx')
 op('rts')
 lab('ev_ready')
 L_('; Smoothed values run v + delta*frac through a call (frac +1/32 per frame). Each call')
@@ -565,20 +576,27 @@ op('bra', 'ev_loop')
 
 # ---- group 2: PRE, the reverse rate, REV --------------------------------------------------
 lab('ev_gr2')
-L_('; PRE (slot 7): D = 154 * 2^(5.16u) samples (7..250 ms), as a fraction of 5512')
+L_('; PRE (slot 7): D = 154 * 2^(%.2fu) samples (7..250 ms), as a fraction of %d, at most %d (%d ms, from PRE %d)'
+   % (PRE_OCT, PRE, D_MAX, D_MAX / FT * 1000, math.ceil(127 * math.log2(D_MAX / 154.0) / PRE_OCT)))
 ku('x:(r6+$c)', 'lo')
 op('move', 'a,%s' % m('tt'))
 op('move', 'a,x0')
 op('mpyi', '%s,x0,a' % imm(PRE_OCT / 8))
 op('sub', '%s,a' % imm(PRE_OCT / 8))
 ex2(3)
+op('move', '%s,x0' % imm(D_MAX / PRE))
+op('cmp', 'x0,a')
+op('tgt', 'x0,a', comment='D <= %d' % D_MAX)
 op('tfr', 'a,b')
 upd('prel')
-L_('; reverse heads advance 2/W of the window per tick: drho = 2^25/154 * 2^(-5.16 max(u, u42))')
+L_('; reverse heads advance 2/W of the window per tick: drho = 2^25/154 * 2^(-%.2f max(u, u42))' % PRE_OCT)
 op('move', '%s,a' % m('tt'))
 op('move', '%s,x0' % imm(U_WMIN))
 op('cmp', 'x0,a')
 op('tlt', 'x0,a')
+op('move', '%s,x0' % imm(U_DMAX))
+op('cmp', 'x0,a')
+op('tgt', 'x0,a')
 op('move', 'a,x0')
 op('mpyi', '%s,x0,a' % imm(-PRE_OCT / 8))
 ex2(3)
@@ -696,8 +714,8 @@ op('move', '#>$ffffff,m1')
 op('move', '#>$ffffff,m2')
 op('move', '#>$ffffff,m3')
 op('move', '#>$ffffff,m6')
-op('move', '#>$3fff,m5')
-op('move', '#>$3fff,m4')
+op('move', '#>%s,m5' % hx(RING - 1))
+op('move', '#>%s,m4' % hx(RING - 1))
 op('move', '#>$1,n0')
 op('move', 'r7,r6')
 op('move', '#>$40,n6')
@@ -1101,7 +1119,7 @@ op('move', 'a,y:(r5)', comment='the pre-delay write')
 op('move', '%s,b' % X_('rmode'))
 op('tst', 'b')
 op('bne', 'ev_rvrs')
-op('move', '%s,x0' % X_('fv2'), comment='D/5512')
+op('move', '%s,x0' % X_('fv2'), comment='D/%d' % PRE)
 op('move', '%s,y0' % imm(-PRE))
 op('mpy', 'y0,x0,a')
 interp_read('a', 'b', 'q')
@@ -1113,7 +1131,7 @@ op('move', '%s,a' % X_('fv2'))
 op('move', '%s,x0' % imm(W_MIN / PRE))
 op('cmp', 'x0,a')
 op('tlt', 'x0,a')
-op('sub', '%s,a' % imm(4.0 / PRE), comment='uw = (W - 4)/5512')
+op('sub', '%s,a' % imm(4.0 / PRE), comment='uw = (W - 4)/%d' % PRE)
 op('move', 'a,x0')
 op('mpyi', '#>%s,x0,a' % hx(-PRE), comment='-(W - 4), whole samples')
 op('move', 'a1,%s' % X_('rw'))

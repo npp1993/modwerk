@@ -24,7 +24,7 @@ beforeEach(() => {
   }))
 })
 afterEach(() => { vi.unstubAllGlobals(); for (const db of databases.splice(0)) db.close() })
-const release = (id = 'miniverb', version = '10.0.0'): ModuleRelease => ({ id, version, name: communityModule(id)!.name, href: communityModule(id)!.href, notes: { announce: true, version, date: '2026-10-08', changes: ['Correct playback behavior for ' + id + ' v' + version + '.'] } })
+const release = (id = 'miniverb', version = '10.0.0'): ModuleRelease => ({ id, version, name: communityModule(id)!.name, href: communityModule(id)!.href, notes: { version, date: '2026-10-08', changes: ['Correct playback behavior for ' + id + ' v' + version + '.'] } })
 const manifest = (modules: ModuleRelease[]) => ({ format: 'modwerk-module-releases-v1', modules })
 const report = { title: 'A control freezes', steps: 'Turn the control.', expected: 'A new value.', actual: 'It freezes.', context: { model: 'mk2', flash: 'flashed', os: '1.40C', modules: [{ id: 'miniverb', version: communityModule('miniverb')!.version }], keepStockFx2: true, build: '' }, logMissing: { reason: 'logger-not-in-build' } }
 
@@ -47,30 +47,83 @@ async function fixture() {
 }
 
 describe('module update subscriptions', () => {
-  it('records quiet releases and media edits until that exact version is explicitly announced', async () => {
-    const f = await fixture(), follower = await f.member('quietfan')
+  it.each([undefined, false])('notifies followers by default, regardless of the legacy announce flag (%s)', async announce => {
+    const f = await fixture(), follower = await f.member('defaultfan')
     await f.publish(release('miniverb', '9.0.0'))
     await f.call('/modules/miniverb/updates', 'PATCH', { enabled: true }, follower.session)
-    const quiet = release('miniverb', '10.0.0'); delete quiet.notes!.announce
-    expect(await f.publish(quiet)).toEqual({ checked: 1, notified: 0 })
-    const next = release('miniverb', '11.0.0'); next.notes!.announce = false
-    expect(await f.publish(next)).toEqual({ checked: 1, notified: 0 })
-    expect(f.db.prepare('SELECT version FROM module_release_state').get()!.version).toBe('11.0.0')
-    expect(f.db.prepare('SELECT COUNT(*) AS count FROM module_releases').get()!.count).toBe(3)
-    expect(f.db.prepare('SELECT after_version FROM module_update_subscriptions').get()!.after_version).toBe('9.0.0')
-    expect(await f.items(follower.session)).toHaveLength(0)
-    expect(f.db.prepare('SELECT COUNT(*) AS count FROM announcements').get()!.count).toBe(0)
-    // An old inventory cannot announce a superseded release; the current version can opt in later.
-    expect(await f.publish(release('miniverb', '10.0.0'))).toEqual({ checked: 1, notified: 0 })
-    next.notes!.announce = true
+    const next = release(); if (announce !== undefined) next.notes!.announce = announce
     expect(await f.publish(next)).toEqual({ checked: 1, notified: 1 })
     expect(await f.publish(next)).toEqual({ checked: 1, notified: 0 })
     next.notes!.changes.push('Media-only: replace the thumbnail with shared signal artwork.')
     expect(await f.publish(next)).toEqual({ checked: 1, notified: 0 })
-    expect((await f.items(follower.session)).filter(item => item.kind === 'module_update')).toHaveLength(1)
-    // Opt-in belongs to one version and does not carry forward to the next release.
-    const later = release('miniverb', '12.0.0'); delete later.notes!.announce
-    expect(await f.publish(later)).toEqual({ checked: 1, notified: 0 })
+    expect(await f.publish(release('miniverb', '9.0.0'))).toEqual({ checked: 1, notified: 0 })
+    expect(f.db.prepare('SELECT after_version FROM module_update_subscriptions').get()!.after_version).toBe('10.0.0')
+    expect(await f.publish(release('miniverb', '11.0.0'))).toEqual({ checked: 1, notified: 1 })
+    expect((await f.items(follower.session)).filter(item => item.kind === 'module_update')).toHaveLength(2)
+    await f.call('/modules/miniverb/updates', 'PATCH', { enabled: false }, follower.session)
+    expect(await f.publish(release('miniverb', '12.0.0'))).toEqual({ checked: 1, notified: 0 })
+  })
+
+  it('recovers missed current releases once and consolidates them without changing opt-outs', async () => {
+    const f = await fixture(), follower = await f.member('catchupfan'), silent = { id: 'catchupsilent' }, unfollowed = { id: 'catchupunfollowed' }
+    // Only the follower needs an HTTP session; seed the other recipients without unrelated password hashing.
+    for (const member of [silent, unfollowed]) {
+      f.db.prepare('INSERT INTO users(id,display_name,username,email_verified) VALUES(?,?,?,1)').run(member.id, member.id, member.id)
+      f.db.prepare('INSERT INTO auth_users(id,name,email,emailVerified,createdAt,updatedAt) VALUES(?,?,?,1,0,0)').run(member.id, member.id, member.id + '@example.test')
+    }
+    const ids = ['miniverb', 'tapeecho']
+    await f.publish(...ids.map(id => release(id, '9.0.0')))
+    for (const member of [follower, silent]) for (const id of ids) f.db.prepare("INSERT INTO module_update_subscriptions(user_id,module_id,after_version) VALUES(?,?,'9.0.0')").run(member.id, id)
+    f.db.prepare('INSERT INTO notification_preferences(user_id,updates) VALUES(?,0)').run(silent.id)
+    for (const id of ids) f.db.prepare('INSERT INTO module_update_opt_outs(user_id,module_id) VALUES(?,?)').run(unfollowed.id, id)
+    // The broken policy recorded publication but left subscribers at their last notified version.
+    for (const id of ids) {
+      const next = release(id)
+      f.db.prepare('INSERT INTO module_releases(module_id,version,name,href,notes) VALUES(?,?,?,?,?)').run(id, next.version, next.name, next.href, JSON.stringify(next.notes))
+      f.db.prepare('UPDATE module_release_state SET version=? WHERE module_id=?').run(next.version, id)
+    }
+    // Restoring ordinary publication must not send an unapproved catch-up.
+    expect(await f.publish(...ids.map(id => release(id)))).toEqual({ checked: 2, notified: 0 })
+    expect(await recordModuleReleases(f.env.DB!, ids.map(id => release(id)), true, true)).toEqual({ checked: 2, notified: 4 })
+    expect(await recordModuleReleases(f.env.DB!, ids.map(id => release(id)), true, true)).toEqual({ checked: 2, notified: 0 })
+    expect(await f.digests(5)).toEqual({ sent: 0 })
+    expect(await f.digests(15)).toEqual({ sent: 1 })
+    expect(sent[0].to).toEqual([follower.email])
+    expect(sent[0].subject).toBe('A few updates from me')
+    for (const id of ids) expect(sent[0].text).toContain(release(id).name + ' ' + release(id).version)
+    expect(sent[0].html).toContain('Unsubscribe from activity email')
+    expect(f.db.prepare('SELECT updates FROM notification_preferences WHERE user_id=?').get(silent.id)!.updates).toBe(0)
+    expect(f.db.prepare('SELECT COUNT(*) AS count FROM module_update_opt_outs WHERE user_id=?').get(unfollowed.id)!.count).toBe(2)
+  })
+
+  it('keeps unrelated activity out of the approved catch-up and queued for the next chosen interval', async () => {
+    const f = await fixture(), follower = await f.member('catchupmixed'), author = await f.member('catchupreply')
+    await f.publish(release('miniverb', '9.0.0'))
+    await f.call('/modules/miniverb/updates', 'PATCH', { enabled: true }, follower.session)
+    await recordModuleReleases(f.env.DB!, [release()], true, true)
+    const { id } = await (await f.call('/forum/threads', 'POST', { title: 'Catch-up discussion', body: 'Discuss the update.', category: 'general' }, follower.session)).json()
+    await f.call('/forum/threads/' + id + '/replies', 'POST', { body: 'An unrelated reply.' }, author.session)
+    expect(await f.digests()).toEqual({ sent: 1 })
+    expect(sent[0].subject).toBe('A few updates from me')
+    expect(sent[0].text).not.toContain('An unrelated reply.')
+    expect(f.db.prepare("SELECT emailed FROM notifications WHERE kind='reply'").get()!.emailed).toBe(0)
+    expect(await f.digests(25 * 60)).toEqual({ sent: 0 })
+    expect(await f.digests(31 * 60)).toEqual({ sent: 1 })
+    expect(sent[0].text).toContain('An unrelated reply.')
+    expect(sent[0].subject).not.toBe('A few updates from me')
+  })
+
+  it('keeps the approved catch-up behind a recent module digest', async () => {
+    const f = await fixture(), follower = await f.member('catchupspacing')
+    await f.publish(release('miniverb', '9.0.0'))
+    await f.call('/modules/miniverb/updates', 'PATCH', { enabled: true }, follower.session)
+    const previous = new Date().toISOString().replace('T', ' ').slice(0, 19)
+    f.db.prepare('INSERT INTO notification_preferences(user_id,last_digest_at,last_module_digest_at) VALUES(?,?,?)').run(follower.id, previous, previous)
+    await recordModuleReleases(f.env.DB!, [release()], true, true)
+    expect(await f.digests(15)).toEqual({ sent: 0 })
+    expect(await f.digests(7 * 60)).toEqual({ sent: 0 })
+    expect(await f.digests()).toEqual({ sent: 1 })
+    expect(sent[0].subject).toBe('A few updates from me')
   })
 
   it('queues beta releases only for eligible beta followers and stays quiet publicly', async () => {

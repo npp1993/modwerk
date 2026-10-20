@@ -718,7 +718,7 @@ li[data-status="error"] .forum-media-status { color: #f0a6ad; }
   .forum-list-heading { margin-bottom: 10px; }
 }
 
-/* Showcase strip: the newest images and sound clips, scrolled sideways, ending with an invitation to share. */
+/* Showcase strip: an invitation to share, followed by the newest images and sound clips, scrolled sideways. */
 .forum-showcase { margin: 4px 0 8px; }
 .forum-showcase-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 232px); gap: 12px; margin: 0; padding: 2px 2px 14px; list-style: none; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: thin; scrollbar-color: var(--control-border) transparent; }
 .forum-showcase-strip > li { scroll-snap-align: start; }
