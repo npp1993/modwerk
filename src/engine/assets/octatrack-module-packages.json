@@ -273,7 +273,7 @@
       "bytes": 1236,
       "sha256": "a9e6a2e503391d08bcbc88637f655428aae0284855abbaec30db6cda9e361f4e",
       "path": "octatrack-modules/sidechain-compressor/0.1.2-experimental.mwrm",
-      "requiredBase": "6650236ad27b0b4e59b2d8df8c51638faf065a386bfe77cbf5dfdd530c6fb18b"
+      "requiredBase": "24b25c39e7323f902bd9caee0b79ca74762716440eda58031287d9e0d9d955f1"
     },
     {
       "id": "output-matrix",
@@ -289,7 +289,7 @@
       "bytes": 3740,
       "sha256": "9f97f3bdb354ea86337e660567f57d0f4ec9969f0288f63161b9a926f159a44b",
       "path": "octatrack-modules/output-matrix/0.1.1-experimental.mwrm",
-      "requiredBase": "6650236ad27b0b4e59b2d8df8c51638faf065a386bfe77cbf5dfdd530c6fb18b"
+      "requiredBase": "24b25c39e7323f902bd9caee0b79ca74762716440eda58031287d9e0d9d955f1"
     },
     {
       "id": "cc-map",
@@ -305,7 +305,22 @@
       "bytes": 966,
       "sha256": "c7cd39a5f645d69279d3a288c40b8366e6638acdc042cf0fe68dfb9964a68ea2",
       "path": "octatrack-modules/cc-map/0.1.2-experimental.mwrm",
-      "requiredBase": "6650236ad27b0b4e59b2d8df8c51638faf065a386bfe77cbf5dfdd530c6fb18b"
+      "requiredBase": "24b25c39e7323f902bd9caee0b79ca74762716440eda58031287d9e0d9d955f1"
+    },
+    {
+      "id": "quantize-live-rec-toggle",
+      "octabam": true,
+      "abi": 7,
+      "features": 1,
+      "sites": 2,
+      "copies": 0,
+      "fills": 0,
+      "version": "0.1.0-experimental",
+      "name": "Quant Live Rec",
+      "module": "7d0747d4",
+      "bytes": 356,
+      "sha256": "026464deb27c8178d44ad1fd5866b754478b11c114561e73000cdca3b44f86e8",
+      "path": "octatrack-modules/quantize-live-rec-toggle/0.1.0-experimental.mwrm"
     },
     {
       "id": "recorder-loop-fix",
@@ -321,7 +336,7 @@
       "bytes": 1818,
       "sha256": "2748657e65f3f6f3873b524adc11809a5a7e1154f1da561bc7cf17dd63c72b81",
       "path": "octatrack-modules/recorder-loop-fix/0.1.0-experimental.mwrm",
-      "requiredBase": "6650236ad27b0b4e59b2d8df8c51638faf065a386bfe77cbf5dfdd530c6fb18b"
+      "requiredBase": "24b25c39e7323f902bd9caee0b79ca74762716440eda58031287d9e0d9d955f1"
     },
     {
       "id": "analog-bassdrum",
@@ -337,7 +352,7 @@
       "bytes": 6676,
       "sha256": "549ce7e280eec366ce8fd3eae04e6fd6e155d2b192e126d110e8f1a801d95106",
       "path": "octatrack-modules/analog-bassdrum/0.1.5-experimental.mwrm",
-      "requiredBase": "6650236ad27b0b4e59b2d8df8c51638faf065a386bfe77cbf5dfdd530c6fb18b"
+      "requiredBase": "24b25c39e7323f902bd9caee0b79ca74762716440eda58031287d9e0d9d955f1"
     }
   ]
 }
