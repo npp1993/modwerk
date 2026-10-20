@@ -26,7 +26,20 @@ The author then flashed the same base from the card (browser-built `.bin` `ca8b4
 
 **Display issue after the power cycle:** the track's LEV box first showed stock's split bars (half MAIN level, half CUE) instead of Output Matrix's solid bar; pressing CUE redrew it as MNL with a solid full-width bar. Likely cause, not yet confirmed: the base restores the saved module set after the first screen is drawn, and nothing redraws the page once the module's patches are in. A static build has the module from the first draw.
 
-Follow-up, pending hardware verification (20 Oct 2026): the cause is confirmed in the stock code. CUE's press handler (`0x4004e978`) only calls the track screen's drawer `0x4004d948(-1)`, and nothing calls it after the base's restore. Base `2f575d3e…` makes that call itself from the UI tick once the installed modules change; the Output Matrix package is unchanged. This has been checked only in the emulator. The record above stays as observed on `3e3e3de1`.
+Follow-up (20 Oct 2026, the author's MKII, RAM boots driven over USB, panel observations by the author). The cause is in the stock code: CUE's press handler (`0x4004e978`) does nothing but call the track screen's drawer `0x4004d948(-1)`, and nothing called it after the base installed the module. The 0.1.1 package is unchanged.
+
+| Base | Step | Observed |
+|---|---|---|
+| `b5fae2ae` (unfixed, package `c5b77b56`) | fresh RAM boot, install with OUT CFG on MATRIX | stock LEV label and split bars: the issue |
+| `b5fae2ae` | RAM-boot restore of a kept set | MNL, solid bar: the MODULES LOADED dialog's close redrew |
+| `3e3e3de1` (package `e2df2fbf`) | install | stock LEV label and split bars: the issue |
+| `3e3e3de1` | RAM-boot restore | the screen redrew as the module loaded: MNL, solid bar |
+| `2f575d3e` (fix, package `c5b77b56`) | install and keep, OUT CFG on MATRIX | the module's own label at once, no key pressed: pass |
+| `2f575d3e` | route to MNL, save, RAM-boot restore | MNL with a solid bar; CUE changed nothing: pass |
+| `2f575d3e` | install and remove Apply Scene with a PROJECT menu open | menu intact; MNL kept: pass |
+| `2f575d3e` | remove Output Matrix while MATRIX uses its DSP code | refused (loader refusal 7), as expected |
+
+`2f575d3e` was a build made before the fix was rebased onto newer main code. The fix ships in base `6650236a` (package `9f97f3bd`, relinked on main for its moved arena), which has not run on the unit. The restore after a real power cycle on a flashed base with the fix is not verified. A RAM-boot restore did not reproduce the issue on any base. The record above stays as it was observed on `3e3e3de1`.
 
 ## Limitations
 

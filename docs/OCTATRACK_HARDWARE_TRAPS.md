@@ -498,17 +498,23 @@ save or edit: power-cycle once more, or PROJECT > RELOAD the last save from the
 card.
 
 **Stock redraws a page only on its own events.** A module that patches how stock
-draws a page is seen at the next key that redraws it, so a set restored about
-3 s after the first draw left stale pixels: Output Matrix's LEV box kept stock's
-split bars until CUE was pressed (owner's MKII, flashed `3e3e3de1`, 16 October
-2026; audio was right). The track screen's drawer is `0x4004d948(-1)`, which is
-all CUE does (`0x4004e978`) and which marks the display for the UI loop's flush
-(`0x46c7c72c`). It writes the screen's plane and globals, so call it only from
-the UI task (`ev_tick`, key and encoder handlers), never from the engine task
-that installs or from an interrupt. The base now calls it on the UI tick after
-the live modules change (`runtime.c`, base `2f575d3e`; not yet checked on the
-unit). A RAM boot runs the same restore, so it reproduces this without a power
-cycle.
+draws a page shows only at the next key that redraws it. On the Output Matrix
+author's MKII (20 October 2026, RAM-booted `b5fae2ae` and `3e3e3de1`), installing
+Output Matrix over USB with OUT CFG on MATRIX left the LEV box with stock's LEV
+label and split bars until CUE was pressed (audio was right). After a power cycle
+on flashed `3e3e3de1` (16 October) the restored set looked the same. A RAM-boot
+restore did not reproduce it on either base: the screen redrew as the module
+loaded and the MODULES LOADED dialog appeared. The track screen's drawer is
+`0x4004d948(-1)`. CUE's handler (`0x4004e978`) does nothing more, and the drawer
+marks the display for the UI loop's flush (`0x46c7c72c`). It writes the screen's
+plane and globals, so call it only from the UI task (`ev_tick`, key and encoder
+handlers), never from the engine task that installs or from an interrupt. The
+base calls it on the UI tick once the live modules change (`runtime.c`). On the
+same MKII the fix base `2f575d3e` showed Output Matrix's own label right after the
+install. That build was made before a rebase onto newer main code; the same
+`runtime.c` is now in base `6650236a`, which has not been on the unit. After a RAM-boot restore it showed MNL with a solid bar that CUE left
+unchanged. A PROJECT menu stayed intact through an install and a removal. The
+power-cycle restore with this fix is unverified, because it needs a flashed base.
 
 **A RAM boot can come back without USB.** On 19 October 2026 one RAM boot of a
 dev twin (`82b9bef4`) ran for over 15 minutes (its log has loads) but never
