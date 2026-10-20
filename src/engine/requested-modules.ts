@@ -92,8 +92,10 @@ export async function readRequestedObject(label: string, original?: Uint8Array, 
   }
   return { label, object }
 }
+// Modules the catalog lists after the utility and replacing modules: native places their ROM units after those, in catalog order.
+const LATE_ROM: readonly string[] = ['mute-modes', 'quantize-live-rec-toggle']
 export async function requestedRom(ids: readonly string[], cursor: number, overflow: number, caveLimit: number, cave: (address: number, bytes: Uint8Array, note: string) => Promise<void>, late = false) {
-  const groups = selectedRequestedGroups(ids).filter(group => (group.moduleId === 'mute-modes') === late), symbols = new Map<string, number>()
+  const groups = selectedRequestedGroups(ids).filter(group => LATE_ROM.includes(group.moduleId) === late), symbols = new Map<string, number>()
   for (const group of groups) for (const pkg of facts.objects.filter(p => p.moduleId === group.moduleId && !requestedObjectDram(p, ids) && requestedObjectSelected(p, ids) && p.placement !== 'cave')) {
     const address = pkg.caveAddress ?? Math.ceil(cursor / 128) * 128
     const linked = linkRomText((await readRequestedObject(pkg.label, undefined, ids)).object, address, symbols)
@@ -153,21 +155,19 @@ export async function requestedHooks(original: Uint8Array, ids: readonly string[
 }
 
 /** The recorder's source caves follow utility caves in the native placement order. */
-export async function requestedCaves(ids: readonly string[], cursor: number, overflow: number, caveLimit: number, cave: (address: number, bytes: Uint8Array, note: string) => Promise<void>, poolBase: number) {
+export async function requestedCaves(ids: readonly string[], cursor: number, overflow: number, _caveLimit: number, cave: (address: number, bytes: Uint8Array, note: string) => Promise<void>, poolBase: number) {
   const symbols = new Map<string, number>()
   for (const group of selectedRequestedGroups(ids)) for (const pkg of facts.objects.filter(row => row.moduleId === group.moduleId && row.placement === 'cave')) {
     const object = (await readRequestedObject(pkg.label, undefined, ids)).object
-    let address = Math.ceil(cursor / 128) * 128, linked = linkRomText(object, address)
-    const inside = address + linked.bytes.length <= caveLimit
-    if (!inside) { address = Math.ceil(overflow / 4) * 4; linked = linkRomText(object, address) }
+    // Native places a floating cave at the cave cursor only and refuses when it does not fit there; `cave` refuses the same.
+    const address = Math.ceil(cursor / 128) * 128, linked = linkRomText(object, address)
     const view = new DataView(linked.bytes.buffer, linked.bytes.byteOffset, linked.bytes.byteLength)
     let literals = 0
     for (let i = 0; i + 4 <= linked.bytes.length; i += 2) if (view.getUint32(i) === 0x40a955e0) { literals++; view.setUint32(i, poolBase) }
     if (literals !== pkg.poolBaseLiterals) throw new Error('Recorder pool-base literal count differs from its declaration.')
     await cave(address, linked.bytes, pkg.label)
     for (const [name, value] of linked.symbols) { symbols.set(name, value); symbols.set(pkg.label + '::' + name, value) }
-    if (inside) cursor = address + linked.bytes.length
-    else overflow = Math.ceil((address + linked.bytes.length) / 4) * 4
+    cursor = address + linked.bytes.length
   }
   return { cursor, overflow, symbols }
 }

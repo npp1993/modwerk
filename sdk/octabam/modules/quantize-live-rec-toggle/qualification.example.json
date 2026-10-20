@@ -1,7 +1,7 @@
 {
   "moduleVersion": "0.1.0-experimental",
   "sourceSha256": "3919857a869087c66907941c64c2ef735f44e32849237a876521f8525fc9a8e1",
-  "imageSha256": "eb34c12e9c906107fc6a8285ec757eaacf83a39c8dfb42e7bc390421f4189afd",
+  "imageSha256": "026464deb27c8178d44ad1fd5866b754478b11c114561e73000cdca3b44f86e8",
   "cycles": [
     {
       "processor": "coldfire",
@@ -16,7 +16,7 @@
         "parameterModulation": "Not applicable: one global boolean reached by a key gesture; no LFO, parameter lock, scene or MIDI CC reaches it.",
         "modeSwitching": "Repeated show, invert and invert-back presses inside one toast, and [REC] release with and without a toast on screen.",
         "maxLoad": "One instance per unit (a global key gesture). The code runs once per [PLAY] press or [REC] release in the key handler, never in the frame or audio path.",
-        "inputConditions": "Independent of audio. Counts cover the authored instructions only; the stock routines they call (project gate, checksum, notification open and close) are stock cost and excluded."
+        "inputConditions": "Independent of audio. Counts cover the authored instructions only; the stock routines they call (project gate, checksum, notification open and close) are stock cost and excluded. The qualified image is the USB package 026464de (ABI 7, 356 bytes), which carries this 188-byte unit byte for byte; the instructions were counted on the same unit in the card image QLRTEST03 (MAIN OS eb34c12e9c906107fc6a8285ec757eaacf83a39c8dfb42e7bc390421f4189afd)."
       },
       "report": "TESTING.md"
     }
@@ -51,16 +51,15 @@
     "kind": "functional",
     "status": "reported",
     "model": "MKII",
-    "testedOn": "2026-10-13",
+    "testedOn": "2026-10-15",
     "tester": "npp1993",
-    "sourceRevision": "50f653953c35801ae6696b91fd87bd6a594b52b4",
-    "imageSha256": "57a19a4dbd6fa08b38d3dfba507cdf5b5b7d357e03bef20c988360bc355c2e69",
-    "summary": "QLRTEST02, this module alone at the tested source, flashed from the card on an MKII. Hold [REC] + [PLAY] showed the setting and started live recording; a second tap while the toast was up inverted it, a tap after the toast had run out only showed it, and releasing [REC] closed the toast. Both toasts, LIVE REC: QUANTIZED and LIVE REC: UNQUANTIZED, fit the screen. With PROJECT > SYSTEM > PERSONALIZE open the box followed each flip without an arrow key, and CONTROL > AUDIO was left as it was. A changed setting survived a power cycle. No freeze, screen garbage, crackle or dead controls.",
+    "sourceRevision": "d7526ad548965cebea84b211a60d3bc00c1c6f3a",
+    "imageSha256": "026464deb27c8178d44ad1fd5866b754478b11c114561e73000cdca3b44f86e8",
+    "summary": "Package 026464de (source d7526ad5) over USB on the user's MKII with the flashed Modwerk beta base, OS 1.40C, APPLY SCENE installed beside it. Two trials without Keep rolled back; a kept trial was accepted and listed as Quant Live Rec. With it kept the user reported: hold [REC] + tap [PLAY] shows the toast and starts live recording; a tap within about a second flips the setting; a tap after the toast has gone only shows it; releasing [REC] closes the toast; with PERSONALIZE open the box follows a flip; a changed setting survives a power cycle, and the module was still installed after it. Removal was accepted and the inventory no longer listed it.",
     "limitations": [
-      "Ran QLRTEST02 (source 50f65395) from the card. The current source (stock-free reorder, 15 October 2026) ran on the MKII over USB as package 026464deb27c8178d44ad1fd5866b754478b11c114561e73000cdca3b44f86e8 (TESTING.md); this record names card images only, so how a USB package report binds here is an open question for the owner, and its card image QLRTEST03 has not run on a unit.",
-      "How long the tests ran was not recorded.",
-      "No MKI; the redraw beside Output Matrix ran in the emulator only.",
-      "Not checked: grid recording, MIDI tracks, the gesture with no project loaded."
+      "Over USB only: the card image of this source (QLRTEST03) has not run on a unit. An earlier source (50f65395, QLRTEST02) ran from the card on the same MKII with the same results, before the stock-free re-encoding.",
+      "Not checked: stock [REC] + [PLAY] behaviour after the removal, Part or project reload with it installed, grid recording, MIDI tracks, an MKI with this build.",
+      "How long the tests ran was not recorded."
     ],
     "report": "TESTING.md"
   },

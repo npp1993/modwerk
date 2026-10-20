@@ -308,6 +308,10 @@
       "requiredBase": "38a0bde156a2145020ca79ae00a202aa824c3cc99b7723089d8933ede3bdc457"
     },
     {
+      "id": "quantize-live-rec-toggle",
+      "octabam": true
+    },
+    {
       "id": "recorder-loop-fix",
       "base": true,
       "abi": 8,
