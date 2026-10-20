@@ -144,8 +144,8 @@
       },
       "native": {
         "bytes": 1112560,
-        "osSha256": "c7389e9759bec1881012cc378e1e7a0123ddc26d1a52348e3c077030351d839d",
-        "maskedOsSha256": "c7389e9759bec1881012cc378e1e7a0123ddc26d1a52348e3c077030351d839d"
+        "osSha256": "11d239fb68479cd137afd9461f15a8174e653d6924218e2305561dca9a20c9c7",
+        "maskedOsSha256": "11d239fb68479cd137afd9461f15a8174e653d6924218e2305561dca9a20c9c7"
       },
       "result": "identical"
     },
@@ -174,8 +174,8 @@
       },
       "native": {
         "bytes": 1112560,
-        "osSha256": "f01a187b2c09beedc078ab596888f701ba6a39721c57391c5b76520aaef8f618",
-        "maskedOsSha256": "f01a187b2c09beedc078ab596888f701ba6a39721c57391c5b76520aaef8f618"
+        "osSha256": "bdbb39ea751eab433714ecde1dcc2c81150daaf26cc4ab071910f8c7c2411a8b",
+        "maskedOsSha256": "bdbb39ea751eab433714ecde1dcc2c81150daaf26cc4ab071910f8c7c2411a8b"
       },
       "result": "identical"
     },
@@ -583,8 +583,8 @@
       },
       "native": {
         "bytes": 1112560,
-        "osSha256": "16d0de2d7f47c8899d177fbce71de5ad723b257f38c09bb9747bac6c249e0655",
-        "maskedOsSha256": "16d0de2d7f47c8899d177fbce71de5ad723b257f38c09bb9747bac6c249e0655"
+        "osSha256": "e296281415194763f9cd1870643226bd606ab06f758e0626a5d4bafbe5bac787",
+        "maskedOsSha256": "e296281415194763f9cd1870643226bd606ab06f758e0626a5d4bafbe5bac787"
       },
       "result": "identical"
     },
@@ -613,8 +613,8 @@
       },
       "native": {
         "bytes": 1112560,
-        "osSha256": "8282aea3a519d914b0eaa532cefb293f929a27877f8438a0bbdb582342cb1353",
-        "maskedOsSha256": "8282aea3a519d914b0eaa532cefb293f929a27877f8438a0bbdb582342cb1353"
+        "osSha256": "8215e4957a8738d6e75ed9c0e455b474d1de2dbadea58ff62598db5f88ad4fa4",
+        "maskedOsSha256": "8215e4957a8738d6e75ed9c0e455b474d1de2dbadea58ff62598db5f88ad4fa4"
       },
       "result": "identical"
     },
@@ -1295,9 +1295,9 @@
         ]
       },
       "native": {
-        "bytes": 1118019,
-        "osSha256": "fb890a9fe5c0858796740ed664db33d76464e64662cc369a978d8dbeae777f88",
-        "maskedOsSha256": "fb83e1e9d1001e1b8117d66736a5fd2bec0fa52f535db74964ce56a0a7398fa3"
+        "bytes": 1118800,
+        "osSha256": "c707989cee79ffdf05bbd411c601b55977f083d8ec7262fa958e8ef5edc2f575",
+        "maskedOsSha256": "54c7e6f2f7c3f678a1ef8ee4b144e2b3aebf9c4de332d5508414735afcd80d29"
       },
       "result": "masked"
     },
@@ -1323,9 +1323,9 @@
         "fx2": []
       },
       "native": {
-        "bytes": 1118019,
-        "osSha256": "ed33bccbcd71fc80981c64d272556507ff4dc920234a15b8cfd1c2baedce5ebd",
-        "maskedOsSha256": "4c54f3e9dcac1c37e40747d63322126a1c3feb8822a97e701320611b111f0e24"
+        "bytes": 1118800,
+        "osSha256": "b05f5d0c57663142ad0409d2d8ba67771be331dc70689e3edabeb45c57f61577",
+        "maskedOsSha256": "bb84751b9dde4e4a7f83acbb79538781d2567e56004ea506ec6bff8d27a64f3f"
       },
       "result": "masked"
     },
@@ -1509,9 +1509,9 @@
         ]
       },
       "native": {
-        "bytes": 1114033,
-        "osSha256": "a7460857eb3020fb6c0ff0f3e6fb5d13cb0e5abd377dffea8c155c7dc642bb50",
-        "maskedOsSha256": "24eb10b3e74db04ce6d2d30cf3aaa4a0c33de71e470f61ef1b7c2fbda4e370fd"
+        "bytes": 1114061,
+        "osSha256": "c4841db984fad27a7c48e98066e253321bc99ee91a6e220f54cedc9134e668b4",
+        "maskedOsSha256": "1b8c5b8aaff5ec7d19b80e988e72ded99675b1a6ca5f24024c10bb227f36508d"
       },
       "result": "masked"
     },
@@ -1537,9 +1537,9 @@
         "fx2": []
       },
       "native": {
-        "bytes": 1114033,
-        "osSha256": "2dbaa01d9de33bbea156b9c69dce7e79d8ed47ddcb731c4f8fe5594863b2d504",
-        "maskedOsSha256": "73d0fa3823c9d8dc3dc40fa31d84bf2a9033f7a051732c864c935756f2066da3"
+        "bytes": 1114061,
+        "osSha256": "7141fdbbc2d8b65cb8faa47b053948c92df802a77e36cc4e5dc0e87aa55355a4",
+        "maskedOsSha256": "e9b354392a79c1d4e0d3a64fff73c42dcb8891b5263d55a1c91bdb14b9958859"
       },
       "result": "masked"
     },
@@ -4250,7 +4250,7 @@
         ]
       },
       "native": {
-        "refused": "past the stock zero run (or into the long chooser list)"
+        "refused": "payload A: EVERB overruns the region (2935 > 2724 words)"
       },
       "result": "refused"
     },
@@ -4290,7 +4290,7 @@
         ]
       },
       "native": {
-        "refused": "hold cave (copy) not free"
+        "refused": "payload A: EVERB overruns the region (2935 > 2724 words)"
       },
       "result": "refused"
     },
@@ -4338,9 +4338,9 @@
         ]
       },
       "native": {
-        "bytes": 1128245,
-        "osSha256": "9a95e29e6b4a5782440be4cd37e80b82316e4a42f684f1973ca416b5ec128b53",
-        "maskedOsSha256": "ced33724218ebdbed63898fcb5d1c9d1096bad8861c53b5b63b7fcfc3809c74b"
+        "bytes": 1129013,
+        "osSha256": "afbbe041dee4d5d1e3edde62ca8e203c0509b313ef3f29e0ff7a86c3c37f6078",
+        "maskedOsSha256": "a52533f1a3f8589ac4658b52ef187f1cca69109e41588ae02aca61236bc6fd8c"
       },
       "result": "masked"
     },
@@ -4376,9 +4376,9 @@
         ]
       },
       "native": {
-        "bytes": 1128245,
-        "osSha256": "f20d9c56464888b15244e346ea1d7c55ac49f09c3028d1014a5055f726c64a5b",
-        "maskedOsSha256": "72dd52dadc73608d048b966976317b34417a51d4cca3680aeee2eff1d18204a5"
+        "bytes": 1129013,
+        "osSha256": "2ecd668285a3d0c2d42b1d1115521ec9cba3ff2c72550f8862117b26e7b0fb6f",
+        "maskedOsSha256": "c82959f7ba073d7d36d75d2146bc3da171a84640c06a685057cd6d5f89c15521"
       },
       "result": "masked"
     },
@@ -4427,7 +4427,7 @@
         ]
       },
       "native": {
-        "refused": "past the stock zero run (or into the long chooser list)"
+        "refused": "hold cave (copy guard): 86 B fits neither the clone window (from 0x400d7b80) nor the overflow run"
       },
       "result": "refused"
     },
@@ -4465,7 +4465,7 @@
         ]
       },
       "native": {
-        "refused": "past the stock zero run (or into the long chooser list)"
+        "refused": "hold cave (crossfade guard): 118 B fits neither the clone window (from 0x400d7c00) nor the overflow run"
       },
       "result": "refused"
     },
@@ -4829,7 +4829,7 @@
         ]
       },
       "native": {
-        "refused": "spacing cave not free"
+        "refused": "MUTE_MODES table PERSONALIZE labels at 0x400d7c00 not free"
       },
       "result": "refused"
     },
@@ -4869,7 +4869,7 @@
         ]
       },
       "native": {
-        "refused": "past the stock zero run (or into the long chooser list)"
+        "refused": "MUTE_MODES table PERSONALIZE labels at 0x400d7c00 not free"
       },
       "result": "refused"
     },
@@ -5846,9 +5846,9 @@
         ]
       },
       "native": {
-        "bytes": 1128148,
-        "osSha256": "ee3da1a413d6667126cec4cf154185c24d7376f821c5829b3ae94099c2879ce7",
-        "maskedOsSha256": "36b882cc073db11c45f68cd8229c4fe282531354158fda2a1ade5c985770fef8"
+        "bytes": 1128908,
+        "osSha256": "553e02d8172a48ae990ab5b3f16fb358f12c8e3dbce3e2861618d905b6160272",
+        "maskedOsSha256": "64a67e18a2d6a07b9c50b6d30ed28497b2fcb4e488cce060a2e8b00f3cde079b"
       },
       "result": "masked"
     },
@@ -5880,9 +5880,9 @@
         ]
       },
       "native": {
-        "bytes": 1128148,
-        "osSha256": "74024e0a6bdd8408238162c1907463e7663de906f3a53b22fdb79cf2b4c8561c",
-        "maskedOsSha256": "5d699157ddcf84eff680b18fdbca0f6c425806429607f18c2482dd0940e55aeb"
+        "bytes": 1128908,
+        "osSha256": "c3ba5210c3fc9f0bae37759408230a22c1ad2b6708dcf445741fe310e77e26a9",
+        "maskedOsSha256": "75267abf4d086cc178828905fe152b8d372b7efe2d531d0c3746e5f861f4dcde"
       },
       "result": "masked"
     },
@@ -5931,7 +5931,7 @@
         ]
       },
       "native": {
-        "refused": "payload A: AIR CHORUS overruns the region (2861 > 2724 words)"
+        "refused": "payload A: AIR CHORUS overruns the region (2867 > 2724 words)"
       },
       "result": "refused"
     },
@@ -5969,7 +5969,7 @@
         ]
       },
       "native": {
-        "refused": "payload A: AIR CHORUS overruns the region (2861 > 2724 words)"
+        "refused": "payload A: AIR CHORUS overruns the region (2867 > 2724 words)"
       },
       "result": "refused"
     },
