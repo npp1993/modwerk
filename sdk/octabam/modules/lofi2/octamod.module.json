@@ -113,14 +113,14 @@
       "analog-bassdrum"
     ],
     "limitations": [
-      "Hardware evidence is one short functional report on an MKII (five instances in SHIFT, a Part reload and a power cycle); eight instances, scenes and LOFI2 beside other modules are untested on a unit. Bryan T's own MKII reports are for his octabam builds of the same DSP source.",
+      "Hardware evidence for this source (octabam 8250be0c) is one functional report over USB on an MKII, 20 October 2026, about 15 minutes beside five other modules: every mode, the fixed SHIFT by ear, two instances on one core and a third refused (DSP FULL); the base's self-test failed on ColdFire CPU (98.8 %, cause not confirmed). Reloads, a power cycle, BRR and LPF individually ran only with the previous source (21f6de90: card image with five SHIFT instances, and USB package 7ee9277f), which differs in sixteen DSP coefficient words. Eight instances and scenes are untested on a unit. Bryan T's own MKII reports are for his octabam builds of the same DSP source.",
       "Large: 838 program words and a 516-word table on each DSP core, 1,354 contiguous words. With stock DSP code built in it needs two adjacent stock reverbs given up (PLATE REV + SPRING REV, or SPRING REV + DARK REV); one reverb is not enough.",
       "SHIFT executes 430 instructions/sample at worst in dsp_host (static 416 cycles), about 1.4x SPRING REV's worst case and dearer than every stock effect; RING is 274. The author ran eight instances at once, four per core, in UP, DOWN and RING on his MKII with this source in his own build.",
-      "USB loading on the Modwerk base is not part of this version; it waits on upstream loader changes.",
-      "In DOWN and UP, once sound has passed through, the output settles at about -77 to -83 dBFS instead of silence and stays there (dsp_host render; the upstream module does the same). RING and the reduction stages return to silence.",
+      "Over USB the Modwerk base loads LOFI2 on demand into FX1 or FX2. It declares 637 cycles a sample (timed on an MKII with the previous package, whose instructions are the same), so two instances fit on one DSP core when its other slots are free and a third is refused (DSP FULL).",
+      "In DOWN and UP, once sound has passed through, the output settles at about -83 to -94 dBFS instead of silence and stays there (dsp_host render; the upstream module does the same). RING and the reduction stages return to silence.",
       "Native octabam refuses LOFI2 together with Analog BD: it is not on Analog BD's reviewed DSP companion list. A scratch-only probe with the list widened placed both only with all three reverbs, LO-FI, DJ EQ and CHORUS given up and LOFI2's table moved to X memory; that layout is unreviewed and untested.",
-      "Declared FX2 here because only the FX2 chooser was built and captured. The module has no buffers and its author declares it eligible for an FX1 row; FX1 was not built or tested in this tree.",
-      "Effect ID 0x09, placement priority 19 and layout letter F are Modwerk's; they were checked free against the modules in this tree and the pending RING MOD (0x0e). A project saved with octabam's LOFI2 (ID 0x1f) selects TAPEHEAD's ID here.",
+      "In a card build only the FX2 chooser was built and captured, and FX1 in a card image was not run on a unit. Over USB the base loads it into FX1 as well; FX1 ran on an MKII with the previous source's USB package (7ee9277f), not yet with this source.",
+      "Effect ID 0x09, placement priority 19 and layout letter F are Modwerk's; they were checked free against the modules in this tree. A project saved with octabam's LOFI2 (ID 0x1f) selects TAPEHEAD's ID here.",
       "No single-knob bypass: a passthrough is MIX 0, SRR 0, BRR 0 and LPF 127, the defaults.",
       "A parameter lock holds until the track's next trig, as it does for every stock parameter on this OS.",
       "Not released until the owner approves the first release."
