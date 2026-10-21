@@ -373,8 +373,8 @@ the base was regenerated with these fixes (`b3ac5155…`, `.bin` `f6488e90`) and
   or its owned channel closed) refuses readers for the boot (`RUNTIME_CONFLICT`) instead of retries that never succeed;
   an offset-0 reset chunk clears the dirty mark as a scrub does. Board tests 47 (an unknown core: no enable on the
   other, a reader refused) and 48 (a slot buffer over the window: no scrub, readers retry, then admitted). The base was
-  regenerated for these and again after merging main's Quant Live Rec, its USB Audio layout variants (#756) and LOFI2
-  (#749): `c6aba104…` (`.bin` `1074daec`) and its six variants (base-binding.json); the MKII re-check below ran on
+  regenerated for these and again after merging main's Quant Live Rec, its USB Audio layout variants (#756), LOFI2
+  (#749) and the effect id 100-127 fix (#763): `dead8ea7…` (`.bin` `28eff1fe`) and its six variants (base-binding.json); the MKII re-check below ran on
   the twin of `b3ac5155`, before them, and the next MKII session re-checks the new twin.
 - **One ledger.** The board's key bus constants (its bit, reset total 1,026 and first range 514, what Sidechain
   implies, each feature's cores), the transport's reset totals and splits and the engines' feature index now come from
