@@ -1811,6 +1811,8 @@ button.signal-tile[aria-pressed="true"] > svg { fill: currentColor; }
   .sheet-close { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: var(--muted); }
   .sheet-close:active { background: var(--surface-hover); color: var(--text); }
   .mobile-menu-panel a { min-height: 50px; font-size: 16px; }
+  /* The sheet focuses the current page on open; an outside ring would run into the row below. */
+  .mobile-menu-panel a:focus-visible { outline-offset: -2px; }
 }
 @keyframes sheet-in { from { transform: translateY(24px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .mobile-menu-panel, .library-machine-menu, .library-filter-sheet { animation: none; } }
