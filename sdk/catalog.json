@@ -58,6 +58,11 @@
       "addedAt": "2026-10-14T18:10:58Z"
     },
     {
+      "id": "lofi2",
+      "version": "0.1.0-experimental",
+      "addedAt": "2026-10-12T23:40:23Z"
+    },
+    {
       "id": "analog-bassdrum",
       "version": "0.1.5-experimental",
       "addedAt": "2026-10-01T09:19:37Z"

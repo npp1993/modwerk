@@ -3743,9 +3743,334 @@
           "value": ""
         }
       ]
+    },
+    {
+      "id": "lofi2",
+      "key": "LOFI2",
+      "author": "bryantysinger",
+      "fxId": 9,
+      "donorAddress": 1074616560,
+      "donorSha256": "3b3f9b15f2f6addfea9fc281f5b9fdf054bf305778059b8d43db41d390f0401f",
+      "fx2Slot": 1074618368,
+      "slotSha256": "79bc740214b4d029e385d06d21e224d04e8f91b53fb26ea08ffa4e5d70964b7a",
+      "sourceSha256": "c4cbcdb50f17edf868b6b12400548778600cbb44394224e94ab63a5ef4730b3a",
+      "integers": [
+        {
+          "offset": 3,
+          "width": 1,
+          "value": 9
+        },
+        {
+          "offset": 94,
+          "width": 1,
+          "value": 0
+        },
+        {
+          "offset": 95,
+          "width": 1,
+          "value": 0
+        },
+        {
+          "offset": 96,
+          "width": 1,
+          "value": 0
+        },
+        {
+          "offset": 97,
+          "width": 1,
+          "value": 0
+        },
+        {
+          "offset": 98,
+          "width": 1,
+          "value": 0
+        },
+        {
+          "offset": 99,
+          "width": 1,
+          "value": 127
+        },
+        {
+          "offset": 100,
+          "width": 1,
+          "value": 1
+        },
+        {
+          "offset": 102,
+          "width": 1,
+          "value": 0
+        },
+        {
+          "offset": 104,
+          "width": 1,
+          "value": 64
+        },
+        {
+          "offset": 202,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 250,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 206,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 254,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 210,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 258,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 214,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 262,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 218,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 266,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 222,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 270,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 226,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 274,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 230,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 278,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 234,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 282,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 238,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 286,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 242,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 290,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 246,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 294,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 226,
+          "width": 4,
+          "value": 1073989400
+        },
+        {
+          "offset": 274,
+          "width": 4,
+          "value": 1074033236
+        },
+        {
+          "offset": 322,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 234,
+          "width": 4,
+          "value": 1073989400
+        },
+        {
+          "offset": 282,
+          "width": 4,
+          "value": 1074033236
+        },
+        {
+          "offset": 330,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 242,
+          "width": 4,
+          "value": 1073989536
+        },
+        {
+          "offset": 290,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 338,
+          "width": 4,
+          "value": 1073948900
+        },
+        {
+          "offset": 178,
+          "width": 4,
+          "value": 2
+        },
+        {
+          "offset": 130,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 186,
+          "width": 4,
+          "value": 3
+        },
+        {
+          "offset": 138,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 194,
+          "width": 4,
+          "value": 128
+        },
+        {
+          "offset": 146,
+          "width": 4,
+          "value": 0
+        },
+        {
+          "offset": 398,
+          "width": 4,
+          "value": 17895697
+        },
+        {
+          "offset": 394,
+          "width": 4,
+          "value": 257
+        }
+      ],
+      "strings": [
+        {
+          "offset": 4,
+          "width": 5,
+          "value": "LOF2"
+        },
+        {
+          "offset": 9,
+          "width": 13,
+          "value": "LOFI2"
+        },
+        {
+          "offset": 22,
+          "width": 6,
+          "value": "FREQ"
+        },
+        {
+          "offset": 28,
+          "width": 6,
+          "value": "MIX"
+        },
+        {
+          "offset": 34,
+          "width": 6,
+          "value": "FDBK"
+        },
+        {
+          "offset": 40,
+          "width": 6,
+          "value": "SRR"
+        },
+        {
+          "offset": 46,
+          "width": 6,
+          "value": "BRR"
+        },
+        {
+          "offset": 52,
+          "width": 6,
+          "value": "LPF"
+        },
+        {
+          "offset": 58,
+          "width": 6,
+          "value": "RNGE"
+        },
+        {
+          "offset": 70,
+          "width": 6,
+          "value": "MODE"
+        },
+        {
+          "offset": 82,
+          "width": 6,
+          "value": "AMPH"
+        }
+      ]
     }
   ],
-  "sourceCommit": "b3c17fa76d2e2fd0d8797b79b9e7f012501ab854",
+  "sourceCommit": "408227215dfd24be14d8d6588d95bf22f3a63c0c",
   "moduleVersions": {
     "spectrum": "0.1.1-experimental",
     "modulation": "0.1.1-experimental",
@@ -3758,6 +4083,7 @@
     "airwindows-chorus": "0.1.2-experimental",
     "everb": "0.1.2-experimental",
     "bbd": "0.1.1-experimental",
+    "lofi2": "0.1.0-experimental",
     "analog-bassdrum": "0.1.5-experimental",
     "midi-scenes": "0.2.5-experimental",
     "usb-audio-out-tracks-main-cue": "0.2.0-experimental",

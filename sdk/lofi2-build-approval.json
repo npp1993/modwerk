@@ -1,0 +1,13 @@
+{
+  "kind": "owner-approved-update",
+  "id": "lofi2",
+  "version": "0.1.0-experimental",
+  "approvedBy": "repeat98",
+  "approvedOn": "2026-10-21",
+  "waived": [
+    "current-build-hardware"
+  ],
+  "sourceSha256": "d87e5affa2aa7f4428b4b7067c41bf4c7165ffdb8dfdf2cd51c0ad95758a494d",
+  "ownerStatement": "Approve those scoped experimental waivers",
+  "reason": "The owner explicitly approved experimental merging of PR #749 at contributor commit 2e12329edf13965139b8b9a48f3afc28cd355813 in chat on 21 October 2026, including missing current-source reload/reboot and remaining hardware lifecycle results and the six-module self-test failure at 98.8% ColdFire CPU. The published USB package remains 4f794ebcb6ebe69f; existing functional observations retain their original source/base identities. The CPU cause is unconfirmed and this waiver does not make a failed self-test pass or establish headroom, audio quality, persistence, eight instances or scenes. Software/native checks and existing compatibility refusals remain required. Authored source and packages are unchanged."
+}

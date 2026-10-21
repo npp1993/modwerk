@@ -1,0 +1,69 @@
+LOFI2 (lofi2) for the Elektron Octatrack MKI / MKII
+
+LOFI2 was written by Bryan T (Bryan Tysinger, https://github.com/bryantysinger)
+and contributed to the octabam project, where it was merged as pull request 657
+(commit a6f41a1dff922be622e2e8a7d93bc5a5958c90ab); this copy is that module with his
+pull request 704, merged 13 October 2026, and his SHIFT fix of 14 October 2026
+(commit 153063d85cfe13884f0a18394eb9b4917d650dca), as on octabam main at
+commit 8250be0c23ca0a0a953cb7e5721e3bdb98dadfe5. It is distributed under
+octabam's MIT License, whose full text follows unchanged and is also kept
+byte for byte at upstream/LICENSE.
+
+- The module (lofi2.asm, its tables and declaration in manifest.py, the
+  render gate verify_lofi2.py, upstream/modules/lofi2/README.md): Bryan T.
+- The octabam SDK, schema and harness it is written against: Sam Banks.
+- Modwerk's adaptations of manifest.py and verify_lofi2.py (listed in
+  README.md and sdk/imports/lofi2-8250be0.json), README.md, TESTING.md,
+  octamod.module.json, media/ and presentation/thumbnail.svg are contributed
+  under the same MIT terms.
+
+No Elektron firmware, extracted stock routine or table is included. Stock
+LO-FI's rates and curve are reproduced from measurements by the author, as
+formulas in manifest.py.
+
+================================================================
+sambanks/octabam at 8250be0c23ca0a0a953cb7e5721e3bdb98dadfe5: LICENSE
+================================================================
+
+MIT License
+
+Copyright (c) 2026 Sam Banks
+
+Portions of the firmware analysis tooling originate from the octamax project
+(https://github.com/mxldyn/octamax), Copyright (c) 2025-2026 Maxolydian,
+also under the MIT License.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+This license covers this repository's own source code and documentation only.
+Transcribed third-party DSP sources, the community modifications carried as
+submodules and the tools fetched by `make setup` are listed with their own
+licences in THIRD_PARTY.md.
+
+It does not extend to any Elektron Music Machines firmware, which is not
+distributed here and remains the property of its copyright holder. Users
+supply their own copy of the official OS. The container-format tooling in
+this repository re-implements Elektron's firmware-update packaging solely for
+interoperability: so that an owner can build and flash a modified image for
+their own unit. Nothing in this project is endorsed by, supported by, or
+affiliated with Elektron. Octatrack and Elektron are trademarks of Elektron
+Music Machines MAV AB, used only to identify the hardware this project
+targets.

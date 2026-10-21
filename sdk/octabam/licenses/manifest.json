@@ -278,6 +278,20 @@
       ]
     },
     {
+      "id": "lofi2",
+      "name": "LOFI2 (Bryan T, in octabam)",
+      "spdx": "MIT",
+      "noticeFile": "lofi2.txt",
+      "sources": [
+        {
+          "path": "sdk/octabam/modules/lofi2/upstream/LICENSE"
+        }
+      ],
+      "usedIn": [
+        "modules/lofi2"
+      ]
+    },
+    {
       "id": "kyoti-quantize-live-rec-toggle",
       "name": "Zac Kyoti Quantize Live Rec Toggle",
       "spdx": "MIT",
@@ -323,6 +337,9 @@
     ],
     "airwindows-chorus": [
       "airwindows"
+    ],
+    "lofi2": [
+      "lofi2"
     ],
     "quantize-live-rec-toggle": [
       "kyoti-quantize-live-rec-toggle"

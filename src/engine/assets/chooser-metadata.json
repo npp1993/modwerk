@@ -177,6 +177,13 @@
       "fx1Only": false
     },
     {
+      "id": "lofi2",
+      "key": "LOFI2",
+      "fxId": 9,
+      "fx1": false,
+      "fx1Only": false
+    },
+    {
       "id": "analog-bassdrum",
       "key": "ANALOG BD",
       "fxId": null,

@@ -533,7 +533,7 @@
       "sha256": "5d44ce960d87d22af41166c529bfa5e84c0427b8e4afb3d6d2ca8d880f5dcfd7"
     }
   ],
-  "sourceCommit": "b3c17fa76d2e2fd0d8797b79b9e7f012501ab854",
+  "sourceCommit": "408227215dfd24be14d8d6588d95bf22f3a63c0c",
   "moduleVersions": {
     "spectrum": "0.1.1-experimental",
     "modulation": "0.1.1-experimental",
@@ -546,6 +546,7 @@
     "airwindows-chorus": "0.1.2-experimental",
     "everb": "0.1.2-experimental",
     "bbd": "0.1.1-experimental",
+    "lofi2": "0.1.0-experimental",
     "analog-bassdrum": "0.1.5-experimental",
     "midi-scenes": "0.2.5-experimental",
     "usb-audio-out-tracks-main-cue": "0.2.0-experimental",

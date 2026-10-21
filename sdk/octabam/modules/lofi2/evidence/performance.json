@@ -1,0 +1,33 @@
+{
+ "schema": 1,
+ "module": "lofi2",
+ "version": "0.1.0-experimental",
+ "kind": "dsp",
+ "cycles": {
+  "unit": "instructions/sample",
+  "static": 416,
+  "measured": 430.06,
+  "instancesPerCore": 4,
+  "method": "static: tools/build/cycle_count.py on the author's test remix, the dearest path of the per-sample loop (SHIFT), 416 cycles/sample; RING is about 240 by the author's count. measured: modules/lofi2/perf.py bench, benchmark_reverbs.run as benchmark_stock_dsp.py runs it (one instance per core at positions 0 and 4, audio at X:0, 4,096 blocks of 16 frames, the null stub's peak subtracted) on the private native image ddcd3473... (octabam 8250be0c; rerun 20 Oct 2026, every figure recorded here equal to the run on 3d63406d..., the previous source) Worst of 66 LOFI2 cases: the manifest's dearest settings in SHIFT DOWN with a trig split at frame 1, 430.06 executed instructions/sample (406.44 unsplit; SHIFT UP 429.31 / 406.06; RING 274.31 / 251.06; defaults 249.88). Executed instructions in dsp_host, not chip cycles; no stalls modelled."
+ },
+ "stock": {
+  "comparator": "LO-FI",
+  "comparatorWorst": 290.06,
+  "dearestWorst": 330.94,
+  "baseline": "perf.py bench: LO-FI, SPRING REV, DARK REV and DJ EQ run on the original image through the same cases as LOFI2 (fixed, the moving pattern, and a trig split at every position 1-15). Unsplit they reproduce benchmark_stock_dsp.py's figures as E-Verb's record quotes them (SPRING REV 257.5, DARK REV 193.25, DJ EQ 293.38); LO-FI unsplit is 275.44.",
+  "stockSha256": "164f31224bf61181e3f50e7dec40df9afcae5b16dbf6e4c0d0cc5e986af0a84e",
+  "justification": "LOFI2 does what stock LO-FI does (sample-rate and bit reduction on the same curves, a ring modulator) and adds a stereo frequency shifter: two four-section Hilbert allpass pairs per channel sharing one quadrature oscillator, with feedback, plus a first-order shelf and glides on nine knobs. The shifter is what costs: SHIFT's worst case 430.06 is 1.48x LO-FI (290.06), 1.37x SPRING REV (314.19, the cost target for new FX) and 1.30x DJ EQ (330.94, the dearest stock effect). In RING, which is the part stock LO-FI also has, it is 274.31: 0.95x LO-FI and 0.87x SPRING REV. This is the author's optimisation of the first merged module (654 -> 416 static cycles, 596 -> 430 executed). Four instances per core are 4 x 416 = 1,664 of the 3,120 usable static cycles; the author reports eight instances at once, four per core, in UP, DOWN and RING on his MKII with this source in his octabam build."
+ },
+ "stress": {
+  "instancesPerCore": 4,
+  "tracks": 8,
+  "lfosPerTrack": 3,
+  "lockedSlots": 14,
+  "seconds": 32,
+  "guard": true,
+  "dirty": true,
+  "clobbers": 0,
+  "hangs": 0,
+  "method": "modules/lofi2/perf.py stress. The load stress_project.py describes, driven straight into dsp_host on the private native image ddcd3473... (octabam 8250be0c; rerun 20 Oct 2026, every figure recorded here equal to the run on 3d63406d..., the previous source): LOFI2 on FX2 of all eight tracks (four per core) behind DJ EQ, the dearest stock effect, on every FX1; per block, three LFOs (sine, triangle, square) on LOFI2's FREQ, SRR and LPF, and a new random value on every slot of both effects each sixteenth at 120 BPM: 14 slots changed per step (LOFI2's nine, MODE and RNGE included so the modes switch under load, and DJ EQ's five), of which 11 can be locked on a unit (LOFI2's three SETUP knobs change only with Parts there); trig splits of 1, 3, 7, 8, 12 and 15 frames on six tracks; eight different 32 s stems plus a 2 s tail; dsp_host -guard 0x4000 -guard-shared -dirty 0x5a. Result: host exit 0, no hang; LOFI2's eight instances 0 stray write regions and 0 clobbers (the stock DJ EQs write their own scratch, 0 clobbers); 16 guarded instances; per-core peak 3013.9 and 3014.1 executed instructions/sample with all sixteen effects. It exercises the DSP side only: the firmware's own LFO and lock delivery, Part switches and the ColdFire side are not in it."
+ }
+}
