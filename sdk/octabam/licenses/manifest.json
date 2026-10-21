@@ -290,6 +290,20 @@
       "usedIn": [
         "modules/lofi2"
       ]
+    },
+    {
+      "id": "kyoti-quantize-live-rec-toggle",
+      "name": "Zac Kyoti Quantize Live Rec Toggle",
+      "spdx": "MIT",
+      "noticeFile": "kyoti-quantize-live-rec-toggle.txt",
+      "sources": [
+        {
+          "path": "sdk/octabam/modules/quantize-live-rec-toggle/LICENSE"
+        }
+      ],
+      "usedIn": [
+        "modules/quantize-live-rec-toggle"
+      ]
     }
   ],
   "moduleComponents": {
@@ -326,6 +340,9 @@
     ],
     "lofi2": [
       "lofi2"
+    ],
+    "quantize-live-rec-toggle": [
+      "kyoti-quantize-live-rec-toggle"
     ]
   }
 }

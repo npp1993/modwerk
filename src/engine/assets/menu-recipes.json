@@ -714,67 +714,6 @@
           "sha256": "eb676fe52d63e37e3646f249ce8932f827bfead29843cb69d684a635adcafb4b"
         }
       ]
-    },
-    {
-      "id": "lofi2",
-      "key": "LOFI2",
-      "author": "bryantysinger",
-      "slot": 6,
-      "name": "RNGE",
-      "labels": [
-        "LOW",
-        "HIGH"
-      ],
-      "renames": {},
-      "wideMaximum": null,
-      "proofs": [
-        {
-          "namesAddress": 1074621238,
-          "bytes": 54,
-          "sha256": "c31cb220419b30c61b60f7520e0da937235891e95acdb7f6b8995d609f463a1e"
-        },
-        {
-          "namesAddress": 1074623350,
-          "bytes": 54,
-          "sha256": "c31cb220419b30c61b60f7520e0da937235891e95acdb7f6b8995d609f463a1e"
-        }
-      ]
-    },
-    {
-      "id": "lofi2",
-      "key": "LOFI2",
-      "author": "bryantysinger",
-      "slot": 8,
-      "name": "MODE",
-      "labels": [
-        "RING",
-        "DOWN",
-        "UP"
-      ],
-      "renames": {
-        "0": {
-          "2": "GAIN"
-        },
-        "1": {
-          "2": "FDBK"
-        },
-        "2": {
-          "2": "FDBK"
-        }
-      },
-      "wideMaximum": null,
-      "proofs": [
-        {
-          "namesAddress": 1074621238,
-          "bytes": 164,
-          "sha256": "f4508b33fca5101ea2aa901fc8799de019d716304ba91014c2578bfae199f71f"
-        },
-        {
-          "namesAddress": 1074623350,
-          "bytes": 164,
-          "sha256": "924730ca295591744386d1e5e001c4e485319aa488889ff61cbd5f8b2e69627c"
-        }
-      ]
     }
   ],
   "repitchPatches": [
@@ -1357,7 +1296,7 @@
       "caveLimit": 1074625596
     }
   ],
-  "sourceCommit": "d13f3202117fe68865a8fc4b95c326953649435e",
+  "sourceCommit": "b3c17fa76d2e2fd0d8797b79b9e7f012501ab854",
   "moduleVersions": {
     "spectrum": "0.1.1-experimental",
     "modulation": "0.1.1-experimental",
@@ -1370,7 +1309,6 @@
     "airwindows-chorus": "0.1.2-experimental",
     "everb": "0.1.2-experimental",
     "bbd": "0.1.1-experimental",
-    "lofi2": "0.1.0-experimental",
     "analog-bassdrum": "0.1.5-experimental",
     "midi-scenes": "0.2.5-experimental",
     "usb-audio-out-tracks-main-cue": "0.2.0-experimental",
@@ -1384,6 +1322,7 @@
     "mute-modes": "0.2.1-experimental",
     "recorder-loop-fix": "0.1.0-experimental",
     "poly8": "0.3.0-experimental",
-    "output-matrix": "0.1.1-experimental"
+    "output-matrix": "0.1.1-experimental",
+    "quantize-live-rec-toggle": "0.1.0-experimental"
   }
 }
