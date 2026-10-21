@@ -4,7 +4,7 @@ import { USB_AUDIO_MODULE, USB_AUDIO_REVISION, USB_AUDIO_VERSION, parseUsbAudioC
 import { parseColdFireObject } from './coldfire-elf.ts'
 import { bytesHash, word32, requestedFacts } from './requested-modules.ts'
 import { recoverStockDsp } from './stock-dsp.ts'
-import { readDspWords } from './dsp-memory.ts'
+import { usbAudioPostCurve } from './usb-audio-curve.ts'
 import { OS_LOAD_ADDRESS, type OsWrite } from './os-patches.ts'
 import type { CfRuntimeLink } from './coldfire-link.ts'
 
@@ -32,11 +32,9 @@ export async function readUsbAudioObjects(value: UsbAudioConfiguration, original
     if (pkg.curve) {
       const { section: index, offset, words, address } = pkg.curve, section = object.sections[index]
       if (value.layout !== 'tracks-post' || words !== 256 || address !== 0x6c00 || !section || offset < 0 || offset + words * 4 > section.data.length || section.data.subarray(offset, offset + words * 4).some(byte => byte)) throw new Error('USB Audio post-fader curve placeholder differs.')
-      const cores = await recoverStockDsp(original), curve = readDspWords(cores[0].memory, 1, address, words)
+      const curve = usbAudioPostCurve(await recoverStockDsp(original))
       const view = new DataView(section.data.buffer, section.data.byteOffset, section.data.byteLength)
       for (const [i, word] of curve.entries()) {
-        const expected = Math.round(Math.sin(2 * Math.PI * i / 1024) * 0x7fffff)
-        if (Math.abs(word - expected) > 64 || (i > 0 && word <= curve[i - 1])) throw new Error('USB Audio post-fader curve differs from the stock quarter-sine table.')
         view.setUint32(offset + i * 4, word)
       }
     }

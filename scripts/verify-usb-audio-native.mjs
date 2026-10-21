@@ -24,6 +24,16 @@ registerHooks({ resolve(specifier, context, next) {
   const resolved = local && !path.extname(specifier) ? specifier + '.ts' : specifier
   const attributes = local && resolved.endsWith('.json') ? { type: 'json' } : context.importAttributes
   return { ...next(resolved, { ...context, importAttributes: attributes }), importAttributes: attributes }
+}, load(url, context, next) {
+  // The worker imports the beta base's Vite URL asset even for card builds.
+  // Node needs its URL, not an attempt to execute .elemod as code.
+  const asset = new URL(url)
+  if (asset.protocol === 'file:' && asset.pathname.endsWith('.elemod') && asset.search === '?url') {
+    asset.search = ''
+    return { format: 'module', shortCircuit: true, source: 'export default ' + JSON.stringify(asset.href) }
+  }
+  const result = next(url, context)
+  return url.endsWith('.ts') ? { ...result, source: String(result.source).replaceAll('import.meta.env.DEV', 'false') } : result
 } })
 const { createEngineSession } = await import('../src/engine/session.ts')
 
@@ -71,10 +81,11 @@ for (const layout of USB_AUDIO_LAYOUTS) for (const companions of [[], ['quantize
   assert.equal(sha(published.bytes), sha(result.bytes), 'public builder matches linked composition')
   let workerImageSha256
   if (!companions.length) {
-    await handle({ id: proofs.length + 1, type: 'build', moduleIds: ids, keepStockFx2: true, usbAudio: configuration })
+    await handle({ id: proofs.length + 1, type: 'build', moduleIds: ids, keepStockFx2: true, usbAudio: configuration, startup: 'classic' })
     const built = replies.at(-1)
     assert.equal(built?.type, 'built', 'public worker builds ' + name + ': ' + built?.message)
     assert.equal(built.report.moduleVersions[USB_AUDIO_MODULE], '0.2.0-experimental')
+    assert.equal(built.report.startupAnimation, 'classic', 'worker uses the same startup as the native composition')
     assert.equal(sha(decodeFirmware(new Uint8Array(built.buffer)).mainOs), sha(result.bytes), 'worker firmware matches composition')
     workerImageSha256 = sha(new Uint8Array(built.buffer))
   }
@@ -85,4 +96,4 @@ for (const layout of USB_AUDIO_LAYOUTS) for (const companions of [[], ['quantize
 const altered = original.mainOs.slice(); altered[0x1e91c - 0x400] ^= 1
 await assert.rejects(planStaticOs(altered, [USB_AUDIO_MODULE], undefined, usbAudioPreset('outbox')), /fingerprint|differs|stock/i)
 fs.writeFileSync(path.join(output, 'proofs.json'), JSON.stringify({ kind: 'usb-audio-native-link-and-composition', revision: USB_AUDIO_REVISION, baseSha256: sha(stock), proofs, alteredBaseRejected: true, hardware: 'untested', limitations: 'GNU linker parity and guarded browser composition, not full native octabam image parity, chip timing or hardware qualification.' }, null, 2) + '\n')
-console.log(proofs.length + ' cases passed. Hardware testing was waived; no hardware result is claimed.')
+console.log(proofs.length + ' cases passed. Software comparison only; no physical hardware result is claimed.')

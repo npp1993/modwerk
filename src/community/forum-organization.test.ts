@@ -114,7 +114,7 @@ describe('forum organization',()=>{
     expect(after.topPosts.map((item:{id:string})=>item.id)).toEqual([opening])
     expect(after.topMembers).toEqual([])
     expect(after.newMembers.map((item:{username:string})=>item.username)).toEqual(['fanone','quietone','starter'])
-  })
+  },20_000) // Five real registration/verification/login flows can exceed 5 s on a shared CI runner.
 })
 describe('Shoutbox 8',()=>{
   it('allows public reading, requires verified membership and trusted origin, and bounds messages',async()=>{
@@ -161,10 +161,16 @@ describe('Shoutbox 8',()=>{
   })
   it('caps sending bursts and keeps chat separate from thread notifications',async()=>{
     const {call,member,db}=await fixture(),owner=await member('chatter')
-    for(let index=0;index<6;index++)expect((await call('/forum/shouts','POST',{body:'Message '+index},owner.token)).status).toBe(201)
-    expect((await call('/forum/shouts','POST',{body:'One too many'},owner.token)).status).toBe(429)
-    expect(db.prepare('SELECT COUNT(*) AS count FROM notifications WHERE user_id=?').get(owner.id)!.count).toBe(0)
-    expect((await call('/forum/threads','POST',{title:'Still able to discuss',body:'A slower conversation',category:'general'},owner.token)).status).toBe(201)
+    // Keep the burst in one rate-limit bucket even when a slow CI run crosses a minute.
+    const now=Date.now(),clock=vi.spyOn(Date,'now').mockReturnValue(now)
+    try{
+      for(let index=0;index<6;index++)expect((await call('/forum/shouts','POST',{body:'Message '+index},owner.token)).status).toBe(201)
+      expect((await call('/forum/shouts','POST',{body:'One too many'},owner.token)).status).toBe(429)
+      expect(db.prepare('SELECT COUNT(*) AS count FROM notifications WHERE user_id=?').get(owner.id)!.count).toBe(0)
+      expect((await call('/forum/threads','POST',{title:'Still able to discuss',body:'A slower conversation',category:'general'},owner.token)).status).toBe(201)
+      clock.mockReturnValue(now+60_000)
+      expect((await call('/forum/shouts','POST',{body:'Next minute'},owner.token)).status).toBe(201)
+    }finally{clock.mockRestore()}
   })
   it('notifies mentioned members like a forum post, never the author, and hides the entry with the message',async()=>{
     const {call,member,admin,db}=await fixture(),owner=await member('chatcaller'),called=await member('chatcalled'),other=await member('chatquiet')

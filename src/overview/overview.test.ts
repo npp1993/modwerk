@@ -65,4 +65,10 @@ describe('overview page', () => {
     expect(html.indexOf('href="#submit"')).toBeLessThan(html.indexOf('href="' + overview.machines.find(machine => !machine.count)!.href + '"'))
     expect(html).toContain('<b>' + overview.modules + '</b> modules by <b>' + overview.creators + '</b> developers')
   })
+
+  it('ends with an invitation to add a machine from any maker', () => {
+    expect(html).toContain('Add your machine')
+    expect(html).toContain('href="#forum?category=requests"')
+    for (const machine of overview.machines) expect(html.indexOf('href="' + machine.href + '"')).toBeLessThan(html.indexOf('Add your machine'))
+  })
 })

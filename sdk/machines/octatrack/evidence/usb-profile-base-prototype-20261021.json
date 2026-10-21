@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "kind": "private-source-linked-usb-profile-base-experiment",
+  "date": "2026-10-21",
+  "status": "offline staging; no host settings or module lifecycle",
+  "sourceCommit": "10411608f081e20bfeff9c044af5eed353d7a1aa",
+  "sourceScope": "Private archived source recipe adds six namespaced authored producers, shared ring/sum, one set of base-owned USB hooks, immutable configuration templates and an internal detached-only staging function. The checked-in builder still emits separate per-layout bases.",
+  "hardware": false,
+  "base": "e38fca82bb675c3e5a84333b46bb3a79f62ca2004c6c2beec0edfb202b5a7f13",
+  "mainSha256": "2136e26284ece071a01a9ab6a0b9d3e549dee342c5886473331c689e8f0cad70",
+  "binSha256": "b7a507ebdd00630134ac60afcc5eed8e71ec3ab9c29c4f994e3a5f6aa8913587",
+  "packageSha256": "792e50f31969b39e3ceeee21c28be95f5cfd84418d76527686b55e8facb29ca7",
+  "generatedAudioSourceSha256": "10de824b7c6973f7d1a3115b94c4742e3b8bc7adbf0e41c0e13f89e1a1fb6122",
+  "stageSourceSha256": "58590205c4cf9b82a03ba09b95f84079249c43a0a6de81a416fb9862c62d92e0",
+  "usbAdapterSha256": "4129ddcc1cab693087d43d895cc015d1115af394ffee1185ab7fdd39f8d05ac9",
+  "emulatorSha256": "ef331b9fdf93cbc6b74ce6bd369d409908cd7ae47cda0eb16e30780d8dd804b4",
+  "emulatorAdapter": "df11f821c9269cbd82b0d7283746e54e5043254f364932edd4dcb1d6d46e7a53",
+  "ordinaryPhysicalBaseUnchanged": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8",
+  "buildResults": {
+    "sourceBuiltBrowserNativeBinEqual": true,
+    "unmodifiedNativePackageStockScanPassed": true,
+    "namedPostCurveFill": true,
+    "privatePackagePostprocessorNeeded": false,
+    "stockSites": 285,
+    "overlappingSites": 0,
+    "templateBytes": 512,
+    "templateCount": 28,
+    "templatesAligned512": true,
+    "sharedRingBytes": 81920,
+    "sharedSumBytes": 8192
+  },
+  "boardResults": {
+    "passed": true,
+    "checks": 455,
+    "transitions": 14,
+    "scope": "Frame-free emulator: all seven profiles at both speeds, exact native reference descriptors including other speed and length clamps, MIDI, storage INQUIRY, invalid/running/stale-audio refusal, interrupt-mask restoration, unchanged POST history/ramp and untouched ring sentinels.",
+    "selector": "Internal board function borrowed by the private emulator fixture; no host command or device authorization."
+  },
+  "streamResults": {
+    "passed": true,
+    "checks": 479,
+    "cases": 14,
+    "nonemptyPacketsPerAudioCase": 16,
+    "audioCases": 12,
+    "offCases": 2,
+    "scope": "Automatic synthetic frames: six output geometries and off at both speeds, actual EP3 packet lengths, MIDI between closed streams, unchanged immutable base identity and old ring poison absent from packets.",
+    "cacheAndTimingModeled": false
+  },
+  "producerResults": {
+    "passed": true,
+    "checks": 875,
+    "nativeReferenceCases": 24,
+    "continuousPostBlocks": 84,
+    "scope": "Source-linked producer bodies, synthetic taps, shared ring/sum and continuous POST state across layouts/off; C-call fixture selects profiles without a host command."
+  },
+  "postResults": {
+    "passed": true,
+    "checks": 341,
+    "scope": "Exact-build maintained synthetic gain/ramp/packing/saturation/EMAC probe. Private symbol aliases select the namespaced POST producer; image bytes unchanged."
+  },
+  "designFindings": [
+    "Use immutable descriptor templates in page-contained aligned slots; select them after EP3 retirement, preserving displaced PEA register/condition state.",
+    "Keep the IRQ-masked commit bounded to selected host state and profile/length; no bulk descriptor or full-ring copy. Hardware cost still unmeasured.",
+    "One automatic synthetic stream run excluded ring poison. A later maintained build with the same reader logic exposed delayed MAIN/CUE slots under near-drain conditions; this result does not establish complete readiness. The maintained staging adapter adds a packet watermark and bounded startup clear."
+  ],
+  "limitations": [
+    "No checked-in all-profile source builder option or catalogue admission.",
+    "No host settings command, reviewed session/base/profile/generation binding or one-use intentional-disconnect/recovery lease.",
+    "No profile inventory/review comparison, actual module self-test/Keep/Undo, removal transaction or persistence.",
+    "No physical boot, real class-driver reconnection, cache/DMA behavior, DSP pairing, musical controls, listening, analog comparison or hardware timing result.",
+    "Historical mutable-table fixture passed441+287 checks but used bulk work under the IRQ mask; retained privately and superseded. Its stock-copy postprocessor is not used by this immutable build.",
+    "An early other-speed oracle and a manual-producer/undrained-stream fixture failed. Those attempts are retained; neither is counted as a passing test or physical firmware defect."
+  ],
+  "supersededBy": "usb-profile-source-staging-20261021.json"
+}

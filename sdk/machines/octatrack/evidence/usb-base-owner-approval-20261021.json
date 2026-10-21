@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "kind": "owner-scoped-experimental-approval",
+  "approvedBy": "repeat98",
+  "approvedOn": "2026-10-21",
+  "ownerStatement": "Approve these scoped experimental exceptions",
+  "pr": 745,
+  "candidateCommit": "d4e5d3e02d2aa8f48feb380aa65aa4dd4abc82ca",
+  "integrationCommit": "6b3463fca82b06896aa2744717c4556f7512d978",
+  "baseIdentity": "1c56b40f099cca45bf7d65f4236d59d90c1f399eeb16c1cb80160bc8c783ecee",
+  "waived": [
+    "exact-final-ordinary-base-hardware",
+    "ordinary-base-hardware-reconnect-audio-timing-and-persistence"
+  ],
+  "status": "experimental-owner-waived",
+  "limitations": [
+    "The final ordinary base has source/native/browser and synthetic transport evidence, but has not run on the physical unit. Earlier unit observations retain their own build identities.",
+    "Cable recovery, listening, sustained musical use, cold start, physical reboot persistence, MKI and cross-host behavior remain unverified.",
+    "The all-profile tooling remains offline-only staging; its missing retirement/lease and lifecycle integration gates remain closed. This record grants no new catalogue admission or released multi-profile capability.",
+    "The USB Audio card release remains its existing 0.2.0-experimental source/packages. Reports #548, #689 and #718 remain unresolved; this approval does not assert a hardware symptom fixed or authorize closure.",
+    "The owner-approved source differs at integrationCommit only by main app changes and readiness-tool fixes; firmware source inputs remain those of candidateCommit."
+  ]
+}

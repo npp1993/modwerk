@@ -14,6 +14,7 @@ AUDIO_LAYOUTS = {
     'USB AUDIO OUT MASTER': 2,
     'USB AUDIO OUT MAIN CUE': 3,
     'USB AUDIO OUT MAIN': 4,
+    'USB AUDIO OUT TRACKS POST': 5,
 }
 MIDI_IAD = bytes([8, 11, 1, 2, 1, 0, 0, 0])
 # These are the existing USB MIDI manifest's guarded, non-shared sites. The
@@ -103,6 +104,57 @@ def audio_source(text):
     return text
 
 
+
+def packet_readiness(text):
+    """Fence the 20-channel packet reader behind its delayed MAIN/CUE writes.
+
+    The raw producer counter and card implementation stay unchanged.
+    Counter subtraction is modulo 2**32, including a running stream's wrap.
+    """
+    for declaration in ('.set MAIN_CUE_LAG_BLOCKS, 1', '.set CUE_MASTER_LAG_BLOCKS,  2'):
+        if text.count(declaration) != 1:
+            raise ValueError('USB profile producer lag changed; review packet and startup bounds.')
+    seam = 'audio_cushion_zero:\n'
+    if text.count(seam) != 1:
+        raise ValueError('USB profile cushion seam changed.')
+    packet, cushion = text.split(seam)
+    read = '    movel   aud_produced,%d0'
+    zero = '    moveq   #AUD_TARGET-1,%d1'
+    start = '0:  subil   #AUD_TARGET,%d0'
+    if packet.count(read) != 3 or cushion.count(zero) != 1 or cushion.count(start) != 1:
+        raise ValueError('USB profile readiness seams changed.')
+    packet = packet.replace(read, '    MW_AUDIO_READY')
+    # A master CUE write can land up to two blocks ahead of the current
+    # cursor. Clear that bounded fresh-start gap as well as the cushion.
+    # The HS reader starts one block earlier after applying its watermark.
+    cushion = cushion.replace(start, '''0:
+.if USB_LAYOUT == LAYOUT_TRACKS_MAIN_CUE
+    subil   #AUD_TARGET+16,%d0
+.else
+    subil   #AUD_TARGET,%d0
+.endif''')
+    cushion = cushion.replace(zero, '''.if USB_LAYOUT == LAYOUT_TRACKS_MAIN_CUE
+    moveq   #AUD_TARGET+16+32-1,%d1
+.elseif USB_LAYOUT == LAYOUT_MAIN_CUE
+    moveq   #AUD_TARGET+32-1,%d1
+.else
+    moveq   #AUD_TARGET-1,%d1
+.endif''')
+    macro = '''
+| Packet-side watermark only: MAIN/CUE trail the tracks by one block at HS.
+.macro MW_AUDIO_READY
+    movel   aud_produced,%d0
+.if USB_LAYOUT == LAYOUT_TRACKS_MAIN_CUE
+    tstb    aud_hs
+    beq     97f
+    subil   #16*MAIN_CUE_LAG_BLOCKS,%d0
+97:
+.endif
+.endm
+'''
+    return macro + packet + seam + cushion
+
+
 def midi_source(text):
     """The MIDI ISR delegates its stock tail to the base's vendor poll owner."""
     before = '    jmp     0x4001e60c'
@@ -117,7 +169,10 @@ def audio_include(key):
     return '| base-owned USB output, without an input function\n.set USB_LAYOUT, %d\n.set USB_IN, 0\n' % AUDIO_LAYOUTS[key]
 
 
-DMA_BLOCK_SHA256 = '0cef06f0a138ebb8026a3bad9a847a0befac64d0da961561f3fe8fe3c5ebf35c'
+DMA_BLOCK_SHA256 = {
+    '0cef06f0a138ebb8026a3bad9a847a0befac64d0da961561f3fe8fe3c5ebf35c',
+    '3eaf6de20d102ef734621d904b480d7fbb5efb10d1fed13fc823e892ce0f37e3',  # licensed selected-layout source's trailing alignment
+}
 
 
 def audio_storage_source(text):
@@ -137,7 +192,7 @@ def audio_storage_source(text):
     # The EP3 dTDs and packets the controller DMAs: reached only through the uncached alias, which the boot clear
     # also writes, and audio_dtds_clear zeroes the dTDs at every EP3 start and stop. Same size, alignment and order.
     dma = '    .balign 32\naud_dtds:'
-    if text.count(dma) != 1 or hashlib.sha256(text[text.index(dma):].encode()).hexdigest() != DMA_BLOCK_SHA256:
+    if text.count(dma) != 1 or hashlib.sha256(text[text.index(dma):].encode()).hexdigest() not in DMA_BLOCK_SHA256:
         raise ValueError('The authored zero-only audio DMA block changed.')
     return text.replace(dma, '    .bss\n' + dma)
 
@@ -158,7 +213,17 @@ def assembly(base, descriptors, audio=None):
     lengths = {len(blob) for blob in blobs.values()}
     if len(lengths) != 1:
         raise ValueError('USB configurations must share a single guarded clamp length.')
-    text = base.ASSEMBLY.format(length=lengths.pop(), **(base.AUDIO_TAILS if audio else base.STOCK_TAILS))
+    # These sites belong to the base once. End MIDI's old session before
+    # the audio/stock reset tails; SET_CONFIGURATION also flushes EP2 before
+    # its queue heads are rewritten. Neither endpoint may retain old traffic.
+    tails = dict(base.AUDIO_TAILS if audio else base.STOCK_TAILS)
+    if audio:
+        for name in ('reset_tail', 'session_end_tail'):
+            tails[name] = 'jsr     usbmidi_rx_bus_end\n    ' + tails[name]
+    else:
+        tails.update(reset_tail='jmp     usbmidi_rx_reset_shim',
+                     session_end_tail='jmp     usbmidi_rx_sessend_shim')
+    text = base.ASSEMBLY.format(length=lengths.pop(), **tails)
     blobs.update(modwerk_device=base.device(True), modwerk_bos=base.bos(), modwerk_msos20=base.msos20())
     for name, blob in blobs.items():
         alignment = max(64, 1 << (len(blob) - 1).bit_length())

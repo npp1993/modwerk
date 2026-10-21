@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "kind": "shared-base-usb-packet-readiness-fix",
+  "date": "2026-10-21",
+  "sourceParent": "edbd23297daddc3956458d48bd37abdd1a2c7518",
+  "hardware": false,
+  "status": "private source candidates; hardware/release qualification pending",
+  "sourcePins": {
+    "sdk/machines/octatrack/elekloader/build_core.py": "9b0d105b9672dc2de7be54df999281874989e38ac16f1452bee9e5559d0d385e",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/dispatch.s": "b4735784ff20795882525caae0e25bde116fbf5fbbaf3d861e13fc9198750559",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/profiles.py": "902adf6b3ed5570e8367f4c662ad4ae7626657cba566046abf6c3808182f1384",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/stage.c": "689797526f5d71ca8ef415444da97d2fc72b90123d62dc3ff5f1aa684d9cf5bd",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/usb_audio_profiles.h": "71542e566cca544ea518384d7a2cee52bd91ddeef892f77c6b96b05dacc51af5",
+    "sdk/machines/octatrack/module-adapters/base_usb_functions.py": "a8a2673c39e0a47bac1eabd4507a3aeb4da449bcff97b22c49143aa3bc6b327d"
+  },
+  "verifierSha256": "d975ca73370486162aac6896d078ab1935c7bfc224479b0a6778e230bdf75772",
+  "candidates": [
+    {
+      "kind": "ordinary-readiness-final-v2",
+      "base": "1c56b40f099cca45bf7d65f4236d59d90c1f399eeb16c1cb80160bc8c783ecee",
+      "mainSha256": "c35231d3c91837069450835666856236691b31ad2f37888aae69a9c9a9e0eec9",
+      "binSha256": "77e0137196eecc8d9ec88f4ec05bacce418281b9de29460345455c93908ae7c8",
+      "packageSha256": "9af46cea81d571d6744c1144ac369170c6e2bd075095c20a6f97b1a54fa33eb8",
+      "browserNativeEqual": true,
+      "stockFree": true,
+      "hardware": false
+    },
+    {
+      "kind": "ordinary-readiness-main-cue-v2",
+      "base": "5868fd1bc8c4b14e98239d51a9830fcb03fc2a04e23919b0433fab91af37d0e5",
+      "mainSha256": "555a134020eb4ac7982c791a210b7702ce0789fe0c63d2f7df24faa98d5a0c72",
+      "binSha256": "64d54041bf7a110c376dba16f80dcb0345fc3ffa627f729fe5ec9a6a47739776",
+      "packageSha256": "04d875c96c1a7a6f1184f788e1d66487a2c721f615f5ea58ae01d41128a0d0ee",
+      "browserNativeEqual": true,
+      "stockFree": true,
+      "hardware": false
+    },
+    {
+      "kind": "profiles-common-readiness-post-v2",
+      "base": "a4604a5f77de401cb520cdfc13bd0cfa3b8b3949419c5bddeb988056e664db86",
+      "mainSha256": "9d51537455d470603cc86e7cabe84cb623a0c9081ab4069139e04cfd0bde8b8a",
+      "binSha256": "f71276f9fc4b736d1ad486792bdf3cd5a6ef2bff07dad92c6d1a6b5d068d645d",
+      "packageSha256": "30f8425658841dc05f8febbec8c36209eb83030f0c36d3e9288a57f71fe080bf",
+      "browserNativeEqual": true,
+      "stockFree": true,
+      "hardware": false
+    },
+    {
+      "kind": "profiles-common-readiness-20-v2",
+      "base": "c405667bba126ec552c515d3b267c32c16c66d767229bf0f83592933ef746ce8",
+      "mainSha256": "406f75fc825feca05482b414ace464eef4fb946a834e5c42149babb37234a872",
+      "binSha256": "b09fb770937636b44d20b9f2c02ad3f512fd4da85971c2a3a632bff3f7c93b96",
+      "packageSha256": "53b463222e6e97d7c814380621df90840005b38495dd3b020a77f064bb7c9db8",
+      "browserNativeEqual": true,
+      "stockFree": true,
+      "hardware": false
+    }
+  ],
+  "emulatorSha256": "ef331b9fdf93cbc6b74ce6bd369d409908cd7ae47cda0eb16e30780d8dd804b4",
+  "physicalBaseUnchanged": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8",
+  "change": {
+    "reader": "At high speed only, the twenty-channel packet/anchor/bring-up watermark subtracts one block from raw produced, modulo 2**32. The producer counter stays raw.",
+    "startup": "Bounded first-open clearing covers the earlier twenty-channel reader and future master-CUE gap:112 slots for twenty channels,96 for MAIN/CUE. Other layouts and full-speed packet watermark retain their arithmetic.",
+    "drift": "Refuses changed producer lag constants and missing/extra packet/cushion transformation seams.",
+    "scope": "Common base adapter only. Protected card source, module version and approved card packages are unchanged."
+  },
+  "ordinaryResults": {
+    "packetStartupChecks": 13,
+    "reconnectChecks": 35,
+    "vendorChecks": 45,
+    "scope": "Exact compiled C-call reader/startup boundary at near-drain and 32-bit wrap, plus independent automatic-frame reconnect/vendor suites. No physical unit."
+  },
+  "allProfileResults": {
+    "profileChecks": 951,
+    "audioStreamCases": 12,
+    "offCases": 2,
+    "packetsPerAudioCase": 16,
+    "producerChecks": 875,
+    "nativeProducerCases": 24,
+    "continuousPostBlocks": 84,
+    "postChecks": 341,
+    "emacContexts": 24,
+    "descriptorChecks": 1795,
+    "descriptorContexts": 896,
+    "generatedProducerSourceEqualToPreviousStaging": true
+  },
+  "negativeControls": {
+    "earlierOrdinaryBase": "15f417687ac94880839a7be4f58513c83b57c011d623e0f224d82f7c1bf3dd40",
+    "earlierOrdinaryRefusedAt": "packet readiness raw=0x80 consumed=0x70 HS=True",
+    "priorReaderObservation": [
+      {
+        "raw": 128,
+        "consumed": 112,
+        "queued": 1,
+        "lastFrames": 10,
+        "rawFill": 16,
+        "consumedAfter": 122
+      },
+      {
+        "raw": 8,
+        "consumed": 4294967288,
+        "queued": 1,
+        "lastFrames": 10,
+        "rawFill": 16,
+        "consumedAfter": 2
+      }
+    ],
+    "wrongIdentityRefusedBeforeFixtureWrites": true,
+    "reservationOverlapRefusedBeforeEmulatorLaunch": true,
+    "skippedSrRestoreDetected": true
+  },
+  "baseBoundPackages": [
+    {
+      "module": "sidechain-compressor",
+      "samePackageBytes": true,
+      "sha256": "a9e6a2e503391d08bcbc88637f655428aae0284855abbaec30db6cda9e361f4e",
+      "requiredBase": "1c56b40f099cca45bf7d65f4236d59d90c1f399eeb16c1cb80160bc8c783ecee"
+    },
+    {
+      "module": "output-matrix",
+      "samePackageBytes": true,
+      "sha256": "9f97f3bdb354ea86337e660567f57d0f4ec9969f0288f63161b9a926f159a44b",
+      "requiredBase": "1c56b40f099cca45bf7d65f4236d59d90c1f399eeb16c1cb80160bc8c783ecee"
+    },
+    {
+      "module": "cc-map",
+      "samePackageBytes": true,
+      "sha256": "c7cd39a5f645d69279d3a288c40b8366e6638acdc042cf0fe68dfb9964a68ea2",
+      "requiredBase": "1c56b40f099cca45bf7d65f4236d59d90c1f399eeb16c1cb80160bc8c783ecee"
+    },
+    {
+      "module": "recorder-loop-fix",
+      "samePackageBytes": true,
+      "sha256": "2748657e65f3f6f3873b524adc11809a5a7e1154f1da561bc7cf17dd63c72b81",
+      "requiredBase": "1c56b40f099cca45bf7d65f4236d59d90c1f399eeb16c1cb80160bc8c783ecee"
+    },
+    {
+      "module": "analog-bassdrum",
+      "samePackageBytes": true,
+      "sha256": "549ce7e280eec366ce8fd3eae04e6fd6e155d2b192e126d110e8f1a801d95106",
+      "requiredBase": "1c56b40f099cca45bf7d65f4236d59d90c1f399eeb16c1cb80160bc8c783ecee"
+    }
+  ],
+  "limits": [
+    "No candidate from this record has run on the physical OT. Hardware timing/first-frame cost, real DSP pairing, project controls, host-driver/cache/DMA behavior, audio/listening and analog comparison remain unverified.",
+    "This synthetic reader defect is not a verified cause or fix of GH548/689/718 or the other unresolved USB Audio symptoms. No report is closed or public version released.",
+    "The all-profile seam still has no host settings command, complete EP0 retirement, session/base/profile/generation-bound one-use disconnect/recovery lease, inventory/review equality, actual install/self-test/Keep/Undo/removal/missing-module or persistence.",
+    "Current physical5ada has empty live inventory and a foreign saved set; saved-set export/recovery is unsupported/incomplete. No Keep, owner project save, flash or power cycle. The original eleven-module live-set gap predates this work."
+  ]
+}

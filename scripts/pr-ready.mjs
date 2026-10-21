@@ -28,7 +28,7 @@ export function readiness({ dirty = [], behind = false, remote = 'upstream', reg
 
 async function main(argv) {
   const root = fileURLToPath(new URL('../', import.meta.url))
-  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trimEnd()
   const option = name => { const index = argv.indexOf(name); return index < 0 ? null : argv[index + 1] }
   const remotes = git('remote').split('\n')
   const remote = option('--remote') ?? (remotes.includes('upstream') ? 'upstream' : 'origin')
@@ -39,7 +39,9 @@ async function main(argv) {
   const tracked = () => git('status', '--porcelain', '--untracked-files=no').split('\n').filter(Boolean).map(line => line.slice(3))
 
   console.log(`Fetching ${remote}/main`)
-  git('fetch', '--no-tags', remote, 'main')
+  // A single-branch clone may fetch main only into FETCH_HEAD. Update the
+  // tracking ref too, so the suggested `git merge <remote>/main` is useful.
+  git('fetch', '--no-tags', remote, `refs/heads/main:refs/remotes/${remote}/main`)
   const base = git('rev-parse', 'FETCH_HEAD'), head = git('rev-parse', 'HEAD')
   const dirty = tracked()
   let behind = false

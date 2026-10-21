@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "kind": "opt-in-source-linked-usb-profile-staging",
+  "date": "2026-10-21",
+  "hardware": false,
+  "status": "offline staging; no catalogue admission or host settings",
+  "sourceParent": "caba0ac75ff24a94c96c5982dc111d1277a60522",
+  "sourcePins": {
+    "sdk/machines/octatrack/elekloader/build_core.py": "d32e087795aeb3911b4b5c9ae82c57a64213da3cd4364fdf562fe1c3d0ef57d6",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/dispatch.s": "b4735784ff20795882525caae0e25bde116fbf5fbbaf3d861e13fc9198750559",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/profiles.py": "58a0048bf6763cc0478d88a32799e9059f0851451e23b4c0937d79982b67658a",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/stage.c": "689797526f5d71ca8ef415444da97d2fc72b90123d62dc3ff5f1aa684d9cf5bd",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/usb_audio_profiles.h": "71542e566cca544ea518384d7a2cee52bd91ddeef892f77c6b96b05dacc51af5"
+  },
+  "candidates": [
+    {
+      "kind": "profiles-readiness-post-v2",
+      "base": "bcb3147732ab3bbe2b53ac7679f8ca07408578783f7d349a9c7a22f9a28b5f0d",
+      "mainSha256": "02944694e6feaa68bf6dec9d810a870e7da07106b72c10ed83bc3e092ea669dc",
+      "binSha256": "07e81680f96237e104377206a4984015209255ea1b7903d110c05f68c6831de0",
+      "packageSha256": "b7edabf90d4a38667c3d59220ffa7fcbae4518e5aea550707cd51157d6aac65c",
+      "browserNativeEqual": true,
+      "stockFreeScanPassed": true,
+      "hardware": false
+    },
+    {
+      "kind": "profiles-readiness-20",
+      "base": "099bb9446a483050e04d3c5cee3b72aa3ec8206f0945fd26f35f1b1feb5ef45b",
+      "mainSha256": "ccc02ffa0cdd9b4a2cd23452cced87e196d7d57bc255b81b305ee0e82ee90eeb",
+      "binSha256": "12292617fdc5ecf32632802646af98e63062b56556962da709d2f6ee6bc57d62",
+      "packageSha256": "b23b480a47c94f4222f5ba379e39c244f70fbb0992e23e5d06027d613afd2c09",
+      "browserNativeEqual": true,
+      "stockFreeScanPassed": true,
+      "hardware": false
+    },
+    {
+      "kind": "ordinary-after-profiles",
+      "base": "04621a70a0250b003fe9261573c0d96d573c4cb24f41353c6cff2012ab1463d2",
+      "mainSha256": "d71e7baa88f28a80254631a94a143b4872cb428403216d1ef93a66e1378e88b8",
+      "binSha256": "29686776a381cb1f32f054b2f6e79dbbd62623109f58fcc5073d19f636768b16",
+      "packageSha256": "3c7f369d935ad785bbd7fe550c7e46cc6a2f796bcb827246bbd17b1cda5f20c4",
+      "browserNativeEqual": true,
+      "stockFreeScanPassed": true,
+      "hardware": false
+    },
+    {
+      "kind": "regenerated-ordinary-with-controllers",
+      "base": "15f417687ac94880839a7be4f58513c83b57c011d623e0f224d82f7c1bf3dd40",
+      "mainSha256": "28b4cdda63e6060f08b502f7d065c7b08894d8f8ad09964767754656404ca646",
+      "binSha256": "fd086d036ab92775d1b156cfed1f0d90f1e16864c45cd1d511508e15b39d04e9",
+      "packageSha256": "746f602b3fd2d203b08f24ff28b506894ad42ed63901af5ee549290a54bdcfe3",
+      "browserNativeEqual": true,
+      "stockFreeScanPassed": true,
+      "hardware": false
+    }
+  ],
+  "emulatorSha256": "ef331b9fdf93cbc6b74ce6bd369d409908cd7ae47cda0eb16e30780d8dd804b4",
+  "physicalBaseUnchanged": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8",
+  "profileGate": {
+    "passed": true,
+    "checks": 951,
+    "audioCases": 12,
+    "offCases": 2,
+    "nonemptyPacketsPerAudioCase": 16,
+    "scope": "Both speeds: immutable descriptor and clamp references, detached stage refusals, MIDI/storage, POST preservation, no bulk ring clear, real compiled packet readiness at 32-bit wrap, bounded fresh-start zeroing, automatic synthetic streams over poisoned ring/sum."
+  },
+  "producerGate": {
+    "passed": true,
+    "checks": 875,
+    "nativeCases": 24,
+    "continuousPostBlocks": 84
+  },
+  "postGate": {
+    "passed": true,
+    "checks": 341,
+    "emacContexts": 24
+  },
+  "descriptorContextGate": {
+    "passed": true,
+    "checks": 1795,
+    "contexts": 896,
+    "skippedSrRestoreNegativeDetected": true
+  },
+  "negativeControls": {
+    "earlierBase": "14eff5edb5a476b32dc28cb51581ab21dc56ebac5da6be42e4e49aca10e1b71b",
+    "earlierBaseRejectedAt": "packet readiness raw=0x80 consumed=0x70 HS=True",
+    "wrongIdentityRejectedBeforeFixtureWrites": true
+  },
+  "ordinaryControl": {
+    "reconnectChecks": 35,
+    "allLinkedSymbolAddressesEqualToPhysicalBase": true,
+    "identityChangedByBuilderSourcePin": true,
+    "audioMidiUsbSourcePinsEqualToPhysicalBase": true,
+    "comparedSourcePins": [
+      "sdk/machines/octatrack/elekloader/usb_base.py",
+      "sdk/machines/octatrack/elekloader/usbmidi_rx.s",
+      "sdk/machines/octatrack/module-adapters/base_usb_functions.py",
+      "sdk/octabam/platform/usb-midi/usbmidi.s",
+      "sdk/octabam/modules/usb-audio-out-tracks-main-cue/usbaudio.s"
+    ]
+  },
+  "limits": [
+    "The one-block packet watermark and bounded startup clear apply only to this opt-in shared-ring adapter. No card firmware/module version or approved public download changed.",
+    "Internal detached seam has no host settings command, session/profile/generation-bound lease, complete EP0 retirement, reconnect recovery, inventory/review equality or module lifecycle.",
+    "No physical all-profile boot, real DSP pairing, musical control/listening/analog tests, cache/DMA/host-driver or frame-cost qualification. No Keep, card/project save or persistence proof.",
+    "One earlier automatic stream pass was timing dependent; the earlier staging image now fails a deterministic nearly drained MAIN/CUE reader test. Historical pass receipts are retained, not treated as proof of readiness."
+  ],
+  "regeneratedOrdinary": {
+    "reconnectChecks": 35,
+    "allLinkedSymbolAddressesEqualToPhysicalBase": true,
+    "baseBoundPackages": [
+      {
+        "module": "sidechain-compressor",
+        "samePackageBytes": true,
+        "sha256": "a9e6a2e503391d08bcbc88637f655428aae0284855abbaec30db6cda9e361f4e",
+        "requiredBase": "15f417687ac94880839a7be4f58513c83b57c011d623e0f224d82f7c1bf3dd40"
+      },
+      {
+        "module": "output-matrix",
+        "samePackageBytes": true,
+        "sha256": "9f97f3bdb354ea86337e660567f57d0f4ec9969f0288f63161b9a926f159a44b",
+        "requiredBase": "15f417687ac94880839a7be4f58513c83b57c011d623e0f224d82f7c1bf3dd40"
+      },
+      {
+        "module": "cc-map",
+        "samePackageBytes": true,
+        "sha256": "c7cd39a5f645d69279d3a288c40b8366e6638acdc042cf0fe68dfb9964a68ea2",
+        "requiredBase": "15f417687ac94880839a7be4f58513c83b57c011d623e0f224d82f7c1bf3dd40"
+      },
+      {
+        "module": "recorder-loop-fix",
+        "samePackageBytes": true,
+        "sha256": "2748657e65f3f6f3873b524adc11809a5a7e1154f1da561bc7cf17dd63c72b81",
+        "requiredBase": "15f417687ac94880839a7be4f58513c83b57c011d623e0f224d82f7c1bf3dd40"
+      },
+      {
+        "module": "analog-bassdrum",
+        "samePackageBytes": true,
+        "sha256": "549ce7e280eec366ce8fd3eae04e6fd6e155d2b192e126d110e8f1a801d95106",
+        "requiredBase": "15f417687ac94880839a7be4f58513c83b57c011d623e0f224d82f7c1bf3dd40"
+      }
+    ],
+    "scope": "Required ordinary package/fingerprint refresh after builder source changes; approved base-bound package bytes rebuilt identical, only required-base metadata moves. Not a physical boot."
+  },
+  "supersededBy": "usb-base-readiness-20261021.json"
+}

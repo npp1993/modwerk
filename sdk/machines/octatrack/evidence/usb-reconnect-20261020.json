@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "kind": "usb-base-reconnect-and-stream",
+  "date": "2026-10-20",
+  "machine": "Octatrack MKII",
+  "os": "1.40C",
+  "candidateBase": "3048472ce466458a52759918f569412404b24ea636a0b43ea4dcb012a23e3b88",
+  "candidateMainSha256": "bf89bd1e008944eebbb54384f4d50bc1dd93962cf78072ca97c6651d3931e3a8",
+  "usbSourceHashes": {
+    "sdk/machines/octatrack/elekloader/usb_base.py": "e53d621d30db629ef0be15d0db5aa1a08c1f7c31de5f3a04d2e6a79fa464c602",
+    "sdk/machines/octatrack/module-adapters/base_usb_functions.py": "436e82f8b307582a171c505b6a7379aeb1232b371e00f6642cff65f08ea73507",
+    "sdk/octabam/modules/usb-audio-out-tracks-main-cue/usbaudio.s": "ac92cdca02ab3c66a3f931b30cf3ac8b8429bfe7463182398fe9beaac080e4e0",
+    "sdk/octabam/platform/usb-midi/usbmidi.s": "97c7e161711e2a515b97558367e9226d019810ca3c1709e7e75d81289fe3dd6b",
+    "sdk/octabam/platform/usb-midi/usbmidi_rx.s": "609b7dba1bb08677acc90501805001216a0d1aa6e927a3f24ce3a67eac35b11e"
+  },
+  "software": {
+    "oldBaseNegativeControl": "Stale MIDI clocks precede a new note after reconnect, and EP2 IN is primed before reconfiguration.",
+    "candidate": "Four unplug/replug cycles and a bus reset send only the new message, keep subsequent transmission working, and do not prime EP2 IN while disconnected.",
+    "receiptImageSha256": "bf89bd1e008944eebbb54384f4d50bc1dd93962cf78072ca97c6651d3931e3a8"
+  },
+  "hardware": {
+    "boot": "RAM boot only; never flashed",
+    "host": "macOS CoreAudio, repaired rec.swift HAL recorder",
+    "physicalReconnect": "Owner unplugged only USB for five seconds and reconnected; exact candidate digest read afterward; twenty-channel capture reopened. An earlier unplug plus power cycle is excluded.",
+    "stream": {
+      "seconds": 359.99056689342405,
+      "frames": 15875584,
+      "sampleRate": 44100,
+      "channels": 20,
+      "monitoredWindows": 35,
+      "cpuMin": 57.1,
+      "cpuMax": 59.2,
+      "frameGapMaxUs": 405.97727272727275,
+      "counterDeltas": {
+        "overruns": 0,
+        "underruns": 0,
+        "bankdup": 0,
+        "reprimes": 0
+      },
+      "wavSha256": "fdc10481f225ac6349779a87d0c46c25cd684274627efc35e03ae3297d69af71"
+    },
+    "signalAnalysis": {
+      "kind": "private-usb-audio-continuity-analysis",
+      "frames": 15875584,
+      "rate": 44100,
+      "channels": 20,
+      "seconds": 359.99056689342405,
+      "longestExactStereoZeroRunFrames": 0,
+      "longestExactStereoZeroRunAfterStartupFrames": 0,
+      "adjacentRepeatedTrack1BlocksAboveNoiseFloor": {
+        "16": 0,
+        "32": 0,
+        "64": 0
+      },
+      "minimumOneSecondRmsTrack1Left": 0.03505892937033791,
+      "maximumOneSecondRmsTrack1Left": 0.07018583965867296,
+      "limitations": [
+        "One scratch STATIC loop and stock FILTER/DELAY on one MKII; not the reporter project or seven-module combination.",
+        "Sample-domain detectors and device counters, not a listening test, Windows/Ableton/Outbox or analog-output measurement."
+      ]
+    },
+    "restoration": "All 6322 bytes of both bank D Part 1 copies equal the private pre-test snapshots; transport stopped. Temporary scratch sample slot cleared."
+  },
+  "limitations": [
+    "The six-minute signal capture and physical USB-only reconnect belong to development candidate3048472c. Candidate c4f4bb7e and final scoped candidate98ec6014 have their own separate evidence below; no hardware result is relabelled across identities.",
+    "One sustained STATIC loop, stock FILTER/DELAY, no additional runtime modules. No seven-module or FM Synth reproducer.",
+    "No Windows, Linux, Ableton, Outbox, second-interface hotplug, analog output or listening result.",
+    "No flash/cold-start/reboot-persistence qualification; an original eleven-module restoration gap predates this task and remains open.",
+    "Card USB Audio0.2.0 has not been changed or published by this base work; reports remain open."
+  ],
+  "publicFlagsCandidate": {
+    "base": "c4f4bb7e48b7e71941b1c0aeda81ac8955b542ac915375d47ec38d7b17e31471",
+    "mainSha256": "8e6224c1ed1a1e4fc586cf2d3511a1e6a41c063d4c55080d8df6db2a58b13480",
+    "build": "Preserves current main uncached module mode and controller trust rows; native/browser images equal and stock-free scan passed.",
+    "emulator": "Four reconnects and a bus reset; initial17 MIDI checks and subsequent35 MIDI/audio checks passed.",
+    "hardware": "RAM boot identified through the frontend MCP. Tape Echo 0.1.5 trial passed the physical self-test, and explicit Undo returned to the original empty runtime inventory. No Keep or card save.",
+    "selftest": {
+      "state": 2,
+      "failed": 0,
+      "modules": 1,
+      "dsp": 1,
+      "intact": 1,
+      "ran": 1,
+      "frameGap": 56677,
+      "cpu": 530,
+      "tracks1to4": 336,
+      "tracks5to8": 419
+    },
+    "limitations": [
+      "No physical cable pull on this exact candidate; the owner is asleep.",
+      "No cold boot or persistence result; no seven-module/Ableton/second-interface test.",
+      "USB Audio catalogue selection remains card-only; this does not qualify a module migration."
+    ],
+    "capture": {
+      "frames": 353792,
+      "channels": 20,
+      "sampleRate": 44100,
+      "sha256": "dea2680215865b50d384e7b7609905a714d17106a7d36eb892d6ccc11003260a",
+      "limitation": "Eight-second host reopen capture with transport stopped; not sustained signal or audible qualification."
+    },
+    "recorderChurn": {
+      "cycles": 20,
+      "captureSecondsPerCycle": 3,
+      "sampleRate": 44100,
+      "channels": 20,
+      "allIdentitiesMatched": true,
+      "cpuMin": 54.4,
+      "cpuMax": 54.6,
+      "overruns": 0,
+      "underruns": 0,
+      "bankdup": 0,
+      "reprimes": 0,
+      "limitation": "Repeated HAL recorder start/stop, not a physical reconnect or proof that the macOS class driver changed alternate settings. Transport stopped; no sustained musical signal or Ableton session save."
+    }
+  },
+  "finalCandidate": {
+    "base": "98ec6014fd03b413d91fd83c2089b6cf7c68dbb16aa8482f6e905595d7b8223e",
+    "mainSha256": "7d97d4b18ebec508e59ed05b3880fc36400205e9673d419e30d95e9b79f45f44",
+    "binSha256": "09e08abd67e13ba9987e09aaf83258ce487ea59d02d5458f30adc29e4cd8aeb8",
+    "packageSha256": "db3f73ef795f3610cc486a5467c75f800198af3b0f84c16d602e0dd40fec727c",
+    "sourceScope": "Unchanged upstream receiver and its root MIT license live beside the base builder; the approved card SDK source tree and compiled packages remain exact.",
+    "cardSourceTreeSha256": "31b7cd81ea0a797b3e1167fdd17b11c0e39ded36684e66627c1a062f2728fd79",
+    "allLinkedSymbolsSameAsPreviousPublicFlagsCandidate": true,
+    "native": "Source build, native/browser equality, stock-free scan and guarded flash-safety checks passed. No flash performed.",
+    "emulator": {
+      "checks": 35,
+      "passed": true,
+      "scope": "Four unplug/replugs and a bus reset, with audio open across each reset, alternate setting zero afterward, EP3 whole frames on reopen, fresh MIDI only and no unconfigured EP2 primes."
+    },
+    "hardware": "RAM boot identified through the frontend MCP; Tape Echo trial passed the physical self-test and explicit Undo restored the prior empty inventory. Foreign saved set left untouched.",
+    "selftest": {
+      "state": 2,
+      "failed": 0,
+      "modules": 1,
+      "dsp": 1,
+      "intact": 1,
+      "ran": 1,
+      "frameGap": 56811,
+      "cpu": 522,
+      "tracks1to4": 336,
+      "tracks5to8": 419
+    },
+    "recorderReopens": {
+      "cycles": 20,
+      "captureSecondsPerCycle": 3,
+      "channels": 20,
+      "sampleRate": 44100,
+      "cpuMin": 54.3,
+      "cpuMax": 54.5,
+      "overruns": 0,
+      "underruns": 0,
+      "bankdup": 0,
+      "reprimes": 0,
+      "limitation": "HAL recorder process start/stop with transport stopped; no musical signal or proof that the OS changed alternate settings."
+    },
+    "limitations": [
+      "No physical cable pull on this exact candidate.",
+      "The six-minute musical signal capture belongs only to development candidate3048472c.",
+      "No cold boot/persistence, Ableton save, second-interface, Windows/Linux, seven-module, FM Synth or listening/analog-output result.",
+      "USB Audio catalogue settings/lifecycle migration remains incomplete; no card module update."
+    ]
+  }
+}

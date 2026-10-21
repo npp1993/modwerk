@@ -13,7 +13,12 @@ Read [the module guides index](README.md) first. A module that sends or reacts t
 - [ ] **Feedback.** When a MIDI message changes a value, the panel shows it (`verify_ccfeedback.py`), including values that are parameter-locked or LFO-modulated at that moment. **Verify** the interaction and record the result.
 - [ ] **Parameter locks and LFOs.** A CC-driven parameter and a lock or LFO on the same parameter: say which wins, and test it.
 - [ ] **USB:** the device enumerates as the instrument's own identity, with the interfaces the host expects (`verify_usb.py` checks the Elektron 1935:0002 identity, the MSC interface and the INQUIRY and CSW responses). Sample alignment and channel layout are tested (`verify_usb_align.py`, `verify_usb_in.py`), startup behaviour is stated (USB Audio reports a reordering burst 0.5–1.5 s after the stream opens), and the hosts you measured are named: "Windows and Linux hosts have not been measured" is a legitimate sentence, an omission is not.
-- [ ] **Dependencies are explicit.** USB Audio brings the internal USB MIDI module; only one USB output layout can be composed.
+- [ ] **Stock tables stay local.** A POST producer's gain curve is DSP data expanded to 32-bit ColdFire words. Use the shared named reconstruction recipe, with a bounded source span and no literal table in packages; a raw stock-byte scan alone does not prove a changed encoding is stock-free.
+- [ ] **Shared USB ownership is explicit.** The card composer includes the internal USB MIDI platform code; the beta base owns the USB functions and their shared reset/ISR sites. Use that shared SDK/base code, never depend on another catalogue module. Only one USB output layout can be composed.
+- [ ] **Keep POST state continuous across runtime profile changes.** Its four-block snapshot history and gain ramp must advance on the instrument's frame even while another layout or audio-off is selected. Reinitialize host cursors and endpoint state on a profile change, while preserving that musical history. Budget and measure the added frame work; synthetic ColdFire parity does not establish DSP pairing or hardware headroom.
+- [ ] **Bound the profile commit.** Prefer immutable descriptor tables that each stay within one 4 KiB page. Select them only after the old endpoint retires; do not copy descriptors or clear the entire ring with frame interrupts masked. The producer's first-block cushion and cursors must exclude old-layout samples; poison the old ring to check this. Preserve handler-entry registers and condition flags across table dispatch too: an audio-off PEA must retain the original CCR, not the lookup's flags. Check the actual continuation as well as synthetic handler-entry captures. Emulator success still leaves cache, driver recovery and hardware timing unqualified.
+- [ ] **A stopped controller is not a retired control transfer.** Refuse a profile commit while EP0 owns data/status/completion, stock awaits an OUT stage, or an old clock SET latch remains pending. In the opt-in base emulator, a clock SET interrupted by unplug retained both EP0 OUT and its latch. Preserve pending state on refusal; only the owner-authorized transition may drain/cancel it, retire cached vendor replies and then reconnect. Ordinary bus-reset rollback must remain enabled.
+- [ ] **Publish only complete sample frames.** A track counter can advance before delayed MAIN/CUE writes reach the same slots. Fence packet availability at the slowest component, including counter wrap, and clear the bounded fresh-start gap for future-offset CUE. Exercise a nearly drained queue as well as steady streaming: a synthetic test caught old ring bytes in MAIN/CUE after an earlier streaming pass, and the same reader error reproduced in the ordinary base. This is not physical evidence of any reported audio symptom.
 
 ## MIDI generators and MIDI effects
 
@@ -32,7 +37,8 @@ A **MIDI generator** makes notes or controllers from the transport (an arpeggiat
 
 ## Integrate
 
-- [ ] Conflicts and dependencies are declared in `compatibility`; USB Audio needs USB MIDI and the composer adds it.
+- [ ] Conflicts are declared in `compatibility`; shared audio/MIDI endpoint and descriptor ownership belongs to the SDK/base, not to a second catalogue module.
+- [ ] Over USB, USB Audio is a base layout, not a runtime package: each output layout (and USB MIDI alone) is its own published base, all sharing every address outside a fixed USB reserve. A module set with USB Audio asks for its layout, and the site installs that base over USB before anything else syncs; a set without it leaves the base's layout alone ([the base's variants](../../sdk/machines/octatrack/elekloader/README.md#the-base-in-the-browser)). A change to USB code must fit `USB_RESERVE` and regenerates every variant. Windows keeps one capture endpoint per device and stores its channel count: after a switch from twenty channels to Main + Cue or Main on the same unit (21 October 2026, Windows 11, class driver), WASAPI, MME and DirectSound refused to open it until that format is reselected (Sound settings → Recording → Properties → Advanced), while WDM-KS opened the 2-channel layout at once.
 - [ ] `sdk/catalog.json` entry, thumbnail, `resources.impact`, README sections, tutorial and screenshots of the setting that enables it (`PROJ` → `MIDI` → `CONTROL` for CC Map).
 - [ ] A module with no Octatrack page of its own (an automatic USB module) uses the narrow `access.noUiReason` and still documents the host connection and routing. See [MODULE_UI_CAPTURES.md](../MODULE_UI_CAPTURES.md).
 - [ ] `evidence/performance.json` passes `npm run perf:audit -- check` ([Performance](README.md#performance)).
@@ -41,6 +47,18 @@ A **MIDI generator** makes notes or controllers from the transport (an arpeggiat
 ## Test
 
 Flood and stop it: notes, CC and clock at the wire rate, stopped mid-note, a Part change while it runs, and count what is left sounding and what was dropped. `verify_midi.py`, `verify_ccmap.py`, `verify_usb.py`, `verify_usb_align.py` and `verify_usb_in.py` are the patterns. A host-side test is part of the work: name the operating system, the USB speed and the software you used, or say "not tested".
+
+Match startup settings in native/worker image comparisons. The worker defaults to docking startup; the USB layout verifier explicitly requests classic startup to match its native composition. Different startup hooks are a real image difference, not a USB layout regression.
+
+For a private source-built POST base, run the executed ColdFire arithmetic probe:
+
+```sh
+python3 -B scripts/verify-octatrack-usb-post.py \
+  --build /private/post-base-build --emulator /path/to/ot_emu \
+  --output /private/new-post-probe
+```
+
+It binds IDENTIFY to the build receipt, supplies synthetic snapshots with fake audio frames disabled, and compares eight tracks' four-block history, per-sample gain ramps and closed-stream state against an independent integer model. The actual producer's sixteen-channel ring packing and full-speed saturated sum are checked with distinct stereo signals, silence and both clipping directions. EMAC checks cover the gain helper and actual caller in twelve modes each, including open/closed paths, with a skipped-restoration negative control. The probe replaces only the dormant stock ISR epilogue with an authored C return in emulator RAM; it records that patch and the image, symbols and emulator hashes. This is ColdFire execution evidence; it does not establish DSP pairing, physical mute/solo/scene behaviour, audio quality or chip timing. The authored memory-reader wrapper supports older emulator binaries without a `peek` command; do not infer a firmware failure from an unsupported bench command. For long borrowed-call runs, use the [isolated emulator adapter](../OCTATRACK_ELEKLOADER_MIGRATION.md#borrowed-call-probes) to avoid the upstream caller-stack leak.
 
 ## Digitakt and Digitone
 

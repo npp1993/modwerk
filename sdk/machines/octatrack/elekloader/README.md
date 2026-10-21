@@ -68,8 +68,22 @@ commit it with the beta base's options (the committed base is the beta base):
 
 ```sh
 npm run octatrack:base -- --stock /private/OCTATRACK_OS1.40C.bin --usb-midi --usb-audio 'USB AUDIO OUT TRACKS MAIN CUE' \
-  --site-events --table-owners --resident-stock-hooks --resident-on-demand --controllers --write
+  --site-events --table-owners --resident-stock-hooks --resident-on-demand --controllers --usb-audio-variants --write
 ```
+
+USB Audio is part of the base: its output layout sets the USB descriptors, so each layout is its own base, sent over
+USB like any base update when a module set asks for another layout (`src/engine/elekloader/base-variants.ts`). The
+command above builds the twenty-channel default and, with `--usb-audio-variants`, the five other layouts and USB MIDI
+alone (`off`). `build_core.py` links the USB sources last and pads them to a fixed reserve (`USB_RESERVE`: 8 KiB of
+code, 2.5 KiB of data, 96 KiB of bss), so every layout links everything else at the same addresses and one set of
+base-bound packages fits each. For every variant the script proves it: the controller packages encode byte for byte
+as on the default, `base_bound.py bind` gives the same binding but for the identity, the variant patches no stock site
+the default leaves alone (stock copies are checked against the default's sites), and the browser builds its `.bin`
+from the default package plus the variant's line patch exactly as `build_core.py` does. It writes the patches and
+fills to `src/engine/assets/octatrack-base-variants.json` and each layout's identity to `base-binding.json`
+(`variants`). A USB source that outgrows the reserve fails the build: raise `USB_RESERVE`, which moves the base.
+Build with the reviewed GCC 16.2 (`sdk/build/Dockerfile`): another compiler links a different base, and Analog BD's
+reviewed recipe then refuses its image.
 
 When the change moves the base's write-lease entries, recapture Analog BD's reviewed recipe
 (`module-adapters/machine-recipes.json` imageSha256) against the new base's symbols first, then rebuild the
@@ -231,8 +245,94 @@ install anyway. [`usb_base.py`](usb_base.py) generates 41-byte configurations
 (stock mass storage, byte for byte USB MIDI's, plus an endpoint-free vendor
 interface, class `ff/4d/01`), the two length clamps and the shims. Every
 replaced or skipped stock span is hash-guarded against your firmware. USB
-MIDI and USB Audio claim the same sites, so they cannot be combined with this
-base yet; they have to become base features.
+MIDI and USB Audio are base-owned features in the beta composite configuration
+(`base_usb_functions.py`); modules cannot patch those sites separately. The
+shared MIDI receiver lives in [`usbmidi_rx.s`](usbmidi_rx.s), beside its upstream MIT licence.
+Both reset/session-end paths retire its old session before continuing to the
+audio/stock handler, and SET_CONFIGURATION flushes EP2 before rewriting its
+queue heads. The legacy card module retains its own earlier source until its
+separate, versioned update; a base fix does not update that card download.
+
+The private builder also accepts `--usb-audio 'USB AUDIO OUT TRACKS POST'`.
+Only that layout uses the already imported selected-layout audio/descriptor
+source; the other five retain their original source. `usb_post.py` reads
+core 0's X:0x6c00 quarter-sine table from verified local 1.40C. The package
+omits it through a named `usb-post-xlv` fill: unlike 24-bit DSP code, these
+256 words become 32-bit big-endian ColdFire data. The browser uses the same
+bounded recipe, shared with the card composer's gain-table validation.
+Never ship literal reconstructed table words or rely on a raw-byte scan to
+recognize an expanded encoding. This does not add runtime settings or
+admit the USB Audio catalogue module to USB sync. POST still needs its own
+signal/ramp/scene, EMAC preservation, timing and physical qualification.
+
+For offline development, raw `build_core.py --usb-audio-profiles` source-links
+all six outputs plus audio-off in one base. It requires `--dsp-loader`,
+`--usb-midi` and an explicit `--usb-audio` initial layout, and refuses development
+mode or controller admission. The generated package uses the same named POST
+fill even when another layout starts active. All inputs are fingerprinted;
+generated sources, packages and images stay private. This flag is deliberately
+absent from the public base/export CLI.
+
+The [profile adapter](../module-adapters/usb-audio-profiles/profiles.py) gives
+the six producers one shared ring/sum and one set of hooks, while preserving
+POST history across other layouts/off. Immutable 512-byte descriptor slots
+stay within pages. Its internal detached-only function changes the incoming
+bounded host state and selected profile under the IRQ mask. It has no host
+settings command, transition authorization/recovery lease, EP0 retirement,
+profile inventory or Keep/Undo/persistence transaction. Do not admit a USB Audio
+catalogue module on the strength of this staging seam.
+
+The detached commit also refuses pending EP0 prime/flush/status/completion,
+SETUP, stock non-idle/awaited-OUT state and the old POST clock SET latch.
+Stopping USB does not itself retire those: an emulated clock SET with no data
+still held EP0 OUT after unplug, and the earlier stager accepted it. The guard
+leaves it intact until normal control handling cancels it. This is only a
+refusal fence. Cached vendor results, ownership, a deliberate drain/acknowledgement
+and MSC/disk-mode admission still need the engine-owned transition policy.
+See [EP0 staging evidence](../evidence/usb-profile-ep0-fence-20261021.json).
+
+The six USB handler dispatchers preserve their entry registers and CCR. Their
+earlier lookup retained the registers but changed flags; an exact-image
+audio-off GET_INTERFACE check exposed 30 mismatches across 32 CCR values,
+although its original PEA leaves CCR unchanged. The maintained profile probe
+checks the actual PEA continuation, all 1,344 selected handler-entry contexts,
+and a skipped-SR-restoration control. These captures replace dormant continuations
+only after USB checks finish; they do not establish real ISR timing or host recovery.
+See [dispatcher context evidence](../evidence/usb-profile-dispatch-context-20261021.json).
+
+In the shared base adapter, the high-speed twenty-channel packet watermark trails
+the raw track counter by one block, because MAIN/CUE land later. Its startup
+clear also covers the earlier reader cursor and future master-CUE gap. The
+unchanged raw counter still drives producers. This was found with a poisoned
+shared ring and near-drained packet queue; one timing-dependent streaming pass
+did not prove the original cushion sufficient. The same reader error also
+reproduces in the earlier ordinary base with synthetic counters, so ordinary
+base builds now use the guard too. The bounded first-frame cost, real DSP
+pairing and audio remain hardware qualification gaps. The card module retains
+its earlier source; a base fix does not change that approved download.
+
+Run `scripts/verify-octatrack-usb-profiles.py --build <private-initial-POST-build>
+--emulator <isolated-ot_emu> --reference-builds <seven-separate-native-builds>
+--output <new-private-directory>` for exact-identity offline descriptor,
+detached-stage, MIDI/storage, packet-readiness/counter-wrap, bounded startup
+clear and poisoned-stream checks at both speeds. It checks native image hashes
+and reference layouts before launch, and IDENTIFY before fixture writes.
+Only the frame-free phase substitutes a dormant ISR epilogue with a C return;
+the streaming phase uses automatic synthetic frames without code patches.
+See [scoped results](../evidence/usb-profile-source-staging-20261021.json).
+For only the compiled ordinary twenty-channel reader/startup regression, use
+`--ordinary` without reference builds. [Readiness evidence](../evidence/usb-base-readiness-20261021.json)
+keeps the earlier counterexample and physical qualification gaps explicit.
+
+`scripts/verify-octatrack-usb-reconnect.py` runs four unplug/replug cycles and a
+bus reset against a private source-linked base in `ot_emu`. Its negative
+control must show stale clocks and an EP2 IN prime before reconfiguration;
+the candidate must show neither. It is endpoint-lifecycle evidence, not an
+audio-quality or host-driver test. On the twenty-channel base, add
+`--audio-interface 5` to check that audio resets to alternate setting zero
+and reopens EP3 with whole sample frames alongside MIDI. Complete an IDENTIFY transfer after the
+SET_CONFIGURATION status before calling a sender in the bench: stock primes
+that status before its MIDI initialization body finishes.
 
 [`ep0.c`](ep0.c) runs the [EP0 transport](../../../runtime/upload/README.md#ep0-vendor-transport-version-1)
 in the USB ISR and its controller on the engine task:

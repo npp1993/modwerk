@@ -31,6 +31,7 @@ export function OverviewPage({ overview }: { overview: Overview }) {
       {shown.filter(machine => machine.kind === 'mods').map(machine => <MachineTile key={machine.device.id} machine={machine} />)}
       {filter !== 'research' && filter !== 'open' && <DevelopTile machines={overview.machines.filter(machine => machine.count).map(machine => machine.device.name)} />}
       {shown.filter(machine => machine.kind !== 'mods').map(machine => <MachineTile key={machine.device.id} machine={machine} />)}
+      {(filter === 'all' || filter === 'open') && <AddMachineTile />}
     </div>
     <MachinePhotoCredits />
   </div>
@@ -45,6 +46,19 @@ function DevelopTile({ machines }: { machines: string[] }) {
     </span>
     <div className="overview-tile-body">
       <div className="overview-tile-line"><h2 className="overview-tile-name">Start developing</h2><Icon name="plus" size={16} /></div>
+    </div>
+  </a>
+}
+
+// The last tile: Modwerk is not limited to the machines above, whichever company makes the instrument.
+function AddMachineTile() {
+  return <a className="overview-tile is-develop is-add-machine" href="#forum?category=requests">
+    <span className="overview-art">
+      <span className="overview-waiting"><strong>Add your machine</strong><small>Any instrument · any maker</small></span>
+      <span className="overview-pitch">Not only Elektron. Suggest the instrument you want to mod and help open its firmware.</span>
+    </span>
+    <div className="overview-tile-body">
+      <div className="overview-tile-line"><h2 className="overview-tile-name">Suggest a machine</h2><Icon name="plus" size={16} /></div>
     </div>
   </a>
 }

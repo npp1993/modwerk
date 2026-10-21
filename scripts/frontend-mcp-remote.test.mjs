@@ -58,11 +58,13 @@ describe('a read-only remote session', () => {
     expect(await remote.unit.controlTransferOut({ requestType: 'vendor', recipient: 'interface', request: 1, value: 1, index: 5 }, hello)).toEqual({ status: 'stall', bytesWritten: 0 })
     expect(out).toHaveBeenCalledTimes(1)
     expect(member.getState().log.at(-1)).toMatchObject({ label: 'HELLO', outcome: 'stall' })
-    stop(); remote.end(); await settle()
+    stop(); remote.end()
+    // End crosses the operator and member relay hops; a fixed 5 ms sleep
+    // can observe the core's completion before the member receives it.
+    await vi.waitFor(() => expect(member.getState()).toMatchObject({ status: 'ended', ended: 'operator' }))
     expect(finished).toMatchObject([{ reason: 'operator' }])
     expect(finished[0].summary['in 3 ok']).toBeGreaterThan(0)
     expect(finished[0].summary['out 1 stall']).toBe(1)
-    expect(member.getState()).toMatchObject({ status: 'ended', ended: 'operator' })
     expect(device.opened).toBe(true)
   })
   it('refuses writes, self-test starts and saved-file reads at the relay', async () => {

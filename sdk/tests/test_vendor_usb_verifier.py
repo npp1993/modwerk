@@ -25,14 +25,14 @@ class VendorDescriptorExpectations(unittest.TestCase):
                 with self.subTest(high_speed=hs, audio=audio):
                     chosen = dict(midi='bounded-rx-1', audio=audio)
                     cfg, other, device = verifier.descriptor_expectations(hs, composite=chosen)
-                    self.assertEqual(cfg, verifier.functions.configuration(verifier.usb, verifier.descriptors, hs, False, audio))
-                    self.assertEqual(other, verifier.functions.configuration(verifier.usb, verifier.descriptors, not hs, True, audio))
+                    self.assertEqual(cfg, verifier.functions.configuration(verifier.usb, verifier.descriptor_source(audio), hs, False, audio))
+                    self.assertEqual(other, verifier.functions.configuration(verifier.usb, verifier.descriptor_source(audio), not hs, True, audio))
                     self.assertEqual(device, verifier.usb.device(True))
                     self.assertEqual(other[1], 7)
                     self.assertEqual(int.from_bytes(other[2:4], 'little'), len(other))
                     if audio:
                         self.assertGreater(len(other), 255)
-                        channels = verifier.descriptors.HS_LAYOUT[audio][0] if hs else verifier.descriptors.FS_CHANNELS
+                        channels = verifier.descriptor_source(audio).HS_LAYOUT[audio][0] if hs else verifier.descriptor_source(audio).FS_CHANNELS
                         self.assertEqual(verifier.audio_shape(hs, audio), (4, 5, channels * 4))
 
     def test_unreviewed_midi_and_input_layouts_are_refused(self):

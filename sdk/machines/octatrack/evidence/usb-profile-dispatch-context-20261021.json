@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "opt-in-profile-dispatcher-context-preservation",
+  "date": "2026-10-21",
+  "sourceParent": "388c0d55011ff44c3e52c42000028041058e6227",
+  "hardware": false,
+  "status": "offline internal staging; no host settings/lifecycle admission",
+  "base": "ed87a3db234ec21ca62394c4f2dbbf33ced06925f50aabdf18bb2c0ad7307866",
+  "mainSha256": "c087a8fc0de21f1cfca6f77b7a2cd4844ad7deb83a42ac071541cfc105972a37",
+  "binSha256": "17b6c071ec8b219cf6c7579f2703482d6d7b29f952eae1d40742fd1d6b01a6a2",
+  "packageSha256": "7a796aa7dec4a3cfff01f833a6dca4652a4ba21b2856a5cc9fec86044f15d839",
+  "nativeBrowserEqual": true,
+  "unmodifiedPackageStockFree": true,
+  "sourcePins": {
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/dispatch.s": "51e2c9037d50d228e72be07252cc5039a4beaca97707455a1d17a30d2bc5338a",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/profiles.py": "902adf6b3ed5570e8367f4c662ad4ae7626657cba566046abf6c3808182f1384",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/stage.c": "15b6f5f524ec6596c112cda46818963b93752e86a175cc514ac654c262729156",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/usb_audio_profiles.h": "f6a51a26047158f11dca5789c24490be904aa8062ee92e3d92ee753bcdbea149"
+  },
+  "verifierSha256": "28e9c2f16fb7372d0c08216cf0b0a27d1afbbd6768f8801de9b3ffc268ad1d6b",
+  "emulatorSha256": "ef331b9fdf93cbc6b74ce6bd369d409908cd7ae47cda0eb16e30780d8dd804b4",
+  "earlierCounterexample": {
+    "base": "9bbcf5dd0a6a4e9c7b2c69ed260f836045573fd00ae00498b08122ad1b155455",
+    "actualOffGetInterfaceContexts": 32,
+    "ccrMismatches": 30,
+    "registersPreserved": true,
+    "peaPointerPreserved": true,
+    "maintainedGateRefusal": "selected handler receives original CCR",
+    "scope": "Actual compiled audio-off GET_INTERFACE dispatcher and PEA; emulator-only authored capture replaces the dormant stock send rejoin after exact identity. No further USB traffic."
+  },
+  "guardedResults": {
+    "profileChecks": 6512,
+    "handlerEntryContexts": 1344,
+    "actualOffPeaContexts": 32,
+    "entryRegisters": "d0-d7/a0-a6",
+    "entryCcrValues": 32,
+    "callerStackPreserved": true,
+    "skippedSrRestoreDetected": true,
+    "audioStreamCases": 12,
+    "nonemptyPacketsPerAudioCase": 16,
+    "scope": "Six USB dispatchers across seven profiles and all CCR values; actual off PEA preserves input registers/CCR and pushes its original pointer. Final handler-entry capture patches are emulator-only and receive no further USB traffic. A separate fresh automatic-frame process runs unpatched streaming checks."
+  },
+  "regressions": {
+    "producerChecks": 875,
+    "nativeProducerCases": 24,
+    "continuousPostBlocks": 84,
+    "postChecks": 341,
+    "emacContexts": 24,
+    "descriptorContextChecks": 1795,
+    "descriptorContexts": 896,
+    "descriptorSkippedSrRestoreDetected": true
+  },
+  "ordinaryBaseUnchanged": "1c56b40f099cca45bf7d65f4236d59d90c1f399eeb16c1cb80160bc8c783ecee",
+  "physicalBaseUnchanged": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8",
+  "limits": [
+    "Only opt-in USB dispatchers changed; the audio-frame producer entry is unchanged. Real ISR timing, cache/DMA races and physical host/audio behavior remain unqualified. No all-profile candidate was booted on the OT.",
+    "CCR preservation is not a verified cause or fix for a reported USB Audio symptom. Approved card/default packages and module versions remain unchanged. No report closed or release published.",
+    "No engine-owned complete EP0/EP3/cached-vendor-result retirement, one-use session/base/profile/generation-bound re-enumeration/recovery lease, MSC ownership admission, profile inventory/review equality or real USB Audio lifecycle/persistence qualification.",
+    "Current physical unit stays on 5ada with empty live inventory and a foreign saved set. No Keep, owner project save, flash, power cycle or new RAM boot."
+  ]
+}

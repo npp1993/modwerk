@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "kind": "private-shared-usb-producer-experiment",
+  "date": "2026-10-21",
+  "status": "staging; not a base package, USB settings transaction or hardware result",
+  "sourceCommit": "273dcf49c43b723b13a4a29e6362c448180751dc",
+  "hardware": false,
+  "firmwareInputsUnchangedSince": "e353be0f",
+  "ordinaryPhysicalBase": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8",
+  "emulatorAdapter": {
+    "kind": "isolated-octatrack-emulator",
+    "upstream": "8250be0c23ca0a0a953cb7e5721e3bdb98dadfe5",
+    "sourceRtosSha256": "b4589de516372e21211b37b6f68511f23503219a6fbeb3ef1a325dcc130bdfce",
+    "patchedRtosSha256": "df11f821c9269cbd82b0d7283746e54e5043254f364932edd4dcb1d6d46e7a53",
+    "regressionSha256": "77fb990b10e2cc1e3564465c6919bae2772028b05f74c1c8015f6caa8f5f6f6f",
+    "built": true,
+    "limitations": [
+      "Six stock-free gates do not qualify firmware, a project, DSP pairing or hardware.",
+      "Shared checkout, cached binaries and imported SDK are unchanged."
+    ],
+    "gates": 6,
+    "emulatorSha256": "ef331b9fdf93cbc6b74ce6bd369d409908cd7ae47cda0eb16e30780d8dd804b4"
+  },
+  "prototype": {
+    "baseForEmulator": "4cd4887d8b00ebd25f3fbc32f5aeb2f1ca4841668b0be7ccddf44703d998ebf8",
+    "helperSha256": "b5888a3be2ad677982a2d892a1cfb7c8536600e5484802b8ff341582e81d9de1",
+    "loadedBytes": 16144,
+    "reservationBytes": 123168,
+    "sharedRingBytes": 81920,
+    "sharedSumBytes": 8192,
+    "profiles": [
+      {
+        "index": 1,
+        "name": "tracks-main-cue",
+        "sourceSha256": "43e82989a7d6bfda1824954d44eb961838ba8867d940def6dcc69d70ebaac8e8",
+        "includeSha256": "dbac71e79eb23e0516fc047181de8706ce471619f86240f0a0bb4dcf2a56ef8e",
+        "patchedSourceSha256": "c19e9b72abc27f07f73ce3d8cddb78a3074cdd6a32d0761ed729b543de3eac0c"
+      },
+      {
+        "index": 2,
+        "name": "tracks",
+        "sourceSha256": "43e82989a7d6bfda1824954d44eb961838ba8867d940def6dcc69d70ebaac8e8",
+        "includeSha256": "f291f199021625ce32fbcf7d246ac0b5c67d05f6b1b474c81128c79e01312703",
+        "patchedSourceSha256": "c19e9b72abc27f07f73ce3d8cddb78a3074cdd6a32d0761ed729b543de3eac0c"
+      },
+      {
+        "index": 3,
+        "name": "master",
+        "sourceSha256": "43e82989a7d6bfda1824954d44eb961838ba8867d940def6dcc69d70ebaac8e8",
+        "includeSha256": "7095d241f7524eae7097a10cb37cfc73f276d602b4c07015199df9619c317b18",
+        "patchedSourceSha256": "c19e9b72abc27f07f73ce3d8cddb78a3074cdd6a32d0761ed729b543de3eac0c"
+      },
+      {
+        "index": 4,
+        "name": "main-cue",
+        "sourceSha256": "43e82989a7d6bfda1824954d44eb961838ba8867d940def6dcc69d70ebaac8e8",
+        "includeSha256": "784761de056c99b3c184bdfdb5b7fca60b4beb66c46409efae65288bbcb16e12",
+        "patchedSourceSha256": "c19e9b72abc27f07f73ce3d8cddb78a3074cdd6a32d0761ed729b543de3eac0c"
+      },
+      {
+        "index": 5,
+        "name": "main",
+        "sourceSha256": "43e82989a7d6bfda1824954d44eb961838ba8867d940def6dcc69d70ebaac8e8",
+        "includeSha256": "bf473364774884fbfffaba2a7e5aba363626cc9ca37790fc0246d38116b8f283",
+        "patchedSourceSha256": "c19e9b72abc27f07f73ce3d8cddb78a3074cdd6a32d0761ed729b543de3eac0c"
+      },
+      {
+        "index": 6,
+        "name": "tracks-post",
+        "sourceSha256": "5bd354a7c52ab8b4cf7d7515aa47ccbbd4ec3802bb6cf2682df81b86590dbd21",
+        "includeSha256": "eee4be567e4896e4256cf4f8e75de9b278183540ba6075d6a33ec75acd49089e",
+        "patchedSourceSha256": "f36828eb348b240b2f60858829ae3509b4d58b9252506677498bb03671391f64"
+      }
+    ],
+    "source": "Six authored audio objects, with namespaced symbols and one shared ring/sum allocation. C-callable dispatcher; rings/producer state reset by the private host fixture, not a settings adapter.",
+    "stockFree": false,
+    "stockDataLimit": "The private helper contains the POST curve; never publish or boot it as a package/image."
+  },
+  "results": {
+    "checks": 875,
+    "passed": true,
+    "nativeReferenceCases": 24,
+    "speeds": [
+      "high",
+      "full"
+    ],
+    "masterTrack": [
+      false,
+      true
+    ],
+    "continuousGainBlocks": 84,
+    "continuousLayouts": 7,
+    "continuousScope": "Compare POST history/index/ramp/table against continuous reference execution while cycling six layouts and off. No real DSP pairing.",
+    "missingTrackerControl": {
+      "expectedFailure": true,
+      "check": "continuous post_hidx frame0"
+    },
+    "callerStackRegression": {
+      "originalMismatches": 128,
+      "fixedMismatches": 0,
+      "calls": 128,
+      "argumentsPerCall": 2
+    },
+    "actualBaseStackProbe": {
+      "calls": 12,
+      "argumentsPerCall": 2,
+      "originalDeltaBytes": -96,
+      "fixedDeltaBytes": 0
+    },
+    "maintainedPostProbe": {
+      "checks": 341,
+      "passed": true,
+      "base": "4cd4887d8b00ebd25f3fbc32f5aeb2f1ca4841668b0be7ccddf44703d998ebf8",
+      "imageSha256": "dd2cd17ec092b8bcda01b9166d351637eaab4b5f5b27717845fb6146428a833b",
+      "emulatorSha256": "ef331b9fdf93cbc6b74ce6bd369d409908cd7ae47cda0eb16e30780d8dd804b4"
+    },
+    "preparerRefusals": [
+      "wrong source repository/pin before output creation",
+      "changed RTOS source at correct pin before output creation"
+    ]
+  },
+  "limitations": [
+    "Synthetic placement outside the linked base is not hardware resource or compatibility evidence.",
+    "The helper has no active descriptor/interface switch or EP3 drain/reinitialization transaction.",
+    "No one-use base/session/profile/generation-bound reconnect or recovery ABI.",
+    "No catalogue install/removal, profile inventory comparison, Keep/Undo or persistence.",
+    "POST tracker idle/frame cost, real DSP pairing, project controls, EMAC preservation and timing require exact-build hardware tests.",
+    "Original long-path failure and unpatched-emulator stack exhaustion attempts are retained privately; neither is a firmware defect."
+  ]
+}

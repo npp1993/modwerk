@@ -25,15 +25,38 @@ def load(name, relative):
 
 base = load('composed_base_usb', 'sdk/machines/octatrack/elekloader/usb_base.py')
 descriptors = load('authored_usb_functions', 'sdk/octabam/platform/usb-midi/descriptors.py')
+post_descriptors = load('authored_post_usb_functions', 'sdk/octabam/modules/usb-audio-out-tracks-main-cue/layouts/descriptors.py')
+post = load('base_post_recipe', 'sdk/machines/octatrack/elekloader/usb_post.py')
+
+
+def selected(audio):
+    return post_descriptors if audio == base.POST_LAYOUT else descriptors
+
+
+def include(audio):
+    text = functions.audio_include(audio)
+    if audio == base.POST_LAYOUT:
+        import math
+        text += post.include(round(math.sin(2 * math.pi * i / 1024) * 0x7fffff) for i in range(256))
+    return text
 
 
 class BaseUsbFunctions(unittest.TestCase):
+    def test_shared_midi_receiver_matches_its_licensed_import(self):
+        import json
+        record = json.loads((ROOT / 'sdk/imports/shared-usb-midi-reconnect-ab911d96.json').read_text())
+        for imported in record['files']:
+            with self.subTest(path=imported['path']):
+                source = ROOT / imported['path']
+                self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(), imported['vendoredSha256'])
+                self.assertEqual(imported['sourceSha256'], imported['vendoredSha256'])
+
     def test_all_output_layouts_preserve_speed_packets_and_class_entities(self):
         for audio in [None, *functions.AUDIO_LAYOUTS]:
             for high in (False, True):
                 for other in (False, True):
                     with self.subTest(audio=audio, high=high, other=other):
-                        made = functions.configuration(base, descriptors, high, other, audio)
+                        made = functions.configuration(base, selected(audio), high, other, audio)
                         records = list(functions.records(made))
                         self.assertEqual(struct.unpack_from('<H', made, 2)[0], len(made))
                         self.assertEqual(made[4], 6 if audio else 4)
@@ -41,7 +64,7 @@ class BaseUsbFunctions(unittest.TestCase):
                         self.assertEqual(interfaces, set(range(6 if audio else 4)))
                         vendor = next(r for r in records if r[1] == 4 and r[2] == 1)
                         self.assertEqual(vendor[4:8], bytes([0, 255, 77, 1]))
-                        original = descriptors.audio_config(high, other, audio, with_in=None) if audio else descriptors.midi_config(high, other)
+                        original = selected(audio).audio_config(high, other, audio, with_in=None) if audio else descriptors.midi_config(high, other)
                         old = list(functions.records(original))
                         # No endpoint, entity, jack ID, sample-format or channel
                         # layout is reconstructed or guessed by the adapter.
@@ -73,7 +96,7 @@ class BaseUsbFunctions(unittest.TestCase):
     def test_unknown_layout_speed_and_malformed_authored_records_are_refused(self):
         for audio in ('USB AUDIO IN AB', 'unknown', True):
             with self.assertRaises(ValueError):
-                functions.configuration(base, descriptors, True, audio=audio)
+                functions.configuration(base, selected(audio), True, audio=audio)
         with self.assertRaises(ValueError):
             functions.configuration(base, descriptors, 1)
         for data in (b'\x09\x04', b'\x00\x04', b'\x01', bytes(4096)):
@@ -82,12 +105,23 @@ class BaseUsbFunctions(unittest.TestCase):
 
     def test_tables_fit_their_transfer_page_and_keep_the_vendor_binding(self):
         for audio in [None, *functions.AUDIO_LAYOUTS]:
-            text = functions.assembly(base, descriptors, audio)
-            length = len(functions.configuration(base, descriptors, True, audio=audio))
+            text = functions.assembly(base, selected(audio), audio)
+            length = len(functions.configuration(base, selected(audio), True, audio=audio))
             self.assertIn('.set modwerk_cfg_len, %d' % length, text)
             self.assertEqual(text.count('.balign %d\n    .global modwerk_cfg_' % (512 if audio else 256)), 4)
             self.assertNotIn('.set usbmidi_rx_isr_shim,', text)
             self.assertEqual(base.msos20()[22], 1)  # WinUSB still binds vendor interface 1.
+
+    def test_reset_and_session_end_also_retire_the_shared_midi_session(self):
+        for audio in [None, *functions.AUDIO_LAYOUTS]:
+            text = functions.assembly(base, selected(audio), audio)
+            for label, midi, continuation in (
+                    ('modwerk_bus_reset_shim', 'usbmidi_rx_reset_shim', 'audio_reset_shim'),
+                    ('modwerk_session_end_shim', 'usbmidi_rx_sessend_shim', 'audio_sessend_shim')):
+                body = text.split(label + ':', 1)[1].split('\n\n', 1)[0]
+                self.assertIn('jsr     modwerk_ep0_bus_reset', body)
+                self.assertIn('jsr     usbmidi_rx_bus_end\n    jmp     ' + continuation if audio else
+                              'jmp     ' + midi, body)
 
     def test_one_isr_owner_and_full_guarded_midi_sender_span(self):
         old = functions.MIDI_DETOURS
@@ -125,7 +159,7 @@ class BaseUsbFunctions(unittest.TestCase):
                 for name in ('modwerk_ep0_dispatch', 'modwerk_ep0_poll', 'modwerk_ep0_bus_reset', 'modwerk_engine_idle',
                              'olog_idle_hook', 'modwerk_ep0_reply')))
             midi = assemble('usbmidi', functions.midi_source((ROOT / 'sdk/octabam/platform/usb-midi/usbmidi.s').read_text()))
-            receive = assemble('usbmidi_rx', (ROOT / 'sdk/octabam/modules/usb-audio-out-tracks-main-cue/usbmidi_rx.s').read_text())
+            receive = assemble('usbmidi_rx', (ROOT / 'sdk/machines/octatrack/elekloader/usbmidi_rx.s').read_text())
             def link(objects, origin):
                 script, elf, raw = root / 'usb.ld', root / 'usb.elf', root / 'usb.bin'
                 script.write_text(builder.SCRIPT % origin)
@@ -139,16 +173,21 @@ class BaseUsbFunctions(unittest.TestCase):
                 return image, symbols, symbols['__bss_end'] - symbols['__image_end']
             for audio in [None, *functions.AUDIO_LAYOUTS]:
                 with self.subTest(audio=audio):
-                    objects = [stubs, midi, receive, assemble('base', functions.assembly(base, descriptors, audio))]
+                    objects = [stubs, midi, receive, assemble('base', functions.assembly(base, selected(audio), audio))]
                     if audio:
-                        (root / 'remix.inc').write_text(functions.audio_include(audio))
-                        source = functions.audio_source(base.AUDIO_SOURCE.read_text())
+                        (root / 'remix.inc').write_text(include(audio))
+                        source = functions.audio_source(base.audio_paths(audio)[0].read_text())
+                        if audio != base.POST_LAYOUT:
+                            source = functions.packet_readiness(source)
                         original_audio = assemble('audio_original_rings', source)
                         original_image, original_symbols, _ = link([*objects, original_audio], 0)
                         objects.append(assemble('audio', functions.audio_storage_source(source)))
                     image, symbols, bss = link(objects, 0)
+                    # Upstream cleanup clears the accumulator through this
+                    # guarded layout; pin the actual linked symbols too.
+                    self.assertEqual(symbols['usbmidi_tx_acc_len'], symbols['usbmidi_up'] + 4)
                     if audio:
-                        ring = [81920, 65536, 8192, 16384, 8192][functions.AUDIO_LAYOUTS[audio]]
+                        ring = [81920, 65536, 8192, 16384, 8192, 65536][functions.AUDIO_LAYOUTS[audio]]
                         for name, size in [('aud_ring', ring), ('aud_sum', 8192)]:
                             self.assertEqual(original_image[original_symbols[name]:original_symbols[name] + size], bytes(size))
                             self.assertGreaterEqual(symbols[name], symbols['__image_end'])
@@ -172,7 +211,7 @@ class BaseUsbFunctions(unittest.TestCase):
                     self.assertEqual(bss, fresh_bss)
                     for name, high, other in [('modwerk_cfg_fs', False, False), ('modwerk_cfg_hs', True, False),
                                              ('modwerk_cfg_os_fs', False, True), ('modwerk_cfg_os_hs', True, True)]:
-                        blob = functions.configuration(base, descriptors, high, other, audio)
+                        blob = functions.configuration(base, selected(audio), high, other, audio)
                         address = fresh_symbols[name]
                         self.assertLessEqual((address & 4095) + len(blob), 4096)
                         self.assertEqual(image[symbols[name]:symbols[name] + len(blob)], blob)

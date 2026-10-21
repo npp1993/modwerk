@@ -55,10 +55,10 @@ describe('the Octatrack base from the stock file', () => {
     for (const site of doc.sites as { addr: string; len: number; new: string }[]) missing.set(site.addr, site.len - site.new.length / 2)
     for (const fill of fills) {
       const payload = metadata.payloads.find(p => p.tag === fill.tag)!
-      const recipe = 'fx' in fill ? payload.packages.find(p => p.fxId === fill.fx) : payload.shared.find(s => s.destination === fill.shared)
+      const recipe = 'curve' in fill ? { words: 256 } : 'fx' in fill ? payload.packages.find(p => p.fxId === fill.fx) : payload.shared.find(s => s.destination === fill.shared)
       expect(recipe && fill.first + fill.count <= recipe.words).toBe(true)
-      const key = 'fx' in fill ? fill.section : fill.site
-      missing.set(key, missing.get(key)! - 3 * fill.count)
+      const key = 'section' in fill ? fill.section : fill.site
+      missing.set(key, missing.get(key)! - ('curve' in fill ? 4 : 3) * fill.count)
     }
     expect([...missing.values()].every(n => n === 0)).toBe(true)
     expect(fills.length).toBeGreaterThan(0)

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/sambanks/octabam",
+  "revision": "ab911d9642ef58eaa336c644f810ac8706d5ed47",
+  "modules": [],
+  "status": "Shared base USB MIDI receiver and reconnect cleanup; existing card module imports remain unchanged.",
+  "files": [
+    {
+      "path": "sdk/machines/octatrack/elekloader/usbmidi_rx.s",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "ab911d9642ef58eaa336c644f810ac8706d5ed47",
+      "sourcePath": "modules/usb-midi/usbmidi_rx.s",
+      "sourceSha256": "609b7dba1bb08677acc90501805001216a0d1aa6e927a3f24ce3a67eac35b11e",
+      "vendoredSha256": "609b7dba1bb08677acc90501805001216a0d1aa6e927a3f24ce3a67eac35b11e",
+      "note": "MIT source imported unchanged, including the upstream reset/session-end and SET_CONFIGURATION EP2 cleanup. Used by the Modwerk base only at this stage."
+    },
+    {
+      "path": "sdk/machines/octatrack/elekloader/usbmidi_rx.LICENSE",
+      "repository": "https://github.com/sambanks/octabam",
+      "revision": "ab911d9642ef58eaa336c644f810ac8706d5ed47",
+      "sourcePath": "LICENSE",
+      "sourceSha256": "f91a43799d9e31ccc3540f385f68c4d6ff5a096f93ae933be2ce98f6b3f7f113",
+      "vendoredSha256": "f91a43799d9e31ccc3540f385f68c4d6ff5a096f93ae933be2ce98f6b3f7f113"
+    }
+  ]
+}

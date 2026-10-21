@@ -49,6 +49,14 @@ WINDOWS_8_1 = 0x06030000
 OCTABAM = Path(__file__).resolve().parents[3] / 'octabam'
 AUDIO_SOURCE = OCTABAM / 'modules/usb-audio-out-tracks-main-cue/usbaudio.s'
 AUDIO_DESCRIPTORS = OCTABAM / 'platform/usb-midi/descriptors.py'
+POST_LAYOUT = 'USB AUDIO OUT TRACKS POST'
+POST_AUDIO_SOURCE = OCTABAM / 'modules/usb-audio-out-tracks-main-cue/layouts/usbaudio.s'
+POST_AUDIO_DESCRIPTORS = POST_AUDIO_SOURCE.with_name('descriptors.py')
+
+
+def audio_paths(layout=None):
+    return (POST_AUDIO_SOURCE, POST_AUDIO_DESCRIPTORS) if layout == POST_LAYOUT else (AUDIO_SOURCE, AUDIO_DESCRIPTORS)
+
 AUDIO_INTERFACES = (2, 3)  # AudioControl, AudioStreaming
 AUDIO_INC = "| remix.inc -- usbaudio.s's layout: USB AUDIO OUT MAIN CUE\n    .set USB_LAYOUT, 3\n    .set USB_IN, 0\n"
 AUDIO_DETOURS = (  # address, stock bytes, shim: usbaudio.s's own sites, none of the base's

@@ -1,0 +1,318 @@
+{
+  "schemaVersion": 1,
+  "kind": "usb-base-post-layout-preparation",
+  "date": "2026-10-21",
+  "status": "staging; USB Audio catalogue lifecycle not implemented",
+  "sourceInputs": "src/engine/assets/octatrack-base-sources.json",
+  "sourceInputsSha256": "f14211d77b0a56493e13f1782eb3908ad6a983aa19a6f3f724d5801c61e8b168",
+  "browserSourceHashes": {
+    "src/engine/usb-audio-curve.ts": "7287f413d1f492434435a58b232f6ed6ea17d3709edd7466b6fa3822f42099cd",
+    "src/engine/elekloader/octatrack-base.ts": "db9ee4a113972f49ce775bde51cdf44bfb7e4ec89e805836ec567f249e132a46"
+  },
+  "selectedLayoutSourceRevision": "7b2984c859732ae6c797ae49c7d61d250b1b6519",
+  "cardModuleVersion": "0.2.0-experimental",
+  "cardSourceTreeSha256": "31b7cd81ea0a797b3e1167fdd17b11c0e39ded36684e66627c1a062f2728fd79",
+  "postStockDataFill": {
+    "kind": "integrated-post-base-stock-data-fill",
+    "base": "4cd4887d8b00ebd25f3fbc32f5aeb2f1ca4841668b0be7ccddf44703d998ebf8",
+    "browserNativeEqual": true,
+    "binSha256": "18f8cf8adaf3920e811009dacb79f317fefaf66eb2733e7651e475773a618959",
+    "curveRecipe": {
+      "curve": "usb-post-xlv",
+      "tag": "A",
+      "first": 0,
+      "count": 256,
+      "section": ".run",
+      "offset": 222624
+    },
+    "stockCurveBytesOmitted": 1024,
+    "checks": [
+      {
+        "check": "missing curve",
+        "refused": true,
+        "reason": "The base package does not leave room for its stock DSP code."
+      },
+      {
+        "check": "duplicate curve",
+        "refused": true,
+        "reason": "The base package does not leave room for its stock DSP code."
+      },
+      {
+        "check": "wrong curve name",
+        "refused": true,
+        "reason": "Unsupported USB POST stock-data fill."
+      },
+      {
+        "check": "wrong count",
+        "refused": true,
+        "reason": "Unsupported USB POST stock-data fill."
+      },
+      {
+        "check": "wrong position",
+        "refused": true,
+        "reason": "The base package does not leave room for its stock DSP code."
+      },
+      {
+        "check": "ambiguous recipe",
+        "refused": true,
+        "reason": "Unsupported USB POST stock-data fill."
+      }
+    ],
+    "hardware": false,
+    "limitation": "Source-built firmware and stock-free package reconstruction only; no physical POST boot, signal/ramp, settings or persistence qualification."
+  },
+  "layoutSoftware": {
+    "scope": "Six separate per-layout audio images plus MIDI-only. Empty controller trust rows; no physical boot or runtime companion qualification of these seven images.",
+    "reconnectChecks": 227,
+    "vendorChecks": 307,
+    "profiles": [
+      {
+        "profile": "tracks-main-cue",
+        "base": "9095784ccac147aec3e0af600a262bda6f91622a14c82c02265d31c7b52ab196",
+        "mainSha256": "21726e2bc394854834ca9c394a24450935023d7a40b68febfd1acc6d4061c7a2",
+        "binSha256": "6ad4bd66e849c789512f565d419842b3768cccae1661880336ff41bb237a2fa1",
+        "browserNativeEqual": true,
+        "stockFreeScan": true,
+        "reconnectChecks": 35,
+        "vendorChecks": 45,
+        "hardware": false
+      },
+      {
+        "profile": "tracks-post",
+        "base": "4cd4887d8b00ebd25f3fbc32f5aeb2f1ca4841668b0be7ccddf44703d998ebf8",
+        "mainSha256": "dd2cd17ec092b8bcda01b9166d351637eaab4b5f5b27717845fb6146428a833b",
+        "binSha256": "18f8cf8adaf3920e811009dacb79f317fefaf66eb2733e7651e475773a618959",
+        "browserNativeEqual": true,
+        "stockFreeScan": true,
+        "reconnectChecks": 35,
+        "vendorChecks": 45,
+        "hardware": false
+      },
+      {
+        "profile": "tracks",
+        "base": "eb1008aa19866ad0bfcf306c67130f75a437432283651a05c7923ada4f53e6ca",
+        "mainSha256": "07463a08ee41b6977b8ab68872d65b4fc0d64f2331827a298b2d49292f8fe1ee",
+        "binSha256": "481f8446fc10e200733ba5ee909dba31a16cf1c865aeae181bbc36be719f6f92",
+        "browserNativeEqual": true,
+        "stockFreeScan": true,
+        "reconnectChecks": 35,
+        "vendorChecks": 45,
+        "hardware": false
+      },
+      {
+        "profile": "master",
+        "base": "4cd10975b5c63de3799f3972977508fca27b0a2906b752b5e4c0c9190fffb06c",
+        "mainSha256": "29eabae1377c9b39509e22022339dfe541b27bb3f650c260d096e2761afc32f1",
+        "binSha256": "80dd7764ca963e8e319b2fbb1b6a58bf68a7e97c65ae01fcbb904f83573394d3",
+        "browserNativeEqual": true,
+        "stockFreeScan": true,
+        "reconnectChecks": 35,
+        "vendorChecks": 45,
+        "hardware": false
+      },
+      {
+        "profile": "main-cue",
+        "base": "ae3a83286635a4db20c5b046f19077efa0c64dfb22fcb58007ee7b65a351e79c",
+        "mainSha256": "718ca692436e3e4c4a05f7f092bce2a3751ab1d99e165f76050cf48fcf9ab059",
+        "binSha256": "e324f6e4be8f82f08331df3535a75362d5231c84f37eefe2600a963d5dc79a5d",
+        "browserNativeEqual": true,
+        "stockFreeScan": true,
+        "reconnectChecks": 35,
+        "vendorChecks": 45,
+        "hardware": false
+      },
+      {
+        "profile": "main",
+        "base": "76372fb1be5dd2e9543f7174cff212f7459f4cce41ac3683b9b26eb906057e6a",
+        "mainSha256": "8eaa95a380e0172fa8900dc0d2df3c15033f728b38311823134c363a67c2968a",
+        "binSha256": "e9a5b13070bd7615dd8fcc9cc28099d52367d6d73dfb07dc0aacda97e4bb7d7e",
+        "browserNativeEqual": true,
+        "stockFreeScan": true,
+        "reconnectChecks": 35,
+        "vendorChecks": 45,
+        "hardware": false
+      },
+      {
+        "profile": "midi-only",
+        "base": "08586312e73acb099825eaaa480e6c35fe9b5db0491c1434ab6c8637e6422816",
+        "mainSha256": "8587beed25686e942d249de665a84bfa4195c638721e5c9b8ee14e79774781b7",
+        "binSha256": "5cc944939789d2fbf27d2b993d52d8049511ef4d76fa18e15192d70095cfd043",
+        "browserNativeEqual": true,
+        "stockFreeScan": true,
+        "reconnectChecks": 17,
+        "vendorChecks": 37,
+        "hardware": false
+      }
+    ]
+  },
+  "ordinaryTwentyChannelCandidate": {
+    "base": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8",
+    "mainSha256": "8b30710f93628c68813a747b28e89288a5f4cd78106b249069f37e7454ff4ce6",
+    "binSha256": "3b97123e896e011c047552ea1d739f3ab35340777faf5864293569020d1f3446",
+    "allLinkedSymbolsSameAs98ec": true,
+    "symbolDifferences": [],
+    "packageSha256": "fb47e5508c3a3a01803f53b9db77903028c0fb0ef8828d7fce02456bcd9c6136",
+    "flags": "MIDI, TRACKS MAIN CUE, site-events, table-owners, resident-stock-hooks/on-demand, controllers; uncached module execution.",
+    "stockFreeScan": true,
+    "browserNativeEqual": true,
+    "exactEmulatorReconnectChecks": 35,
+    "boundPackages": [
+      {
+        "module": "sidechain-compressor",
+        "samePackageBytes": true,
+        "sha256": "a9e6a2e503391d08bcbc88637f655428aae0284855abbaec30db6cda9e361f4e",
+        "requiredBase": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8"
+      },
+      {
+        "module": "output-matrix",
+        "samePackageBytes": true,
+        "sha256": "9f97f3bdb354ea86337e660567f57d0f4ec9969f0288f63161b9a926f159a44b",
+        "requiredBase": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8"
+      },
+      {
+        "module": "cc-map",
+        "samePackageBytes": true,
+        "sha256": "c7cd39a5f645d69279d3a288c40b8366e6638acdc042cf0fe68dfb9964a68ea2",
+        "requiredBase": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8"
+      },
+      {
+        "module": "recorder-loop-fix",
+        "samePackageBytes": true,
+        "sha256": "2748657e65f3f6f3873b524adc11809a5a7e1154f1da561bc7cf17dd63c72b81",
+        "requiredBase": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8"
+      },
+      {
+        "module": "analog-bassdrum",
+        "samePackageBytes": true,
+        "sha256": "549ce7e280eec366ce8fd3eae04e6fd6e155d2b192e126d110e8f1a801d95106",
+        "requiredBase": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8"
+      }
+    ],
+    "hardware": {
+      "machine": "Octatrack MKII",
+      "boot": "RAM only, exact identity read through real frontend MCP",
+      "captureDuringTrial": {
+        "package": "Tape Echo0.1.5",
+        "packageSha256": "21b953eb038429a5f7428c655cb889aa871e6c794313e51b00568150528630d1",
+        "physicalSelftest": {
+          "state": 2,
+          "failed": 0,
+          "modules": 1,
+          "dsp": 1,
+          "intact": 1,
+          "ran": 1,
+          "frameGap": 54292,
+          "saved": 4,
+          "savedCount": 0,
+          "live": 0,
+          "culprit": 0,
+          "refusal": 0,
+          "cpu": 644,
+          "tracks1to4": 337,
+          "tracks5to8": 419
+        },
+        "explicitUndo": true,
+        "restoredLiveInventory": [],
+        "capture": {
+          "channels": 20,
+          "sampleRate": 44100,
+          "bytes": 158801964,
+          "sha256": "6d605cc9c65447865b6b3b8be185a9da05d6b71c1f9becd12e8be39696b8283b",
+          "frames": 1985024,
+          "seconds": 45.0118820861678
+        },
+        "counterDeltas": {
+          "overruns": 0,
+          "underruns": 0,
+          "bankdup": 0,
+          "reprimes": 0
+        },
+        "limitation": "Transport stopped; concurrent capture and actual self-test/trial/Undo, not sustained musical-signal or listening qualification."
+      },
+      "recorderReopens": {
+        "cycles": 20,
+        "secondsPerCycle": 3,
+        "channels": 20,
+        "sampleRate": 44100,
+        "cpuMin": 54.3,
+        "cpuMax": 54.5,
+        "overruns": 0,
+        "underruns": 0,
+        "bankdup": 0,
+        "reprimes": 0,
+        "limitation": "HAL recorder process reopens; no physical cable pull or proof of host alternate-setting changes."
+      },
+      "finalState": {
+        "status": "ready",
+        "base": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8",
+        "liveInventory": [],
+        "foreignSavedStatus": 4,
+        "load": {
+          "ticks": 7140,
+          "frames": 338154,
+          "cpu": 487,
+          "tracks5to8": 419,
+          "peak5to8": 419,
+          "tracks1to4": 327,
+          "peak1to4": 336
+        }
+      },
+      "preservation": "No Keep, flash, power cycle or project save. Foreign saved files left untouched. Self-test/Undo restored the prior empty live inventory; no raw Part readback on this non-development base."
+    }
+  },
+  "cardRegression": {
+    "cases": 18,
+    "sourceWorkerBuilds": 6,
+    "startup": "classic explicitly matched in native composition and source worker",
+    "alteredBaseRejected": true,
+    "checks": [
+      "complete GNU runtime bytes and symbols",
+      "USB/reset ownership guards",
+      "complete firmware packaging round trip",
+      "public composition/source-worker parity",
+      "stock immutable and changed stock rejected"
+    ],
+    "scope": "Card0.2.0source and compiled packages unchanged. This is software regression evidence, not a new card release or physical qualification."
+  },
+  "qualificationLimits": [
+    "No physical POST boot, signal/ramp/mute/solo/scene or EMAC preservation result. No POST real-chip worst-case timing.",
+    "No switchable all-profile base or base-owned USB settings transaction, deliberate re-enumeration recovery, catalogue module install/removal, Keep or persistence qualification.",
+    "No flash or physical cold boot; foreign saved set must not be overwritten.",
+    "No AudioFuse/Ableton stop-save, seven-module/FM Synth, MKI, Windows/Linux, listening or analog-output result. Reports remain open; no card release or publication.",
+    "Earlier six-minute musical capture and owner cable pull belong only to development base3048472c in usb-reconnect-20261020.json, not these candidates."
+  ],
+  "softwareChecks": {
+    "applicationTests": 2420,
+    "applicationFiles": 310,
+    "sdkTests": 424,
+    "optionalNativeSkips": 62,
+    "transportTests": 36,
+    "transportSkips": 1,
+    "sourceTests": "13 descriptor/assembly/verifier checks;11 stock-fill/resident checks;5 targetedTypeScript checks; typecheck passed",
+    "environment": "FullcheckinNode24LinuxCIenvironment. ActualColdFirebasebuilds run separately on equippedhost. Knownmain#734nativelegacyPlayModesrecipe mismatch remains independent."
+  },
+  "postSyntheticColdFire": {
+    "kind": "usb-post-synthetic-coldfire-probe",
+    "base": "4cd4887d8b00ebd25f3fbc32f5aeb2f1ca4841668b0be7ccddf44703d998ebf8",
+    "imageSha256": "dd2cd17ec092b8bcda01b9166d351637eaab4b5f5b27717845fb6146428a833b",
+    "emulatorSha256": "bdbe962c14fc3560fb3196b01566646b80a74fd451883873a77290b4973dbbf1",
+    "symbolsSha256": "13b2966a23b9e1d1f14bd83598d9d543fa70b020cbe9819d6837043e1432691d",
+    "hardware": false,
+    "frames": 96,
+    "tracks": 8,
+    "producerCases": 8,
+    "emacContexts": 24,
+    "emulatorOnlyReturnPatch": {
+      "address": "0x4000d9a6",
+      "bytes": 2,
+      "purpose": "C return in dormant ISR epilogue; producer unchanged"
+    },
+    "limitation": "Synthetic ColdFire execution without audio frames: not DSP-main pairing, project mute/solo/scene behaviour, physical EMAC preservation, audio quality or chip timing.",
+    "script": "scripts/verify-octatrack-usb-post.py",
+    "scriptSha256": "b0acd1c7bf8a7e552a25d5ba28b0783326816448f614dde4712ed2783e20ee67",
+    "checks": 341,
+    "passed": true,
+    "skippedRestorationNegativeControl": true,
+    "snapshotSeed": "0x20261021"
+  }
+}

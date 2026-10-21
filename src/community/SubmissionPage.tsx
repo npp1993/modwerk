@@ -64,7 +64,7 @@ function DevelopIntro() {
   return <section className="develop-intro" aria-label="Before you start">
     <div><h2>What you need</h2>
       <ul className="develop-needs">
-        <li><span className="develop-need-icon"><Icon name="message" /></span><strong>A Claude or ChatGPT subscription</strong><small>It includes Claude Code or Codex, the coding assistant that does the programming.</small></li>
+        <li><span className="develop-need-icon"><Icon name="message" /></span><strong>An AI coding assistant</strong><small>Modules are built with large language models (LLMs). The assistant writes and checks the code with you.</small></li>
         <li><span className="develop-need-icon"><Icon name="file" /></span><strong>A free GitHub account</strong><small>Where your module lives. The prompt helps you create one if you don’t have it yet.</small></li>
         <li className="is-optional"><span className="develop-need-icon"><Icon name="sliders" /></span><strong>Your machine</strong><small>To try your mod for real. You can start in an emulator without one.</small></li>
       </ul>

@@ -155,7 +155,7 @@ describe('start developing page', () => {
   it('shows one complete prompt and hides its long preview and setup by default', () => {
     const html = renderToStaticMarkup(createElement(SubmissionPage))
     expect(html).toContain('Describe it, paste one prompt, build it together.')
-    expect(html).toContain('A Claude or ChatGPT subscription')
+    expect(html).toContain('An AI coding assistant')
     expect(html).toContain('/fork"')
     expect(html).toContain('Copy prompt')
     expect(html.match(/Copy prompt/g)).toHaveLength(1)

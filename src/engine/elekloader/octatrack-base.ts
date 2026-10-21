@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The Modwerk Octatrack base, built from the user's own OS 1.40C file. The committed package
 // (assets/octatrack-base.elemod, from sdk/machines/octatrack/elekloader/build_core.py --dsp-loader) carries no stock
-// bytes: the stock DSP code it needs is left out, and each gap is a fill naming a recipe of stock-dsp-metadata.json.
+// bytes: stock code/data is left out, with fills naming stock-dsp-metadata.json's recipes or the bounded POST curve.
 // fillBase puts the words back from the user's firmware (every recipe hash-checked), then the unchanged Elekloader kit
 // links, packs and verifies the base exactly as build_core.py's patch.build does, .run packed as build_core.py packs it.
 import { BASE_FIRMWARE } from '../base.ts'
+import { usbAudioPostCurve } from '../usb-audio-curve.ts'
 import { recoverStockDsp, type StockDspCore } from '../stock-dsp.ts'
 import { packRun, RUN_UNPACK } from './run-pack.ts'
 import { sha } from '../../../vendor/elekloader/kit/src/bytes.ts'
@@ -12,9 +13,9 @@ import * as formats from '../../../vendor/elekloader/kit/src/formats.ts'
 import { build } from '../../../vendor/elekloader/kit/src/patch.ts'
 
 /** A gap in the package: `count` words of a stock recipe from word `first`, at `offset` (bytes, in the filled
- * layout) of a section (the ColdFire's packed copy: big-endian words) or of a DSP payload site (little-endian). */
+ * layout) of a section (24-bit code or the named 32-bit POST data recipe), or a DSP payload site (24-bit little-endian). */
 export type BaseFill = { tag: string; first: number; count: number; offset: number } &
-  ({ fx: number; section: string } | { shared: number; site: string })
+  ({ fx: number; section: string } | { shared: number; site: string } | { curve: 'usb-post-xlv'; section: string })
 /** What build_core.py names its version field: the base's own. */
 const VERSION = 'ELEKLOADER'
 
@@ -27,14 +28,19 @@ export function fillBase(text: string, fills: readonly BaseFill[], cores: readon
   const doc = JSON.parse(text) as { sections: Record<string, { parts: Part[] }>; sites: { addr: string; new: string }[] }
   for (const fill of [...fills].sort((a, b) => a.offset - b.offset)) {
     const core = cores.find(c => c.tag === fill.tag)
-    const words = 'fx' in fill ? core?.packages.find(p => p.fxId === fill.fx)?.words : core?.shared.find(s => s.destination === fill.shared)?.words
+    const curve = 'curve' in fill
+    if (curve && (Object.keys(fill).sort().join(',') !== 'count,curve,first,offset,section,tag' || fill.curve !== 'usb-post-xlv' || fill.tag !== 'A' || fill.first !== 0 || fill.count !== 256 || !Number.isInteger(fill.offset) || fill.offset < 0 || fill.offset % 2 || typeof fill.section !== 'string' || !Object.hasOwn(doc.sections, fill.section)))
+      throw new Error('Unsupported USB POST stock-data fill.')
+    const words = curve ? usbAudioPostCurve(cores) : 'fx' in fill ? core?.packages.find(p => p.fxId === fill.fx)?.words : 'shared' in fill ? core?.shared.find(s => s.destination === fill.shared)?.words : undefined
     if (!words || fill.first < 0 || fill.count <= 0 || fill.first + fill.count > words.length) throw new Error('The base package names stock DSP code your firmware does not have.')
     if ('section' in fill) {
       const parts = doc.sections[fill.section]?.parts ?? []
       let at = 0, i = 0
       while (i < parts.length && at < fill.offset) { const part = parts[i++]; at += part[0] === 'hex' ? part[1].length / 2 : part[2] }
       if (at !== fill.offset) throw new Error('The base package does not leave room for its stock DSP code.')
-      parts.splice(i, 0, ['hex', hex(words.subarray(fill.first, fill.first + fill.count), true)])
+      const value = words.subarray(fill.first, fill.first + fill.count)
+      const data = curve ? Array.from(value, word => word.toString(16).padStart(8, '0')).join('') : hex(value, true)
+      parts.splice(i, 0, ['hex', data])
     } else {
       const site = doc.sites.find(s => s.addr === fill.site)
       if (!site || 2 * fill.offset > site.new.length) throw new Error('The base package does not leave room for its stock DSP code.')

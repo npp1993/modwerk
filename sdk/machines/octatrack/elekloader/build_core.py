@@ -17,6 +17,8 @@ import sys
 
 HERE = Path(__file__).resolve().parent
 APP = HERE.parents[3]
+_spec = importlib.util.spec_from_file_location('modwerk_usb_post', HERE / 'usb_post.py')
+usb_post = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(usb_post)
 VERSION = '0.3.1-modwerk-dev.1'
 # Resident controller trust: association, the scoped write lease, its resolver and the board-compiled policy table.
 CONTROLLER_POLICY_SOURCES = ('controller_policy.c', 'controller_policy.h', 'controller_association.c', 'controller_association.h',
@@ -1039,6 +1041,62 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
+# Every USB Audio layout, and USB MIDI alone, links the base's USB sources last and pads them to these sizes, so a
+# layout changes nothing outside this block: the base-bound packages (base-binding.json) hold for every layout's base.
+USB_GROUP = ('usb_base.s', 'usbmidi.s', 'usbmidi_rx.s', 'usbaudio.s')
+USB_RESERVE = {'.text': 8192, '.data': 2560, '.bss': 98304}
+USB_ALIGN = {'.text': 512, '.data': 32, '.bss': 32}
+
+
+def usb_reserve(source, sources, defsym, device, sdk):
+    """Moves the USB sources to the end of `sources` between usb_align.s and usb_reserve.s, whose padding brings each
+    of their sections to USB_RESERVE. The sizes come from assembling them as Elekloader's build does; the build's
+    own symbols prove the result (usb_reserve_check)."""
+    from elekloader.sdk.elf import Elf
+    group = [name for name in USB_GROUP if name in sources]
+    head = ''.join('        %s\n        .balign %d\n        .globl modwerk_usb%s_start\nmodwerk_usb%s_start:\n'
+                   % (k, USB_ALIGN[k], k.replace('.', '_'), k.replace('.', '_'))
+                   for k in USB_RESERVE)
+    (source / 'usb_align.s').write_text(head)
+    tool = os.environ.get('ELEKLOADER_CROSS', device.toolchain['prefix']) + 'as'
+    defs = [a for k, v in defsym.items() for a in ('--defsym', '%s=%s' % (k, v))]
+    work = source / 'usb-reserve.work'
+    work.mkdir(exist_ok=True)
+
+    def sections(name):
+        out = work / (name + '.o')
+        subprocess.run([tool, *device.toolchain['asflags'], '-I', str(source), '-I', sdk.INCLUDE, *defs,
+                        '-o', str(out), str(source / name)], check=True, capture_output=True)
+        return {s.name: (s.size, max(1, s.align)) for s in Elf.load(str(out)).sections if s.flags & 2}
+
+    def tail(skips):
+        return ''.join('        %s\n        .skip %d\n        .globl modwerk_usb%s_end\nmodwerk_usb%s_end:\n'
+                       % (k, skips.get(k, 0), k.replace('.', '_'), k.replace('.', '_'))
+                       for k in USB_RESERVE)
+    (source / 'usb_reserve.s').write_text(tail({}))
+    at = dict.fromkeys(USB_RESERVE, 0)
+    for name in group + ['usb_reserve.s']:
+        for kind, (size, align) in sections(name).items():
+            if kind not in USB_RESERVE:
+                raise ValueError('%s has a %s section the USB reserve does not cover.' % (name, kind))
+            if align > USB_ALIGN[kind]:
+                raise ValueError('%s aligns %s to %d, past the USB reserve\'s %d.' % (name, kind, align, USB_ALIGN[kind]))
+            at[kind] = -(-at[kind] // align) * align + (size if name != 'usb_reserve.s' else 0)
+    if any(at[k] > USB_RESERVE[k] for k in USB_RESERVE):
+        raise ValueError('The USB sources outgrow their reserve: %s of %s.' % (at, USB_RESERVE))
+    (source / 'usb_reserve.s').write_text(tail({k: USB_RESERVE[k] - at[k] for k in USB_RESERVE}))
+    shutil.rmtree(work)
+    return [name for name in sources if name not in USB_GROUP] + ['usb_align.s', *group, 'usb_reserve.s']
+
+
+def usb_reserve_check(symbols):
+    """Each USB reserve spans exactly its size in the linked base."""
+    for kind, size in USB_RESERVE.items():
+        start, end = (symbols.get('modwerk_usb%s_%s' % (kind.replace('.', '_'), edge)) for edge in ('start', 'end'))
+        if not start or not end or start[0] != end[0] or end[1] - start[1] != size:
+            raise ValueError('The USB %s reserve is not %d bytes in the linked base.' % (kind, size))
+
+
 def git(root, *args):
     return subprocess.check_output(['git', '-C', str(root), *args], text=True, stderr=subprocess.PIPE).strip()
 
@@ -1297,9 +1355,10 @@ def strip(document, fills, words, image, load):
     firmware. In a section (the ColdFire's packed copies) a word is big-endian, in a DSP payload site little-endian."""
     document = json.loads(json.dumps(document))
     for fill in sorted(fills, key=lambda f: -f['offset']):  # from the end: earlier offsets stay where they were
-        start, end = fill['offset'], fill['offset'] + 3 * fill['count']
+        width = usb_post.width(fill)
+        start, end = fill['offset'], fill['offset'] + width * fill['count']
         if 'section' in fill:
-            expected = b''.join(w.to_bytes(3, 'big') for w in words(fill))
+            expected = b''.join(w.to_bytes(width, 'big') for w in words(fill))
             kept, removed, at = [], b'', 0
             for part in document['sections'][fill['section']]['parts']:
                 size = len(part[1]) // 2 if part[0] == 'hex' else part[2]
@@ -1335,8 +1394,10 @@ def main():
     parser.add_argument('--usb-midi', action='store_true',
                         help='Private composite-base preparation: bounded USB MIDI receive/transmit plus vendor and MSC.')
     parser.add_argument('--usb-audio', choices=('USB AUDIO OUT TRACKS MAIN CUE', 'USB AUDIO OUT TRACKS',
-                        'USB AUDIO OUT MASTER', 'USB AUDIO OUT MAIN CUE', 'USB AUDIO OUT MAIN'),
+                        'USB AUDIO OUT MASTER', 'USB AUDIO OUT MAIN CUE', 'USB AUDIO OUT MAIN', usb_post.LAYOUT),
                         help='Private composite-base preparation: one authored output layout, with internal USB MIDI. Requires exact new-base qualification.')
+    parser.add_argument('--usb-audio-profiles', action='store_true',
+                        help='Offline staging only: source-link all six outputs and off, with --usb-audio as the explicit initial profile. No host settings/recovery or catalogue admission.')
     parser.add_argument('--dsp-hook', choices=tuple(DSP_HOOK_EDITS), default='guard',
                         help="with --dsp-loader: the state-7 entry, guard (default); usbin, pretend, noflags, long: hardware bisect variants")
     parser.add_argument('--dsp-probe', choices=('A', 'B', 'S', 'W', 'M', 'X'),
@@ -1374,6 +1435,8 @@ def main():
                         help='with --dsp-loader: the base\'s effect ids (fxids.h, the dispatch and chooser tables; '
                              'docs/OCTATRACK_MORE_EFFECT_IDS.md). 32, the old width, only to bisect a fault.')
     args = parser.parse_args()
+    if args.usb_audio_profiles and (not args.usb_midi or not args.usb_audio or not args.dsp_loader or args.dev or args.controller_policies):
+        parser.error('--usb-audio-profiles needs --usb-midi, an explicit --usb-audio and --dsp-loader; development mode and controller admission are not qualified.')
     if args.saved_set_export and (not args.dsp_loader or args.dsp_probe or args.dsp_burn):
         parser.error('Private saved-set export requires the ordinary DSP loader without probes/burn.')
     if args.resident_stock_hooks and (not args.dsp_loader or args.dsp_probe or args.dsp_burn):
@@ -1476,13 +1539,18 @@ def main():
     # The base owns the USB configuration and the EP0 unknown-request tail.
     spec = importlib.util.spec_from_file_location('modwerk_usb_base', HERE/'usb_base.py')
     usb = importlib.util.module_from_spec(spec); spec.loader.exec_module(usb)
-    usb_functions = None
+    usb_functions, usb_profiles, profile_inputs = None, None, {}
     if args.usb_midi or args.usb_audio:
         spec = importlib.util.spec_from_file_location('modwerk_base_usb_functions',
             APP / 'sdk/machines/octatrack/module-adapters/base_usb_functions.py')
         usb_functions = importlib.util.module_from_spec(spec); spec.loader.exec_module(usb_functions)
-        spec = importlib.util.spec_from_file_location('modwerk_authored_usb_descriptors', usb.AUDIO_DESCRIPTORS)
+        audio_path, descriptor_path = usb.audio_paths(args.usb_audio)
+        spec = importlib.util.spec_from_file_location('modwerk_authored_usb_descriptors', descriptor_path)
         usb_descriptors = importlib.util.module_from_spec(spec); spec.loader.exec_module(usb_descriptors)
+        if args.usb_audio_profiles:
+            spec = importlib.util.spec_from_file_location('modwerk_usb_audio_profiles',
+                APP / 'sdk/machines/octatrack/module-adapters/usb-audio-profiles/profiles.py')
+            usb_profiles = importlib.util.module_from_spec(spec); spec.loader.exec_module(usb_profiles)
     for name in ('ep0.c', 'fxids.h', 'runtime.c', 'runtime.h', 'boot.c', 'boot.h', 'boot.s', 'flash.c', 'flash.h', 'modset.c', 'boot_anim.c', 'boot_anim.s', 'crash.c', 'crash.s', 'run_unpack.s') + (('dev.c',) if args.dev else ()) + (
             ('runtime_events.h', 'runtime_events.s', 'machine_registry.c', 'machine_registry.s') if args.site_events else ()):
         shutil.copyfile(HERE / name, source / name)
@@ -1638,15 +1706,33 @@ def main():
             chooser_sites.append(dict(addr=hex(at), stock=word.hex(), op='bytes', new=bytes((word[0], FX_IDS - 1)).hex()))
         dsp_sites += chooser_sites
     (source/'usb_base.h').write_text(usb.header())
-    (source/'usb_base.s').write_text(usb_functions.assembly(usb, usb_descriptors, args.usb_audio)
+    (source/'usb_base.s').write_text(usb_profiles.assembly(usb, usb_functions, usb_descriptors, args.usb_audio) if usb_profiles else
+                                   usb_functions.assembly(usb, usb_descriptors, args.usb_audio)
                                    if usb_functions else usb.assembly(args.dev))
     if usb_functions:
         (source/'usbmidi.s').write_text(usb_functions.midi_source((usb.OCTABAM / 'platform/usb-midi/usbmidi.s').read_text()))
-        (source/'usbmidi_rx.s').write_text((usb.OCTABAM / 'modules/usb-audio-out-tracks-main-cue/usbmidi_rx.s').read_text())
-        if args.usb_audio:
-            (source/'usbaudio.s').write_text(usb_functions.audio_storage_source(
-                usb_functions.audio_source(usb.AUDIO_SOURCE.read_text())))
-            (source/'remix.inc').write_text(usb_functions.audio_include(args.usb_audio))
+        (source/'usbmidi_rx.s').write_text((HERE / 'usbmidi_rx.s').read_text())
+        if usb_profiles:
+            spec = importlib.util.spec_from_file_location('modwerk_other_usb_descriptors',
+                usb.AUDIO_DESCRIPTORS if args.usb_audio == usb_post.LAYOUT else usb.POST_AUDIO_DESCRIPTORS)
+            other_descriptors = importlib.util.module_from_spec(spec); spec.loader.exec_module(other_descriptors)
+            normal, post_descriptors = ((other_descriptors, usb_descriptors) if args.usb_audio == usb_post.LAYOUT else
+                                        (usb_descriptors, other_descriptors))
+            post_curve = usb_post.image_words(image, device, dsp)
+            profile_sources, profile_inputs = usb_profiles.prepare(usb, usb_functions, normal, post_descriptors,
+                                                                  usb_post, post_curve, args.usb_audio)
+            for name, text in profile_sources.items():
+                (source/name).write_text(text)
+        elif args.usb_audio:
+            audio_text = usb_functions.audio_source(audio_path.read_text())
+            if args.usb_audio != usb_post.LAYOUT:
+                audio_text = usb_functions.packet_readiness(audio_text)
+            (source/'usbaudio.s').write_text(usb_functions.audio_storage_source(audio_text))
+            audio_inc = usb_functions.audio_include(args.usb_audio)
+            if args.usb_audio == usb_post.LAYOUT:
+                post_curve = usb_post.image_words(image, device, dsp)
+                audio_inc += usb_post.include(post_curve)
+            (source/'remix.inc').write_text(audio_inc)
     elif args.dev:  # USB AUDIO OUT MAIN CUE (usb_base.py): Octabam's source with our interface numbers
         (source/'usbaudio.s').write_text(usb.audio_assembly())
         (source/'remix.inc').write_text(usb.AUDIO_INC)
@@ -1655,6 +1741,10 @@ def main():
     folders = (logger, upload, loader, HERE) + ((DYNLOAD,) if args.dsp_loader else ())
     inputs = {str(p.relative_to(APP)): sha(p.read_bytes()) for folder in folders
               for p in sorted(folder.iterdir()) if p.is_file() and p.suffix in ('.c', '.h', '.s', '.asm', '.py', '.json')}
+    for path, digest in profile_inputs.items():
+        if sha(path.read_bytes()) != digest:
+            raise ValueError('A USB profile input changed during source preparation.')
+        inputs[str(path.relative_to(APP))] = digest
     inputs['sdk/runtime/m68k_codegen.py'] = sha((APP / 'sdk/runtime/m68k_codegen.py').read_bytes())  # its flag and gate
     for name in MACHINE_TRUST_SOURCES:
         path = machine_trust / name
@@ -1671,9 +1761,9 @@ def main():
         for path in (usb.AUDIO_SOURCE, usb.AUDIO_DESCRIPTORS):
             inputs[str(path.relative_to(APP))] = sha(path.read_bytes())
     if usb_functions:
-        for path in (Path(usb_functions.__file__), usb.AUDIO_DESCRIPTORS,
+        for path in (Path(usb_functions.__file__), descriptor_path,
                      usb.OCTABAM / 'platform/usb-midi/usbmidi.s',
-                     usb.OCTABAM / 'modules/usb-audio-out-tracks-main-cue/usbmidi_rx.s') + ((usb.AUDIO_SOURCE,) if args.usb_audio else ()):
+                     HERE / 'usbmidi_rx.s') + ((audio_path,) if args.usb_audio else ()):
             inputs[str(path.relative_to(APP))] = sha(path.read_bytes())
     if args.dsp_loader:
         for name in ('src/engine/assets/stock-dsp-metadata.json', 'src/engine/assets/chooser-metadata.json',
@@ -1725,6 +1815,9 @@ def main():
         configuration['usb'].update(interfaces=['msc', 'modwerk-vendor', 'midi-control', 'midi-streaming'] +
             (['audio-control', 'audio-streaming'] if args.usb_audio else []),
             midi='bounded-rx-1', audio=args.usb_audio)
+        if usb_profiles:
+            configuration['usb']['profiles'] = dict(schema=1, initial=usb_functions.AUDIO_LAYOUTS[args.usb_audio] + 1,
+                                                     stagingOnly=True, hostSettings=False)
         if args.dev:
             configuration['dev'] = ['key', 'panel', 'state', 'screen']
     if resident_boot_prepared:
@@ -1875,7 +1968,8 @@ modwerk_retained_end:
             raise ValueError('Stock bytes at %#x are not the CUE CFG clamp/check cue_cfg.s widens.' % addr)
         recipe['sites'].append(dict({k: v for k, v in site.items() if k != 'length'},
                                     addr=hex(addr), stock=stock_at(addr, site['length']).hex()))
-    recipe['sites'] += usb_functions.sites(usb, stock_at, args.usb_audio) if usb_functions else usb.sites(stock_at, args.dev)
+    recipe['sites'] += (usb_profiles.sites(usb, usb_functions, stock_at, args.usb_audio) if usb_profiles else
+                       usb_functions.sites(usb, stock_at, args.usb_audio) if usb_functions else usb.sites(stock_at, args.dev))
     # RAM boot: the gate at the OS entry, and the DSP park in both payloads.
     at = BOOT_GATE[0] - device.main_load
     if image[at:at+6].hex() != BOOT_GATE[1]:
@@ -1944,8 +2038,12 @@ modwerk_retained_end:
     locked = catalogue_overlaps(recipe['sites'])
     if locked:
         raise ValueError('Base sites overlap what these catalogue modules patch: ' + ', '.join(locked))
+    if usb_functions and not usb_profiles:
+        recipe['sources'] = usb_reserve(source, recipe['sources'], recipe.get('defsym', {}), device, sdk)
     (source/'mod.json').write_text(json.dumps(recipe, indent=2)+'\n')
     path, _ = sdk.build(str(source), str(args.stock), str(out/'package'))
+    if usb_functions and not usb_profiles:
+        usb_reserve_check(json.loads(Path(path).read_text())['symbols'])
     # Every C object of the base, before anything is packaged (sdk/runtime/m68k_codegen.py).
     if not CODEGEN.check(sorted((out/'package').glob('*.work/*.c.o')), args.cross + 'objdump'):
         raise ValueError('The base build left no C objects to check.')
@@ -2002,7 +2100,10 @@ modwerk_retained_end:
                             dsp_layout[t]['residentHooks'])
                 else:
                     fills.append(dict(tag=t, fx=fx, first=0, count=len(words), section=section, offset=offset))
-        recovered = lambda f: (dsp_layout[f['tag']]['words'][f['fx']] if 'fx' in f else
+        if args.usb_audio == usb_post.LAYOUT or usb_profiles:
+            section, offset = document['symbols']['post_xlv']
+            fills.append(usb_post.fill(section, offset))
+        recovered = lambda f: (post_curve if 'curve' in f else dsp_layout[f['tag']]['words'][f['fx']] if 'fx' in f else
                                dsp_layout[f['tag']]['shared'][f['shared']])[f['first']:f['first'] + f['count']]
         (out/'base.elemod').write_text(json.dumps(strip(document, fills, recovered, image, device.main_load), indent=1)+'\n')
         (out/'base-fills.json').write_text(json.dumps(fills, indent=1)+'\n')

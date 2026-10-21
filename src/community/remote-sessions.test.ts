@@ -84,7 +84,11 @@ describe('remote debug sessions', () => {
     expect((await call(`/admin/remote-sessions/${second.id}/ticket`, 'POST', {}, '', admin)).status).toBe(409)
     const history = await (await call('/remote-sessions', 'GET', undefined, member)).json()
     expect(history.current).toBeNull()
-    expect(history.sessions.map((item: { status: string; endedBy: string | null }) => [item.status, item.endedBy])).toEqual([['ended', 'member'], ['declined', null]])
+    expect(history.sessions).toHaveLength(2)
+    // Both requests may share a millisecond; their relative history order
+    // then says nothing about whether each session ended correctly.
+    expect(Object.fromEntries(history.sessions.map((item: { id: string; status: string; endedBy: string | null }) =>
+      [item.id, [item.status, item.endedBy]]))).toEqual({ [first.id]: ['declined', null], [second.id]: ['ended', 'member'] })
   })
   it('lets the administrator end or withdraw, and expires what nobody answered', async () => {
     const { call, ask, admin, env } = await fixture()

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "opt-in-profile-ep0-refusal-fence",
+  "date": "2026-10-21",
+  "sourceParent": "cf417708e7dbc0269e820822478e228f5cc3676a",
+  "hardware": false,
+  "status": "offline internal staging only; no transition authorization",
+  "base": "9bbcf5dd0a6a4e9c7b2c69ed260f836045573fd00ae00498b08122ad1b155455",
+  "mainSha256": "9086e44afc02c9641fdf2c122c7abfef7108354ae0232a6347b8841fe76eeb21",
+  "binSha256": "f715cd2e7728a77a4e4cc0c08b6881a27b091c370a961b3f6d8b96a0bdb00460",
+  "packageSha256": "9e5ebf3ab451510005a49f5275a6c3788b08a97f40cec225b2334dc541efc830",
+  "nativeBrowserEqual": true,
+  "unmodifiedPackageStockFree": true,
+  "sourcePins": {
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/dispatch.s": "5487fd9061cc1d74d14acd623b51f4a12ab144c53357ce777db8945d429a1f9c",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/profiles.py": "902adf6b3ed5570e8367f4c662ad4ae7626657cba566046abf6c3808182f1384",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/stage.c": "15b6f5f524ec6596c112cda46818963b93752e86a175cc514ac654c262729156",
+    "sdk/machines/octatrack/module-adapters/usb-audio-profiles/usb_audio_profiles.h": "f6a51a26047158f11dca5789c24490be904aa8062ee92e3d92ee753bcdbea149"
+  },
+  "verifierSha256": "224257c85d7f5bb3d04a7fa2b69eb04169c933a65318059b9f733fb181052817",
+  "emulatorSha256": "ef331b9fdf93cbc6b74ce6bd369d409908cd7ae47cda0eb16e30780d8dd804b4",
+  "earlierCounterexample": {
+    "base": "a4604a5f77de401cb520cdfc13bd0cfa3b8b3949419c5bddeb988056e664db86",
+    "scope": "Actual emulated POST clock SET_CUR with its four-byte data omitted, followed by simulated unplug.",
+    "pendingClockAfterUnplug": true,
+    "ep0OutActiveAfterUnplug": true,
+    "stageReturn": 0,
+    "profileAfter": 1
+  },
+  "guardedResults": {
+    "checks": 974,
+    "addedEp0Checks": 23,
+    "audioCases": 12,
+    "nonemptyPacketsPerAudioCase": 16,
+    "scope": "RAM stock-state/awaited-OUT/clock-latch faults, actual interrupted clock SET, unread descriptor IN and unfinished vendor SUBMIT OUT after RS stop. Every refusal preserves profile and retained state; a real new SETUP/normal reset retires control traffic before a stage succeeds. Full descriptor/MIDI/storage/readiness/poison-stream suite still passes.",
+    "earlierBaseFailsMaintainedRefusal": "EP0 stock IN state refuses profile commit"
+  },
+  "regressions": {
+    "producerChecks": 875,
+    "nativeProducerCases": 24,
+    "continuousPostBlocks": 84,
+    "postChecks": 341,
+    "emacContexts": 24,
+    "descriptorContextChecks": 1795,
+    "descriptorContexts": 896,
+    "skippedSrRestoreDetected": true
+  },
+  "ordinaryBaseUnchanged": "1c56b40f099cca45bf7d65f4236d59d90c1f399eeb16c1cb80160bc8c783ecee",
+  "physicalBaseUnchanged": "5ada864ef9b846d452f9971795a5ce39956da03d312459384055995611ba31a8",
+  "limits": [
+    "A refusal fence is not an engine-owned retirement/acknowledgement, session/base/profile/generation-bound one-use recovery lease, cached-vendor-result retirement, or MSC/disk-mode admission. No host settings command or catalogue admission.",
+    "No all-profile image was booted on the physical OT. Real cache/DMA races, host recovery, audio, DSP pairing and masked timing are unqualified.",
+    "No actual USB Audio install/self-test/Keep/Undo/removal/missing-module/persistence qualification. No project/card save, flash, power cycle, module release or issue closure.",
+    "Default ordinary package inputs and approved card/runtime package bytes remain unchanged; the new native candidate is opt-in only."
+  ]
+}

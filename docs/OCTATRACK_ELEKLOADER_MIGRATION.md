@@ -2158,6 +2158,68 @@ unit:
   table pointers and two length clamps) and the unknown-request tail. USB MIDI
   and USB Audio claim the same sites; they become base features compiled into
   it, which their descriptor changes require anyway.
+- USB Audio migration (20 October 2026): the beta base already exposes the
+  twenty-channel output, but the catalogue module and its six card layouts
+  still have no USB module-set lifecycle. A marker package would misrepresent
+  removal: audio would remain enabled in the base. Geometry changes need a
+  base-owned settings transaction and host re-enumeration, with exact
+  review/trial/self-test/Keep/Undo and recovery across that disconnect.
+  Upstream's unified `usb` module reads its six settings from an early CS1
+  block at the next boot ([`56e43e53`](https://github.com/sambanks/octabam/commit/56e43e53dd4c6d594f60ce8d3f95f7859fc736d3),
+  TRACKS/MAIN/CUE/MASTER/IN/MIDI); that is
+  a reference design, not hot switching or a completed Modwerk port. Keep
+  settings ownership in the shared base and qualify the supported layouts,
+  MIDI, mass storage and rollback before admitting the catalogue selection.
+- Migration preparation on 21 October: the private base builder now covers
+  all six output layouts, including post-fader TRACKS. Its named stock-data
+  recipe removes the 256-word gain curve from the package and reconstructs
+  32-bit ColdFire data from the verified local OS, independently of the
+  catalogue card module. These are separate per-layout images, not one
+  switchable all-profile base. This is build preparation, not a settings lifecycle
+  or a physical post-fader result. `InventoryTarget` currently carries module
+  IDs and removed stock FX, not `usbAudio`: migration must carry and compare
+  the validated device profile too, so unchanged module IDs cannot hide a
+  layout change. Outbox output assignments remain host routing, not device
+  profile state. The base's immutable build identity, active profile and
+  transaction generation must all survive review/reconnect verification;
+  today a bus reset aborts an open runtime trial, so intentional
+  re-enumeration needs an explicit recovery phase before this can ship.
+  Bind that one-use transition to the reviewed session, base, old/new
+  profiles and generation; do not suppress rollback for unrelated resets.
+  Removal must report and prove audio disabled, rather than only removing
+  a marker from the module inventory.
+  [Six-layout reconstruction and fresh-base results](../sdk/machines/octatrack/evidence/usb-post-base-20261021.json)
+  separate software POST preparation from the ordinary twenty-channel base's
+  physical trial/Undo/capture. Neither qualifies settings, removal or persistence.
+  [Earlier results](../sdk/machines/octatrack/evidence/usb-base-layouts-20261021.md)
+  retain their original image identities.
+- A private shared-ring producer experiment now links the six authored audio
+  producers in one helper and matches 24 separate-native cases. With POST's
+  gain history advanced for other layouts and off too, 84 mixed blocks match
+  a continuously running POST reference. The missing-tracker control fails
+  at the first off block. Its 123,168-byte reservation is a synthetic linker
+  result, not qualified base placement. The helper contains a private stock
+  curve and has no descriptor switch, transaction, catalogue admission or
+  persistence. [Exact experiment scope](../sdk/machines/octatrack/evidence/usb-profile-producer-prototype-20261021.json)
+  keeps those results separate from hardware and stock-free base packages.
+- A later private archived recipe source-links those producers into one actual
+  format-2 base. Its browser/native image matches and its unmodified native
+  package passes the stock scan, including the named POST curve reconstruction.
+  An internal detached-only function selects immutable descriptor templates in
+  512-byte slots. It refuses a running controller or an unretired audio request;
+  only the incoming host state and profile/length change under the IRQ mask.
+  Descriptor shims preserve the displaced PEA's registers and condition flags.
+  No descriptor or full-ring copy runs under that mask: the existing startup
+  cushion excludes old ring data. Exact base `e38fca82` passes 455 frame-free
+  board checks, 479 synthetic streaming checks, 875 producer comparisons and
+  341 POST arithmetic/EMAC checks. Each board/stream suite covers all six
+  layouts and off at both speeds; ring poison stays out of the captured packets.
+  These are emulator results, without actual DSP or host class drivers. The
+  checked-in builder still emits separate layouts. The archived recipe has no
+  host settings command, reconnect lease/recovery, profile inventory, module
+  lifecycle or persistence, and has not been booted on the unit.
+  [Exact source-linked experiment scope](../sdk/machines/octatrack/evidence/usb-profile-base-prototype-20261021.json)
+  records the image identities and remaining gates.
 - The emulator models EP0–EP3, transfers up to 8 KiB and no packet timing.
   Its source here cannot build as is: the CPU cores under `sdk/octabam/vendor/`
   and `remixes/` are absent, and the 27 USB checks used a private adapter.
@@ -2236,6 +2298,28 @@ not proof of the installed image. The runtime transport must provide that
 identity before automation can associate a trial with the exact candidate or
 accept it. Keep captures and raw reports private; none of these tools is
 connected to automatic log uploads or automatic trial acceptance here.
+
+### Borrowed-call probes
+
+The pinned emulator's `callAsMain` leaves C arguments on the guest stack after
+a successful return. Repeated bench calls therefore drift main's stack; this
+is a harness defect, not evidence of a firmware fault. Build the reviewed
+[adapter](../scripts/prepare-octatrack-emulator.py) into a new private directory:
+
+```sh
+lockf -k /tmp/modwerk-check.lock python3 -B scripts/prepare-octatrack-emulator.py \
+  --source /path/to/verified/octabam --output /private/new-emulator --build
+```
+
+It checks the exact upstream pin and source hash, copies committed tooling
+sources outside Git, and restores the caller's stack only after a confirmed
+return. Failed calls remain intact for diagnosis. Its stock-free 128-call
+regression fails on the original and passes with the fix, alongside the five
+existing EMAC, peripheral and ColdFire gates. The receipt binds the patch,
+regression and built executable. The shared checkout, its cached binaries and
+`sdk/octabam/` stay unchanged; its two hardware-tool repairs still apply as
+above. These gates do not qualify a project, DSP pairing or hardware. Keep
+Unix socket paths short when adding nested private probe directories.
 
 ## Modwerk's own interface for safe agent access
 

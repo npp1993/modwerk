@@ -36,6 +36,14 @@ _spec.loader.exec_module(functions)
 _spec = importlib.util.spec_from_file_location('authored_usb_descriptors', APP / 'sdk/octabam/platform/usb-midi/descriptors.py')
 descriptors = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(descriptors)
+_spec = importlib.util.spec_from_file_location('post_usb_descriptors', usb.POST_AUDIO_DESCRIPTORS)
+post_descriptors = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(post_descriptors)
+
+
+def descriptor_source(audio=None):
+    return post_descriptors if audio == usb.POST_LAYOUT else descriptors
+
 
 VENDOR_IN, VENDOR_OUT, IDENTIFY, SUBMIT, RESULT = 0xc1, 0x41, 3, 1, 2
 
@@ -107,7 +115,7 @@ def descriptor_expectations(hs, audio=False, composite=None):
     if composite:
         if composite.get('midi') != 'bounded-rx-1':
             raise ValueError('Unsupported base-owned MIDI declaration.')
-        configuration = lambda high, other: functions.configuration(usb, descriptors, high, other, composite.get('audio'))
+        configuration = lambda high, other: functions.configuration(usb, descriptor_source(composite.get('audio')), high, other, composite.get('audio'))
     else:
         configuration = lambda high, other: usb.configuration(high, other, audio)
     return configuration(hs, False), configuration(not hs, True), usb.device(bool(composite) or audio)
@@ -115,8 +123,9 @@ def descriptor_expectations(hs, audio=False, composite=None):
 
 def audio_shape(hs, composite_audio=None):
     if composite_audio:
-        channels = descriptors.HS_LAYOUT[composite_audio][0] if hs else descriptors.FS_CHANNELS
-        return 4, 5, channels * descriptors.SUBSLOT
+        source = descriptor_source(composite_audio)
+        channels = source.HS_LAYOUT[composite_audio][0] if hs else source.FS_CHANNELS
+        return 4, 5, channels * source.SUBSLOT
     return (*usb.AUDIO_INTERFACES, 16 if hs else 8)
 
 
