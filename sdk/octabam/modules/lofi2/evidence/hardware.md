@@ -30,6 +30,7 @@ On the first attempt FREQ, MIX, GAIN and SRR seemed to do nothing. The tester th
 | The fix by ear: UP, RNGE HIGH, FREQ about 30, MIX 127, FDBK 0, bright material | "seems good": one shifted copy, the mirror image not prominent. By ear only; no A/B against the previous build was recorded |
 | Two instances, T1 FX2 and T2 FX2 | both ran |
 | A third on the same core, T1 FX1 | refused, DSP FULL |
+| The self-sustaining SHIFT feedback found in `dsp_host` (TESTING.md, re-pin): MODE UP, RNGE HIGH, FREQ 64, MIX 127, FDBK 127, SRR 0, BRR 0, LPF 127, a short sound then silence | reproduced: a sustaining tone continued after the input ended; with FDBK turned down to 120 it died away. Level not measured ("a sustaining tone" only) |
 
 ### The base's self-test
 
@@ -41,7 +42,7 @@ Asked about the result afterwards, the tester said they noticed no lag or sluggi
 
 ### Not run on this source
 
-BRR and LPF individually, the self-sustaining feedback case (TESTING.md, re-pin), Part and project reload, a power cycle and persistence, the missing-module fallback, FX1 on a card image, eight instances, scenes and the crossfader. Against the previous source only 16 DSP coefficient data words differ (TESTING.md, re-pin), so its results below carry over **by argument only, not by observation**.
+BRR and LPF individually, the self-sustaining feedback in DOWN, at other FREQ values or with the previous coefficients, Part and project reload, a power cycle and persistence, the missing-module fallback, FX1 on a card image, eight instances, scenes and the crossfader. Against the previous source only 16 DSP coefficient data words differ (TESTING.md, re-pin), so its results below carry over **by argument only, not by observation**.
 
 ### Limits
 
