@@ -92,7 +92,9 @@ export async function readRequestedObject(label: string, original?: Uint8Array, 
   }
   return { label, object }
 }
-// Modules the catalog lists after the utility and replacing modules: native places their ROM units after those, in catalog order.
+// The requested modules listed after the utility and replacing modules in the catalog that have image-linked ROM units: native places
+// those units after the utility units and the replacing modules' raw pointers, in catalog order. The others listed there (Vector, Play
+// Modes, Recorder Loop Fix, POLY8, Output Matrix) put their units in DRAM or fixed caves, which this pass skips.
 const LATE_ROM: readonly string[] = ['mute-modes', 'quantize-live-rec-toggle']
 export async function requestedRom(ids: readonly string[], cursor: number, overflow: number, caveLimit: number, cave: (address: number, bytes: Uint8Array, note: string) => Promise<void>, late = false) {
   const groups = selectedRequestedGroups(ids).filter(group => LATE_ROM.includes(group.moduleId) === late), symbols = new Map<string, number>()

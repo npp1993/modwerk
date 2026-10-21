@@ -204,7 +204,7 @@
         "summary": "Package 026464de (source d7526ad5) over USB on the user's MKII with the flashed Modwerk beta base, OS 1.40C, APPLY SCENE installed beside it. Two trials without Keep rolled back; a kept trial was accepted and listed as Quant Live Rec. With it kept the user reported: hold [REC] + tap [PLAY] shows the toast and starts live recording; a tap within about a second flips the setting; a tap after the toast has gone only shows it; releasing [REC] closes the toast; with PERSONALIZE open the box follows a flip; a changed setting survives a power cycle, and the module was still installed after it. Removal was accepted and the inventory no longer listed it.",
         "limitations": [
           "Over USB only: the card image of this source (QLRTEST03) has not run on a unit. An earlier source (50f65395, QLRTEST02) ran from the card on the same MKII with the same results, before the stock-free re-encoding.",
-          "Not checked: stock [REC] + [PLAY] behaviour after the removal, Part or project reload with it installed, grid recording, MIDI tracks, an MKI with this build.",
+          "Not checked: stock [REC] + [PLAY] behaviour after the removal, grid recording, MIDI tracks, an MKI with this build. Part and project reload ran on 20 October 2026 (same MKII, same package, beside other modules) and left the setting unchanged; whether the gesture was used again after each reload was not recorded.",
           "How long the tests ran was not recorded."
         ],
         "report": "TESTING.md"

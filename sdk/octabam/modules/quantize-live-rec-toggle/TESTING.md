@@ -10,7 +10,7 @@ Recorded 12 and 13 October 2026. Version `0.1.0-experimental`.
 
 - An MKI panel in the emulator; a project loaded from a real card; grid recording; MIDI tracks; the gesture with no project loaded.
 - Chip timing, and frame-interrupt load or a stress run on a unit: the load and stress figures under Performance are from the emulator.
-- Over USB: stock [REC] + [PLAY] behaviour after its removal (see Hardware report). Part and project reload: see below.
+- Over USB: stock [REC] + [PLAY] behaviour after its removal (see Hardware report). Part and project reload ran on 20 October 2026 (see below).
 
 ## Hardware report (MKII, 13 October 2026)
 
@@ -156,7 +156,7 @@ Built from this source on main `b058d41e` with `sdk/runtime/loader/build.py --oc
 - `sdk/tests/test_runtime_loader.py`: 15 tests pass, one opt-in skip.
 - The module is named Quant Live Rec (15 October 2026, the user's choice), the name the package carries, so the published package can take it from the catalogue.
 - On the user's MKII (Hardware report): trials undone, kept, the gesture, persistence across a power cycle and removal. Not tested: stock behaviour after its removal.
-- Part and project reload, same MKII, 20 October 2026 (flashed beta base `6650236a`, package `026464de` kept beside Output Matrix, Analog BD, Apply Scene, LOFI2 and LIFT): after a flip with [REC] + [PLAY], RELOAD PART and a project reload each left the LIVE REC setting unchanged, as expected for a PERSONALIZE setting that neither a Part nor the project stores. Whether the gesture was used again after each reload was not recorded.
+- Part and project reload, same MKII, 20 October 2026 (flashed beta base `6650236a`, package `026464de` kept beside Output Matrix, Analog BD, Apply Scene, LOFI2 and one private module): after a flip with [REC] + [PLAY], RELOAD PART and a project reload each left the LIVE REC setting unchanged, as expected for a PERSONALIZE setting that neither a Part nor the project stores. Whether the gesture was used again after each reload was not recorded.
 
 ## Captures
 
