@@ -2,7 +2,7 @@
 
 Bryan T's LOFI2 from [octabam](https://github.com/sambanks/octabam) (`modules/lofi2`), brought into Modwerk with its DSP unchanged. The pinned source is commit `8250be0c23ca0a0a953cb7e5721e3bdb98dadfe5` on upstream `main`: the merged LOFI2 (pull request 657) with the author's optimisation (pull request 704, merged 13 October 2026; 416 cycles/sample in SHIFT, down from 654) and his SHIFT fix of 14 October 2026 (`153063d8`: the Hilbert coefficients squared, so the unwanted sideband drops from about -20 dB to about -46 to -55 dB, with the same instructions and cycles). The author's own README is kept at [upstream/modules/lofi2/README.md](upstream/modules/lofi2/README.md); it holds the design notes and his hardware reports.
 
-**Status: release candidate, not released.** It builds natively, passes the author's render gate (70 checks), a stress run and the performance audit, and its packages compile. The previous source (`21f6de90`, the unsquared coefficients) ran on an Octatrack MKII as a card image and as a USB package ([evidence/hardware.md](evidence/hardware.md)); this source differs from it only in sixteen DSP data words and has not run on a unit yet. That run and the owner's first-release approval are still missing (TESTING.md).
+**Status: release candidate, not released.** It builds natively, passes the author's render gate (70 checks), a stress run and the performance audit, and its packages compile. This source's USB package ran on an Octatrack MKII for about 15 minutes beside five other modules: every mode, the fixed SHIFT by ear, two instances on one core and a third refused; the base's self-test failed on ColdFire CPU with the six modules (98.8 %; see below). The previous source (`21f6de90`, the unsquared coefficients), which differs only in sixteen DSP data words, also ran as a card image and as a USB package with reloads and power cycles ([evidence/hardware.md](evidence/hardware.md)). The owner's first-release approval is still missing.
 
 ## Overview
 
@@ -67,7 +67,9 @@ Assign LOFI2 in FX2 SETUP, shape the modulator on the main page (FREQ, MIX, GAIN
 - **A missing module.** The native build aliases the ID of a module that is not in the image to NONE, so a project that selects LOFI2 on an image without it should play that track dry. Not tested on a card image. Over USB, the base shows MODULE MISSING and plays the track dry, and reinstalling LOFI2 restores it with its settings (tested on an MKII).
 - **Aliasing is intended** in SRR and BRR; they have no reconstruction filter. Stock LO-FI follows its hold with a FIR near Nyquist that LOFI2 does not copy.
 - **Parameter locks hold until the track's next trig**, as they do for every stock parameter on this OS (checked against the stock image in the emulator).
-- **Not tested:** eight instances and scenes on a unit; FX1 in a card image on a unit; payload B in the render gate.
+- **The base's self-test with six modules failed on CPU.** On an MKII on the uncached beta base `6650236a`, with LOFI2 beside Output Matrix, Analog BD, Apply Scene, Quantize Live Rec and one private module, the self-test reported the ColdFire CPU at 98.8 % ("the CPU over 90 % (LOFI2)"); every module was intact and the DSP effects ran. LOFI2 has no ColdFire code, and six or seven modules on an uncached base reach 80-100 % CPU in other testers' sets too, but the cause was not confirmed.
+- **Scene locks hold LOFI2's knobs** as they hold any parameter: if FREQ, MIX, GAIN or SRR seem to do nothing, check the track's scene locks.
+- **Not tested:** on this source, BRR and LPF individually on a unit, the feedback case on a unit, reloads and a power cycle (run with the previous source only); eight instances and scenes on a unit; FX1 in a card image on a unit; payload B in the render gate.
 
 ## Tests and measurements
 
@@ -79,8 +81,9 @@ Details, commands and every result are in [TESTING.md](TESTING.md).
 - Static cost 416 cycles/sample; `dsp_host` benchmark 430 instructions/sample (SHIFT) and 274 (RING), against stock SPRING REV 314, LO-FI 290, DARK REV 242 and DJ EQ 331.
 - Stress: eight instances (four per core) behind DJ EQ, LFOs and every slot changing each sixteenth, 32 s under memory guards: no hang, no clobber. `perf:audit` passes with a justification for SHIFT's cost.
 - `fx:audit`: clean at the defaults and with the shelf in; the modulating and reducing settings are recorded as intended; the SHIFT residue and the self-sustaining feedback above are the findings.
-- USB loading (previous source, package `7ee9277f…`): ran on an MKII on the beta base: trial and Undo, install and Keep, FX1 and FX2 on both cores, two instances on one core, removal, the missing-module fallback and persistence through a Part reload, a project reload and a power cycle.
-- Hardware (previous source, card image `3d63406d…`): a functional MKII report (every mode, five SHIFT instances, a parameter lock, Part reload and a power cycle). This source's own hardware run is pending.
+- USB loading, this source (package `4f794ebc…`, 20 October 2026): install and Keep, every mode, FREQ, MIX, GAIN and SRR, the fixed SHIFT by ear, two instances on one core and a third refused DSP FULL, on base `6650236a` beside five other modules; the base's self-test failed on CPU (above).
+- USB loading, previous source (package `7ee9277f…`): ran on an MKII on the beta base: trial and Undo, install and Keep, FX1 and FX2 on both cores, two instances on one core, removal, the missing-module fallback and persistence through a Part reload, a project reload and a power cycle.
+- Hardware (previous source, card image `3d63406d…`): a functional MKII report (every mode, five SHIFT instances, a parameter lock, Part reload and a power cycle). Not repeated with this source.
 - Upstream hardware evidence (Bryan T's MKII, octabam images 96-99 and builds 11 and 12, October 2026) is quoted in TESTING.md. It is not evidence for this build.
 
 ## Authorship and licences

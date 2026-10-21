@@ -383,8 +383,7 @@ Taken from the author's README and manifest at the pinned commit (kept under `up
 
 ## Not tested
 
-- This source (octabam `8250be0c`) on a unit: every hardware result in this record is for the previous source. Its own run of the USB package `4f794ebc…` is pending.
-- The self-sustaining SHIFT feedback at FDBK 124-127 (RNGE HIGH, FREQ 60-76) on a unit.
+- On this source (octabam `8250be0c`), on a unit: BRR and LPF individually, the self-sustaining SHIFT feedback at FDBK 124-127 (RNGE HIGH, FREQ 60-76), Part and project reload, a power cycle, the missing-module fallback. They ran with the previous source only and carry over by argument (16 coefficient words), not by observation. What did run with this source is in [evidence/hardware.md](evidence/hardware.md) (20 October 2026), including the failed CPU self-test with six modules.
 - On a unit: an MKI, eight instances at once, chip timing, LFO modulation, scenes and the crossfader, and project save and reload as a separate step (evidence/hardware.md lists what was run).
 - FX1 in a card image on hardware (FX1 ran on the unit with the USB package only).
 - `rig_render` on both cores, `verify_set` under the ColdFire port, `make check` as a whole.
@@ -403,8 +402,8 @@ On the re-pinned source (octabam `8250be0c`), merged with main `e370b78e`, 20 Oc
 
 - `npm run licenses:generate`: passes with the `lofi2` licence component. `npm run sdk:imports:check` passes.
 - `npm run perf:audit -- check`: no check failed (above).
-- `npm run modules:generate` and `npm run modules:check`: **refused, as they must be until this source's hardware run:** "lofi2: qualification source SHA-256 differs from current native source". `tests.qualification` still binds the previous source (`e041c2bb…`, image `3d63406d…`, the LOFI2T03 report); the current native source is `d87e5aff…`. It gets a new qualification record (source hash, the image or base the run used, the new hardware report) once the run on a unit is in; nothing is filled in before. `src/catalog/module-documents.json` is regenerated then.
+- `tests.qualification` binds this source: native source `d87e5aff…`, image `69d28e95…` (MAIN.raw of beta base `6650236a`, the base the 20 October run used, reproduced here from main with the beta flags, as Output Matrix and BBD record their USB runs), the new hardware report. `npm run modules:generate` and `modules:check` pass with it.
 - `npm run module:verify -- lofi2 --os <the tester's 1.40C>`: 130 selections; 46 native module-owned images match (20 identical outright, 26 outside the platform writes), 84 matching refusals, 0 mismatches. Recorded in `sdk/native-comparisons/lofi2.json`. The run also reorders POLY8's row in `chooser-metadata.json` (no entry changed); that reorder is not kept, and `--check` passes against the committed order. The 15 October run's three mismatches (native refused crowded selections for menu space where the browser builder refused for DSP space) are gone since the builder's overflow-parity fix (#682).
 - The beta base rebuilt for LOFI2's chooser row with the beta flags (`octatrack:base … --resident-on-demand --controllers --write`, Elekloader at kit pin `7b5b5b8`): identity `6b6a1616…`, .bin `5eccbce3…`; rebuilt again after the re-pin, unchanged. The five base-bound packages rebuild byte-identical, and their `requiredBase` names `6b6a1616`.
-- `npm run module:doctor -- lofi2`: one red line, the module rules above.
+- `npm run module:doctor -- lofi2`: no red line.
 - Before the re-pin, `npm run pr:ready` on this Mac passed everything but three `sdk:check` tests that do not involve LOFI2: `test_run_pack` (packer parity), `test_base_bound` for CC Map and `test_published_module_packages_rebuild_byte_for_byte` at Tape Echo (both read a local Elekloader checkout that is not at the recipes' pin). Now it stops at `modules:generate`, for the qualification above.

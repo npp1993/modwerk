@@ -1,5 +1,54 @@
 # LOFI2 0.1.0-experimental: hardware report
 
+## This source: the USB package on an MKII (20 October 2026)
+
+A functional report, as the tester gave it; reported evidence by ear, not a measured qualification.
+
+- **Unit:** Octatrack MKII, OS 1.40C, flashed beta base `6650236a…` (main's committed base at `e370b78e`, uncached module code; MAIN.raw SHA-256 `69d28e954674f18e5e3fb80c0e0ab7083755e89615bd41a7753b93f4221cc329`, reproduced here byte for byte from main with the beta flags).
+- **Package under test:** `public/octatrack-modules/lofi2/0.1.0-experimental.mwrm`, SHA-256 `4f794ebcb6ebe69f4c66412463f7cef41952551b2b2484cebf2cbfe004e5662c`, built from octabam `8250be0c` (Bryan T's SHIFT fix `153063d8`).
+- **Date and duration:** 20 October 2026, about 15 minutes. **Tester:** npp1993 (the contributor of this port; LOFI2's author is Bryan T), at the unit; installation driven over USB by a coordinating session.
+- **Other modules installed:** Output Matrix `9f97f3bd…`, Analog BD, Apply Scene `bd90b397…`, Quantize Live Rec `026464de…` and one private module.
+
+### Installation
+
+| Step | Result |
+| --- | --- |
+| Remove the kept previous package `7ee9277f…`, then trial `4f794ebc…` and Keep | accepted (generation 2) |
+| Swap back to `7ee9277f…`, then again to `4f794ebc…` | both accepted; final state `4f794ebc…` kept (generation 6) |
+| Removal while a track used LOFI2 | refused, loader refusal 7 (in use), as designed |
+
+### Panel checks (the tester's results)
+
+On the first attempt FREQ, MIX, GAIN and SRR seemed to do nothing. The tester then found scene locks active on that track, which hold those parameters: the test setup, not the module. With the scene locks off:
+
+| Check | Result |
+| --- | --- |
+| RING with RNGE LOW | amplitude modulation (tremolo) |
+| DOWN and UP | an audible frequency shift |
+| MODE swept through RING, DOWN and UP | works |
+| FREQ, MIX, GAIN and SRR | each acts |
+| The fix by ear: UP, RNGE HIGH, FREQ about 30, MIX 127, FDBK 0, bright material | "seems good": one shifted copy, the mirror image not prominent. By ear only; no A/B against the previous build was recorded |
+| Two instances, T1 FX2 and T2 FX2 | both ran |
+| A third on the same core, T1 FX1 | refused, DSP FULL |
+
+### The base's self-test
+
+Run over USB with `4f794ebc…` installed beside the five other modules: **FAILED**, "the CPU over 90 % (LOFI2)". Modules 6/6 intact, 2 with DSP effects, together 2/2 ran; peaks: CPU 98.8 %, T1-4 26.7 %, T5-8 43.2 %; longest frame 391 µs; card set 7, 6/6.
+
+The failing figure is the ColdFire CPU, not a DSP core. Main's beta notes tie 80-100 % ColdFire CPU with six or seven modules to module code running uncached (`docs/OCTATRACK_BETA_TEST_PLAN.md`, findings 20, 52 and 56: testers' self-tests refused at 98-100 % CPU), and this base runs module code uncached. That this is the cause here is an interpretation, **not confirmed**: LOFI2 alone, or the same set without it, was not self-tested. LOFI2 itself has no ColdFire code (an ABI 6 DSP package with no sites).
+
+### Not run on this source
+
+BRR and LPF individually, the self-sustaining feedback case (TESTING.md, re-pin), Part and project reload, a power cycle and persistence, the missing-module fallback, FX1 on a card image, eight instances, scenes and the crossfader. Against the previous source only 16 DSP coefficient data words differ (TESTING.md, re-pin), so its results below carry over **by argument only, not by observation**.
+
+### Limits
+
+- One unit, about 15 minutes, by ear; no recording, chip timing or memory check.
+- The self-test failure above is unexplained on this evidence.
+- The tester is the contributor of the port, not an independent reviewer.
+
+## Previous source (history)
+
 > **Previous source.** Everything below was run on the source pinned to octabam `21f6de90` (the unsquared SHIFT coefficients): the card image `3d63406d…` and the USB package `7ee9277f…`. On 20 October 2026 the module was re-pinned to octabam `8250be0c` for Bryan T's SHIFT fix (`153063d8`). That source differs only in sixteen DSP coefficient words (TESTING.md, re-pin), and these reports do not bind it: its own run on a unit is pending. They are kept as the previous source's history.
 
 A functional report, as the tester gave it. It is reported evidence, not a measured stress qualification.
