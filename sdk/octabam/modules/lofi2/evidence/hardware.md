@@ -37,6 +37,8 @@ Run over USB with `4f794ebc…` installed beside the five other modules: **FAILE
 
 The failing figure is the ColdFire CPU, not a DSP core. Main's beta notes tie 80-100 % ColdFire CPU with six or seven modules to module code running uncached (`docs/OCTATRACK_BETA_TEST_PLAN.md`, findings 20, 52 and 56: testers' self-tests refused at 98-100 % CPU), and this base runs module code uncached. That this is the cause here is an interpretation, **not confirmed**: LOFI2 alone, or the same set without it, was not self-tested. LOFI2 itself has no ColdFire code (an ABI 6 DSP package with no sites).
 
+Asked about the result afterwards, the tester said they noticed no lag or sluggishness during the session with all six modules installed. That is their impression at the panel, not a measurement.
+
 ### Not run on this source
 
 BRR and LPF individually, the self-sustaining feedback case (TESTING.md, re-pin), Part and project reload, a power cycle and persistence, the missing-module fallback, FX1 on a card image, eight instances, scenes and the crossfader. Against the previous source only 16 DSP coefficient data words differ (TESTING.md, re-pin), so its results below carry over **by argument only, not by observation**.
