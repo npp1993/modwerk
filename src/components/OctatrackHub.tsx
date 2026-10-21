@@ -2,6 +2,7 @@ import { useMobileWorkspace } from '../hooks/useMobileWorkspace'
 import { ConfigurationHandoff } from './ConfigurationHandoff'
 import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import { MODULES } from '../catalog/modules'
+import { moduleUsbOnly } from '../catalog/usb-only'
 import { lastInventory, sameModules, type Inventory } from '../config/inventory'
 import { lastSuccessfulSync } from '../config/octatrack-progress'
 import { BaseLayoutRequired, BaseUpdateRequired, baseOutdated, moduleSetReview, setLayout } from '../engine/elekloader/module-set'
@@ -129,13 +130,15 @@ function DesktopOctatrackHub({ view, link, inventory, sets, selectedId, needs, u
     : state.notice?.tone === 'error' ? [state.notice.text, <button key="connect" className="button button-quiet" onClick={() => void link?.connect()}>Connect</button>]
     : [<>Not connected{last ? <> · Last seen: {lastName ? <b>{lastName}</b> : modules(last.moduleIds.length)} · {when(last.at)}</> : null}</>, <button key="connect" className="button button-quiet" onClick={() => void link?.connect()}>Connect</button>]
   const panel = (name: HubView, content: ReactNode) => <section key={name} className={'hub-view hub-view-' + name} hidden={view !== name} aria-label={name === 'set' ? selected?.name ?? 'Module set' : UNIT_VIEWS.find(item => item.view === name)!.title}>{content}</section>
-  const syncLine: ReactNode = !usb ? <>This browser can’t use USB. <a href="#octatrack/setup">Install it from the card</a> instead.</>
+  // A set with a module card firmware cannot carry (usb-only.ts) is never pointed at the card.
+  const cardable = !selected?.moduleIds.some(id => moduleUsbOnly(id))
+  const syncLine: ReactNode = !usb ? cardable ? <>This browser can’t use USB. <a href="#octatrack/setup">Install it from the card</a> instead.</> : 'This browser can’t use USB, and this set needs it. Open this page in Chrome or Edge on a computer.'
     : needsBase ? <span role="alert">{(review?.problem ?? new BaseUpdateRequired()).message}</span>
     : review?.problem ? <span role="alert">{review.problem.message}</span>
     : changes ? review?.needsSync ? <>Adds {changes.add.length} · Removes {changes.remove.length}{updates.length > 0 && <> · Updates {updates.length}</>}{!!(changes.stockOff.length + changes.stockOn.length) && <> · Stock effects change</>}</>
       : selected?.moduleIds.length ? <span className="hub-insync"><span className="unit-led is-on" aria-hidden="true" />Already on your Octatrack</span> : 'No modules in this set.'
     : busy ? 'A sync is running.' : status === 'stock' ? 'Install the base to sync this set.' : connected ? 'Reading what’s on your Octatrack…'
-    : <>Connect your Octatrack to sync this set, or <a href="#octatrack/setup">install it from the card</a>.</>
+    : cardable ? <>Connect your Octatrack to sync this set, or <a href="#octatrack/setup">install it from the card</a>.</> : 'Connect your Octatrack to sync this set.'
   return <div className="configuration-page octatrack-hub">
     {header}
     <div className="hub-split" ref={split}>

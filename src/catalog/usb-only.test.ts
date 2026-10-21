@@ -7,9 +7,11 @@ describe('modules that need the Modwerk base', () => {
     const published = { packages: [{ id: 'repitch', requires: 8 }, { id: 'tapehead' }] }
     expect(moduleUsbOnly('repitch', published)).toBe(true)
     expect(moduleUsbOnly('tapehead', published)).toBe(false)
-    expect(cardBuildError(['tapehead'], published)).toBe('')
-    expect(cardBuildError(['tapehead', 'repitch'], published)).toMatch(/^Repitch needs the Modwerk base, so card firmware cannot include it\. Sync this set over USB/)
-    expect(() => cardBuildError(['unknown'], published)).toThrow('Unknown module')
+    expect(cardBuildError(['tapehead'], true, published)).toBe('')
+    expect(cardBuildError(['tapehead', 'repitch'], true, published)).toMatch(/^Repitch needs the Modwerk base, so card firmware cannot include it\. Sync this set over USB/)
+    // Without USB sync (the beta interface) it does not point at a sync the member cannot start.
+    expect(cardBuildError(['repitch'], false, published)).toMatch(/in the beta for now; take it out to build card firmware\.$/)
+    expect(() => cardBuildError(['unknown'], true, published)).toThrow('Unknown module')
   })
 
   it('follows the published packages', () => {

@@ -54,3 +54,21 @@ describe('USB library feedback and card admission stay separate', () => {
     expect(load).not.toHaveBeenCalled()
   })
 })
+
+describe('a module only the Modwerk base can load (usb-only.ts)', () => {
+  const published = { packages: [{ id: 'everb', requires: 8 }] }
+  it('cannot be added without USB sync, and is offered as usual in the beta USB library', () => {
+    expect(libraryCompatibility(true, [], false, ['everb'], published).blocks).toEqual({})
+    const { blocks } = libraryCompatibility(false, ['analog-bassdrum'], false, ['everb'], published)
+    expect(blocks.everb).toMatchObject({ kind: 'usb-only', reason: 'USB only, in the beta' })
+    expect(libraryCompatibility(false, ['everb'], false, ['everb'], published).blocks.everb).toBeUndefined() // in the set already: removable
+    const html = renderToStaticMarkup(createElement(BetaUi, { value: false }, createElement(MachineLibrary, {
+      device: DEVICES_BY_ID.octatrack, query: '', octatrackModules: [everb], octatrackSelected: [], onToggleOctatrack: noop,
+      digiSelected: { digitakt: [], 'digitakt-ii': [], digitone: [] }, onToggleDigi: noop, family: 'all', onFamilyChange: noop, sort: 'collection',
+      onSortChange: noop, statistics: [], octatrackConflicts: [], octatrackBlocks: blocks, comparison: [], onCompare: noop, onOpenComparison: noop,
+      viewedModuleVersions: {}, moduleBaseline: [],
+    })))
+    expect(html).toMatch(/<button[^>]*class="add-button is-blocked"[^>]*disabled/)
+    expect(html).toContain('USB only, in the beta')
+  })
+})

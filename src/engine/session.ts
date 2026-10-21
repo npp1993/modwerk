@@ -9,6 +9,7 @@ import { explainBuildFailure } from './build-errors'
 import { diagnosePlacement, isPlacementFailure } from './placement-conflicts'
 import { checkSelection } from '../catalog/compatibility'
 import { moduleAvailabilityError } from '../catalog/availability'
+import { cardBuildError } from '../catalog/usb-only'
 import { CATALOG_SOURCE, resolveSelection } from '../catalog/modules'
 import { buildBase, type BaseFill } from './elekloader/octatrack-base'
 // A file of its own, fetched when a base is built: the worker bundle inlines imports, and the package is 600 KB.
@@ -16,7 +17,7 @@ import basePackage from './assets/octatrack-base.elemod?url'
 import baseVariants from './assets/octatrack-base-variants.json?url'
 import { variantPackage, type BaseVariants } from './elekloader/base-variants'
 import baseFills from './assets/octatrack-base-fills.json'
-import { DOWNLOADS_ENABLED, DSP_LOADER, FIRMWARE_VERSION, type BuildReport, type EngineRequest, type EngineResponse, type StartupAnimation } from './protocol'
+import { DOWNLOADS_ENABLED, DSP_LOADER, FIRMWARE_VERSION, USB_LINK, type BuildReport, type EngineRequest, type EngineResponse, type StartupAnimation } from './protocol'
 export function createEngineSession(reply: (response: EngineResponse, transfer?: Transferable[]) => void) {
   // `newest` is the latest validate or build: the worker runs requests concurrently, and the page ignores older answers.
   let base: DecodedFirmware | null = null, stock: Uint8Array | null = null, generation = 0, newest = 0
@@ -57,6 +58,9 @@ export function createEngineSession(reply: (response: EngineResponse, transfer?:
       const modules = resolveSelection(request.moduleIds)
       const unavailable = moduleAvailabilityError(request.moduleIds,request.betaAccess === true)
       if (unavailable) throw new Error(unavailable)
+      // Card firmware has no Modwerk base: a module that needs it is refused here, for the page and the MCP's downloads alike.
+      const card = cardBuildError(request.moduleIds, USB_LINK || request.betaAccess === true)
+      if (card) throw new Error(card)
       if (!modules.length) throw new Error('Add at least one module before building custom firmware.')
       if (typeof request.keepStockFx2 !== 'boolean') throw new Error('Choose whether to keep the stock FX2 effects.')
       const claims = checkSelection(request.moduleIds, DSP_LOADER && request.keepStockFx2)

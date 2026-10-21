@@ -186,6 +186,10 @@ h2 { font-size: 16px; letter-spacing: -.15px; font-weight: 600; }
 /* A module that conflicts with the configuration. The button stays enabled and opens the swap prompt. */
 .add-button.is-conflict { color: #f0bb79; background: #3a3026; border-color: #715235; }
 .add-button.is-conflict:hover, .add-button.is-conflict[aria-expanded="true"] { background: #463829; border-color: #f0bb79; }
+/* A module this member cannot load (USB only, in the beta): the add is disabled, the reason is on the chip. */
+.add-button.is-blocked, .module-configure-action.is-blocked { color: var(--muted); cursor: not-allowed; opacity: .7; }
+.add-button.is-blocked:hover { background: var(--surface-hover); }
+.add-block-detail { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .module-card { position: relative; }
 /* The note replaces the type line on a card and the prompt floats over it, so a conflict never changes a card's height. */
 .add-block-chip { display: flex; align-items: center; gap: 5px; flex: 1 1 0; min-width: 0; color: var(--muted); }

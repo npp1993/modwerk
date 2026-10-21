@@ -5,8 +5,9 @@ import { selectionConflicts, type SelectionConflict } from './selection-conflict
 // configuration panel shows, so the library can warn before the add instead of after it.
 export type AddBlock = {
   // 'conflict' names selected modules the candidate cannot run beside. 'stock-fx2' only needs the stock FX2 option off,
-  // which is a setting rather than a module to remove, so it never blocks the add.
-  kind: 'conflict' | 'stock-fx2'
+  // which is a setting rather than a module to remove, so it never blocks the add. 'usb-only' is a module only the
+  // Modwerk base over USB can load (usb-only.ts) for a member who cannot sync over USB: the add is disabled.
+  kind: 'conflict' | 'stock-fx2' | 'usb-only'
   // Selected modules the candidate conflicts with, in catalogue order. Empty for 'stock-fx2'.
   withIds: string[]
   // Short, for the chip beside the add button.

@@ -385,9 +385,11 @@ the base was regenerated with these fixes (`b3ac5155…`, `.bin` `f6488e90`) and
   entries with `requiresFeatures` and `dspClaims`), the private candidate reader and the MCP's prepared packages accept
   ABI 9.
 - A module whose published package requires a base DSP feature is USB-only: card firmware has no base, so the
-  configurator's card build refuses it (`cardBuildError` in `src/catalog/usb-only.ts`, derived from the package's
-  `requires`, not listed per module) and the MCP shows `card: false`. Its card rows stay, so native comparisons and
-  the pair checks still cover the card build it would make.
+  configurator and the firmware session refuse card firmware with it (`cardBuildError` in `src/catalog/usb-only.ts`,
+  derived from the published package's `requires`, not a manifest field, not listed per module and not checked
+  against a pinned version) and the MCP shows `card: false`. While USB sync is beta-only, members without the beta
+  interface cannot add it (`libraryCompatibility`'s `usb-only` block) and the MCP's public catalogue leaves it out.
+  Its card rows stay, so native comparisons and the pair checks still cover the card build it would make.
 
 **Re-check on the fixed twin (MKII, OS 1.40C, 20-21 October 2026).** The development twin of `b3ac5155` (identity
 `2bf3c9ab…`, `.bin` `d4522c1a`), RAM-booted, with Sidechain's package relinked to it (`f509d094`); ears and capture by
