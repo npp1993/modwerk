@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type RefObject, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
 import { DEFAULT_MODULE_SORT, MODULE_SORTS } from '../community/module-statistics'
 import { useSheetScrollLock } from '../hooks/useSheetScrollLock'
+import { useSheetFocus } from '../hooks/useSheetFocus'
 
 type SheetOption = { value: string; label: string; count?: number }
 
@@ -34,17 +35,17 @@ export function LibraryResultsBar({ summary, sort, onSortChange, family, onFamil
       <button type="button" className={'library-results-button' + (sort !== DEFAULT_MODULE_SORT ? ' is-set' : '')} aria-label={'Sort: ' + sortOption.label} aria-haspopup="dialog" aria-expanded={open === 'sort'} aria-controls={open === 'sort' ? sheetId : undefined} onClick={event => show('sort', event.currentTarget)}><Icon name="sort" size={15} /><span>{sortOption.short}</span></button>
       <button type="button" className={'library-results-button' + (family !== 'all' ? ' is-set' : '')} aria-label={'Type: ' + (family === 'all' ? 'all types' : family)} aria-haspopup="dialog" aria-expanded={open === 'type'} aria-controls={open === 'type' ? sheetId : undefined} onClick={event => show('type', event.currentTarget)}><Icon name="filter" size={15} /><span>{family === 'all' ? 'Type' : family}</span></button>
     </>}
-    {open && <OptionSheet id={sheetId} title={open === 'sort' ? 'Sort by' : 'Type'} options={open === 'sort' ? MODULE_SORTS : typeOptions} value={open === 'sort' ? sort : family} onClose={close}
+    {open && <OptionSheet trigger={trigger} id={sheetId} title={open === 'sort' ? 'Sort by' : 'Type'} options={open === 'sort' ? MODULE_SORTS : typeOptions} value={open === 'sort' ? sort : family} onClose={close}
       onChoose={value => { if (open === 'sort') onSortChange(value); else onFamilyChange(value); close() }} />}
   </div>
 }
 
-function OptionSheet({ id, title, options, value, onChoose, onClose }: { id: string; title: string; options: readonly SheetOption[]; value: string; onChoose: (value: string) => void; onClose: () => void }) {
+function OptionSheet({ trigger, id, title, options, value, onChoose, onClose }: { trigger: RefObject<HTMLButtonElement | null>; id: string; title: string; options: readonly SheetOption[]; value: string; onChoose: (value: string) => void; onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const titleId = useId()
   useSheetScrollLock(true)
+  useSheetFocus(true, panel, trigger, '[aria-pressed="true"]')
   useEffect(() => {
-    panel.current?.querySelector<HTMLElement>('[aria-pressed="true"]')?.focus()
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     window.addEventListener('hashchange', onClose)
@@ -54,13 +55,14 @@ function OptionSheet({ id, title, options, value, onChoose, onClose }: { id: str
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
     const buttons = Array.from(panel.current?.querySelectorAll<HTMLElement>('.library-sheet-options button') ?? [])
     const index = buttons.indexOf(document.activeElement as HTMLElement)
-    buttons[(index + (event.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length]?.focus()
+    const next = index < 0 ? event.key === 'ArrowDown' ? 0 : buttons.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length
+    buttons[next]?.focus()
     event.preventDefault()
   }
   return createPortal(<>
     {/* A tap on the scrim closes the sheet without reaching the page behind it. */}
     <div className="sheet-scrim" aria-hidden="true" onClick={onClose} />
-    <div ref={panel} id={id} className="library-filter-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} onKeyDown={moveFocus}>
+    <div ref={panel} id={id} className="library-filter-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} onKeyDown={moveFocus}>
       <div className="sheet-head"><span className="sheet-handle" aria-hidden="true" /><strong id={titleId}>{title}</strong><button type="button" className="sheet-close" aria-label="Close" onClick={onClose}><Icon name="close" size={18} /></button></div>
       <div className="library-sheet-options">
         {options.map(option => <button key={option.value} type="button" aria-pressed={option.value === value} onClick={() => onChoose(option.value)}>

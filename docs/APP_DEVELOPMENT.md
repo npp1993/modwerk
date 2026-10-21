@@ -38,6 +38,10 @@ Every visible module must support firmware generation and download in a compatib
 
 ## Browsing module results
 
+### Search and filter recovery
+
+`src/catalog/module-search.ts` supplies the library and developer MCP matcher. Every query word must match actual module, author/contributor, instrument, type or category text, in any order; case, combining accents and punctuation are normalized. Keep cards and type counts on the same session-eligible catalogue. Search and type filters can be removed separately; clearing a filter returns keyboard focus to the results heading. The All machines build action follows the active configuration's machine, just like the phone dock.
+
 ### External project directory
 
 `/projects/` is the **Other projects** directory, linked from the desktop sidebar,
@@ -72,11 +76,19 @@ or proof of compatibility. The directory's own Modwerk sharing card is separate;
 see [social-preview artwork](SOCIAL-PREVIEW.md#other-projects-directory).
 Omit `--refresh` to resume missing previews after a transient download failure.
 
+### Phone sheet keyboard behavior
+
+Phone filter, machine and navigation sheets use `useSheetFocus` alongside the scroll lock. They focus their current choice, keep Tab inside, make the covered app inert and restore the trigger after removing inert on dismissal. Preserve these behaviors when changing portal placement, and keep native-dialog handoffs from having their focus stolen. DOM tests cover focus and filter behavior; rendered layout, actual touch and assistive-technology behavior still need review on the candidate preview.
+
 ### Module navigation
 
 On desktop (above 1100px), module detail pages offer left and right chevrons and Left/Right arrow keys to move through the catalog results that were visible when a module was opened. The result order includes the selected machine, category, search, type and sort; All machines continues across machine groups in their displayed order. Paging stops at each end. “Back to results” restores the same filters. The last result selection stays in this tab's session storage so refreshing a module page keeps the context; unavailable storage still permits paging during the visit. Direct pages outside that result selection keep their usual library link.
 
 Inputs, tab lists, menus, media controls and open dialogs retain their arrow-key behavior. Phones and smaller layouts retain the normal module page without side chevrons or global arrow-key navigation.
+
+### Mobile configurations
+
+Phones (up to 600px) and touch-only tablets use `useMobileWorkspace`: discovery, module selection, compatibility claims, JSON import/export and forum sharing remain available. Firmware file pickers, build/download actions and Octatrack unit installation/sync panels do not mount. The beta Octatrack route opens its module-set editor even from a unit-page deep link. Octatrack JSON transfers preserve `classicStartup` alongside module/USB and chooser settings. JSON files move sets between devices; browser storage is local and does not sync. Desktop build authorization, risk acceptance and exact-build qualification remain required. Keep mobile compatibility copy at the claims/estimate level: it is not placement or hardware verification.
 
 ## Run locally
 
@@ -469,6 +481,8 @@ sdk/              pinned native source, eleven module folders, internal dependen
 `npm run check` runs lint, small domain / API tests, type checks and a production build. API tests use an in-memory SQLite database and synthetic media, never real firmware. Native emulator, stress and audio-render checks require separate qualification and are not part of this command or the configuration flow.
 
 Checks first validate licence-notice and catalog freshness, then finish notice/catalog/media generation before readers start. SDK checks, lint, tests and the production build run concurrently, and every stage must pass; type errors prevent bundling. Vitest discovers `src/**/*.test.ts` and `scripts/**/*.test.mjs`; `.test.tsx` is not included. Use `.test.ts` with `createElement` for React regressions and confirm the expected cases ran. Proof builds with a localhost API need a separate build after the normal full check; production CSP/header parity deliberately rejects that override. Test files retain isolation and use up to four workers, including the release tests under `scripts/`. ESLint caches results by file contents and configuration under `node_modules/.cache/eslint/`; TypeScript keeps incremental app, tooling and server state under `node_modules/.tmp/`. Licence and catalog/qualification validation, SDK checks, all tests and production bundling still run every time. `npm run typecheck` checks all three TypeScript projects, and `npm run lint -- --no-cache` performs an uncached lint run.
+
+For asynchronous relays, wait for the observable message or status (for example, `vi.waitFor`) instead of sleeping a few milliseconds. A message can cross multiple event-loop turns, so a fixed 5 ms wait can assert before delivery on busy CI runners. Keep simulated sessions closed in `finally` when an assertion can fail.
 
 Successful reports offer the Modwerk report as the primary conversation link, with GitHub available as an optional secondary link. Existing-report checks link to the module’s frontend Issues tab. The server mentions the current catalog maintainers. If GitHub forwarding fails, the saved-report confirmation asks users not to submit duplicates.
 

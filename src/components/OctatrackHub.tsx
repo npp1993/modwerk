@@ -1,3 +1,5 @@
+import { useMobileWorkspace } from '../hooks/useMobileWorkspace'
+import { ConfigurationHandoff } from './ConfigurationHandoff'
 import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import { MODULES } from '../catalog/modules'
 import { lastInventory, sameModules, type Inventory } from '../config/inventory'
@@ -52,13 +54,33 @@ function SetMenu({ set, onAction }: { set: Configuration; onAction: (id: string,
  * (`grid`) and the card route (`card`: base OS file, checks, build) are App's own parts. Every page stays mounted, so
  * local samples and the load history survive moving around. Nothing goes onto the unit without the guided sync.
  */
-export function OctatrackHub({ view, link, inventory, sets, selectedId, needs, username, onSelect, onSync, onInstall, onNew, onImport, onSetAction, onFill, onSaveUnit, onReport, header, grid, card }: {
+type OctatrackHubProps = {
   view: HubView; link: OctatrackLink | null; inventory?: Inventory; sets: Configuration[]; selectedId?: string; needs?: ProjectNeeds; username?: string | null
   onSelect: (id: string) => void; onSync: (id: string) => void; onInstall: () => void
   onNew: () => void; onImport: () => void; onSetAction: (id: string, action: SetAction) => void
   onFill: (ids: string[]) => void; onSaveUnit: () => void; onReport: (id?: string) => void
   header: ReactNode; grid: ReactNode; card: ReactNode
-}) {
+}
+
+export function OctatrackHub(props: OctatrackHubProps) {
+  const mobile = useMobileWorkspace()
+  return mobile ? <MobileModuleSets {...props} /> : <DesktopOctatrackHub {...props} />
+}
+
+function MobileModuleSets({ sets, selectedId, onSelect, onNew, onImport, onSetAction, header, grid }: OctatrackHubProps) {
+  const selected = sets.find(set => set.id === selectedId) ?? sets[0]
+  return <div className="configuration-page">
+    {header}
+    <section className="configuration-section" aria-label="Module sets">
+      {!!sets.length && <label>Module set<select value={selected?.id} onChange={event => onSelect(event.target.value)}>{sets.map(set => <option key={set.id} value={set.id}>{set.name} · {modules(set.moduleIds.length)}</option>)}</select></label>}
+      <div className="configuration-heading-actions"><button type="button" className="button button-quiet" onClick={onNew}>New module set</button><button type="button" className="button button-quiet" onClick={onImport}>Import JSON</button><a className="text-button" href="#module-sets">Starting points</a></div>
+    </section>
+    {selected ? <><header className="hub-editor-head"><h2>{selected.name}</h2><SetMenu set={selected} onAction={onSetAction} /></header>{grid}<ConfigurationHandoff onExport={() => onSetAction(selected.id, 'export')} exported={false} /></>
+      : <p>Start a module set, then add modules from the library.</p>}
+  </div>
+}
+
+function DesktopOctatrackHub({ view, link, inventory, sets, selectedId, needs, username, onSelect, onSync, onInstall, onNew, onImport, onSetAction, onFill, onSaveUnit, onReport, header, grid, card }: OctatrackHubProps) {
   const state = useOctatrackLink(link), { status, identity } = state
   // The page fits the window, so it never scrolls as a whole: the split gets the height left in the app's main area.
   // shortcut: measured when the window or main area resizes and when the page changes, not when a banner above appears.

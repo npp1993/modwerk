@@ -18,7 +18,8 @@
   "copied": [],
   "regions": [],
   "claims": [
-    "settings:INPUT SENDS PRE"
+    "settings:INPUT SENDS PRE",
+    "settings:KEEP FX AWAKE"
   ],
   "requires": [],
   "derive": null,
@@ -40,6 +41,13 @@
           "stockSha256": "4729e5aa4195651cbe38e64435f22f20584f21eaa0fec6513c0335d17a6f0868",
           "op": "jsr",
           "target": "ipf_sends"
+        },
+        {
+          "addr": "0x40077ef8",
+          "len": 6,
+          "stockSha256": "979b2bdcc6cab36b59c536da97194d62109ad62906a75d6fbff3dd0e5cff9109",
+          "op": "jsr",
+          "target": "ipf_hold"
         }
       ]
     }

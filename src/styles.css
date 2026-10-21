@@ -233,13 +233,13 @@ h2 { font-size: 16px; letter-spacing: -.15px; font-weight: 600; }
   .module-card .module-preview { height: 150px; }
   .module-card-body { padding: 14px 16px 10px; }
   .module-card-title { align-items: center; }
-  .add-button { display: inline-flex; gap: 6px; width: auto; height: 40px; margin-top: 0; padding: 0 14px; border-radius: 8px; font-size: 13px; }
+  .add-button { display: inline-flex; gap: 6px; width: auto; height: 44px; margin-top: 0; padding: 0 14px; border-radius: 8px; font-size: 13px; }
   .add-button span { display: inline; }
   .card-description { display: -webkit-box; font-size: 14px; line-height: 1.6; -webkit-line-clamp: 3; }
   .card-bottom { font-size: 13px; }
   .card-stats { gap: 4px 14px; }
   .card-proof { font-size: 12px; }
-  .card-proof label { min-height: 40px; margin-right: -12px; padding: 0 12px; }
+  .card-proof label { min-height: 44px; margin-right: -12px; padding: 0 12px; }
   /* The whole card opens the module page; its own controls stay on top. */
   .module-card-heading > a::before { content: ""; position: absolute; inset: 0; }
   .add-button, .card-credit a, .card-proof label { position: relative; z-index: 1; }
@@ -1010,6 +1010,14 @@ h1 { font-size: 28px; }
 .community-privacy { color: var(--faint); font-size: 11px; line-height: 1.75; margin: 18px 0; }
 @media(max-width:480px) { .submission-page > .page-heading { flex-wrap: wrap; } .submission-page > .page-heading h1 { font-size: 25px; } .submission-page > .page-heading .pill { margin-top: 3px; } }
 .discovery-tools { display: flex; gap: 14px; align-items: center; margin: -3px 0 20px; flex-wrap: wrap; }
+.library-active-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+.library-active-filters > span { margin-right: 4px; }
+.library-active-filters button { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; min-height: 36px; padding: 6px 10px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface-raised); color: var(--text-secondary); font-size: inherit; text-align: left; }
+.library-active-filters button > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.library-active-filters button > svg { flex-shrink: 0; }
+.library-active-filters button:hover { background: var(--surface-hover); color: var(--text); }
+.library-active-filters .filter-clear-all { border-color: transparent; background: transparent; color: var(--accent); }
+@media (max-width: 600px), (pointer: coarse) { .library-active-filters button { min-height: 44px; } }
 .discovery-tools label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
 .discovery-tools select { box-sizing: border-box; height: 40px; font-size: 12px; padding: 0 42px 0 12px; border: 1px solid var(--control-border); border-radius: 6px; color: var(--text-secondary); background-color: var(--surface-raised); }
 .discovery-tools button { margin-left: auto; min-height: 32px; padding: 5px 10px; font-size: 12px; }
@@ -1797,7 +1805,7 @@ button.signal-tile[aria-pressed="true"] > svg { fill: currentColor; }
   .sheet-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 12px; margin-bottom: 4px; padding: 20px 4px 4px 14px; background: var(--surface-raised); }
   .sheet-head strong { flex: 1; font-size: 15px; font-weight: 600; color: #e6e6ee; }
   .sheet-handle { position: absolute; top: 8px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: #4a4a55; }
-  .sheet-close { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #a0a0ac; }
+  .sheet-close { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: var(--muted); }
   .sheet-close:active { background: var(--surface-hover); color: var(--text); }
   .mobile-menu-panel a { min-height: 50px; font-size: 16px; }
 }

@@ -12,3 +12,6 @@ tap DOWN
 snap settings-post
 tap RIGHT
 snap settings-pre
+tap DOWN
+tap RIGHT
+snap settings-awake

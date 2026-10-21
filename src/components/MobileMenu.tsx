@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSheetScrollLock } from '../hooks/useSheetScrollLock'
+import { useSheetFocus } from '../hooks/useSheetFocus'
 import { Icon } from './Icon'
 import type { IconName } from './Icon'
 import { SupportButton } from './SupportDialog'
@@ -14,14 +15,17 @@ export function MobileMenu({ route, online, selectedCount, configurationHref, ad
   const w = useSetWords()
   const [open, setOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   useSheetScrollLock(open)
+  useSheetFocus(open, panelRef, buttonRef, '[aria-current="page"]')
   useEffect(() => {
     if (!open) return
     const close = () => setOpen(false)
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { setOpen(false); buttonRef.current?.focus() } }
     window.addEventListener('hashchange', close)
     window.addEventListener('keydown', onKey)
-    return () => { window.removeEventListener('hashchange', close); window.removeEventListener('keydown', onKey) }
+    window.addEventListener('resize', close)
+    return () => { window.removeEventListener('hashchange', close); window.removeEventListener('keydown', onKey); window.removeEventListener('resize', close) }
   }, [open])
   const groups: MenuLink[][] = [
     [
@@ -44,15 +48,15 @@ export function MobileMenu({ route, online, selectedCount, configurationHref, ad
   ]
   return (
     <div className="mobile-menu">
-      <button ref={buttonRef} type="button" className="mobile-menu-button" aria-label="Menu" aria-expanded={open} aria-controls="mobile-menu-panel" onClick={() => setOpen(value => !value)}>{open ? <Icon name="close" size={20} /> : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>}</button>
+      <button ref={buttonRef} type="button" className="mobile-menu-button" aria-label="Menu" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? 'mobile-menu-panel' : undefined} onClick={() => setOpen(value => !value)}>{open ? <Icon name="close" size={20} /> : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>}</button>
       {open && createPortal(<>
         <div className="mobile-menu-scrim" aria-hidden="true" onClick={() => setOpen(false)} />
-        <nav id="mobile-menu-panel" className="mobile-menu-panel" aria-label="Menu">
+        <div ref={panelRef} id="mobile-menu-panel" className="mobile-menu-panel" role="dialog" aria-modal="true" aria-label="Menu" tabIndex={-1}>
           <div className="sheet-head"><span className="sheet-handle" aria-hidden="true" /><strong>Menu</strong><button type="button" className="sheet-close" aria-label="Close menu" onClick={() => { setOpen(false); buttonRef.current?.focus() }}><Icon name="close" size={18} /></button></div>
           {groups.map((links, index) => <div key={index} className="mobile-menu-group">{links.map(link => <a key={link.href} href={link.href} aria-current={link.current ? 'page' : undefined} onClick={() => setOpen(false)}><Icon name={link.icon} size={18} /><span>{link.label}</span>{link.count !== undefined && <small>{link.count}</small>}{link.online ? <small className="menu-online"><span className="online-dot" aria-hidden="true"/>{link.online} online</small> : null}</a>)}{index === 0 && onConfigurations && <button type="button" onClick={() => { setOpen(false); buttonRef.current?.focus(); onConfigurations() }}><Icon name="file" size={18} /><span>{'Saved ' + w.sets}</span></button>}</div>)}
 
           {onSupport && <div className="mobile-menu-support"><SupportButton onClick={() => { setOpen(false); buttonRef.current?.focus(); onSupport() }} /></div>}
-        </nav>
+        </div>
       </>, document.body)}
     </div>
   )

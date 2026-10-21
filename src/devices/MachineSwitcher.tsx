@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Icon } from '../components/Icon'
 import { DeviceImage } from './DeviceImage'
 import { useSheetScrollLock } from '../hooks/useSheetScrollLock'
+import { useSheetFocus } from '../hooks/useSheetFocus'
 import { ALL_MACHINES, DEVICES, STATUS_LABELS, deviceHref, type DeviceProfile } from './registry'
 
 const GROUPS = [
@@ -21,6 +22,7 @@ export function MachineSwitcher({ current, all, counts, compact = false, active 
   const panelRef = useRef<HTMLDivElement>(null)
   const panelId = useId()
   useSheetScrollLock(open && compact)
+  useSheetFocus(open && compact, panelRef, buttonRef, '[aria-current="true"]')
   useEffect(() => {
     if (!open) return
     const selected = panelRef.current?.querySelector<HTMLElement>('[aria-current="true"]') ?? panelRef.current?.querySelector<HTMLElement>('a')
@@ -43,11 +45,12 @@ export function MachineSwitcher({ current, all, counts, compact = false, active 
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
     const links = Array.from(panelRef.current?.querySelectorAll<HTMLElement>('a') ?? [])
     const index = links.indexOf(document.activeElement as HTMLElement)
-    links[(index + (event.key === 'ArrowDown' ? 1 : links.length - 1)) % links.length]?.focus()
+    const next = index < 0 ? event.key === 'ArrowDown' ? 0 : links.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : links.length - 1)) % links.length
+    links[next]?.focus()
     event.preventDefault()
   }
   // The phone chip row scrolls horizontally and clips; its menu renders in the body as a bottom sheet.
-  const menu = <div ref={panelRef} id={panelId} className={'machine-menu' + (compact ? ' library-machine-menu' : '')} role="navigation" aria-label="Machines" onKeyDown={moveFocus}>
+  const menu = <div ref={panelRef} id={panelId} className={'machine-menu' + (compact ? ' library-machine-menu' : '')} role={compact ? 'dialog' : 'navigation'} aria-modal={compact ? true : undefined} aria-label="Machines" tabIndex={-1} onKeyDown={moveFocus}>
     {compact && <div className="sheet-head"><span className="sheet-handle" aria-hidden="true" /><strong>Machine</strong><button type="button" className="sheet-close" aria-label="Close" onClick={() => { setOpen(false); buttonRef.current?.focus() }}><Icon name="close" size={18} /></button></div>}
     <div className="machine-menu-group">
       <a href={deviceHref(ALL_MACHINES)} aria-current={all ? 'true' : undefined} onClick={selectMachine}><AllMachinesArt /><span><strong>{compact ? 'All mods' : 'All machines'}</strong><small>All mods in one library</small></span><small className="machine-menu-count">{total}</small>{all && <Icon name="check" size={14} />}</a>
@@ -64,7 +67,7 @@ export function MachineSwitcher({ current, all, counts, compact = false, active 
   </div>
   return (
     <div className={compact ? 'library-machine-switcher' : 'machine-switcher'}>
-      <button ref={buttonRef} type="button" className={compact ? 'library-machine-button' + (active ? ' active' : '') : 'sidebar-device'} aria-label={compact ? (all ? 'All mods' : current.name) + ', choose machine' : undefined} aria-current={compact && active ? 'page' : undefined} aria-expanded={open} aria-controls={panelId} onClick={toggleMenu} onKeyDown={event => { if (!open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) { event.preventDefault(); toggleMenu() } }}>
+      <button ref={buttonRef} type="button" className={compact ? 'library-machine-button' + (active ? ' active' : '') : 'sidebar-device'} aria-label={compact ? (all ? 'All mods' : current.name) + ', choose machine' : undefined} aria-current={compact && active ? 'page' : undefined} aria-haspopup={compact ? 'dialog' : undefined} aria-expanded={open} aria-controls={open ? panelId : undefined} onClick={toggleMenu} onKeyDown={event => { if (!open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) { event.preventDefault(); toggleMenu() } }}>
         {all ? <AllMachinesArt /> : <DeviceImage device={current} eager />}
         {!compact && <span><small>Machine</small><strong>{all ? 'All machines' : current.name}</strong></span>}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>

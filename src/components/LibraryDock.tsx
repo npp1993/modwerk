@@ -1,3 +1,4 @@
+import { useMobileWorkspace } from '../hooks/useMobileWorkspace'
 import { Icon } from './Icon'
 import { useSetWords } from '../community/beta-ui'
 
@@ -11,7 +12,7 @@ export type LibraryDockProps = {
 // Phones: the library's actions wait at the bottom of the screen and appear only when there is something to act on.
 // Ticking modules to compare takes precedence; otherwise a configuration with modules offers its build.
 export function LibraryDock({ compared, onClearComparison, onCompare, build }: LibraryDockProps) {
-  const w = useSetWords()
+  const w = useSetWords(), mobile = useMobileWorkspace()
   if (compared.length) return <div className="library-dock" role="region" aria-label="Comparison">
     <span className="library-dock-copy"><strong>{compared.length} of 3 to compare</strong><small>{compared.join(', ')}</small></span>
     <button type="button" className="button button-quiet" onClick={onClearComparison}>Clear</button>
@@ -21,6 +22,6 @@ export function LibraryDock({ compared, onClearComparison, onCompare, build }: L
   return <div className="library-dock" role="region" aria-label={'Your ' + w.set}>
     <span className="library-dock-icon" aria-hidden="true"><Icon name="sliders" size={18} /></span>
     <span className="library-dock-copy"><strong>{build.count} {build.count === 1 ? 'module' : 'modules'} added</strong><small>{build.detail}</small></span>
-    <a className="button button-primary" href={build.href}>Build firmware</a>
+    <a className="button button-primary" href={build.href}>{mobile ? 'Open configuration' : 'Build firmware'}</a>
   </div>
 }

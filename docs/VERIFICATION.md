@@ -1,5 +1,13 @@
 # Verification record
 
+## Input Pre-Fader Sends 0.2.0-experimental — 21 October 2026
+
+Digitakt I module update by draadpiraat for OS 1.54 on Core 2.1: SETTINGS > KEEP FX AWAKE releases the stock delay/reverb hold (project load, double STOP) once its fade-out has finished, so external inputs reach the effects with no track playing. The source-only package from commit `bc9f90685cfa0204b43ebe83337197e328745926` (`input-prefader-0.2.0-experimental-os1.54.elemod`, sha256 `3ac8c4f9…fed82b26`) replaces 0.1.0's pin through `npm run elekloader:update -- --overlay sdk/imports/elekloader-input-prefader-2026-10-21.json`; kit 0.6.0 is unchanged and the catalogue still holds 40 mods.
+- **Package:** built in the pinned Docker toolchain (`build-elemod-isolated.sh`) from `08ab54e6`; linked with Core 2.1 it reproduces both SysEx files the author flashed, byte for byte (`ddf836a3…` alone, `a60b869f…` with Digi Health and Digi EQ).
+- **Emulator (pinned digiemu `c1b5735`, a tone fed into IN L/R):** a double STOP silences the input effects' tail; ticked, the hold releases within 1.5 s and the tail returns at full level, also with Digi Health and Digi EQ; unticked it stays held. Load +410 mean, +485 worst cycles of 166,666 per block (about 0.2% and 0.3%).
+- **Hardware:** the author reports all seven steps passing on their Digitakt I, OS 1.54 (2026-10-20), alone and with Digi Health and Digi EQ; with those two the input effects were awake at power-on, which a control build without this module also showed. Pattern changes and sampling from the inputs not tested. Details: [TESTING.md](../sdk/digitakt/modules/input-prefader/TESTING.md).
+- **Checks:** `npm run check` and `npm run pr:ready` on macOS. Firmware, linked images and emulator state stayed local.
+
 ## LOFI2 0.1.0-experimental — 20 October 2026
 
 New Octatrack effect: Bryan T's LOFI2 from octabam `8250be0c` (ring modulator or stereo frequency shifter, then sample-rate and bit reduction and a shelf), effect ID 9, FX1 and FX2. Re-pinned the same day from `21f6de90` for the author's SHIFT fix `153063d8` (Hilbert coefficients squared). Hardware (module's `evidence/hardware.md`): on 20 October the contributor's MKII ran this source's USB package `4f794ebc…` on flashed beta base `6650236a` beside five other modules for about 15 minutes (every mode, the fixed SHIFT by ear, two instances on one core and a third refused DSP FULL); the base's self-test failed on ColdFire CPU, 98.8 % with the six modules on the uncached base, cause not confirmed. The previous source ran as card image LOFI2T03 and as USB package `7ee9277f…` on `acf91e0a`, with reloads and power cycles.

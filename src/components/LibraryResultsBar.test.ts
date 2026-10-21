@@ -39,7 +39,7 @@ describe('phone library results bar', () => {
     expect(renderToStaticMarkup(createElement(MachineLibrary, props))).toContain('class="discovery-tools"')
     const phone = renderToStaticMarkup(createElement(MachineLibrary, { ...props, phone: true }))
     expect(phone).not.toContain('discovery-tools')
-    expect(phone).toContain('<h1>Module library</h1>')
+    expect(phone).toMatch(/<h1[^>]*>Module library<\/h1>/)
   })
 })
 

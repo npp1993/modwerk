@@ -1,39 +1,56 @@
 {
   "schemaVersion": 1,
-  "reportedOn": "2026-10-19",
+  "reportedOn": "2026-10-20",
   "source": "Direct author statements in the development conversation",
   "reporter": "draadpiraat",
   "status": "hardware-tested-author-reported",
   "model": "Digitakt I",
   "release": "1.54",
+  "moduleVersion": "0.2.0-experimental",
   "builds": [
     {
-      "name": "Core 2.1 + input-prefader 0.1.0-experimental",
-      "syxSha256": "e0f55015fffff75361d1912f1b61231b93b3fd33ab910620608cbb1da6ec4b89",
-      "durationMinutes": 5,
-      "statement": "2 yes, 3 yes, 4 yes, 5 yes no clicks, 6 yes, 7 yes (step 1: the row shows up in settings)",
+      "name": "Core 2.1 + input-prefader 0.2.0-experimental",
+      "syxSha256": "ddf836a3a1dce14b1813995f24938ac3b5163d253bdec8c2a3215279ff40fa64",
+      "statement": "everything checks out, all 7 points; on step 4: pressing stop twice with KEEP FX AWAKE cut out the tail completely right away",
       "steps": {
-        "1 row in SETTINGS": "yes",
-        "2 unticked, LEV 0: dry and effect silent": "yes",
-        "3 ticked, LEV 0: effect only": "yes",
-        "4 ticked, raise LEV: dry returns, effect unchanged": "yes",
-        "5 untick: stock, no clicks": "yes",
-        "6 tracks unchanged": "yes",
-        "7 power cycle: row unticked": "yes"
+        "1 KEEP FX AWAKE row in SETTINGS, unticked": "yes",
+        "2 unticked: input effects silent after power-on until a trig (stock)": "yes",
+        "3 ticked: effects come back after a double STOP, no trig": "yes",
+        "4 ticked: double STOP still cuts the tail": "yes, completely and right away",
+        "5 ticked: effects come back after a project load": "yes",
+        "6 unticked again: double STOP holds until a trig (stock)": "yes",
+        "7 INPUT SENDS PRE at LEV 0: fully wet": "yes"
       }
     },
     {
-      "name": "Core 2.1 + digihealth 1.0 + digieq 1.0.2-experimental + input-prefader 0.1.0-experimental",
-      "syxSha256": "3e8e6422a3118702789b3976f95cf59c142b42beb612a3e73285e7a825e107d3",
-      "durationMinutes": 5,
-      "statement": "tested everything, it checks out correctly",
-      "steps": "not itemized"
+      "name": "Core 2.1 + digihealth 1.0 + digieq 1.0.2-experimental + input-prefader 0.2.0-experimental",
+      "syxSha256": "a60b869f94fe371ab65681266a11e0693615af7b2d1dc7834cf1ad6dd9ea6aa6",
+      "statement": "1 yes, 2 no - the fx are still awake after power on and the keep FX awake is ticked off (stock) though double pressing stop follows normal stock behaviour so not a major issue, the rest checks out just like build A",
+      "steps": {
+        "1 row in SETTINGS": "yes",
+        "2 unticked: silent after power-on until a trig": "no: input effects already awake at power-on; double STOP behaves as stock",
+        "3-7": "as build A"
+      }
+    },
+    {
+      "name": "Control: Core 2.1 + digihealth 1.0 + digieq 1.0.2-experimental (without this module)",
+      "syxSha256": "e4c11db65821e945a4d10d5c492c428d0b45d23cdb94b358f630bed41c949b02",
+      "statement": "fx become awake at power on, but only after about 5-10 seconds",
+      "steps": {
+        "input effects at power-on, no trig": "awake after about 5-10 seconds"
+      }
     }
   ],
-  "packageSha256": "a30dc2557908f7b22f48f774dc0721eaf9d3dbf2ca546da5a69cf86f1f28f54f",
+  "packageSha256": "3ac8c4f98a0dbbdf92de6f6c4578de994002acc187776ebd74e1d041fed82b26",
   "limitations": [
-    "Project save/load, pattern changes and sampling from the inputs were not tested.",
+    "Pattern changes and sampling from the inputs were not tested.",
     "Firmware was not read back from the device; the builds are identified by their SysEx hashes.",
-    "The combined build's steps were reported together, not one by one."
-  ]
+    "The power-on difference with Digi Health and Digi EQ also occurs without this module (control build); its cause in those modules is not identified.",
+    "Test time was reported as a total (about one to two hours of use), not per build."
+  ],
+  "packageParity": "The isolated Docker build (toolchain image sha256:f5c85e78…4854) of commit 08ab54e6, packaged with scripts/package-elemod-recipe.mjs and linked with Core 2.1, gives the MAIN image and SysEx of both hardware-tested builds byte for byte (ddf836a3…40fa64 alone, a60b869f…ea6aa6 with Digi Health and Digi EQ).",
+  "usage": {
+    "statement": "ive been playing around with it for about an hour or 2 without any issues whatsoever.",
+    "durationMinutes": "60-120, as reported"
+  }
 }

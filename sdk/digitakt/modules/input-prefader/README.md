@@ -6,50 +6,56 @@ Stock, the Digitakt takes the delay and reverb sends of the external inputs (IN 
 
 With **SETTINGS > INPUT SENDS PRE** ticked, the inputs' DEL and REV sends are taken before LEV instead (still after PAN). LEV then sets only the dry inputs on the mains, so at LEV 0 an input goes fully wet: the effects get it, the mains get only the effects' return. The sends are then what stock sends at LEV 127.
 
-Unticked, the mixer runs exactly the stock instructions. Tracks 1-8, DUAL MONO, PAN and every other mixer setting are unchanged in both modes.
+Stock, loading a project or pressing STOP twice also puts the delay and reverb on hold: they fade out and stay silent until an audio track trigs, so the inputs get no effect while nothing plays. Elektron describes this as protection against runaway feedback. With **SETTINGS > KEEP FX AWAKE** ticked, the hold releases itself once its fade-out has finished: a double STOP still cuts the effects, and they come back for the inputs within about a second, with no track playing. Together the two rows let the Digitakt work as an effects box for external sources.
 
-Version **0.1.0-experimental** for Digitakt I OS **1.54** on Core 2.1.
+Unticked, each row leaves the stock instructions running. Tracks 1-8, DUAL MONO, PAN and every other mixer setting are unchanged in both modes.
+
+Version **0.2.0-experimental** for Digitakt I OS **1.54** on Core 2.1.
 
 ## Controls
 
 | Control | Action |
 | --- | --- |
 | SETTINGS > INPUT SENDS PRE | Ticked: IN L and IN R send to the delay and reverb before their LEV (PRE). Unticked: stock post-fader sends (POST). YES toggles it; RIGHT ticks and LEFT unticks it. Unticked at every power-on. |
+| SETTINGS > KEEP FX AWAKE | Ticked: after a project load or a double STOP, the delay and reverb come back by themselves once their fade-out has finished, instead of waiting for a trig. Unticked: stock hold. YES toggles it; RIGHT ticks and LEFT unticks it. Unticked at every power-on. |
 | External Mixer DEL, REV, PAN, LEV, DUAL | As stock. In PRE, LEV no longer changes the sends. |
+| STOP, STOP | As stock: cuts the delay and reverb. With KEEP FX AWAKE ticked they come back after the fade-out. |
 
 ## Usage
 
-The row is in the stock SETTINGS menu. The External Mixer is the last master page.
+The rows are the last two in the stock SETTINGS menu. The External Mixer is the last master page.
 
 ### Where to find it
 
-SETTINGS > INPUT SENDS PRE
+SETTINGS > INPUT SENDS PRE, SETTINGS > KEEP FX AWAKE
 
 1. Use a build containing Input Pre-Fader Sends for the original Digitakt on OS 1.54.
-2. Press SETTINGS and go to the INPUT SENDS PRE row with UP/DOWN.
-3. Press YES to tick it (PRE) or untick it (POST, stock). LEFT and RIGHT also untick and tick it.
+2. Press SETTINGS and go down to INPUT SENDS PRE or KEEP FX AWAKE, the last two rows, with UP/DOWN.
+3. Press YES to tick or untick a row. RIGHT ticks it and LEFT unticks it.
 4. Press FUNC + LFO until the External Mixer page, and set IN L/IN R LEV, DEL and REV as usual.
 
-### Quick tutorial: a 100% wet input
+### Quick tutorial: the Digitakt as an effects box
 
-1. Connect a source to IN L and IN R, open the External Mixer (FUNC + LFO until its page) and turn the inputs' DEL or REV up so you hear the effect.
-2. Turn IN L and IN R LEV down to 0. With the row unticked (stock) the inputs and their effect go silent.
-3. Open SETTINGS and tick INPUT SENDS PRE. The dry inputs stay silent, and the delay and reverb now get them as if LEV were at full: 100% wet.
-4. Raise LEV again to blend the dry inputs back in; the sends stay the same. Untick the row to return to stock post-fader sends.
+1. Connect a source to IN L and IN R, open the External Mixer (FUNC + LFO until its page) and turn the inputs’ DEL or REV up.
+2. Open SETTINGS and tick KEEP FX AWAKE. If the effects were on hold, they now answer the inputs within about a second, with no track playing.
+3. Tick INPUT SENDS PRE and turn IN L and IN R LEV down to 0: the dry inputs go silent and the delay and reverb get them as if LEV were at full, 100% wet.
+4. Raise LEV to blend the dry inputs back in; the sends stay the same. Press STOP twice to cut the effects at any time; with KEEP FX AWAKE ticked they come back by themselves.
 
 ## Compatibility and limitations
 
 Requires Core 2.1. Built for OS 1.54 only.
 
-- **Not saved.** The row starts unticked (stock) at every power-on and applies to every project and pattern. Projects and patterns store nothing for it, so they load the same on a stock OS.
+- **Not saved.** Both rows start unticked (stock) at every power-on and apply to every project and pattern. Projects and patterns store nothing for them, so they load the same on a stock OS. After power-on, tick KEEP FX AWAKE (and press STOP twice if the effects stay silent) to release the hold the boot sets.
+- **Stock flow change: the effects hold (KEEP FX AWAKE only).** *What changes:* after a project load or a double STOP, the stock firmware keeps the delay and reverb silent until an audio track trigs; with the row ticked they come back by themselves once the hold's fade-out ends. *Why:* used as an effects box for external sources, no track plays, so the effects would stay silent; the stock workaround is a silent trig on a track at volume 0. An own page or gesture was not needed, since the row only decides when the stock hold ends. *What a musician sees:* the double STOP still cuts the effects at once; the inputs' effect returns within about a second. With high delay feedback the inputs can build up again, which the stock hold exists to prevent. *Opt-out:* the row is off at every power-on and unticking it restores the stock hold at once. *Neighbouring flows checked:* the double STOP's cut, project load, and the tracks' own trigs (section 5 of TESTING.md); pattern changes are not tested.
 - **After PAN.** PRE sends still follow PAN, as stock sends do; only LEV is bypassed.
 - **Louder sends at low LEV.** In PRE the sends equal stock's at LEV 127, so switching to PRE with a low LEV raises the effects' level. The mixer's own smoothing glides the change.
-- **What it patches.** Two sites inside the render's mixer routine on OS 1.54: the dry-gain multiply at 0x40071e36 (8 bytes) and the send multiply at 0x40071eb4 (24 bytes). Both are `jsr` patches that return with `rts`. They overlap no other Modwerk module's bytes. They also run from Digi Health's FAST AUDIO copy of the render in SRAM: there is no PC-relative code and no address FAST AUDIO has to relocate in either site. Digi EQ's site at 0x400721e6 sits in the same routine, apart.
-- **Stock flows.** It adds one SETTINGS row (`settings:INPUT SENDS PRE`) and changes no stock page, gesture or saved data. With the row unticked the render is stock.
+- **With Digi Health and Digi EQ.** On the author's unit, a build with Digi Health and Digi EQ had the input effects awake 5-10 seconds after power-on even without this module; with it, KEEP FX AWAKE behaves as described.
+- **What it patches.** Three sites on OS 1.54, all `jsr` patches that return with `rts`: the dry-gain multiply at 0x40071e36 (8 bytes) and the send multiply at 0x40071eb4 (24 bytes) in the render's mixer, and the read of the effects-hold state at 0x40077ef8 (6 bytes) in the audio interrupt. They overlap no other Modwerk module's bytes. The two mixer sites also run from Digi Health's FAST AUDIO copy of the render in SRAM: there is no PC-relative code and no address FAST AUDIO has to relocate in either. Digi EQ's site at 0x400721e6 sits in the same routine, apart.
+- **Stock flows.** It adds two SETTINGS rows (`settings:INPUT SENDS PRE`, `settings:KEEP FX AWAKE`) and changes no stock page, gesture or saved data. With both rows unticked the render and the audio interrupt are stock.
 
 ## Tests and measurements
 
-See [TESTING.md](TESTING.md) for the exact evidence and the checks still open. The emulator results cover the render's arithmetic and the SETTINGS row; they do not prove audible output, timing on the unit or behaviour beside every other module on hardware.
+See [TESTING.md](TESTING.md) for the exact evidence and the checks still open. The emulator results cover the render's arithmetic, the effects hold and the SETTINGS rows; they do not prove audible output, timing on the unit or behaviour beside every other module on hardware.
 
 ## Authorship and licences
 
@@ -67,3 +73,7 @@ Press SETTINGS and go down to INPUT SENDS PRE, below SYSTEM. Unticked, the input
 ![INPUT SENDS PRE ticked: the inputs send before LEV.](media/settings-pre.png)
 
 Press YES or RIGHT to tick it. The inputs now reach the delay and reverb whatever their LEV.
+
+![KEEP FX AWAKE ticked: the effects need no trig.](media/settings-awake.png)
+
+KEEP FX AWAKE is the next row down. Ticked, the delay and reverb come back by themselves after a project load or a double STOP.

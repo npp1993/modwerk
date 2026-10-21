@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "algorithm": "sha256 of canonical sorted JSON {sources,build}; UTF-8, compact separators",
-  "sha256": "52cda84a0158a4b01af9db0b62a2c5a16e3546c70854176455a265074c642a31",
+  "sha256": "58001255b9d476e7b82c1a160b9a8a078f3eaa1e0d4dfcace83aec834140d826",
   "sources": {
-    "src/prefader.s": "6dd193f9cf4dc89f966d27843341711063f920daac9e715b0e5064c47101f02e"
+    "src/prefader.s": "a0c791306d8e6ac33722b6785bb28f61e1362beafbf656781d2ae295c434ab77"
   },
   "build": {
     "schemaVersion": 1,
@@ -25,7 +25,8 @@
     "copied": [],
     "regions": [],
     "claims": [
-      "settings:INPUT SENDS PRE"
+      "settings:INPUT SENDS PRE",
+      "settings:KEEP FX AWAKE"
     ],
     "requires": [],
     "derive": null,
@@ -47,6 +48,13 @@
             "stockSha256": "4729e5aa4195651cbe38e64435f22f20584f21eaa0fec6513c0335d17a6f0868",
             "op": "jsr",
             "target": "ipf_sends"
+          },
+          {
+            "addr": "0x40077ef8",
+            "len": 6,
+            "stockSha256": "979b2bdcc6cab36b59c536da97194d62109ad62906a75d6fbff3dd0e5cff9109",
+            "op": "jsr",
+            "target": "ipf_hold"
           }
         ]
       }

@@ -33,7 +33,7 @@ describe('machine switching layout', () => {
   it.each(['octatrack', 'digitakt', 'digitone', 'syntakt'])('keeps the search tools and build action in the %s library without the local-build banner', id => {
     const html = renderToStaticMarkup(createElement(MachineLibrary, {...props, device: DEVICES_BY_ID[id]}))
     expect(html.indexOf('class="discovery-tools"')).toBeLessThan(html.indexOf('class="library-subheading"'))
-    expect(html).toContain('<h1>Module library</h1>')
+    expect(html).toMatch(/<h1[^>]*>Module library<\/h1>/)
     expect(html).toContain('Collection order')
     expect(html).toContain('Build firmware</a>')
     expect(html).not.toContain('device-preview-note')
@@ -70,7 +70,7 @@ describe('All machines library parity', () => {
     }
     expect(html).toContain('href="#configuration"')
     expect(html).toContain('Build firmware')
-    expect(html).toContain('<h1>All mods</h1>')
+    expect(html).toMatch(/<h1[^>]*>All mods<\/h1>/)
     expect(html.slice(html.indexOf('class="discovery-tools"'), html.indexOf('id="machine-octatrack"'))).toContain('Build firmware')
     expect(html.slice(html.indexOf('id="machine-octatrack"'),html.indexOf('id="machine-digitakt"'))).not.toContain('Build firmware')
     expect(html).toContain('aria-label="Build firmware for Octatrack"')

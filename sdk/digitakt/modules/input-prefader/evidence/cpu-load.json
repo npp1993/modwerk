@@ -5,7 +5,7 @@
   "periodCycles": 166666,
   "core": "2.1",
   "release": "1.54",
-  "conditions": "Disposable first-boot project, transport stopped, IN L/R LEV 0 and DEL/REV 127 set in the External Mixer block; the module's handlers run on all ten mixer channels every block whatever the pattern, so its added cost does not depend on the workload. Not a hardware measurement.",
+  "conditions": "Disposable first-boot project, transport stopped, IN L/R LEV 0 and DEL/REV 127 set in the External Mixer block; the mixer handlers run on all ten channels and the hold check once, every block, whatever the pattern, so the added cost does not depend on the workload. Not a hardware measurement.",
   "stock": {
     "blocks": 3000,
     "mean_cycles": 100448,
@@ -16,30 +16,31 @@
     "stock_syx_sha256": "f78ba80fa7b1da5fb0e1ff61ad61e9e71aafe79f4364fc49679f3651353e3cf6"
   },
   "module": {
-    "build_sha256": "e0f55015fffff75361d1912f1b61231b93b3fd33ab910620608cbb1da6ec4b89",
-    "ticked": {
+    "build_sha256": "ddf836a3a1dce14b1813995f24938ac3b5163d253bdec8c2a3215279ff40fa64",
+    "moduleVersion": "0.2.0-experimental",
+    "both_ticked": {
       "blocks": 3000,
-      "mean_cycles": 100840,
-      "p99_cycles": 101147,
-      "max_cycles": 101710,
-      "mean_fraction": 0.605,
-      "max_fraction": 0.6103
+      "mean_cycles": 100858,
+      "p99_cycles": 101190,
+      "max_cycles": 101726,
+      "mean_fraction": 0.6052,
+      "max_fraction": 0.6104
     },
     "unticked": {
       "blocks": 3000,
-      "mean_cycles": 100771,
-      "p99_cycles": 101103,
-      "max_cycles": 101564,
-      "mean_fraction": 0.6046,
+      "mean_cycles": 100779,
+      "p99_cycles": 101110,
+      "max_cycles": 101571,
+      "mean_fraction": 0.6047,
       "max_fraction": 0.6094
     }
   },
   "addedMeanCycles": {
-    "ticked": 392,
-    "unticked": 323
+    "both_ticked": 410,
+    "unticked": 331
   },
   "addedWorstCycles": {
-    "ticked": 469,
-    "unticked": 323
+    "both_ticked": 485,
+    "unticked": 330
   }
 }

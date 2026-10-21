@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "id": "input-prefader",
   "name": "Input Pre-Fader Sends",
-  "version": "0.1.0-experimental",
+  "version": "0.2.0-experimental",
   "machine": "digitakt",
   "category": "system",
   "exclusive": false,
@@ -18,31 +18,33 @@
   "presentation": {
     "label": "INPUT PRE SENDS",
     "family": "Mixer",
-    "summary": "Takes the external inputs’ delay and reverb sends before their LEV, so the inputs can go fully wet to the FX.",
-    "overview": "Stock, the Digitakt derives IN L and IN R’s delay and reverb sends from the level after their External Mixer LEV, so turning LEV down also silences what they send to the effects. With SETTINGS > INPUT SENDS PRE ticked, the inputs’ sends are taken before LEV instead (still after PAN): LEV sets only the dry inputs on the mains, and at LEV 0 the inputs reach the delay and reverb fully wet. The sends then match what stock sends at LEV 127. Unticked, the render runs exactly the stock instructions. Tracks 1-8, DUAL MONO and every other mixer setting are unchanged.",
+    "summary": "Takes the external inputs’ delay and reverb sends before their LEV, and can keep the effects awake with no track playing, so the Digitakt works as an effects box.",
+    "overview": "Stock, the Digitakt derives IN L and IN R’s delay and reverb sends from the level after their External Mixer LEV, so turning LEV down also silences what they send to the effects. With SETTINGS > INPUT SENDS PRE ticked, the inputs’ sends are taken before LEV instead (still after PAN): LEV sets only the dry inputs on the mains, and at LEV 0 the inputs reach the delay and reverb fully wet. The sends then match what stock sends at LEV 127. Stock, loading a project or pressing STOP twice also puts the delay and reverb on hold until an audio track trigs, so the inputs get no effect while nothing plays. With SETTINGS > KEEP FX AWAKE ticked, that hold releases itself as soon as its fade-out has finished: a double STOP still cuts the effects, and they come back for the inputs within about a second. Unticked, both rows leave the stock instructions running. Tracks 1-8, DUAL MONO and every other mixer setting are unchanged.",
     "highlights": [
       "IN L and IN R send to the delay and reverb independently of their LEV.",
       "LEV 0 gives a 100% wet input: the effects only, no dry signal on the mains.",
-      "Unticked, the mixer is stock; tracks are never affected."
+      "KEEP FX AWAKE: the effects work on the inputs without a trig after a project load or a double STOP.",
+      "Unticked, each row is stock; tracks are never affected."
     ],
     "usage": [
-      "Connect a source to IN L and IN R, open the External Mixer (FUNC + LFO until its page) and turn the inputs' DEL or REV up so you hear the effect.",
-      "Turn IN L and IN R LEV down to 0. With the row unticked (stock) the inputs and their effect go silent.",
-      "Open SETTINGS and tick INPUT SENDS PRE. The dry inputs stay silent, and the delay and reverb now get them as if LEV were at full: 100% wet.",
-      "Raise LEV again to blend the dry inputs back in; the sends stay the same. Untick the row to return to stock post-fader sends."
+      "Connect a source to IN L and IN R, open the External Mixer (FUNC + LFO until its page) and turn the inputs’ DEL or REV up.",
+      "Open SETTINGS and tick KEEP FX AWAKE. If the effects were on hold, they now answer the inputs within about a second, with no track playing.",
+      "Tick INPUT SENDS PRE and turn IN L and IN R LEV down to 0: the dry inputs go silent and the delay and reverb get them as if LEV were at full, 100% wet.",
+      "Raise LEV to blend the dry inputs back in; the sends stay the same. Press STOP twice to cut the effects at any time; with KEEP FX AWAKE ticked they come back by themselves."
     ]
   },
   "access": {
-    "location": "SETTINGS > INPUT SENDS PRE",
+    "location": "SETTINGS > INPUT SENDS PRE, SETTINGS > KEEP FX AWAKE",
     "steps": [
       "Use a build containing Input Pre-Fader Sends for the original Digitakt on OS 1.54.",
-      "Press SETTINGS and go to the INPUT SENDS PRE row with UP/DOWN.",
-      "Press YES to tick it (PRE) or untick it (POST, stock). LEFT and RIGHT also untick and tick it.",
+      "Press SETTINGS and go down to INPUT SENDS PRE or KEEP FX AWAKE, the last two rows, with UP/DOWN.",
+      "Press YES to tick or untick a row. RIGHT ticks it and LEFT unticks it.",
       "Press FUNC + LFO until the External Mixer page, and set IN L/IN R LEV, DEL and REV as usual."
     ],
     "screenshots": [
       "media/settings-post.png",
-      "media/settings-pre.png"
+      "media/settings-pre.png",
+      "media/settings-awake.png"
     ]
   },
   "controls": [
@@ -50,6 +52,12 @@
       "name": "INPUT SENDS PRE",
       "default": null,
       "doc": "Ticked: IN L and IN R’s DEL and REV sends are taken before their LEV (after PAN), as at LEV 127. Unticked: stock post-fader sends. Unticked at every power-on; not saved with the project.",
+      "labels": null
+    },
+    {
+      "name": "KEEP FX AWAKE",
+      "default": null,
+      "doc": "Ticked: after a project load or a double STOP, the delay and reverb come back by themselves once their fade-out has finished (under a second in the emulator) instead of waiting for an audio track to trig, so the external inputs reach them with no track playing. A double STOP still cuts the effects. Unticked: stock. Unticked at every power-on; not saved with the project.",
       "labels": null
     }
   ],
@@ -61,8 +69,9 @@
     "conflicts": [],
     "limitations": [
       "Built for OS 1.54 only.",
-      "The setting is not saved: it starts unticked (stock) at every power-on and is the same for every project and pattern.",
-      "PRE sends are taken after PAN, as the stock sends are."
+      "Neither setting is saved: both start unticked (stock) at every power-on and apply to every project and pattern. After power-on, tick KEEP FX AWAKE (and press STOP twice if the effects stay silent) to release the hold the boot sets.",
+      "PRE sends are taken after PAN, as the stock sends are.",
+      "KEEP FX AWAKE overrides a safety hold: with high delay feedback, inputs feeding the effects can build up again after a double STOP. Untick it to restore the stock hold."
     ]
   },
   "platform": {
@@ -73,22 +82,23 @@
       "ev_settings"
     ],
     "claims": [
-      "settings:INPUT SENDS PRE"
+      "settings:INPUT SENDS PRE",
+      "settings:KEEP FX AWAKE"
     ]
   },
   "resources": {
-    "memoryBytes": 312,
+    "memoryBytes": 434,
     "fastBytes": 0,
     "load": {
       "display": "Adds 0.2% average, 0.3% worst-case of an audio block over stock (emulator)",
       "method": "emulator",
-      "conditions": "Emulator: OS 1.54 on Core 2.1, 3,000 audio blocks timed with the MCF5441x instruction-timing model at 250 MHz, zero-wait memory, row ticked. Stock: 60.3% average, 60.7% worst block; with the module 60.5% and 61.0% (unticked 60.5% and 60.9%). The handlers run on all ten mixer channels every block, so the cost does not depend on the pattern. Not a hardware measurement."
+      "conditions": "Emulator: OS 1.54 on Core 2.1, 3,000 audio blocks timed with the MCF5441x instruction-timing model at 250 MHz, zero-wait memory, both rows ticked. Stock: 60.3% average, 60.7% worst block; with the module 60.5% and 61.0% (both unticked 60.5% and 60.9%). The mixer handlers run on all ten channels and the hold check once, every block, so the cost does not depend on the pattern. Not a hardware measurement."
     }
   },
   "evidence": {
     "tier": "author-hardware",
-    "moduleVersion": "0.1.0-experimental",
-    "sourceSha256": "52cda84a0158a4b01af9db0b62a2c5a16e3546c70854176455a265074c642a31",
+    "moduleVersion": "0.2.0-experimental",
+    "sourceSha256": "58001255b9d476e7b82c1a160b9a8a078f3eaa1e0d4dfcace83aec834140d826",
     "reports": [
       "evidence/hardware-testing.json",
       "evidence/source-identity.json",
@@ -98,34 +108,35 @@
     "hardware": {
       "model": "Digitakt I",
       "release": "1.54",
-      "testedOn": "2026-10-19",
+      "testedOn": "2026-10-20",
       "tester": "draadpiraat",
-      "durationMinutes": 10,
-      "summary": "draadpiraat flashed the module-alone build and a build with Digi Health and Digi EQ on their Digitakt I, OS 1.54, about 5 minutes each: the row appears, at LEV 0 the inputs are silent unticked and fully wet ticked, LEV changes only the dry signal when ticked, no clicks when switching, tracks unchanged, unticked after a power cycle; the combined build “checks out correctly”.",
+      "durationMinutes": 60,
+      "summary": "draadpiraat flashed the module-alone build and a build with Digi Health and Digi EQ on their Digitakt I, OS 1.54. Module alone, all seven steps passed: the KEEP FX AWAKE row appears unticked; unticked the input effects stay silent after power-on until a trig, as stock; ticked they come back without a trig after a double STOP and after a project load; a double STOP still cuts the tail completely; unticked again it is stock; INPUT SENDS PRE still gives a fully wet input at LEV 0. With Digi Health and Digi EQ the same steps passed, except that the input effects were already awake at power-on with the row unticked; a control build of Digi Health and Digi EQ without this module showed the same, after 5-10 seconds. The author then played with it for about one to two hours without any issues.",
       "limitations": [
-        "Project save/load, pattern changes and sampling from the inputs not tested.",
-        "The combined build’s steps were reported together, not one by one.",
-        "Firmware was not read back from the device."
+        "Pattern changes and sampling from the inputs were not tested.",
+        "Firmware was not read back from the device; the builds are identified by their SysEx hashes.",
+        "Project load is tested by loading a project; KEEP FX AWAKE starts unticked at power-on, so it never acts on the boot hold."
       ]
     },
     "verifiedBy": null
   },
   "tests": {
     "report": "TESTING.md",
-    "summary": "Author hardware (Digitakt I, OS 1.54, module alone and with Digi Health and Digi EQ) and emulator: unticked is stock, ticked sends the inputs to the delay and reverb regardless of LEV, no clicks, tracks unchanged. Project save/load and sampling not tested.",
+    "summary": "Author hardware (Digitakt I, OS 1.54, module alone and with Digi Health and Digi EQ) and emulator: INPUT SENDS PRE as in 0.1.0; KEEP FX AWAKE releases the effects hold after a double STOP and a project load without a trig, the double STOP still cuts the tail, and unticked it is stock. Pattern changes and sampling not tested.",
     "documentation": {
       "tutorial": {
-        "title": "Quick tutorial: a 100% wet input",
+        "title": "Quick tutorial: the Digitakt as an effects box",
         "steps": [
-          "Connect a source to IN L and IN R, open the External Mixer (FUNC + LFO until its page) and turn the inputs' DEL or REV up so you hear the effect.",
-          "Turn IN L and IN R LEV down to 0. With the row unticked (stock) the inputs and their effect go silent.",
-          "Open SETTINGS and tick INPUT SENDS PRE. The dry inputs stay silent, and the delay and reverb now get them as if LEV were at full: 100% wet.",
-          "Raise LEV again to blend the dry inputs back in; the sends stay the same. Untick the row to return to stock post-fader sends."
+          "Connect a source to IN L and IN R, open the External Mixer (FUNC + LFO until its page) and turn the inputs’ DEL or REV up.",
+          "Open SETTINGS and tick KEEP FX AWAKE. If the effects were on hold, they now answer the inputs within about a second, with no track playing.",
+          "Tick INPUT SENDS PRE and turn IN L and IN R LEV down to 0: the dry inputs go silent and the delay and reverb get them as if LEV were at full, 100% wet.",
+          "Raise LEV to blend the dry inputs back in; the sends stay the same. Press STOP twice to cut the effects at any time; with KEEP FX AWAKE ticked they come back by themselves."
         ]
       },
       "screenshots": [
         "media/settings-post.png",
-        "media/settings-pre.png"
+        "media/settings-pre.png",
+        "media/settings-awake.png"
       ],
       "captureRecord": "media/capture.json"
     }
@@ -156,8 +167,8 @@
       "capture": {
         "type": "emulator",
         "release": "1.54",
-        "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "e0f55015fffff75361d1912f1b61231b93b3fd33ab910620608cbb1da6ec4b89",
+        "moduleVersion": "0.2.0-experimental",
+        "imageSha256": "ddf836a3a1dce14b1813995f24938ac3b5163d253bdec8c2a3215279ff40fa64",
         "setup": "Pinned digiemu, firmware-native drawing, disposable first-boot project. No audio or cycle-timing qualification."
       }
     },
@@ -172,8 +183,24 @@
       "capture": {
         "type": "emulator",
         "release": "1.54",
-        "moduleVersion": "0.1.0-experimental",
-        "imageSha256": "e0f55015fffff75361d1912f1b61231b93b3fd33ab910620608cbb1da6ec4b89",
+        "moduleVersion": "0.2.0-experimental",
+        "imageSha256": "ddf836a3a1dce14b1813995f24938ac3b5163d253bdec8c2a3215279ff40fa64",
+        "setup": "Pinned digiemu, firmware-native drawing, disposable first-boot project. No audio or cycle-timing qualification."
+      }
+    },
+    {
+      "path": "media/settings-awake.png",
+      "kind": "screenshot",
+      "caption": "KEEP FX AWAKE ticked: the effects need no trig",
+      "alt": "KEEP FX AWAKE ticked below INPUT SENDS PRE, on the Digitakt monochrome LCD",
+      "credit": "Modwerk documentation capture; Elektron interface; draadpiraat module",
+      "license": "LicenseRef-Digi-UI-Documentation",
+      "source": "original",
+      "capture": {
+        "type": "emulator",
+        "release": "1.54",
+        "moduleVersion": "0.2.0-experimental",
+        "imageSha256": "ddf836a3a1dce14b1813995f24938ac3b5163d253bdec8c2a3215279ff40fa64",
         "setup": "Pinned digiemu, firmware-native drawing, disposable first-boot project. No audio or cycle-timing qualification."
       }
     }

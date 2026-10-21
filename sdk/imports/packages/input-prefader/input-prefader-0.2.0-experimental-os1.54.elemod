@@ -1,0 +1,400 @@
+{
+ "elemod": 2,
+ "id": "input-prefader",
+ "version": "0.2.0-experimental",
+ "title": "Input Pre-Fader Sends",
+ "description": "Takes the external inputs’ delay and reverb sends before their LEV, and can keep the effects awake with no track playing, so the Digitakt works as an effects box.",
+ "category": "system",
+ "author": "draadpiraat",
+ "license": "GPL-3.0-or-later",
+ "target": {
+  "device": "digitakt-mk1",
+  "product": "Digitakt mk1",
+  "os": "1.54",
+  "syx_sha256": "f78ba80fa7b1da5fb0e1ff61ad61e9e71aafe79f4364fc49679f3651353e3cf6",
+  "section3_sha256": "5c58bf9e3949ef09977c5fc007a61e8d026931f67f1621238379dfb8ee4d31a2",
+  "section3_len": 2479680
+ },
+ "sections": {
+  ".run": {
+   "align": 4,
+   "len": 424,
+   "parts": [
+    [
+     "hex",
+     "23c00000000023c100000000ac000900ac81090054974e754a390000000067140c82000000086d0c203900000000223900000000a0400900a0c10900a1c9a3c8ac000900ac810900a1c6a3c15097509754974e754a390000000067187001b0b94199f124660e4a794199f464660642b94199f12420394199f1244e75487a00ea2f2f00084eb900000000508f487a00ea2f2f00084eb900000000508f4e7543fa00e8600443fa00f24e56fffc2f02486effff2f0924082f084eb94017af204fef000c2002242efff84e5e4e7543f900000000600643f9000000002f02206f000824104a1166067001128060024211204241e80038241f2f4800044ef9400c9a3a43f900000000600643f900000000202f000c670e2f02206f000824104a806ac660ca4e7543f900000000600643f90000000070004a116702701cd0b9421f8a3c222f000c2f4100042f400008222f00102f41000c222f00142f41001042af00144ef9400c2b8800000000000000000000000000000000000000000000000000000000000000000000494e5055542053454e445320505245004b454550204658204157414b45000000"
+    ]
+   ]
+  },
+  ".bss": {
+   "align": 4,
+   "size": 12
+  }
+ },
+ "symbols": {
+  "STR_CTOR": [
+   "abs",
+   1075293984
+  ],
+  "INVALIDATE": [
+   "abs",
+   1074567738
+  ],
+  "BLIT": [
+   "abs",
+   1074539400
+  ],
+  "CHECKBOXES": [
+   "abs",
+   1109363260
+  ],
+  "FX_HOLD": [
+   "abs",
+   1100607780
+  ],
+  "FX_FADE": [
+   "abs",
+   1100608612
+  ],
+  "ipf_pan_l": [
+   ".bss",
+   0
+  ],
+  "ipf_pan_r": [
+   ".bss",
+   4
+  ],
+  "ipf_pre": [
+   ".bss",
+   8
+  ],
+  "ipf_awake": [
+   ".bss",
+   10
+  ],
+  "ipf_row": [
+   ".run",
+   360
+  ],
+  "ipf_row2": [
+   ".run",
+   376
+  ],
+  "ipf_label": [
+   ".run",
+   158
+  ],
+  "ipf_name": [
+   ".run",
+   392
+  ],
+  "ipf_label_any": [
+   ".run",
+   168
+  ],
+  "ipf_label2": [
+   ".run",
+   164
+  ],
+  "ipf_name2": [
+   ".run",
+   408
+  ],
+  "ipf_select": [
+   ".run",
+   204
+  ],
+  "ipf_select_any": [
+   ".run",
+   218
+  ],
+  "ipf_select2": [
+   ".run",
+   212
+  ],
+  "ipf_change": [
+   ".run",
+   256
+  ],
+  "ipf_change_any": [
+   ".run",
+   270
+  ],
+  "ipf_change2": [
+   ".run",
+   264
+  ],
+  "ipf_draw": [
+   ".run",
+   292
+  ],
+  "ipf_draw_any": [
+   ".run",
+   306
+  ],
+  "ipf_draw2": [
+   ".run",
+   300
+  ],
+  "ipf_dry": [
+   ".run",
+   0
+  ],
+  "ipf_hold": [
+   ".run",
+   84
+  ],
+  "ipf_settings": [
+   ".run",
+   124
+  ],
+  "ipf_sends": [
+   ".run",
+   24
+  ]
+ },
+ "exports": [
+  "ipf_dry",
+  "ipf_hold",
+  "ipf_sends",
+  "ipf_settings"
+ ],
+ "imports": [
+  "core_additem"
+ ],
+ "weak": [],
+ "relocs": [
+  [
+   ".run",
+   2,
+   "abs32",
+   "sec:.bss",
+   0
+  ],
+  [
+   ".run",
+   8,
+   "abs32",
+   "sec:.bss",
+   4
+  ],
+  [
+   ".run",
+   26,
+   "abs32",
+   "sec:.bss",
+   8
+  ],
+  [
+   ".run",
+   42,
+   "abs32",
+   "sec:.bss",
+   0
+  ],
+  [
+   ".run",
+   48,
+   "abs32",
+   "sec:.bss",
+   4
+  ],
+  [
+   ".run",
+   86,
+   "abs32",
+   "sec:.bss",
+   10
+  ],
+  [
+   ".run",
+   134,
+   "abs32",
+   "sym:core_additem",
+   0
+  ],
+  [
+   ".run",
+   150,
+   "abs32",
+   "sym:core_additem",
+   0
+  ],
+  [
+   ".run",
+   206,
+   "abs32",
+   "sec:.bss",
+   8
+  ],
+  [
+   ".run",
+   214,
+   "abs32",
+   "sec:.bss",
+   10
+  ],
+  [
+   ".run",
+   258,
+   "abs32",
+   "sec:.bss",
+   8
+  ],
+  [
+   ".run",
+   266,
+   "abs32",
+   "sec:.bss",
+   10
+  ],
+  [
+   ".run",
+   294,
+   "abs32",
+   "sec:.bss",
+   8
+  ],
+  [
+   ".run",
+   302,
+   "abs32",
+   "sec:.bss",
+   10
+  ],
+  [
+   ".run",
+   360,
+   "abs32",
+   "sec:.run",
+   158
+  ],
+  [
+   ".run",
+   364,
+   "abs32",
+   "sec:.run",
+   204
+  ],
+  [
+   ".run",
+   368,
+   "abs32",
+   "sec:.run",
+   292
+  ],
+  [
+   ".run",
+   372,
+   "abs32",
+   "sec:.run",
+   256
+  ],
+  [
+   ".run",
+   376,
+   "abs32",
+   "sec:.run",
+   164
+  ],
+  [
+   ".run",
+   380,
+   "abs32",
+   "sec:.run",
+   212
+  ],
+  [
+   ".run",
+   384,
+   "abs32",
+   "sec:.run",
+   300
+  ],
+  [
+   ".run",
+   388,
+   "abs32",
+   "sec:.run",
+   264
+  ]
+ ],
+ "sites": [
+  {
+   "addr": "0x40071e36",
+   "len": 8,
+   "stock_sha256": "f03f032ea1b97923f619d75171278004a4d6edb04c2128e19de8dc9c1c859471",
+   "new": "4eb9000000004e71",
+   "kind": "code",
+   "relocs": [
+    [
+     2,
+     "abs32",
+     "sym:ipf_dry",
+     0
+    ]
+   ]
+  },
+  {
+   "addr": "0x40071eb4",
+   "len": 24,
+   "stock_sha256": "4729e5aa4195651cbe38e64435f22f20584f21eaa0fec6513c0335d17a6f0868",
+   "new": "4eb9000000004e714e714e714e714e714e714e714e714e71",
+   "kind": "code",
+   "relocs": [
+    [
+     2,
+     "abs32",
+     "sym:ipf_sends",
+     0
+    ]
+   ]
+  },
+  {
+   "addr": "0x40077ef8",
+   "len": 6,
+   "stock_sha256": "979b2bdcc6cab36b59c536da97194d62109ad62906a75d6fbff3dd0e5cff9109",
+   "new": "4eb900000000",
+   "kind": "code",
+   "relocs": [
+    [
+     2,
+     "abs32",
+     "sym:ipf_hold",
+     0
+    ]
+   ]
+  }
+ ],
+ "collections": {},
+ "contribute": [
+  {
+   "to": "ev_settings",
+   "order": 50,
+   "data": "00000000",
+   "relocs": [
+    [
+     0,
+     "abs32",
+     "sym:ipf_settings",
+     0
+    ]
+   ],
+   "claims": []
+  }
+ ],
+ "copied": [],
+ "resources": {
+  "regions": [],
+  "names": [
+   "settings:INPUT SENDS PRE",
+   "settings:KEEP FX AWAKE"
+  ],
+  "core": "2.1"
+ },
+ "requires": [
+  "core"
+ ],
+ "conflicts": [],
+ "signature": null
+}

@@ -25,6 +25,11 @@ describe('selection export', () => {
 })
 
 describe('configuration import and chooser persistence',()=>{
+ it('retains classic startup during a mobile-to-desktop JSON transfer and refuses malformed values',()=>{
+  const exported={...createSelection(['miniverb'],null,false,undefined,undefined,undefined,true),name:'Phone set'}
+  expect(parseSelection(JSON.stringify(exported))).toMatchObject({classicStartup:true,moduleIds:['miniverb']})
+  expect(()=>parseSelection(JSON.stringify({...exported,options:{...exported.options,classicStartup:'true'}}))).toThrow('startup setting')
+ })
  it('round-trips a compact chooser without importing firmware',()=>{
   const exported={...createSelection(['miniverb','repitch'],null,false),name:'Compact set'}
   expect(parseSelection(JSON.stringify(exported))).toEqual({name:'Compact set',moduleIds:['miniverb','repitch'],moduleVersions:pinModuleVersions(['miniverb','repitch']),keepStockFx2:false})

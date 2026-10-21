@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "machine": "digitakt",
   "moduleId": "input-prefader",
-  "moduleVersion": "0.1.0-experimental",
-  "capturedAt": "2026-10-19",
+  "moduleVersion": "0.2.0-experimental",
+  "capturedAt": "2026-10-20",
   "firmware": "1.54",
-  "imageSha256": "e0f55015fffff75361d1912f1b61231b93b3fd33ab910620608cbb1da6ec4b89",
+  "imageSha256": "ddf836a3a1dce14b1813995f24938ac3b5163d253bdec8c2a3215279ff40fa64",
   "stockSha256": "f78ba80fa7b1da5fb0e1ff61ad61e9e71aafe79f4364fc49679f3651353e3cf6",
   "source": {
     "repository": "https://github.com/repeat98/modwerk",
-    "revision": "uncommitted working tree, branch input-prefader",
+    "revision": "uncommitted working tree, branch input-prefader-0.2.0-main",
     "path": "sdk/digitakt/modules/input-prefader"
   },
   "kit": {
@@ -18,9 +18,9 @@
   },
   "catalog": {
     "revision": "71df7763a1702837e1bdcb0c506890177efd6ca8",
-    "sha256": "891ee2df5b6bc26407f9aa4db1e6d6a8f1df7d0faf3cf5fb467aa48bc206e1a8",
+    "sha256": "74942c139d126c4bd083a29bf7debac5e48f0d07d2d0c1c7cbe9ace0688a0fab",
     "cores": 6,
-    "mods": 39
+    "mods": 40
   },
   "build": {
     "modules": [
@@ -31,7 +31,7 @@
       },
       {
         "id": "input-prefader",
-        "version": "0.1.0-experimental",
+        "version": "0.2.0-experimental",
         "sha256": null
       }
     ],
@@ -70,108 +70,131 @@
   },
   "inputs": [
     [
-      1000.0,
+      1000.004,
       "press 6"
     ],
     [
-      1100.0,
+      1103.959,
       "release 6"
     ],
     [
-      1414.234,
+      1403.968,
       "press 15"
     ],
     [
-      1514.237,
+      1503.971,
       "release 15"
     ],
     [
-      1814.246,
+      1803.979,
       "press 15"
     ],
     [
-      1914.249,
+      1903.982,
       "release 15"
     ],
     [
-      2214.258,
+      2203.991,
       "press 15"
     ],
     [
-      2314.261,
+      2303.994,
       "release 15"
     ],
     [
-      2614.269,
+      2604.002,
       "press 15"
     ],
     [
-      2714.272,
+      2704.005,
       "release 15"
     ],
     [
-      3014.281,
+      3004.014,
       "press 15"
     ],
     [
-      3114.284,
+      3104.017,
       "release 15"
     ],
     [
-      3414.293,
+      3404.026,
       "press 15"
     ],
     [
-      3514.295,
+      3504.029,
       "release 15"
     ],
     [
-      3814.304,
+      3804.038,
       "press 15"
     ],
     [
-      3914.307,
+      3904.041,
       "release 15"
     ],
     [
-      4214.316,
+      4204.049,
       "press 15"
     ],
     [
-      4314.319,
+      4304.052,
       "release 15"
     ],
     [
-      4614.328,
+      4604.061,
       "press 15"
     ],
     [
-      4714.33,
+      4704.063,
       "release 15"
     ],
     [
-      5014.34,
+      5004.072,
       "press 17"
     ],
     [
-      5114.342,
+      5104.075,
+      "release 17"
+    ],
+    [
+      5404.084,
+      "press 15"
+    ],
+    [
+      5504.087,
+      "release 15"
+    ],
+    [
+      5804.095,
+      "press 17"
+    ],
+    [
+      5904.099,
       "release 17"
     ]
   ],
   "captures": [
     {
       "path": "media/settings-post.png",
-      "sha256": "ceaf436e8edc135d336d5a417d3359ede01591d0472360689365df4bd184aecc",
-      "plan": "wait 1000\ntap GLOBAL\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\nsnap settings-post\ntap RIGHT\nsnap settings-pre\n",
-      "atMs": 5014.3395299145295,
-      "requestedAtMs": 5014.3395299145295
+      "sha256": "a55931183ac16fef79ce1088f5dd79337be8ecb9509c785c05a66e9fcd4e2e68",
+      "plan": "wait 1000\ntap GLOBAL\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\nsnap settings-post\ntap RIGHT\nsnap settings-pre\ntap DOWN\ntap RIGHT\nsnap settings-awake\n",
+      "atMs": 5004.072435897436,
+      "requestedAtMs": 5004.072435897436
     },
     {
       "path": "media/settings-pre.png",
-      "sha256": "60bc10893ab41fdceb78ae58f81eb16d7b61a30a471723da194949974322195c",
-      "plan": "wait 1000\ntap GLOBAL\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\nsnap settings-post\ntap RIGHT\nsnap settings-pre\n",
-      "atMs": 5414.350641025641,
-      "requestedAtMs": 5414.350641025641
+      "sha256": "061673ae82ee8c46206f9411e962d8c4e78d3d340cae1f879c4671ff8439a82b",
+      "plan": "wait 1000\ntap GLOBAL\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\nsnap settings-post\ntap RIGHT\nsnap settings-pre\ntap DOWN\ntap RIGHT\nsnap settings-awake\n",
+      "atMs": 5404.08376068376,
+      "requestedAtMs": 5404.08376068376
+    },
+    {
+      "path": "media/settings-awake.png",
+      "sha256": "e4c00263a56bb365eeccdbc5a210b1bf70e2dbd40df52739d1f4f0659aedfb91",
+      "plan": "wait 1000\ntap GLOBAL\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\ntap DOWN\nsnap settings-post\ntap RIGHT\nsnap settings-pre\ntap DOWN\ntap RIGHT\nsnap settings-awake\n",
+      "atMs": 6204.1070512820515,
+      "requestedAtMs": 6204.1070512820515
     }
   ]
 }

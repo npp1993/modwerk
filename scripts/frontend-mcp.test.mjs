@@ -18,6 +18,16 @@ beforeAll(async () => { folder = await mkdtemp(join(tmpdir(), 'modwerk-mcp-test-
 afterAll(async () => { await service?.close(); await rm(folder, { recursive: true, force: true }) })
 
 describe('frontend MCP protocol and isolated site workflows', () => {
+  it('searches the same instrument/type words as the site and preserves availability gates', async () => {
+    const reverb = await service.call('site_catalogue', { query: 'octatrack reverb' })
+    expect(reverb.modules.some(module => module.id === 'everb')).toBe(true)
+    expect(reverb.modules.every(module => module.machine === 'octatrack')).toBe(true)
+    const midi = await service.call('site_catalogue', { query: 'digitakt midi' })
+    expect(midi.modules.length).toBeGreaterThan(0)
+    expect(midi.modules.every(module => module.machine === 'digitakt')).toBe(true)
+    expect((await service.call('site_catalogue', { query: 'air chorus' })).modules).toHaveLength(0)
+    expect((await service.call('site_catalogue', { query: 'air chorus', beta: true })).modules.map(module => module.id)).toEqual(['airwindows-chorus'])
+  })
   it('bounds USB error logs without dumping bundled stacks, causes or account objects', () => {
     const error = new Error('The self-test record has the wrong length.', { cause: { session: 'private-session' } })
     error.stack = 'Error: wrong length\n at data:text/javascript;base64,' + 'Z'.repeat(500000)

@@ -14,6 +14,7 @@ import { useSetWords } from '../community/beta-ui'
 const ROWS = ['Machine', 'Version', 'Purpose', 'Location', 'Storage', 'Processing', 'Hardware record', 'Build status'] as const
 
 type ComparisonProps = {
+  betaAccess?: boolean
   ids: string[]
   selected: string[]
   digiSelected: Record<DigiMod['device'], string[]>
@@ -22,11 +23,11 @@ type ComparisonProps = {
   onClose: () => void
 }
 
-export function ModuleComparison({ ids, onClose, onToggle, selected, digiSelected, onToggleDigi }: ComparisonProps) {
+export function ModuleComparison({ betaAccess = false, ids, onClose, onToggle, selected, digiSelected, onToggleDigi }: ComparisonProps) {
   const w = useSetWords()
   const ref = useRef<HTMLDialogElement>(null)
   const modules = [
-    ...MODULES.filter(module => isModuleAvailable(module.id)).map(module => ({
+    ...MODULES.filter(module => isModuleAvailable(module.id, betaAccess)).map(module => ({
       key: module.id, name: module.name, author: module.authorName, authorUrl: module.authorUrl,
       href: moduleHref(module.id), selected: selected.includes(module.id), toggle: () => onToggle(module.id),
       values: {
