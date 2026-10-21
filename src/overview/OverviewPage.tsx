@@ -31,7 +31,7 @@ export function OverviewPage({ overview }: { overview: Overview }) {
       {shown.filter(machine => machine.kind === 'mods').map(machine => <MachineTile key={machine.device.id} machine={machine} />)}
       {filter !== 'research' && filter !== 'open' && <DevelopTile machines={overview.machines.filter(machine => machine.count).map(machine => machine.device.name)} />}
       {shown.filter(machine => machine.kind !== 'mods').map(machine => <MachineTile key={machine.device.id} machine={machine} />)}
-      {(filter === 'all' || filter === 'open') && <AddMachineTile />}
+      {(filter === 'all' || filter === 'open') && <><FridgeTile /><AddMachineTile /></>}
     </div>
     <MachinePhotoCredits />
   </div>
@@ -61,6 +61,21 @@ function AddMachineTile() {
       <div className="overview-tile-line"><h2 className="overview-tile-name">Suggest a machine</h2><Icon name="plus" size={16} /></div>
     </div>
   </a>
+}
+
+// A temporary easter egg after the last machine: the Elektron Fridge, locked like every machine without mods.
+function FridgeTile() {
+  return <article className="overview-tile is-locked is-open">
+    <a className="overview-art" href="#forum?category=requests" aria-label="Help unfreeze: Elektron Fridge">
+      <img className="device-photo is-cutout" src={import.meta.env.BASE_URL + 'machines/elektron-fridge.webp'} alt="" loading="lazy" decoding="async" />
+      <span className="overview-lock" aria-hidden="true"><Icon name="lock" size={22} /></span>
+      <span className="overview-cta" aria-hidden="true"><span><Icon name="plus" size={15} />Help unfreeze</span></span>
+    </a>
+    <div className="overview-tile-body">
+      <div className="overview-tile-line"><h2 className="overview-tile-name">Elektron Fridge</h2><span className="overview-state">No research yet</span></div>
+      <span className="overview-ladder" aria-hidden="true">{DEVICE_STEPS.map(step => <i key={step.id} />)}</span>
+    </div>
+  </article>
 }
 
 function MachineTile({ machine }: { machine: OverviewMachine }) {

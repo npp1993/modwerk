@@ -203,9 +203,12 @@ button.octatrack-status { width: 100%; border: 0; border-top: 1px solid var(--li
 .instrument-item .instrument-editing small { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; }
 .instrument-editing small.is-on { color: #c4e6cf; }
 .instrument-editing small.is-load { color: var(--accent); }
-.sidebar-build.is-connection { width: 100%; border-inline: 0; border-bottom: 0; background: none; color: var(--text); text-align: left; cursor: pointer; }
-.sidebar-build.is-connection strong { color: var(--accent); }
-.sidebar-build.is-connection:disabled { cursor: wait; }
+/* The card's next step (connect, install, retry), joined to its foot. */
+.instrument-item.is-unit:has(+ .instrument-action) { margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.instrument-action { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 34px; margin-bottom: 2px; padding: 0 10px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 8px 8px; background: var(--surface-raised); color: var(--accent); font: inherit; font-size: 12px; font-weight: 550; text-align: left; cursor: pointer; transition: background .15s; }
+.instrument-item[aria-current="page"] + .instrument-action { border-color: var(--accent-line); }
+.instrument-action:hover { background: var(--surface-hover); }
+.instrument-action:disabled { color: var(--muted); cursor: wait; }
 /* The Octatrack page: the unit's hero on top, then a list of its pages and your module sets beside the one open. */
 .octatrack-hub { container: hub / inline-size; }
 /* The page fits the window (--hub-height, measured by OctatrackHub): the hero and list stay put, a long page scrolls in its pane. */

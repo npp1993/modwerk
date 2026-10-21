@@ -100,6 +100,12 @@ remain readable on hover surfaces; primary buttons use dark text on lavender.
 Keep panel edges quiet and use filled surfaces for separation; reserve bright
 outlines for focus. Native selects share the chevron token with a 14px edge inset
 and 42px right padding, including in dialogs and phone layouts.
+
+`main.tsx` imports `App` before `src/styles.css`, so a component's own
+stylesheet (statically imported through `App`) loads first and loses to a rule
+of equal specificity in `styles.css`, including inside its own media query. Lazy
+(beta) chunks load later and win. Raise the selector (for example
+`.sidebar .sidebar-home`) when a component rule must override a shared one.
 When changing the palette, inspect rendered pages and keyboard focus at phone,
 tablet and desktop widths, and measure text contrast against the actual surface.
 

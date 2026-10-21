@@ -8,16 +8,14 @@ const ACTIVE: LinkState['status'][] = ['sending', 'testing', 'trial', 'finishing
 const activity = ({ status, progress = 0 }: LinkState) => status === 'sending' ? `Syncing ${Math.round(progress * 100)}%`
   : status === 'testing' ? 'Self-test' : status === 'trial' ? 'Waiting for Keep or Undo' : 'Finishing'
 
-/** The beta sidebar's next step, instead of asking for an OS file on every visit. */
+/** The beta Octatrack card's next step (connect, install, retry); nothing once connected or syncing, which the card shows. */
 export function OctatrackSidebarStatus({ link, onInstall }: { link: OctatrackLink; onInstall: () => void }) {
-  const state = useOctatrackLink(link), { status, identity } = state
-  const active = ACTIVE.includes(status), connected = status === 'ready' && !!identity?.canSubmit
-  const install = status === 'stock' || status === 'ready' && !connected || status === 'unsupported'
-  const title = active ? activity(state) : connected ? 'Octatrack connected' : install ? 'Install the base' : status === 'connecting' ? 'Connecting…' : status === 'busy' ? 'Try connecting again' : 'Connect Octatrack'
-  const hint = active ? (state.module ? 'Open your module set to follow the sync.' : 'Started from Status.') : connected ? 'Choose a module set to sync.' : status === 'stock' ? 'Original OS detected. Install once from the card.' : install ? 'Install from the card to get started.' : status === 'busy' ? 'Close the other tab or app using it.' : 'Plug in USB, then choose your Octatrack.'
-  const content = <><span className={'status-dot' + (connected ? ' verified' : active ? ' is-live' : '')} /><span className="sidebar-build-copy"><strong>{title}</strong><small>{hint}</small></span><Icon name="arrow" size={14} /></>
-  return connected || active ? <a className="sidebar-build" href="#configuration">{content}</a>
-    : <button type="button" className="sidebar-build is-connection" disabled={status === 'connecting'} onClick={() => { if (install) onInstall(); else void (status === 'busy' ? link.retry() : link.connect()) }}>{content}</button>
+  const { status, identity } = useOctatrackLink(link)
+  if (ACTIVE.includes(status) || status === 'ready' && identity?.canSubmit) return null
+  const install = status === 'stock' || status === 'ready' || status === 'unsupported'
+  const title = install ? 'Install the base' : status === 'connecting' ? 'Connecting…' : status === 'busy' ? 'Try connecting again' : 'Connect Octatrack'
+  const hint = status === 'stock' ? 'Original OS detected. Install once from the card.' : install ? 'Install from the card to get started.' : status === 'busy' ? 'Close the other tab or app using it.' : 'Plug in USB, then choose your Octatrack.'
+  return <button type="button" className="instrument-action" title={hint} disabled={status === 'connecting'} onClick={() => { if (install) onInstall(); else void (status === 'busy' ? link.retry() : link.connect()) }}><span>{title}</span><Icon name="arrow" size={14} /></button>
 }
 
 /** The Octatrack's connection in the status bar; nothing while idle or without WebUSB. */
