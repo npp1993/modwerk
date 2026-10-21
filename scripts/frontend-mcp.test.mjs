@@ -84,6 +84,10 @@ describe('frontend MCP protocol and isolated site workflows', () => {
     await expect(service.call('site_selection', { moduleIds: ['sidechain-compressor'], usb: true, capabilities })).rejects.toThrow('latest Modwerk base')
     const cardOnly = catalogue.modules.find(module => module.machine === 'octatrack' && !module.usb)
     if (cardOnly) await expect(service.call('site_selection', { moduleIds: [cardOnly.id], usb: true })).rejects.toThrow('USB')
+    // A module whose package needs a base DSP feature (the key bus) is USB-only: card firmware has no base.
+    expect((await service.call('site_selection', { moduleIds: ['everb'] })).card).toBe('')
+    for (const module of catalogue.modules.filter(module => module.machine === 'octatrack' && module.card === false))
+      expect((await service.call('site_selection', { moduleIds: [module.id] })).card).toMatch('over USB')
   })
   it('round trips sets through frontend validation without including private firmware', async () => {
     const created = await service.call('set_save', { name: 'MCP test', moduleIds: ['miniverb'] })

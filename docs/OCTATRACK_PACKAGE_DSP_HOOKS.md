@@ -373,8 +373,8 @@ the base was regenerated with these fixes (`b3ac5155…`, `.bin` `f6488e90`) and
   or its owned channel closed) refuses readers for the boot (`RUNTIME_CONFLICT`) instead of retries that never succeed;
   an offset-0 reset chunk clears the dirty mark as a scrub does. Board tests 47 (an unknown core: no enable on the
   other, a reader refused) and 48 (a slot buffer over the window: no scrub, readers retry, then admitted). The base was
-  regenerated for these and again after merging main's Quant Live Rec and its USB Audio layout variants (#756): `9591faad…`
-  (`.bin` `70a9cedd`) and its six variants (base-binding.json); the MKII re-check below ran on
+  regenerated for these and again after merging main's Quant Live Rec, its USB Audio layout variants (#756) and LOFI2
+  (#749): `c6aba104…` (`.bin` `1074daec`) and its six variants (base-binding.json); the MKII re-check below ran on
   the twin of `b3ac5155`, before them, and the next MKII session re-checks the new twin.
 - **One ledger.** The board's key bus constants (its bit, reset total 1,026 and first range 514, what Sidechain
   implies, each feature's cores), the transport's reset totals and splits and the engines' feature index now come from
@@ -384,6 +384,10 @@ the base was regenerated with these fixes (`b3ac5155…`, `.bin` `f6488e90`) and
 - ABI 9 beyond the loader: the site's module sets (`module-set.ts`), the publication builder (`module_packages.py`,
   entries with `requiresFeatures` and `dspClaims`), the private candidate reader and the MCP's prepared packages accept
   ABI 9.
+- A module whose published package requires a base DSP feature is USB-only: card firmware has no base, so the
+  configurator's card build refuses it (`cardBuildError` in `src/catalog/usb-only.ts`, derived from the package's
+  `requires`, not listed per module) and the MCP shows `card: false`. Its card rows stay, so native comparisons and
+  the pair checks still cover the card build it would make.
 
 **Re-check on the fixed twin (MKII, OS 1.40C, 20-21 October 2026).** The development twin of `b3ac5155` (identity
 `2bf3c9ab…`, `.bin` `d4522c1a`), RAM-booted, with Sidechain's package relinked to it (`f509d094`); ears and capture by

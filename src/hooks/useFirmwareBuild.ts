@@ -9,6 +9,7 @@ import { moduleAvailabilityError } from '../catalog/availability'
 import { selectionConflictError } from '../catalog/selection-conflicts'
 import { usbAudioBuildError } from '../config/usb-audio'
 import { moduleBuildError } from '../catalog/build-support'
+import { cardBuildError } from '../catalog/usb-only'
 import type { FirmwareInspection } from '../engine/base'
 import type { FirmwareClient } from '../engine/client'
 import { FirmwareBuildError } from '../engine/client'
@@ -23,7 +24,7 @@ export function useFirmwareBuild(client: RefObject<FirmwareClient | null>, activ
   const {session}=useCommunity(),memberId=session.user?.verified&&session.user.username?session.user.id:null
   const betaAccess = hasBetaAccess(session)
   const ids = active?.moduleIds ?? [], keepStock = DSP_LOADER && (active?.keepStockFx2 ?? true), startup: StartupAnimation = active?.classicStartup ? 'classic' : 'docking'
-  const configurationError=moduleAvailabilityError(ids,betaAccess)||selectionConflictError(ids,keepStock)||moduleBuildError(ids)||usbAudioBuildError(active?.usbAudio)
+  const configurationError=moduleAvailabilityError(ids,betaAccess)||selectionConflictError(ids,keepStock)||moduleBuildError(ids)||cardBuildError(ids)||usbAudioBuildError(active?.usbAudio)
   const key = JSON.stringify([active?.id, ids, active?.moduleVersions, active?.usbAudio, keepStock, startup, firmware?.sha256, memberId, betaAccess])
   const [view, setView] = useState<BuildView>({ key: '', state: 'empty' })
   const operation = useRef(0), building = useRef(false)
