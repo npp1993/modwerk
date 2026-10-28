@@ -19,6 +19,8 @@ The build reports `jmp 0x4005e3d8 -> temp_save:ts_yes_hook` and `jmp 0x4005e1fc 
 
 | image (MAIN OS SHA-256, first 12) | remix | gate | result |
 |---|---|---|---|
+| `9dc5d8b3cb6d` | temp-save-stock, d88d7207 (every page and menu window) | verify.py, MKII | PASS, 54 checks |
+| `9dc5d8b3cb6d` | temp-save-stock, d88d7207 | verify.py, MKI | PASS, 45 checks |
 | `32417b06af3f` | temp-save-stock, 001fc493 | verify.py, MKII | PASS, 37 checks (with the quick double press and the cost measurement) |
 | `01b6df8c37bd` | temp-save-stock, 88b14625 | verify.py, MKII | PASS, 35 checks |
 | `01b6df8c37bd` | temp-save-stock, 88b14625 | verify.py, MKI | PASS, 34 checks (no PROJ/PART keys: PART opened with FUNC + MIDI) |
@@ -53,6 +55,8 @@ The fixture is octabam's TMPL project, staged unchanged. Edits are made with the
 - **Stock flows:** YES alone reaches ARM ALL and NO alone DISARM ALL with no module toast; RELOAD PART (FUNC + CUE) restores the saved Part, not the temp save.
 - **Quick second presses** (001fc493): FUNC + YES twice and FUNC + NO twice inside the message's lifetime: TEMP SAVED, TEMP SAVED, RELOADED, RELOADED, and neither ARM ALL nor DISARM ALL runs.
 - **Cost:** executed ColdFire instructions, interrupts included (frame engine on), from the hook's entry: a save to its toast 16,287; a reload to the end of its screen refresh 637,251 stopped and 640,923 playing. Executed instructions, not chip cycles; not timed on the unit.
+- **Page and menu windows** (d88d7207): in AMP, LFO, FX1 and FX2 SETUP, SCALE, PATTERN SETTINGS, RECORDING SETUP, MIXER, and on the MKII also TRACK TRIG EDIT, PROJECT and a PROJECT page, the PART window, the FUNC + PART menu and ARRANGER (the MKI: the PART window through FUNC + MIDI): FUNC + YES saves (TEMP SAVED), the window stays open, an edit made on the pattern screen is undone by FUNC + NO in the same window (RELOADED), the pattern and Part equal the saved copy byte for byte, the CS1 copy equals RAM, and the window stays open. In AMP SETUP the window's LCD after the reload is pixel-identical to the one before the edit (a capture, ).
+- **Where both stay stock** (d88d7207): SRC SETUP of an audio track; the slot list reached by double-tapping SRC and pressing RIGHT and the sample list reached by double-tapping a TRACK key (stock's list handler, the preview, runs); AED; the RENAME PART editor; the RELOAD PROJECT? dialog: no module toast, nothing changed. FUNC let go before YES or NO: in the sample list stock still gets both keys on press and release.
 - **Power cycle** (CS1 and card kept, `--cs1-in --no-post`): the copy is gone, FUNC + NO shows NO TEMP SAVE.
 
 ## Screens
