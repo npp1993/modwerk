@@ -22,6 +22,8 @@ There is no page, menu row or knob. The copy lives in the module's memory and is
 
 ## Usage
 
+Press FUNC + YES whenever you reach something worth keeping, then experiment. FUNC + NO takes you back to that moment; press FUNC + YES again to move the restore point forward. Use it while the sequencer plays: the reload is immediate.
+
 ### What the copy holds
 
 - **The pattern:** every track's trigs, trig conditions, parameter locks, length and scale settings.
