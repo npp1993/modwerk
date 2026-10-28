@@ -83,10 +83,12 @@ NOTIFY, ARM_ALL, DISARM_ALL = 0x4005a2b8, 0x4005e294, 0x4005e0e8
 YES_REJOIN, NO_REJOIN = 0x4005e3e0, 0x4005e204
 HAS_SAVED, PAT_PART, CUR_BANK, CS1_UNSAVED = 0x9b312, 0x8e57, 0x80000002, 0x100b145e
 PLAIN_YES, PLAIN_NO = 0x4005e4c8, 0x4005e25c
+DIALOG = 0x460e5cd0                  # the yes/no dialog's window, 0 with none
 MKI = os.environ.get("TEMP_MODEL", "mkii").lower() == "mki"
 TEXTS = {"saved": "TEMP SAVED", "reloaded": "RELOADED", "none": "NO TEMP SAVE"}
 KEYS = {'scene_a': 0x19, 'scene_b': 0x1a, 'yes': 0x31, 'no': 0x32, 'func': 0x2d, 'cue': 0x2a, 'pattern': 0x2e,
-        'play': 0x28, 'bank': 0x2f, 'midi': 0x35, 'down': 0x20, 'up': 0x33, 'proj': 0x1c, 'part': 0x1d, 'mixer': 0x30, 'stop': 0x27, 'rec': 0x29, 'pg_src': 0x22, 'pg_amp': 0x23, 'pg_fx1': 0x25,
+        'play': 0x28, 'bank': 0x2f, 'midi': 0x35, 'page': 0x1b, 'rec2': 0x2b, 'arr': 0x1f, 'aed': 0x1e, 'right': 0x21, 'left': 0x34,
+        'track3': 0x12, 'down': 0x20, 'up': 0x33, 'proj': 0x1c, 'part': 0x1d, 'mixer': 0x30, 'stop': 0x27, 'rec': 0x29, 'pg_src': 0x22, 'pg_amp': 0x23, 'pg_fx1': 0x25, 'pg_lfo': 0x24, 'pg_fx2': 0x26,
         **{f'trig{i + 1}': i for i in range(16)}}
 FAILS = []
 
@@ -228,7 +230,8 @@ def diff(a, b):
 
 
 def toasts(hits, texts):
-    return [k for k, a in texts.items() for h in hits if h[1] == NOTIFY and a in h]
+    """The module's toasts among the hits, in order: NOTIFY's text argument is the hit's field 8."""
+    return [k for h in hits if h[1] == NOTIFY for k, a in texts.items() if h[8] == a]
 
 
 def gesture(e, held, name, texts):
@@ -389,28 +392,93 @@ def main():
         s7 = e.state()
         s6 = sa
 
-        print("verify temp-save: in a window FUNC + YES and FUNC + NO stay stock")
-        windows = (("AMP SETUP", ("func", "pg_amp"), ("no",)), ("MIXER", ("mixer",), ("mixer",)))
-        windows += ((("PART", ("func", "midi"), ("no",)),) if MKI else
-                    (("PROJECT", ("proj",), ("no",)), ("PART", ("part",), ("part",))))
-        for name, opening, closing in windows:
-            e.chord(*opening, after=800) if len(opening) == 2 else e.tap(opening[0], after=800)
+        print("verify temp-save: in page and menu windows")
+        def small_edit():
+            e.tap("rec", after=400)
+            e.tap("trig6")
+            e.tap("rec", after=400)
+            e.tap("pg_amp")
+            e.knob(0, 7)
+        def do_open(seq):
+            for k in seq:
+                if isinstance(k, tuple):
+                    e.chord(*k, after=700)
+                else:
+                    e.tap(k, after=500)
+            e.run(300)
+        def do_close():
+            for _ in range(4):
+                if not is_open(e):
+                    break
+                e.tap("no", after=400)
+        windows = [("AMP SETUP", [("func", "pg_amp")]), ("LFO SETUP", [("func", "pg_lfo")]),
+                   ("FX1 SETUP", [("func", "pg_fx1")]), ("FX2 SETUP", [("func", "pg_fx2")]),
+                   ("SCALE", [("func", "page")]), ("PATTERN SETTINGS", [("func", "bank" if MKI else "pattern")]),
+                   ("RECORDING SETUP", [("func", "rec2")]), ("MIXER", ["mixer"])]
+        windows += [("PART window", [("func", "midi")])] if MKI else [
+            ("TRACK TRIG EDIT", [("func", "bank")]), ("PROJECT", ["proj"]), ("PROJECT > CONTROL page", ["proj", "down", "down", "yes"]),
+            ("PART window", ["part"]), ("FUNC + PART menu", [("func", "part")]), ("ARRANGER", ["arr"])]
+        for name, seq in windows:
+            do_open(seq)
+            was_open = is_open(e)
+            t, arm, _ = gesture(e, "func", "yes", texts)
+            sa = e.state()
+            e.run(600)
+            stays = is_open(e)
+            do_close()
+            small_edit()
+            moved = e.state()
+            do_open(seq)
+            t2, _, disarm = gesture(e, "func", "no", texts)
+            sb = e.state()
+            e.run(600)
+            stays2 = is_open(e)
+            do_close()
+            check(was_open and t == ["saved"] and not arm and t2 == ["reloaded"] and not disarm and stays and stays2
+                  and moved["P"] != sa["P"] and sb["P"] == sa["P"] and sb["W"] == sa["W"] and sb["Wcs1"] == sb["W"],
+                  f"{name}: FUNC + YES {t}, FUNC + NO {t2}, the window stays open ({stays}/{stays2}), "
+                  f"pattern {diff(sb['P'], sa['P'])} and Part {diff(sb['W'], sa['W'])} bytes off")
+        s6 = sa
+
+        print("verify temp-save: where FUNC + YES and FUNC + NO stay stock")
+        LISTS = (0x4006dc30, 0x400792a8)
+        def stays_stock(name, opening, want_list=False, closing=None):
+            opening()
+            e.run(300)
             sw = e.state()
-            e.watch([hook, hook_no])
+            lists = e.u32(0x460e5e4c) | e.u32(0x460e70e0)
+            e.watch([NOTIFY, *LISTS])
             e.chord("func", "yes", after=400)
             e.chord("func", "no", after=400)
-            hh = e.hits()
-            reached = (sum(x[1] == hook for x in hh), sum(x[1] == hook_no for x in hh))
-            ty, _, _ = gesture(e, "func", "yes", texts)
-            tn, _, _ = gesture(e, "func", "no", texts)
+            h = e.hits()
+            mine, listed = toasts(h, texts), any(x[1] in LISTS for x in h)
             sx = e.state()
-            open_ = is_open(e)
-            for k in closing:
-                e.tap(k, after=600)
-            check(not ty and not tn and sx["P"] == sw["P"] and sx["W"] == sw["W"] and open_
-                  and reached[0] >= 2 and reached[1] >= 2,
-                  f"{name}: the hooks ran (YES {reached[0]}, NO {reached[1]}, press and release) and left it to stock: "
-                  f"no module toast ({ty + tn}), nothing changed")
+            (closing or do_close)()
+            check(not mine and sx["P"] == sw["P"] and sx["W"] == sw["W"] and (listed if want_list else True),
+                  f"{name}: no module toast ({mine}), nothing changed" + (f", stock's list action ran ({listed})" if want_list else ""))
+        def dbl(k):
+            e.tap(k, hold=40, after=40)
+            e.tap(k, hold=40, after=500)
+        stays_stock("SRC SETUP", lambda: e.chord("func", "pg_src", after=700))
+        stays_stock("slot list (double-tap SRC, RIGHT)", lambda: (e.tap("pg_src", after=300), dbl("pg_src"), e.tap("right", after=600)),
+                    want_list=True)
+        stays_stock("sample list (double-tap TRACK)", lambda: (e.tap("pg_src", after=300), dbl("track3")), want_list=True)
+        if not MKI:
+            stays_stock("AED", lambda: e.tap("aed", after=700), want_list=True)
+            stays_stock("RENAME PART", lambda: (e.chord("func", "part", after=600), e.tap("yes", after=800)))
+            def reload_dialog():
+                e.tap("proj", after=500)
+                e.tap("left", after=200)                 # the category pane: the menu keeps its last cursor
+                for _ in range(4):
+                    e.tap("up", after=150)               # PROJECT, the first category
+                e.tap("right", after=300)
+                for _ in range(8):
+                    e.tap("up", after=120)               # CHANGE, its first row
+                e.tap("down", after=200)
+                e.tap("down", after=200)                 # RELOAD
+                e.tap("yes", after=800)
+                check(e.u32(DIALOG) != 0, "the RELOAD PROJECT? dialog is open")
+            stays_stock("RELOAD PROJECT? dialog", reload_dialog)
         check(not is_open(e), "back on the pattern screen")
 
         print("verify temp-save: another pattern")
@@ -547,15 +615,19 @@ def main():
             hk = e.hits()
             went[k] = "plain layer" if any(x[1] == plain for x in hk) else "the hook" if any(x[1] == mine for x in hk) else "?"
         print(f"        with FUNC let go first the release went to: YES {went['yes']}, NO {went['no']}")
-        e.tap("mixer", after=800)
+        e.tap("pg_src", after=300)
+        e.tap("track3", hold=40, after=40)
+        e.tap("track3", hold=40, after=600)      # the sample list: both keys stay stock there
         e.watch([YES_REJOIN, NO_REJOIN])
         e.chord("func", "yes", after=400)
         e.chord("func", "no", after=400)
         h = e.hits()
         ry, rn = sum(x[1] == YES_REJOIN for x in h), sum(x[1] == NO_REJOIN for x in h)
-        e.tap("mixer", after=800)
-        check(ry == 2 and rn == 2, f"after FUNC released first: in MIXER stock gets FUNC + YES {ry}/2 and FUNC + NO {rn}/2 "
-              "(press and release)")
+        for _ in range(3):
+            if is_open(e):
+                e.tap("no", after=400)
+        check(ry == 2 and rn == 2, f"after FUNC released first: in the sample list stock gets FUNC + YES {ry}/2 and "
+              f"FUNC + NO {rn}/2 (press and release)")
 
         e.tap("bank", after=600)                  # back to bank A, pattern 1
         e.tap("trig1", after=600)
