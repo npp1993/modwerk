@@ -161,7 +161,7 @@ ts_save:
         add.l   %d2,%d0
         pea     (PAT_LEN).l
         move.l  %d0,-(%sp)
-        pea     ts_pat(%pc)
+        pea     (ts_pat).l
         jsr     (%a2)
         lea     12(%sp),%sp
         moveq   #0,%d0
@@ -172,7 +172,7 @@ ts_save:
         add.l   #PARTS,%d0
         pea     (PART_LEN).l
         move.l  %d0,-(%sp)
-        pea     ts_part(%pc)
+        pea     (ts_part).l
         jsr     (%a2)
         lea     12(%sp),%sp
         lea     ts_state(%pc),%a0
@@ -225,12 +225,12 @@ ts_reload:
         moveq   #0,%d0
         move.b  2(%a2),%d0
         move.l  %d0,-(%sp)
-        pea     ts_pat(%pc)
+        pea     (ts_pat).l
         jsr     (PAT_WRITE).l
         addq.l  #8,%sp
 
         | 2. the Part, through the saved slot
-        lea     ts_part(%pc),%a1
+        lea     (ts_part).l,%a1
         move.w  0x10(%a1),%d2           | the copy's own selection, kept for the next reload
         move.w  %d3,0x10(%a1)
         bsr.w   ts_swap                 | the copy into the saved slot; a0 = has-saved byte
@@ -243,7 +243,7 @@ ts_reload:
         addq.l  #4,%sp
         bsr.w   ts_swap                 | the saved Part back, the copy back
         move.b  %d3,(%a0)
-        lea     ts_part(%pc),%a1
+        lea     (ts_part).l,%a1
         move.w  %d2,0x10(%a1)
         | unsaved again, RAM and CS1, as after a paste
         moveq   #1,%d0
@@ -300,7 +300,7 @@ ts_swap:
         move.l  #PART_LEN,%d1
         mulu.l  %d1,%d0
         add.l   #SAVED,%d0
-        lea     ts_part(%pc),%a1
+        lea     (ts_part).l,%a1
         add.l   %a0,%d0
         move.l  %d0,%a0
         move.l  #PART_LEN/2-1,%d1
@@ -346,6 +346,8 @@ ts_taken_yes: .byte 0
 ts_taken_no:  .byte 0
         .balign 2
 
+| The copy is reached by absolute address (relocated at load): in a large
+| card build the shared DRAM link can put .bss beyond a 16-bit PC offset.
         .bss
         .balign 4
 ts_part:    .space PART_LEN
