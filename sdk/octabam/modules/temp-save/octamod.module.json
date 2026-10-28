@@ -45,7 +45,7 @@
       "FUNC + YES and FUNC + NO on the pattern screen no longer repeat ARM ALL and DISARM ALL; YES and NO alone still do. In menus, windows and sample lists both gestures stay stock (FUNC + YES still previews samples).",
       "The reload replaces the pattern and the Part as a whole, including edits made since FUNC + YES on any track; the Part then counts as edited, as after a paste.",
       "Another project, or this one saved under another name, makes the copy unusable (NO TEMP SAVE).",
-      "Uses 816 bytes of code and a 42,892-byte buffer; over USB from the module pool all modules share."
+      "Uses 836 bytes of code and a 42,892-byte buffer; over USB from the module pool all modules share."
     ],
     "effectId": null
   },
@@ -53,11 +53,11 @@
     "recorded": "ot_emu and one MKII, 27-28 Oct 2026",
     "storage": {
       "label": "Storage",
-      "display": "824 B of code plus a 42,892 B copy buffer; no DSP code, no saved data",
-      "value": 43716,
+      "display": "836 B of code plus a 42,892 B copy buffer; no DSP code, no saved data",
+      "value": 43728,
       "unit": "bytes",
       "method": "static",
-      "conditions": "The USB package of commit 001fc493: 824 bytes of code and data, 42,892 bytes of bss. On the card build the unit sits in the platform's DRAM reserve.",
+      "conditions": "The published USB package: 836 bytes of code and data (5 self-relocations), 42,892 bytes of bss. On the card build the unit sits in the platform's DRAM reserve.",
       "source": "TESTING.md"
     },
     "processing": {
@@ -86,7 +86,7 @@
       "memory": {
         "level": "moderate",
         "basis": "measured-comparison",
-        "rationale": "A 42,892-byte buffer for one pattern and one Part, plus 824 bytes of code: on USB about a sixth of the 256 KB module pool all modules share; no saved data.",
+        "rationale": "A 42,892-byte buffer for one pattern and one Part, plus 836 bytes of code: on USB about a sixth of the 256 KB module pool all modules share; no saved data.",
         "source": "TESTING.md"
       }
     }
@@ -125,9 +125,9 @@
           {
             "name": "ColdFire code and state (one linked unit)",
             "space": "sdram",
-            "words": 824,
+            "words": 836,
             "wordBits": 8,
-            "bytes": 824,
+            "bytes": 836,
             "scope": "shared"
           },
           {
@@ -140,10 +140,10 @@
           }
         ],
         "perInstanceBytes": 0,
-        "sharedBytes": 43716,
+        "sharedBytes": 43728,
         "maxInstances": 1,
-        "totalBytes": 43716,
-        "conditions": "The unit as the USB package carries it (824 bytes of code and data, 42,892 bytes of bss). No DSP memory, no saved data.",
+        "totalBytes": 43728,
+        "conditions": "The unit as the USB package carries it (836 bytes of code and data, 42,892 bytes of bss). No DSP memory, no saved data.",
         "report": "TESTING.md"
       },
       "hardware": {

@@ -25,9 +25,13 @@ The build reports `jmp 0x4005e3d8 -> temp_save:ts_yes_hook` and `jmp 0x4005e1fc 
 | `cacf548ba078` | temp-save-combo, 88b14625 | verify.py, MKII | PASS |
 | `cacf548ba078` | temp-save-combo, 88b14625 | Apply Scene's verify.py | PASS, 264 checks |
 
+eadd58a4 (the release source) changes only how the code reaches its copy buffer: an absolute, load-relocated address instead of a 16-bit PC offset, which `module:verify` showed the largest card selections need. On its image `e74f49925947` verify.py passes, 37 checks, with the same save and reload costs (16,287 / 637,251 / 640,923).
+
 001fc493 changes only `ts_screen` (a popup that is the message no longer counts as a window); the MKI and combination runs were not repeated on it.
 
 `npm run modules:compat -- temp-save`, with the folder copied into `sdk/octabam/modules/` and a temporary `sdk/catalog.json` entry (both removed again): 30 active modules, 435 pairs and the whole set, 0 problems.
+
+**Release checks on eadd58a4 and later:** packages rebuilt in the isolated toolchain and imported; `npm run octatrack:module-packages -- --check`: every package identical; published package `public/octatrack-modules/temp-save/0.1.0-experimental.mwrm`, 1,032 bytes, SHA-256 `1078481879f6853a874b79d8bd98959909ea5a882d6f14dedef817dc53af2880` (836 bytes of code and data, 42,892 of bss, 6 relocations, 2 sites). `npm run module:verify -- temp-save --os <1.40C>`: 166 selections, 74 native images match, 92 matching refusals, 0 mismatches (`sdk/native-comparisons/temp-save.json`). The performance record's flood runs (`evidence/performance.json`) used 001fc493's code, whose instruction path eadd58a4 keeps.
 
 **USB packages (private, not committed).** `build.py --octabam temp-save --name "TEMP SAVE" --stock <1.40C .syx> --upstream <elekloader 3b31ef3c>`: module `84a2f52f`, no relocations or hooks, two hashed stock-code sites; the builder's strict stock-free scans passed. 88b14625: 816 bytes of code and data, 42,892 of bss, 988 bytes, SHA-256 `335e59da…` (hardware run 1). 001fc493: 824 bytes of code and data, 42,892 of bss, SHA-256 `f9f45010275476bd93960b402e4ea7c0d8248c553ba12819846af0327675a687` (hardware run 2).
 
@@ -69,5 +73,4 @@ An independent review of `unit.s` against the stock disassembly (27 Oct 2026) fo
 
 - The MKI and the card build on a unit; timing on the unit; the site's review/Keep/Undo flow (the hardware runs used timed trials).
 - Audible output in detail: a reload while playing worked by ear, but clicks were not specifically listened for.
-- `module:verify` (browser builder against native), the performance record (`evidence/performance.json`) and the browser package import.
 - A project save and reload after FUNC + NO; arranger mode and pattern chains; a pattern change queued at the moment of FUNC + NO; the 0x800000b8 mode itself (its stock meaning is not identified).
