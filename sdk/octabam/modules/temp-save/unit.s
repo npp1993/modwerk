@@ -10,11 +10,12 @@
 | 0x4005e294 (ARM ALL) and FUNC + NO, outside its one special mode
 | (0x460d172a), the plain-NO routine 0x4005e0e8 (DISARM ALL), so on those
 | screens both gestures repeat what YES and NO alone do. The FUNCTION
-| layer sits over every window, so the hooks see these keys in menus too;
-| the module takes them only on the pattern screen: no popup open (slot
-| 0x460d175c), no sample list open (0x460e5e4c, 0x460e70e0: the FUNC + YES
-| preview), and outside YES's divert mode (0x460d1aec) and NO's special
-| mode. A taken press swallows its own release; everything else
+| layer sits over every window, and in every window that reaches these
+| handlers stock's FUNC + YES / FUNC + NO are ARM ALL / DISARM ALL too, or a
+| list's own action (measured under the port). So the module takes them on
+| the pattern screen and in every page and menu window, and leaves them to
+| stock in lists, dialogs, editors, browsers, SRC SETUP and AED (ts_screen),
+| in YES's divert mode (0x460d1aec) and NO's special mode. A taken press swallows its own release; everything else
 | replays the two displaced instructions and rejoins stock.
 |
 | The save: memcpy 0x40020898 of the current pattern (bank RAM
@@ -40,8 +41,9 @@
 |     (Part + 0x10, + 0x11) is the one live before the reload. Stock
 |     clears the unsaved bit; it is set again (RAM and CS1), since the
 |     working Part now differs from the saved one, as after a paste;
-|  3. the toast, then the screen refresh stock's FUNC + CUE runs after
-|     its Part Reload (0x4005e0a8 .. 0x4005e0d8).
+|  3. the screen refresh stock's FUNC + CUE runs after its Part Reload
+|     (0x4005e0a8 .. 0x4005e0d8), then the toast: drawn before the refresh,
+|     the toast would be painted over in an open window.
 | Crossfader, scene mutes and track mutes are not in the pattern or the
 | Part and are never touched.
         .text
@@ -67,6 +69,13 @@
         .set    POPUP_FLAGS, 0x20       | its flags: 0x21 open, 0x01 closed
         .set    POPUP_OPEN, 0x20
         .set    TOAST,      0x460d1e70  | the message's window (0x4005a2b8), 0 with none; the same record
+        .set    DIALOG,     0x460e5cd0  | the yes/no dialog's window (0x4006d57c), 0 with none
+        .set    WIN_CLOSE,  0x460d1188  | stock's window table, entry 0: the open window's close routine
+        .set    WIN_KIND,   0x460d119c  | and its kind
+        .set    KIND_PAGE,  1
+        .set    KIND_MENU,  3
+        .set    SRC_SETUP_CLOSE, 0x40055e18 | SRC SETUP of an audio track
+        .set    AED_CLOSE,  0x4006dd18
         .set    YES_DIVERT, 0x460d1aec  | stock sends YES elsewhere while set
         .set    NO_SPECIAL, 0x460d172a  | stock's FUNC + NO has its own job while set
         .set    KEY_MODE,   0x800000b8  | while set, YES and NO alone do nothing
@@ -128,25 +137,54 @@ ts_no_hook:
         move.l  8(%sp),%d0
         jmp     (NO_REJOIN).l
 
-| d0 = nonzero, flags set from it, unless the pattern screen is all there
-| is: no sample list, not the mode in which plain YES and NO do nothing
-| (0x800000b8: there FUNC + YES / FUNC + NO are stock's only way to ARM ALL
-| and DISARM ALL), and the popup slot empty or its record closed (every
-| window the panel opens is that record: SETUP pages, MIXER, PROJECT, PART,
-| ARRANGER, AED, PATTERN SETTINGS; measured under the port)
+| d0 = nonzero, flags set from it, where FUNC + YES / FUNC + NO stay stock's;
+| d0 = 0 everywhere else: the pattern screen, any page or menu window, and
+| the message box. Stock's: an open list (0x460e5e4c, 0x460e70e0: the
+| sample and slot lists, where FUNC + YES previews; AED); the mode in which
+| YES and NO alone do nothing (0x800000b8: there FUNC + YES / FUNC + NO are
+| stock's only way to ARM ALL and DISARM ALL); a yes/no dialog (0x460e5cd0,
+| the dialog's window, set by 0x4006d57c and cleared when it closes); and
+| an open window that is not a page or a menu. Every window the panel opens
+| is the popup record (slot 0x460d175c, flags 0x21 while open); which one
+| it is, stock's window table says (0x460d1188 + 4i the close routine,
+| 0x460d119c + 4i the kind; entry 0 is the open page or menu, entries are
+| not cleared on close, so they are read only while the popup is open).
+| Kind 1 is a page (the SETUP pages, MIXER, PROJECT and its pages, PART,
+| ARRANGER, PATTERN SETTINGS, SCALE, TRACK TRIG EDIT, RECORDING SETUP),
+| kind 3 a menu list (FUNC + PART); the others stay stock: the RENAME
+| editor, TEMPO and card progress screens (5), CHOOSE PROJECT (2). Two pages
+| stay stock by name: SRC SETUP of an audio track, where FUNC + YES
+| previews the slot's sample, and AED. Measured under the port.
 ts_screen:
         move.l  (LIST_A).l,%d0
         or.l    (LIST_B).l,%d0
         or.l    (KEY_MODE).l,%d0
-        bne.s   1f
+        or.l    (DIALOG).l,%d0
+        bne.s   9f
         move.l  (POPUP).l,%d1
-        beq.s   1f                      | d0 = 0
-        cmp.l   (TOAST).l,%d1           | the popup is only a message (TEMP SAVED, ARM ALL): still the
-        beq.s   1f                      | pattern screen, so a quick second press saves or reloads again
+        beq.s   8f                      | no window: the pattern screen
+        cmp.l   (TOAST).l,%d1           | only a message (TEMP SAVED, ARM ALL): a quick second
+        beq.s   8f                      | press saves or reloads again
         move.l  %d1,%a0
         move.l  POPUP_FLAGS(%a0),%d0
         andi.l  #POPUP_OPEN,%d0
-1:      rts
+        beq.s   8f                      | its record closed
+        move.l  (WIN_KIND).l,%d0
+        moveq   #KIND_PAGE,%d1
+        cmp.l   %d1,%d0
+        beq.s   1f
+        moveq   #KIND_MENU,%d1
+        cmp.l   %d1,%d0
+        bne.s   9f                      | a dialog, editor, browser or progress screen
+1:      move.l  (WIN_CLOSE).l,%d0
+        cmpi.l  #SRC_SETUP_CLOSE,%d0
+        beq.s   7f
+        cmpi.l  #AED_CLOSE,%d0
+        bne.s   8f
+7:      moveq   #1,%d0
+        rts
+8:      moveq   #0,%d0
+9:      rts
 
 | -------- the save ---------------------------------------------------------
 ts_save:
@@ -259,11 +297,8 @@ ts_reload:
         or.l    %d0,%d1
         move.b  %d1,(CS1_UNSAVED).l
 
-        | 3. the toast and FUNC + CUE's refresh
-        pea     (0x18).w
-        pea     ts_text_reloaded(%pc)
-        jsr     (NOTIFY).l
-        addq.l  #8,%sp
+        | 3. FUNC + CUE's refresh, then the toast: the refresh repaints an open
+        |    window, which would hide a toast drawn before it
         moveq   #1,%d0
         move.l  %d0,(REFRESH_ON).l
         pea     (-1).w
@@ -275,6 +310,10 @@ ts_reload:
         jsr     (0x40077b00).l
         jsr     (0x4002f2f8).l
         addq.l  #4,%sp
+        pea     (0x18).w
+        pea     ts_text_reloaded(%pc)
+        jsr     (NOTIFY).l
+        addq.l  #8,%sp
         movem.l (%sp),%d2-%d3/%a2
         lea     12(%sp),%sp
         rts
