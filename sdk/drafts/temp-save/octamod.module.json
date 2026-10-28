@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 2,
+  "id": "temp-save",
+  "key": "TEMP SAVE",
+  "name": "Temp Save",
+  "version": "0.1.0-experimental",
+  "category": "system",
+  "author": {
+    "github": "npp1993",
+    "name": "Nathaniel Pavel",
+    "credits": [
+      "Nathaniel Pavel"
+    ]
+  },
+  "nativeManifest": "manifest.py",
+  "presentation": {
+    "label": "Temp Save",
+    "family": "System",
+    "summary": "FUNC + YES keeps a temporary copy of the active pattern and its Part; FUNC + NO puts both back, as Temp Save and Reload do on the Digitakt and Digitone.",
+    "overview": "Got a groove you like? Press FUNC + YES on the pattern screen to keep a temporary copy of the pattern and its whole Part, scenes included. Experiment freely, then press FUNC + NO to bring both back at once, even while the sequencer plays. The copy is separate from the saved Part and the copy/paste clipboard, so RELOAD PART and pattern paste work as before.",
+    "highlights": [
+      "One gesture keeps the pattern (trigs, locks, length, scale) and the whole active Part: machines, every page, FX and scenes.",
+      "FUNC + NO restores both at once, also while playing; the crossfader, the selected scenes and the mutes stay where your hands left them.",
+      "Separate from the saved Part and the clipboard: RELOAD PART still goes back to your last Part save, and copied patterns or tracks stay on the clipboard.",
+      "On another pattern, bank or project FUNC + NO shows NO TEMP SAVE and changes nothing."
+    ],
+    "usage": [
+      "On the pattern screen (no menu or list open), press FUNC + YES: TEMP SAVED.",
+      "Change the pattern and the Part as you like: trigs, knobs, scenes, machines.",
+      "Press FUNC + NO: RELOADED. The pattern and its Part are back as they were at FUNC + YES."
+    ]
+  },
+  "controls": [],
+  "compatibility": {
+    "firmware": "1.40C",
+    "location": "Project sequencer",
+    "conflicts": [],
+    "uiClaims": [
+      "key:FUNC+YES@PATTERN",
+      "key:FUNC+NO@PATTERN"
+    ],
+    "limitations": [
+      "One temporary copy, kept in the module's memory: it is gone after a power-off and is never written to the card. Save the Part and the project to keep your work.",
+      "FUNC + YES and FUNC + NO on the pattern screen no longer repeat ARM ALL and DISARM ALL; YES and NO alone still do, and in menus, windows and sample lists both gestures stay stock (FUNC + YES still previews samples).",
+      "The reload replaces the pattern and the active Part as a whole, including edits made since FUNC + YES on other tracks.",
+      "Not tested on hardware yet."
+    ],
+    "effectId": null
+  },
+  "resources": {
+    "recorded": "Not measured",
+    "storage": {
+      "label": "Storage",
+      "display": "Not measured",
+      "value": null,
+      "unit": "unknown",
+      "method": "unmeasured",
+      "conditions": "No measurements exist yet. Add exact conditions and source evidence when available.",
+      "source": "TESTING.md"
+    },
+    "processing": {
+      "label": "CPU / DSP load",
+      "display": "Not measured",
+      "value": null,
+      "unit": "unknown",
+      "method": "unmeasured",
+      "conditions": "No measurements exist yet. Add exact conditions and source evidence when available.",
+      "source": "TESTING.md"
+    }
+  },
+  "tests": {
+    "report": "TESTING.md",
+    "summary": "No tests have been run. Add tests.qualification with worst-case cycles, exact memory and attributed owner-reviewed hardware evidence before submitting. This scaffold cannot pass publication checks.",
+    "hardwareStatus": "untested",
+    "evidenceRevision": "b8deefc88b2c3e5f3c6158e364eb741df1924e1d",
+    "gates": [
+      "Worst-case cycles under parameter modulation and maximum load",
+      "Exact memory region and maximum-instance totals",
+      "Owner-reviewed real-hardware evidence with actual coverage and limitations"
+    ]
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "LICENSE",
+    "declaration": "Replace with accurate authorship, attribution and original/licensed source and media rights. Never include Elektron firmware, extracted routines or tables."
+  },
+  "media": [],
+  "access": {
+    "location": "Describe the exact OT page or menu where the module is selected or enabled.",
+    "steps": [
+      "Describe prerequisites, track/machine selection and the exact button/menu sequence."
+    ],
+    "screenshots": []
+  }
+}
