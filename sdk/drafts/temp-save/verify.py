@@ -238,6 +238,16 @@ def gesture(e, held, name, texts):
     return toasts(h, texts), any(x[1] == ARM_ALL for x in h), any(x[1] == DISARM_ALL for x in h)
 
 
+def cost(e, key, entry, end):
+    """Executed ColdFire instructions from the hook's entry to `end` (interrupts included), one FUNC + key."""
+    e.watch([entry, end])
+    e.chord("func", key, after=800)
+    h = e.hits()
+    a = [x[0] for x in h if x[1] == entry]
+    b = [x[0] for x in h if x[1] == end]
+    return b[0] - a[0] if a and b and b[0] > a[0] else None
+
+
 def edit(e):
     """Panel edits to the pattern and the Part: trigs, knobs, a scene lock, the scene selection."""
     e.tap("rec", after=400)                       # grid recording
@@ -553,6 +563,21 @@ def main():
         if is_open(e):
             e.tap("no", after=600)
         check(e.peek(CUR_BANK, 1)[0] == 0, "back on bank A")
+
+        print("verify temp-save: cost")
+        at = unit.find(bytes.fromhex("4eb94002f2f8"))          # the reload's last refresh call
+        reload_end = hook + at + 6
+        save_end = NOTIFY
+        costs = {}
+        for label, playing in (("stopped", False), ("playing", True)):
+            if playing:
+                e.tap("play", after=1000)
+            costs[label] = (cost(e, "yes", hook, save_end), (edit(e), cost(e, "no", hook_no, reload_end))[1])
+            if playing:
+                e.tap("stop", after=800)
+        print("        executed instructions, save to its toast / reload to the end of its refresh: "
+              + ", ".join(f"{k} {v[0]} / {v[1]}" for k, v in costs.items()))
+        check(at > 0 and all(v[0] and v[1] for v in costs.values()), "cost measured")
 
         print("verify temp-save: stock flows")
         e.watch([ARM_ALL, DISARM_ALL, NOTIFY])
