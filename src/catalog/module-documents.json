@@ -9687,7 +9687,7 @@
       "version": "0.1.0-experimental",
       "category": "system",
       "access": {
-        "location": "The pattern screen (any track page, no menu, window or list open).",
+        "location": "The pattern screen and every page or menu window (SETUP pages, MIXER, PART, PROJECT, ARRANGER and more); not sample lists, an audio track's SRC SETUP, AED, dialogs or editors.",
         "steps": [
           "Hold FUNC and press YES: TEMP SAVED keeps a copy of the active pattern and its Part.",
           "Edit the pattern and the Part as you like.",
@@ -9697,7 +9697,8 @@
         "screenshots": [
           "media/ot-temp-saved.png",
           "media/ot-reloaded.png",
-          "media/ot-no-temp-save.png"
+          "media/ot-no-temp-save.png",
+          "media/ot-temp-saved-amp-setup.png"
         ]
       },
       "author": {
@@ -9712,15 +9713,16 @@
         "label": "Temp Save",
         "family": "System",
         "summary": "FUNC + YES keeps a temporary copy of the active pattern and its Part; FUNC + NO puts both back, as Temp Save and Reload do on the Digitakt and Digitone.",
-        "overview": "Got a groove you like? Press FUNC + YES on the pattern screen to keep a temporary copy of the pattern and its whole Part, scenes included. Experiment freely, then press FUNC + NO to bring both back at once, even while the sequencer plays. The copy is separate from the saved Part and the copy/paste clipboard, so RELOAD PART and pattern paste work as before.",
+        "overview": "Got a groove you like? Press FUNC + YES to keep a temporary copy of the pattern and its whole Part, scenes included, from the pattern screen or from almost any page or menu. Experiment freely, then press FUNC + NO to bring both back at once, even while the sequencer plays. The copy is separate from the saved Part and the copy/paste clipboard, so RELOAD PART and pattern paste work as before.",
         "highlights": [
           "One gesture keeps the pattern (trigs, locks, length, scale) and the whole active Part: machines, every page, both effects and the scenes.",
           "FUNC + NO restores both at once, also while playing; the crossfader, the selected scenes and the mutes stay where your hands left them.",
           "Separate from the saved Part and the clipboard: RELOAD PART still goes back to your last Part save, and copied patterns or tracks stay on the clipboard.",
-          "On another pattern, bank or project FUNC + NO shows NO TEMP SAVE and changes nothing."
+          "On another pattern, bank or project FUNC + NO shows NO TEMP SAVE and changes nothing.",
+          "Works from the pattern screen and from page and menu windows; sample lists keep their FUNC + YES preview, and dialogs and editors are left alone."
         ],
         "usage": [
-          "On the pattern screen (no menu or list open), press FUNC + YES: TEMP SAVED.",
+          "On the pattern screen, or in a SETUP page, MIXER or another menu, press FUNC + YES: TEMP SAVED.",
           "Change the pattern and the Part as you like: trigs, knobs, scenes, machines.",
           "Press FUNC + NO: RELOADED. The pattern and its Part are back as they were at FUNC + YES."
         ]
@@ -9732,16 +9734,16 @@
         "location": "Project sequencer",
         "conflicts": [],
         "uiClaims": [
-          "key:FUNC+YES@PATTERN",
-          "key:FUNC+NO@PATTERN"
+          "key:FUNC+YES",
+          "key:FUNC+NO"
         ],
         "limitations": [
           "OS 1.40C. Tested by hand on one MKII over USB; the MKI and the card build were not run on a unit.",
           "One temporary copy, of one pattern and its Part, kept in the module's memory: gone after a power-off and never written to the card. Save the Part and the project to keep your work.",
-          "FUNC + YES and FUNC + NO on the pattern screen no longer repeat ARM ALL and DISARM ALL; YES and NO alone still do. In menus, windows and sample lists both gestures stay stock (FUNC + YES still previews samples).",
+          "FUNC + YES and FUNC + NO no longer repeat ARM ALL and DISARM ALL on the pattern screen and in page and menu windows; YES and NO alone still do. In sample lists (FUNC + YES still previews), an audio track's SRC SETUP, AED, dialogs, RENAME, TEMPO and CHOOSE PROJECT both gestures stay stock.",
           "The reload replaces the pattern and the Part as a whole, including edits made since FUNC + YES on any track; the Part then counts as edited, as after a paste.",
           "Another project, or this one saved under another name, makes the copy unusable (NO TEMP SAVE).",
-          "Uses 836 bytes of code and a 42,892-byte buffer; over USB from the module pool all modules share."
+          "Uses 890 bytes of code and a 42,892-byte buffer; over USB from the module pool all modules share."
         ]
       },
       "resources": {
@@ -9806,12 +9808,13 @@
             "screenshots": [
               "media/ot-temp-saved.png",
               "media/ot-reloaded.png",
-              "media/ot-no-temp-save.png"
+              "media/ot-no-temp-save.png",
+              "media/ot-temp-saved-amp-setup.png"
             ],
             "screenshotStyle": "black-and-white"
           },
           "moduleVersion": "0.1.0-experimental",
-          "sourceSha256": "9e14bdeea75d8dd1f297c39ebc55b39f68fe03aa50310ba8c5ec1b37e0fa7f80",
+          "sourceSha256": "4048184341cad39f199d9f9755f4cb96e8b9093a6c7afdba35f08f30f72907f9",
           "imageSha256": "1078481879f6853a874b79d8bd98959909ea5a882d6f14dedef817dc53af2880",
           "cycles": [
             {
@@ -9887,7 +9890,7 @@
         {
           "path": "media/ot-temp-saved.png",
           "captureType": "emulator",
-          "caption": "On the pattern screen, with no menu open, hold FUNC and press YES: TEMP SAVED. The active pattern and its whole Part are kept in a temporary copy; the message clears when you let go of FUNC.",
+          "caption": "Hold FUNC and press YES: TEMP SAVED. The active pattern and its whole Part are kept in a temporary copy; the message clears when you let go of FUNC.",
           "alt": "Pattern screen of pattern A01, SRC page of a FLEX track, with the TEMP SAVED message box over it.",
           "credit": "Modwerk contributors (headless capture)",
           "license": "LicenseRef-OT-UI-Documentation",
@@ -9897,8 +9900,8 @@
             "shows": "location-and-controls",
             "firmware": "1.40C",
             "moduleVersion": "0.1.0-experimental",
-            "imageSha256": "32417b06af3f7af3f1601ea5c75ec5da91bd370bc43d473d30a25f6582e43ee5",
-            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit 001fc493) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
+            "imageSha256": "9dc5d8b3cb6da40799cfdba49819b01c263136549ac62c44c9d26bf9fe13b8d1",
+            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit d88d7207) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
           }
         },
         {
@@ -9914,8 +9917,8 @@
             "shows": "controls",
             "firmware": "1.40C",
             "moduleVersion": "0.1.0-experimental",
-            "imageSha256": "32417b06af3f7af3f1601ea5c75ec5da91bd370bc43d473d30a25f6582e43ee5",
-            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit 001fc493) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
+            "imageSha256": "9dc5d8b3cb6da40799cfdba49819b01c263136549ac62c44c9d26bf9fe13b8d1",
+            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit d88d7207) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
           }
         },
         {
@@ -9931,8 +9934,25 @@
             "shows": "controls",
             "firmware": "1.40C",
             "moduleVersion": "0.1.0-experimental",
-            "imageSha256": "32417b06af3f7af3f1601ea5c75ec5da91bd370bc43d473d30a25f6582e43ee5",
-            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit 001fc493) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
+            "imageSha256": "9dc5d8b3cb6da40799cfdba49819b01c263136549ac62c44c9d26bf9fe13b8d1",
+            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit d88d7207) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
+          }
+        },
+        {
+          "path": "media/ot-temp-saved-amp-setup.png",
+          "captureType": "emulator",
+          "caption": "It works in page and menu windows too, here AMP SETUP: FUNC + YES saves, FUNC + NO reloads, and the window stays open showing the restored values. Sample lists, SRC SETUP, AED, dialogs and editors keep their stock FUNC + YES.",
+          "alt": "AMP SETUP window with the TEMP SAVED message box over it.",
+          "credit": "Modwerk contributors (headless capture)",
+          "license": "LicenseRef-OT-UI-Documentation",
+          "source": "original",
+          "otUi": {
+            "page": "AMP SETUP, FUNC held",
+            "shows": "location-and-controls",
+            "firmware": "1.40C",
+            "moduleVersion": "0.1.0-experimental",
+            "imageSha256": "9dc5d8b3cb6da40799cfdba49819b01c263136549ac62c44c9d26bf9fe13b8d1",
+            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit d88d7207) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
           }
         }
       ]

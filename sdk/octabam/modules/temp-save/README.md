@@ -85,4 +85,6 @@ Real LCD captures from the emulator ([media/capture.json](media/capture.json)):
 
 ![On another pattern, FUNC + NO shows NO TEMP SAVE and changes nothing.](media/ot-no-temp-save.png)
 
+![In AMP SETUP: FUNC + YES saves here too, and the window stays open. FUNC + NO reloads and shows the restored values.](media/ot-temp-saved-amp-setup.png)
+
 No audio: the module makes no sound of its own.
