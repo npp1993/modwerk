@@ -76,11 +76,13 @@ PAT_CS1, PART_CS1 = 0x1001614e, 0x100a4ece
 SEL = 0x10                           # Part + 0x10, + 0x11: scenes A and B
 MACH = 0x22                          # Part + 0x22 + track: the machines
 CUR_TRACK, TRANSITION, POPUP = 0x80000000, 0x400972fc, 0x460d175c
+PART_APPLY, UI_PART = 0x40009848, 0x100b14cf     # Part Reload's apply, run only for the current Part
 VOICE_BIND = 0x40006820              # stock binds a track's voice: a trig played
 TICK = 0x400a1e0c                    # the sequencer tick
 NOTIFY, ARM_ALL, DISARM_ALL = 0x4005a2b8, 0x4005e294, 0x4005e0e8
 YES_REJOIN, NO_REJOIN = 0x4005e3e0, 0x4005e204
-HAS_SAVED, PAT_PART, CUR_BANK = 0x9b312, 0x8e57, 0x80000002
+HAS_SAVED, PAT_PART, CUR_BANK, CS1_UNSAVED = 0x9b312, 0x8e57, 0x80000002, 0x100b145e
+PLAIN_YES, PLAIN_NO = 0x4005e4c8, 0x4005e25c
 MKI = os.environ.get("TEMP_MODEL", "mkii").lower() == "mki"
 TEXTS = {"saved": "TEMP SAVED", "reloaded": "RELOADED", "none": "NO TEMP SAVE"}
 KEYS = {'scene_a': 0x19, 'scene_b': 0x1a, 'yes': 0x31, 'no': 0x32, 'func': 0x2d, 'cue': 0x2a, 'pattern': 0x2e,
@@ -264,6 +266,7 @@ def main():
         print(f"verify temp-save: SKIP ({IMAGE} has no TEMP SAVE detours)")
         return 0
     hook = int.from_bytes(img[YES_SITE - BASE + 2:YES_SITE - BASE + 6], "big")
+    hook_no = int.from_bytes(img[NO_SITE - BASE + 2:NO_SITE - BASE + 6], "big")
     print(f"verify temp-save: image {hashlib.sha256(img).hexdigest()[:12]}, hook {hook:#x}")
     work = pathlib.Path(tempfile.mkdtemp(prefix="temp_save_verify_"))
     card = stage(work)
@@ -283,6 +286,7 @@ def main():
         print("verify temp-save: FUNC + YES")
         edit(e)                                   # something worth saving
         s0 = e.state()
+        s0_has = e.peek(s0["bank"] + HAS_SAVED + s0["p"], 1)[0]
         t, arm, disarm = gesture(e, "func", "yes", texts)
         s1 = e.state()
         check(t == ["saved"] and not arm, f"FUNC + YES: toast {t}, ARM ALL {'ran' if arm else 'did not run'}")
@@ -305,7 +309,10 @@ def main():
               f"({diff(s3['W'], want)} bytes differ)")
         check(s3["Wcs1"] == s3["W"], "the CS1 working copy equals RAM")
         check(s3["S"] == s0["S"], "the saved Part is unchanged")
-        check(s3["unsaved"] == 1, "the Part is marked unsaved")
+        cs1_unsaved = e.peek(CS1_UNSAVED, 1)[0] >> s3["p"] & 1
+        has_saved = e.peek(s3["bank"] + HAS_SAVED + s3["p"], 1)[0]
+        check(s3["unsaved"] == 1 and cs1_unsaved == 1 and has_saved == s0_has,
+              f"the Part is marked unsaved (RAM {s3['unsaved']}, CS1 {cs1_unsaved}); has-saved {has_saved} as before")
         check(s3["W"][MACH:MACH + 8] == s0["W"][MACH:MACH + 8], f"machines {list(s3['W'][MACH:MACH + 8])}")
 
         print("verify temp-save: the copy survives its reload")
@@ -360,18 +367,27 @@ def main():
         s6 = sa
 
         print("verify temp-save: in a window FUNC + YES and FUNC + NO stay stock")
-        for name, opening, closing in ((("AMP SETUP", ("func", "pg_amp"), ("no",)), ("MIXER", ("mixer",), ("mixer",)),
-                                        ("PROJECT", ("proj",), ("no",)), ("PART", ("part",), ("part",)))):
+        windows = (("AMP SETUP", ("func", "pg_amp"), ("no",)), ("MIXER", ("mixer",), ("mixer",)))
+        windows += ((("PART", ("func", "midi"), ("no",)),) if MKI else
+                    (("PROJECT", ("proj",), ("no",)), ("PART", ("part",), ("part",))))
+        for name, opening, closing in windows:
             e.chord(*opening, after=800) if len(opening) == 2 else e.tap(opening[0], after=800)
             sw = e.state()
+            e.watch([hook, hook_no])
+            e.chord("func", "yes", after=400)
+            e.chord("func", "no", after=400)
+            hh = e.hits()
+            reached = (sum(x[1] == hook for x in hh), sum(x[1] == hook_no for x in hh))
             ty, _, _ = gesture(e, "func", "yes", texts)
             tn, _, _ = gesture(e, "func", "no", texts)
             sx = e.state()
             open_ = is_open(e)
             for k in closing:
                 e.tap(k, after=600)
-            check(not ty and not tn and sx["P"] == sw["P"] and sx["W"] == sw["W"] and open_ != 0,
-                  f"{name}: no module toast ({ty + tn}), nothing changed")
+            check(not ty and not tn and sx["P"] == sw["P"] and sx["W"] == sw["W"] and open_
+                  and reached[0] >= 2 and reached[1] >= 2,
+                  f"{name}: the hooks ran (YES {reached[0]}, NO {reached[1]}, press and release) and left it to stock: "
+                  f"no module toast ({ty + tn}), nothing changed")
         check(not is_open(e), "back on the pattern screen")
 
         print("verify temp-save: another pattern")
@@ -429,8 +445,18 @@ def main():
         e.run(400)
         before_other = other()
         own_sel = e.peek(sa["bank"] + PARTS + p0 * PART_LEN + SEL, 2)
-        t2, _, _ = gesture(e, "func", "no", texts)
+        e.watch([NOTIFY, TRANSITION, PART_APPLY])
+        e.chord("func", "no", after=800)
+        h = e.hits()
+        t2 = toasts(h, texts)
         sc = e.state()
+        moves, applied = sum(x[1] == TRANSITION for x in h), sum(x[1] == PART_APPLY for x in h)
+        ui_part = e.peek(UI_PART, 1)[0]
+        # Part Reload runs the eight transitions only in its current-Part branch, right after its apply
+        # 0x40009848 (whose entry the port's watch does not report: {applied} hits)
+        check(moves == 8 and ui_part == p0 and sc["p"] == p0,
+              f"the Part is current again for stock's reload: machine transitions {moves}/8, "
+              f"engine and UI Part {sc['p'] + 1}/{ui_part + 1} (apply watch {applied})")
         want = bytearray(sa["W"])
         want[SEL:SEL + 2] = own_sel
         check(own_sel != before_other[SEL:SEL + 2], f"the two Parts' scene selections differ "
@@ -488,11 +514,16 @@ def main():
         e.tap("midi", after=600)
 
         print("verify temp-save: key order")
-        for k in ("yes", "no"):
+        went = {}
+        for k, plain, mine in (("yes", PLAIN_YES, hook), ("no", PLAIN_NO, hook_no)):
             e.key("func", True); e.run(150)
             e.key(k, True); e.run(150)
             e.key("func", False); e.run(150)
+            e.watch([plain, mine])
             e.key(k, False); e.run(600)
+            hk = e.hits()
+            went[k] = "plain layer" if any(x[1] == plain for x in hk) else "the hook" if any(x[1] == mine for x in hk) else "?"
+        print(f"        with FUNC let go first the release went to: YES {went['yes']}, NO {went['no']}")
         e.tap("mixer", after=800)
         e.watch([YES_REJOIN, NO_REJOIN])
         e.chord("func", "yes", after=400)

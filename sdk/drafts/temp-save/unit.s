@@ -2,8 +2,10 @@
 | whole Part (scenes included); [FUNC] + [NO] puts both back.
 |
 | Two detours, at the entries of stock's FUNCTION-layer YES and NO
-| handlers (the FUNCTION key's sub-map 0x400bfa32 -> keys 0x400bf628:
-| YES 0x4005e3d8, NO 0x4005e1fc; handler(key, edge), press and release).
+| handlers (YES 0x4005e3d8, NO 0x4005e1fc; handler(key, edge), press and
+| release; the same two on both models: the FUNCTION key's sub-map is
+| 0x400bfa32 -> keys 0x400bf628 on the MKII, 0x400bfa1e -> 0x400bf2b4 on
+| the MKI).
 | With no list open stock's FUNC + YES runs the plain-YES routine
 | 0x4005e294 (ARM ALL) and FUNC + NO, outside its one special mode
 | (0x460d172a), the plain-NO routine 0x4005e0e8 (DISARM ALL), so on those
@@ -66,6 +68,7 @@
         .set    POPUP_OPEN, 0x20
         .set    YES_DIVERT, 0x460d1aec  | stock sends YES elsewhere while set
         .set    NO_SPECIAL, 0x460d172a  | stock's FUNC + NO has its own job while set
+        .set    KEY_MODE,   0x800000b8  | while set, YES and NO alone do nothing
         .set    MEMCPY,     0x40020898  | (dst, src, n)
         .set    PAT_WRITE,  0x4002b9b0  | (src, pattern)
         .set    PART_RELOAD, 0x4004aab4 | (part): 0 without a saved copy
@@ -75,19 +78,24 @@
         .set    NO_REJOIN,  0x4005e204
 
 | -------- FUNC + YES: replaces `lea -12(%sp),%sp; movem.l %d2-%d4,(%sp)` --
+| Each key keeps its own taken flag. A press sets it when the module takes
+| the press and clears it when stock gets it, so a release the dispatcher
+| sent elsewhere (FUNC let go first: the release then reaches the plain
+| layer) can never leave it set for a later stock press.
 ts_yes_hook:
+        lea     ts_taken_yes(%pc),%a0
         tst.l   8(%sp)                  | edge: 0 = release
         beq.s   .Lyrel
-        bsr.w   ts_screen               | d0 = 0: no list open
+        clr.b   (%a0)
+        bsr.w   ts_screen               | d0 = 0: the pattern screen
         bne.s   .Lystock
         tst.l   (YES_DIVERT).l
         bne.s   .Lystock
-        lea     ts_taken(%pc),%a0
+        lea     ts_taken_yes(%pc),%a0
         move.b  #1,(%a0)
         bra.w   ts_save                 | its rts returns to the key dispatcher
 .Lyrel:
-        lea     ts_taken(%pc),%a0       | swallow only the release of a press we took
-        tst.b   (%a0)
+        tst.b   (%a0)                   | swallow only the release of a press we took
         beq.s   .Lystock
         clr.b   (%a0)
         rts
@@ -98,17 +106,18 @@ ts_yes_hook:
 
 | -------- FUNC + NO: replaces `move.l 4(%sp),%d1; move.l 8(%sp),%d0` -----
 ts_no_hook:
+        lea     ts_taken_no(%pc),%a0
         tst.l   8(%sp)
         beq.s   .Lnrel
+        clr.b   (%a0)
         bsr.w   ts_screen
         bne.s   .Lnstock
         tst.l   (NO_SPECIAL).l
         bne.s   .Lnstock
-        lea     ts_taken(%pc),%a0
-        move.b  #2,(%a0)
+        lea     ts_taken_no(%pc),%a0
+        move.b  #1,(%a0)
         bra.w   ts_reload
 .Lnrel:
-        lea     ts_taken(%pc),%a0
         tst.b   (%a0)
         beq.s   .Lnstock
         clr.b   (%a0)
@@ -119,12 +128,15 @@ ts_no_hook:
         jmp     (NO_REJOIN).l
 
 | d0 = nonzero, flags set from it, unless the pattern screen is all there
-| is: no sample list, and the popup slot empty or its record closed (every
+| is: no sample list, not the mode in which plain YES and NO do nothing
+| (0x800000b8: there FUNC + YES / FUNC + NO are stock's only way to ARM ALL
+| and DISARM ALL), and the popup slot empty or its record closed (every
 | window the panel opens is that record: SETUP pages, MIXER, PROJECT, PART,
 | ARRANGER, AED, PATTERN SETTINGS; measured under the port)
 ts_screen:
         move.l  (LIST_A).l,%d0
         or.l    (LIST_B).l,%d0
+        or.l    (KEY_MODE).l,%d0
         bne.s   1f
         move.l  (POPUP).l,%d1
         beq.s   1f                      | d0 = 0
@@ -322,11 +334,14 @@ ts_text_saved:    .asciz "TEMP SAVED"
 ts_text_reloaded: .asciz "RELOADED"
 ts_text_none:     .asciz "NO TEMP SAVE"
 
-        .data
+| In .text, as Apply Scene's: a DRAM unit's text is RAM, and .data would
+| cost an 8 KB boundary. +0 valid, +1 bank, +2 pattern, +3 Part, +4 the
+| project's hash; zero at every boot (the image is unpacked again).
         .balign 4
-| +0 valid, +1 bank, +2 pattern, +3 Part, +4 the project's hash
 ts_state:   .long 0, 0
-ts_taken:   .byte 0
+ts_taken_yes: .byte 0
+ts_taken_no:  .byte 0
+        .balign 2
 
         .bss
         .balign 4
