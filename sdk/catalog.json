@@ -143,11 +143,6 @@
       "addedAt": "2026-10-12T21:00:00Z"
     },
     {
-      "id": "temp-save",
-      "version": "0.1.0-experimental",
-      "addedAt": "2026-10-28T12:00:00Z"
-    },
-    {
       "id": "apply-scene",
       "version": "0.2.0-experimental",
       "addedAt": "2026-10-15T16:00:00Z"
@@ -166,6 +161,11 @@
       "id": "arp-key-locks",
       "version": "0.1.0-experimental",
       "addedAt": "2026-10-26T12:00:00Z"
+    },
+    {
+      "id": "temp-save",
+      "version": "0.1.0-experimental",
+      "addedAt": "2026-10-28T12:00:00Z"
     },
     {
       "id": "beat-slicer",

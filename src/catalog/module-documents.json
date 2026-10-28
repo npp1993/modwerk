@@ -8255,264 +8255,6 @@
     },
     {
       "schemaVersion": 2,
-      "id": "temp-save",
-      "key": "TEMP SAVE",
-      "name": "Temp Save",
-      "version": "0.1.0-experimental",
-      "category": "system",
-      "access": {
-        "location": "The pattern screen (any track page, no menu, window or list open).",
-        "steps": [
-          "Hold FUNC and press YES: TEMP SAVED keeps a copy of the active pattern and its Part.",
-          "Edit the pattern and the Part as you like.",
-          "Hold FUNC and press NO: RELOADED puts the copy back. On another pattern FUNC + NO shows NO TEMP SAVE.",
-          "Save the Part and the project to keep the result."
-        ],
-        "screenshots": [
-          "media/ot-temp-saved.png",
-          "media/ot-reloaded.png",
-          "media/ot-no-temp-save.png"
-        ]
-      },
-      "author": {
-        "github": "npp1993",
-        "name": "Nathaniel Pavel",
-        "credits": [
-          "Nathaniel Pavel"
-        ]
-      },
-      "nativeManifest": "manifest.py",
-      "presentation": {
-        "label": "Temp Save",
-        "family": "System",
-        "summary": "FUNC + YES keeps a temporary copy of the active pattern and its Part; FUNC + NO puts both back, as Temp Save and Reload do on the Digitakt and Digitone.",
-        "overview": "Got a groove you like? Press FUNC + YES on the pattern screen to keep a temporary copy of the pattern and its whole Part, scenes included. Experiment freely, then press FUNC + NO to bring both back at once, even while the sequencer plays. The copy is separate from the saved Part and the copy/paste clipboard, so RELOAD PART and pattern paste work as before.",
-        "highlights": [
-          "One gesture keeps the pattern (trigs, locks, length, scale) and the whole active Part: machines, every page, both effects and the scenes.",
-          "FUNC + NO restores both at once, also while playing; the crossfader, the selected scenes and the mutes stay where your hands left them.",
-          "Separate from the saved Part and the clipboard: RELOAD PART still goes back to your last Part save, and copied patterns or tracks stay on the clipboard.",
-          "On another pattern, bank or project FUNC + NO shows NO TEMP SAVE and changes nothing."
-        ],
-        "usage": [
-          "On the pattern screen (no menu or list open), press FUNC + YES: TEMP SAVED.",
-          "Change the pattern and the Part as you like: trigs, knobs, scenes, machines.",
-          "Press FUNC + NO: RELOADED. The pattern and its Part are back as they were at FUNC + YES."
-        ]
-      },
-      "controls": [],
-      "compatibility": {
-        "firmware": "1.40C",
-        "effectId": null,
-        "location": "Project sequencer",
-        "conflicts": [],
-        "uiClaims": [
-          "key:FUNC+YES@PATTERN",
-          "key:FUNC+NO@PATTERN"
-        ],
-        "limitations": [
-          "OS 1.40C. Tested by hand on one MKII over USB; the MKI and the card build were not run on a unit.",
-          "One temporary copy, of one pattern and its Part, kept in the module's memory: gone after a power-off and never written to the card. Save the Part and the project to keep your work.",
-          "FUNC + YES and FUNC + NO on the pattern screen no longer repeat ARM ALL and DISARM ALL; YES and NO alone still do. In menus, windows and sample lists both gestures stay stock (FUNC + YES still previews samples).",
-          "The reload replaces the pattern and the Part as a whole, including edits made since FUNC + YES on any track; the Part then counts as edited, as after a paste.",
-          "Another project, or this one saved under another name, makes the copy unusable (NO TEMP SAVE).",
-          "Uses 816 bytes of code and a 42,892-byte buffer; over USB from the module pool all modules share."
-        ]
-      },
-      "resources": {
-        "recorded": "ot_emu and one MKII, 27-28 Oct 2026",
-        "storage": {
-          "label": "Storage",
-          "display": "824 B of code plus a 42,892 B copy buffer; no DSP code, no saved data",
-          "value": 43716,
-          "unit": "bytes",
-          "method": "static",
-          "conditions": "The USB package of commit 001fc493: 824 bytes of code and data, 42,892 bytes of bss. On the card build the unit sits in the platform's DRAM reserve.",
-          "source": "TESTING.md"
-        },
-        "processing": {
-          "label": "CPU / DSP load",
-          "display": "None while idle; ~16k instructions a save, ~640k a reload (emulator)",
-          "value": null,
-          "unit": "unknown",
-          "method": "emulator",
-          "conditions": "ot_emu, executed instructions from the hook's entry, interrupts included: a save to its toast 16,287 (up to 39,151 under a MIDI flood), a reload to the end of its screen refresh 637,251 stopped and 640,923 playing; no DSP work. Under a MIDI flood the longest frame interrupt rose 0.3 us and idle fell 0.2 points against stock. Time on the unit not measured.",
-          "source": "TESTING.md"
-        },
-        "impact": {
-          "conditions": "One reload while the sequencer plays; nothing runs between presses.",
-          "cpu": {
-            "level": "low",
-            "basis": "measured-comparison",
-            "rationale": "No idle cost. A save copies about 43 KB (16,287 executed instructions under ot_emu); a reload runs stock's pattern writer, Part Reload and screen refresh (about 640,000 instructions, most of them stock's). Time on the unit is not measured.",
-            "source": "TESTING.md"
-          },
-          "dsp": {
-            "level": "minimal",
-            "basis": "source-estimate",
-            "rationale": "No DSP code. The restored Part reaches the DSP through stock's own Part apply, as RELOAD PART does.",
-            "source": "TESTING.md"
-          },
-          "memory": {
-            "level": "moderate",
-            "basis": "measured-comparison",
-            "rationale": "A 42,892-byte buffer for one pattern and one Part, plus 824 bytes of code: on USB about a sixth of the 256 KB module pool all modules share; no saved data.",
-            "source": "TESTING.md"
-          }
-        }
-      },
-      "tests": {
-        "report": "TESTING.md",
-        "summary": "On one MKII over USB (28 Oct 2026), by hand on the flashed base beside 13 kept modules: save, reload of trigs, parameters, a machine change and a Part change, reload while playing, NO TEMP SAVE on another pattern, stock behaviour in menus, sample lists, YES/NO alone and FUNC + CUE, and quick double presses (fixed in this source after the first run). Under ot_emu (verify.py, 37 checks MKII, 34 MKI): the pattern and Part restored byte for byte in RAM and their battery copies, Part switch, bank without saved Parts, MIDI mode, windows, key order, power cycle; beside Apply Scene, Preview Vol and Direct Jump.",
-        "hardwareStatus": "reported",
-        "evidenceRevision": "001fc4937ca32bb036b7542c0bef8619fae173f3",
-        "gates": [],
-        "qualification": {
-          "documentation": {
-            "tutorial": {
-              "title": "Quick tutorial",
-              "steps": [
-                "On the pattern screen, with no menu open, place a few trigs and press FUNC + YES: TEMP SAVED.",
-                "Change the pattern and the Part: clear some trigs, turn knobs on two pages, try another machine.",
-                "Press FUNC + NO: RELOADED. The trigs, knobs and machine are back as they were at step 1.",
-                "To keep the result, save the Part (FUNC + PART, SAVE) and the project."
-              ]
-            },
-            "screenshots": [
-              "media/ot-temp-saved.png",
-              "media/ot-reloaded.png",
-              "media/ot-no-temp-save.png"
-            ],
-            "screenshotStyle": "black-and-white"
-          },
-          "moduleVersion": "0.1.0-experimental",
-          "sourceSha256": "af36908fe973bd8dc1f393e80fdf9575375d9aa0ab0cee622209cb13eabbf5f3",
-          "imageSha256": "f9f45010275476bd93960b402e4ea7c0d8248c553ba12819846af0327675a687",
-          "cycles": [
-            {
-              "processor": "coldfire",
-              "worstCase": 640923,
-              "maxConfiguration": 640923,
-              "maxInstances": 1,
-              "budget": 26600000,
-              "unit": "cycles/event",
-              "method": "emulator",
-              "conditions": {
-                "parameterExtremes": "The dearest event is a reload while playing: 640,923 executed instructions from the FUNC + NO hook to the end of the screen refresh (verify.py); under a 1,000 message/s MIDI flood 16 reloads took 605,222 to 635,604. A save took 16,287 (39,151 at most under the flood).",
-                "parameterModulation": "Not applicable: one save or reload per press, outside the audio frame. The restored values are pattern and Part bytes that the sequencer, scenes and LFOs read as usual.",
-                "modeSwitching": "Save, reload, a repeated quick press, a reload after a machine change, after a Part change and on a bank whose Parts were never saved, stopped and playing, MIDI mode.",
-                "maxLoad": "Executed ColdFire instructions under ot_emu, interrupts included; one instance. Budget: 100 ms of ColdFire time at 266 MHz, a key-press responsiveness target, not a measured limit. No static bound: the reload's cost is stock's pattern writer 0x4002b9b0, Part Reload 0x4004aab4 and screen refresh, which nothing in this repository bounds.",
-                "inputConditions": "Independent of audio and MIDI; runs in the UI task once per press. Executed instructions, not cycles: cache and wait states are not modelled, and time on the unit is not measured."
-              },
-              "report": "TESTING.md"
-            }
-          ],
-          "memory": {
-            "regions": [
-              {
-                "name": "ColdFire code and state (one linked unit)",
-                "space": "sdram",
-                "words": 824,
-                "wordBits": 8,
-                "bytes": 824,
-                "scope": "shared"
-              },
-              {
-                "name": "The temporary copy: one pattern (36,568 bytes) and one Part (6,322 bytes)",
-                "space": "sdram",
-                "words": 42892,
-                "wordBits": 8,
-                "bytes": 42892,
-                "scope": "shared"
-              }
-            ],
-            "perInstanceBytes": 0,
-            "sharedBytes": 43716,
-            "maxInstances": 1,
-            "totalBytes": 43716,
-            "conditions": "The unit as the USB package carries it (824 bytes of code and data, 42,892 bytes of bss). No DSP memory, no saved data.",
-            "report": "TESTING.md"
-          },
-          "hardware": {
-            "kind": "functional",
-            "status": "reported",
-            "model": "MKII",
-            "testedOn": "2026-10-28",
-            "tester": "npp1993",
-            "sourceRevision": "001fc4937ca32bb036b7542c0bef8619fae173f3",
-            "imageSha256": "f9f45010275476bd93960b402e4ea7c0d8248c553ba12819846af0327675a687",
-            "summary": "On the contributor's Octatrack MKII (OS 1.40C), flashed personal base beside 13 kept modules, the USB package of this source (SHA-256 above) ran as a timed trial installed with the device tool. By hand: FUNC + YES and FUNC + NO saved and restored trigs, parameters on several tracks, a machine change and a pattern moved to another Part; reloads while playing worked; another pattern showed NO TEMP SAVE; quick double presses saved and reloaded again; in MIXER, PROJECT, trig edit, PATTERN SETTINGS and SRC SETUP both gestures stayed stock, the sample preview played, YES and NO alone and FUNC + CUE behaved as stock, and Apply Scene's SCENE + YES still worked. The first package of this run (an earlier source) failed the quick double press, which this source fixes.",
-            "limitations": [
-              "One unit, tested by the contributor, not an independent reviewer; the MKI was not tested.",
-              "USB only: the card build was not flashed.",
-              "Nothing timed; a reload while playing was judged by ear only.",
-              "Timed trials only: the site's review, Keep and Undo flow and a power cycle with the module kept were not used.",
-              "MIDI mode, other banks and a project save after a reload ran under the emulator only."
-            ],
-            "report": "evidence/hardware.md"
-          }
-        }
-      },
-      "license": {
-        "spdx": "MIT",
-        "file": "LICENSE",
-        "declaration": "Original authored source by Nathaniel Pavel (@npp1993). Stock code is referenced by address, length and SHA-256 only. No firmware, extracted stock routine or table, image, card or memory dump is included."
-      },
-      "media": [
-        {
-          "path": "media/ot-temp-saved.png",
-          "captureType": "emulator",
-          "caption": "On the pattern screen, with no menu open, hold FUNC and press YES: TEMP SAVED. The active pattern and its whole Part are kept in a temporary copy; the message clears when you let go of FUNC.",
-          "alt": "Pattern screen of pattern A01, SRC page of a FLEX track, with the TEMP SAVED message box over it.",
-          "credit": "Modwerk contributors (headless capture)",
-          "license": "LicenseRef-OT-UI-Documentation",
-          "source": "original",
-          "otUi": {
-            "page": "Pattern screen (SRC page), FUNC held",
-            "shows": "location-and-controls",
-            "firmware": "1.40C",
-            "moduleVersion": "0.1.0-experimental",
-            "imageSha256": "32417b06af3f7af3f1601ea5c75ec5da91bd370bc43d473d30a25f6582e43ee5",
-            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit 001fc493) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
-          }
-        },
-        {
-          "path": "media/ot-reloaded.png",
-          "captureType": "emulator",
-          "caption": "Change anything: trigs, knobs, machines, scenes. Then hold FUNC and press NO: RELOADED. The pattern and its Part are back as they were at FUNC + YES; the crossfader, selected scenes and mutes stay where they are.",
-          "alt": "Pattern screen of pattern A01, SRC page of a FLEX track, with the RELOADED message box over it.",
-          "credit": "Modwerk contributors (headless capture)",
-          "license": "LicenseRef-OT-UI-Documentation",
-          "source": "original",
-          "otUi": {
-            "page": "Pattern screen (SRC page), FUNC held",
-            "shows": "controls",
-            "firmware": "1.40C",
-            "moduleVersion": "0.1.0-experimental",
-            "imageSha256": "32417b06af3f7af3f1601ea5c75ec5da91bd370bc43d473d30a25f6582e43ee5",
-            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit 001fc493) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
-          }
-        },
-        {
-          "path": "media/ot-no-temp-save.png",
-          "captureType": "emulator",
-          "caption": "The copy belongs to one pattern. On another pattern (here A02), FUNC + NO shows NO TEMP SAVE and changes nothing; go back to the saved pattern to reload it.",
-          "alt": "Pattern screen of pattern A02 with the NO TEMP SAVE message box over it.",
-          "credit": "Modwerk contributors (headless capture)",
-          "license": "LicenseRef-OT-UI-Documentation",
-          "source": "original",
-          "otUi": {
-            "page": "Pattern screen (SRC page), FUNC held",
-            "shows": "controls",
-            "firmware": "1.40C",
-            "moduleVersion": "0.1.0-experimental",
-            "imageSha256": "32417b06af3f7af3f1601ea5c75ec5da91bd370bc43d473d30a25f6582e43ee5",
-            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit 001fc493) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
-          }
-        }
-      ]
-    },
-    {
-      "schemaVersion": 2,
       "id": "apply-scene",
       "key": "APPLY SCENE",
       "name": "Apply Scene",
@@ -9924,6 +9666,264 @@
             "moduleVersion": "0.1.0-experimental",
             "imageSha256": "db2e61fa540f21edfb70bc8e9df33b0435fc9eae6ec140b58e866e9ec6f56cca",
             "setup": "Headless ot_emu; MKII panel; 128×64 LCD at integer scale 6; stopped transport; project BASS (MIDI track 1 arpeggiating); native card build with ARP KEY LOCKS alone (MAIN OS db2e61fa…); plan in media/capture.json."
+          }
+        }
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "id": "temp-save",
+      "key": "TEMP SAVE",
+      "name": "Temp Save",
+      "version": "0.1.0-experimental",
+      "category": "system",
+      "access": {
+        "location": "The pattern screen (any track page, no menu, window or list open).",
+        "steps": [
+          "Hold FUNC and press YES: TEMP SAVED keeps a copy of the active pattern and its Part.",
+          "Edit the pattern and the Part as you like.",
+          "Hold FUNC and press NO: RELOADED puts the copy back. On another pattern FUNC + NO shows NO TEMP SAVE.",
+          "Save the Part and the project to keep the result."
+        ],
+        "screenshots": [
+          "media/ot-temp-saved.png",
+          "media/ot-reloaded.png",
+          "media/ot-no-temp-save.png"
+        ]
+      },
+      "author": {
+        "github": "npp1993",
+        "name": "Nathaniel Pavel",
+        "credits": [
+          "Nathaniel Pavel"
+        ]
+      },
+      "nativeManifest": "manifest.py",
+      "presentation": {
+        "label": "Temp Save",
+        "family": "System",
+        "summary": "FUNC + YES keeps a temporary copy of the active pattern and its Part; FUNC + NO puts both back, as Temp Save and Reload do on the Digitakt and Digitone.",
+        "overview": "Got a groove you like? Press FUNC + YES on the pattern screen to keep a temporary copy of the pattern and its whole Part, scenes included. Experiment freely, then press FUNC + NO to bring both back at once, even while the sequencer plays. The copy is separate from the saved Part and the copy/paste clipboard, so RELOAD PART and pattern paste work as before.",
+        "highlights": [
+          "One gesture keeps the pattern (trigs, locks, length, scale) and the whole active Part: machines, every page, both effects and the scenes.",
+          "FUNC + NO restores both at once, also while playing; the crossfader, the selected scenes and the mutes stay where your hands left them.",
+          "Separate from the saved Part and the clipboard: RELOAD PART still goes back to your last Part save, and copied patterns or tracks stay on the clipboard.",
+          "On another pattern, bank or project FUNC + NO shows NO TEMP SAVE and changes nothing."
+        ],
+        "usage": [
+          "On the pattern screen (no menu or list open), press FUNC + YES: TEMP SAVED.",
+          "Change the pattern and the Part as you like: trigs, knobs, scenes, machines.",
+          "Press FUNC + NO: RELOADED. The pattern and its Part are back as they were at FUNC + YES."
+        ]
+      },
+      "controls": [],
+      "compatibility": {
+        "firmware": "1.40C",
+        "effectId": null,
+        "location": "Project sequencer",
+        "conflicts": [],
+        "uiClaims": [
+          "key:FUNC+YES@PATTERN",
+          "key:FUNC+NO@PATTERN"
+        ],
+        "limitations": [
+          "OS 1.40C. Tested by hand on one MKII over USB; the MKI and the card build were not run on a unit.",
+          "One temporary copy, of one pattern and its Part, kept in the module's memory: gone after a power-off and never written to the card. Save the Part and the project to keep your work.",
+          "FUNC + YES and FUNC + NO on the pattern screen no longer repeat ARM ALL and DISARM ALL; YES and NO alone still do. In menus, windows and sample lists both gestures stay stock (FUNC + YES still previews samples).",
+          "The reload replaces the pattern and the Part as a whole, including edits made since FUNC + YES on any track; the Part then counts as edited, as after a paste.",
+          "Another project, or this one saved under another name, makes the copy unusable (NO TEMP SAVE).",
+          "Uses 816 bytes of code and a 42,892-byte buffer; over USB from the module pool all modules share."
+        ]
+      },
+      "resources": {
+        "recorded": "ot_emu and one MKII, 27-28 Oct 2026",
+        "storage": {
+          "label": "Storage",
+          "display": "824 B of code plus a 42,892 B copy buffer; no DSP code, no saved data",
+          "value": 43716,
+          "unit": "bytes",
+          "method": "static",
+          "conditions": "The USB package of commit 001fc493: 824 bytes of code and data, 42,892 bytes of bss. On the card build the unit sits in the platform's DRAM reserve.",
+          "source": "TESTING.md"
+        },
+        "processing": {
+          "label": "CPU / DSP load",
+          "display": "None while idle; ~16k instructions a save, ~640k a reload (emulator)",
+          "value": null,
+          "unit": "unknown",
+          "method": "emulator",
+          "conditions": "ot_emu, executed instructions from the hook's entry, interrupts included: a save to its toast 16,287 (up to 39,151 under a MIDI flood), a reload to the end of its screen refresh 637,251 stopped and 640,923 playing; no DSP work. Under a MIDI flood the longest frame interrupt rose 0.3 us and idle fell 0.2 points against stock. Time on the unit not measured.",
+          "source": "TESTING.md"
+        },
+        "impact": {
+          "conditions": "One reload while the sequencer plays; nothing runs between presses.",
+          "cpu": {
+            "level": "low",
+            "basis": "measured-comparison",
+            "rationale": "No idle cost. A save copies about 43 KB (16,287 executed instructions under ot_emu); a reload runs stock's pattern writer, Part Reload and screen refresh (about 640,000 instructions, most of them stock's). Time on the unit is not measured.",
+            "source": "TESTING.md"
+          },
+          "dsp": {
+            "level": "minimal",
+            "basis": "source-estimate",
+            "rationale": "No DSP code. The restored Part reaches the DSP through stock's own Part apply, as RELOAD PART does.",
+            "source": "TESTING.md"
+          },
+          "memory": {
+            "level": "moderate",
+            "basis": "measured-comparison",
+            "rationale": "A 42,892-byte buffer for one pattern and one Part, plus 824 bytes of code: on USB about a sixth of the 256 KB module pool all modules share; no saved data.",
+            "source": "TESTING.md"
+          }
+        }
+      },
+      "tests": {
+        "report": "TESTING.md",
+        "summary": "On one MKII over USB (28 Oct 2026), by hand on the flashed base beside 13 kept modules: save, reload of trigs, parameters, a machine change and a Part change, reload while playing, NO TEMP SAVE on another pattern, stock behaviour in menus, sample lists, YES/NO alone and FUNC + CUE, and quick double presses (fixed in this source after the first run). Under ot_emu (verify.py, 37 checks MKII, 34 MKI): the pattern and Part restored byte for byte in RAM and their battery copies, Part switch, bank without saved Parts, MIDI mode, windows, key order, power cycle; beside Apply Scene, Preview Vol and Direct Jump.",
+        "hardwareStatus": "reported",
+        "evidenceRevision": "001fc4937ca32bb036b7542c0bef8619fae173f3",
+        "gates": [],
+        "qualification": {
+          "documentation": {
+            "tutorial": {
+              "title": "Quick tutorial",
+              "steps": [
+                "On the pattern screen, with no menu open, place a few trigs and press FUNC + YES: TEMP SAVED.",
+                "Change the pattern and the Part: clear some trigs, turn knobs on two pages, try another machine.",
+                "Press FUNC + NO: RELOADED. The trigs, knobs and machine are back as they were at step 1.",
+                "To keep the result, save the Part (FUNC + PART, SAVE) and the project."
+              ]
+            },
+            "screenshots": [
+              "media/ot-temp-saved.png",
+              "media/ot-reloaded.png",
+              "media/ot-no-temp-save.png"
+            ],
+            "screenshotStyle": "black-and-white"
+          },
+          "moduleVersion": "0.1.0-experimental",
+          "sourceSha256": "af36908fe973bd8dc1f393e80fdf9575375d9aa0ab0cee622209cb13eabbf5f3",
+          "imageSha256": "f9f45010275476bd93960b402e4ea7c0d8248c553ba12819846af0327675a687",
+          "cycles": [
+            {
+              "processor": "coldfire",
+              "worstCase": 640923,
+              "maxConfiguration": 640923,
+              "maxInstances": 1,
+              "budget": 26600000,
+              "unit": "cycles/event",
+              "method": "emulator",
+              "conditions": {
+                "parameterExtremes": "The dearest event is a reload while playing: 640,923 executed instructions from the FUNC + NO hook to the end of the screen refresh (verify.py); under a 1,000 message/s MIDI flood 16 reloads took 605,222 to 635,604. A save took 16,287 (39,151 at most under the flood).",
+                "parameterModulation": "Not applicable: one save or reload per press, outside the audio frame. The restored values are pattern and Part bytes that the sequencer, scenes and LFOs read as usual.",
+                "modeSwitching": "Save, reload, a repeated quick press, a reload after a machine change, after a Part change and on a bank whose Parts were never saved, stopped and playing, MIDI mode.",
+                "maxLoad": "Executed ColdFire instructions under ot_emu, interrupts included; one instance. Budget: 100 ms of ColdFire time at 266 MHz, a key-press responsiveness target, not a measured limit. No static bound: the reload's cost is stock's pattern writer 0x4002b9b0, Part Reload 0x4004aab4 and screen refresh, which nothing in this repository bounds.",
+                "inputConditions": "Independent of audio and MIDI; runs in the UI task once per press. Executed instructions, not cycles: cache and wait states are not modelled, and time on the unit is not measured."
+              },
+              "report": "TESTING.md"
+            }
+          ],
+          "memory": {
+            "regions": [
+              {
+                "name": "ColdFire code and state (one linked unit)",
+                "space": "sdram",
+                "words": 824,
+                "wordBits": 8,
+                "bytes": 824,
+                "scope": "shared"
+              },
+              {
+                "name": "The temporary copy: one pattern (36,568 bytes) and one Part (6,322 bytes)",
+                "space": "sdram",
+                "words": 42892,
+                "wordBits": 8,
+                "bytes": 42892,
+                "scope": "shared"
+              }
+            ],
+            "perInstanceBytes": 0,
+            "sharedBytes": 43716,
+            "maxInstances": 1,
+            "totalBytes": 43716,
+            "conditions": "The unit as the USB package carries it (824 bytes of code and data, 42,892 bytes of bss). No DSP memory, no saved data.",
+            "report": "TESTING.md"
+          },
+          "hardware": {
+            "kind": "functional",
+            "status": "reported",
+            "model": "MKII",
+            "testedOn": "2026-10-28",
+            "tester": "npp1993",
+            "sourceRevision": "001fc4937ca32bb036b7542c0bef8619fae173f3",
+            "imageSha256": "f9f45010275476bd93960b402e4ea7c0d8248c553ba12819846af0327675a687",
+            "summary": "On the contributor's Octatrack MKII (OS 1.40C), flashed personal base beside 13 kept modules, the USB package of this source (SHA-256 above) ran as a timed trial installed with the device tool. By hand: FUNC + YES and FUNC + NO saved and restored trigs, parameters on several tracks, a machine change and a pattern moved to another Part; reloads while playing worked; another pattern showed NO TEMP SAVE; quick double presses saved and reloaded again; in MIXER, PROJECT, trig edit, PATTERN SETTINGS and SRC SETUP both gestures stayed stock, the sample preview played, YES and NO alone and FUNC + CUE behaved as stock, and Apply Scene's SCENE + YES still worked. The first package of this run (an earlier source) failed the quick double press, which this source fixes.",
+            "limitations": [
+              "One unit, tested by the contributor, not an independent reviewer; the MKI was not tested.",
+              "USB only: the card build was not flashed.",
+              "Nothing timed; a reload while playing was judged by ear only.",
+              "Timed trials only: the site's review, Keep and Undo flow and a power cycle with the module kept were not used.",
+              "MIDI mode, other banks and a project save after a reload ran under the emulator only."
+            ],
+            "report": "evidence/hardware.md"
+          }
+        }
+      },
+      "license": {
+        "spdx": "MIT",
+        "file": "LICENSE",
+        "declaration": "Original authored source by Nathaniel Pavel (@npp1993). Stock code is referenced by address, length and SHA-256 only. No firmware, extracted stock routine or table, image, card or memory dump is included."
+      },
+      "media": [
+        {
+          "path": "media/ot-temp-saved.png",
+          "captureType": "emulator",
+          "caption": "On the pattern screen, with no menu open, hold FUNC and press YES: TEMP SAVED. The active pattern and its whole Part are kept in a temporary copy; the message clears when you let go of FUNC.",
+          "alt": "Pattern screen of pattern A01, SRC page of a FLEX track, with the TEMP SAVED message box over it.",
+          "credit": "Modwerk contributors (headless capture)",
+          "license": "LicenseRef-OT-UI-Documentation",
+          "source": "original",
+          "otUi": {
+            "page": "Pattern screen (SRC page), FUNC held",
+            "shows": "location-and-controls",
+            "firmware": "1.40C",
+            "moduleVersion": "0.1.0-experimental",
+            "imageSha256": "32417b06af3f7af3f1601ea5c75ec5da91bd370bc43d473d30a25f6582e43ee5",
+            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit 001fc493) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
+          }
+        },
+        {
+          "path": "media/ot-reloaded.png",
+          "captureType": "emulator",
+          "caption": "Change anything: trigs, knobs, machines, scenes. Then hold FUNC and press NO: RELOADED. The pattern and its Part are back as they were at FUNC + YES; the crossfader, selected scenes and mutes stay where they are.",
+          "alt": "Pattern screen of pattern A01, SRC page of a FLEX track, with the RELOADED message box over it.",
+          "credit": "Modwerk contributors (headless capture)",
+          "license": "LicenseRef-OT-UI-Documentation",
+          "source": "original",
+          "otUi": {
+            "page": "Pattern screen (SRC page), FUNC held",
+            "shows": "controls",
+            "firmware": "1.40C",
+            "moduleVersion": "0.1.0-experimental",
+            "imageSha256": "32417b06af3f7af3f1601ea5c75ec5da91bd370bc43d473d30a25f6582e43ee5",
+            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit 001fc493) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
+          }
+        },
+        {
+          "path": "media/ot-no-temp-save.png",
+          "captureType": "emulator",
+          "caption": "The copy belongs to one pattern. On another pattern (here A02), FUNC + NO shows NO TEMP SAVE and changes nothing; go back to the saved pattern to reload it.",
+          "alt": "Pattern screen of pattern A02 with the NO TEMP SAVE message box over it.",
+          "credit": "Modwerk contributors (headless capture)",
+          "license": "LicenseRef-OT-UI-Documentation",
+          "source": "original",
+          "otUi": {
+            "page": "Pattern screen (SRC page), FUNC held",
+            "shows": "controls",
+            "firmware": "1.40C",
+            "moduleVersion": "0.1.0-experimental",
+            "imageSha256": "32417b06af3f7af3f1601ea5c75ec5da91bd370bc43d473d30a25f6582e43ee5",
+            "setup": "Headless ot_emu; MKII panel; stopped transport; card staged from octabam's TMPL project; private native build of TEMP SAVE 0.1.0 (commit 001fc493) alone beside every stock effect (static stock); FUNC held through the capture; 128×64 LCD at integer scale 6."
           }
         }
       ]
