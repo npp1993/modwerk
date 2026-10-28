@@ -1,10 +1,12 @@
 # Temp Save testing
 
-**Hardware status: not tested.** Nothing below ran on an Octatrack. Every result is from the ColdFire port (`ot_emu`) on native builds of OS 1.40C, which approximates the instrument: no real-time timing, no audio check, no LCD.
+**Hardware status: tested by hand on one MKII over USB, 28 October 2026** ([evidence/hardware.md](evidence/hardware.md)): every step passed with package `f9f45010…` (commit 001fc493). The first package failed one check, a quick second FUNC + YES / FUNC + NO, which 001fc493 fixes. The MKI and the card build have not run on a unit; nothing was timed on the unit.
+
+The rest of this file is the ColdFire port (`ot_emu`) on native builds of OS 1.40C, which approximates the instrument: no real-time timing, no audio check.
 
 ## Commands and exact revision
 
-Emulator only, 27 Oct 2026, on the source of this folder at commit `88b14625` (`unit.s` and `verify.py` as tested; this file was added in the same commit). The images are native builds in a scratch copy of `sdk/octabam` with this folder copied to `modules/temp-save` and `static_stock=True` remixes:
+Emulator, 27 and 28 Oct 2026. Final runs on the source of commit `001fc493` (`unit.s`); `verify.py` as of this commit. Earlier rows name their commit. The images are native builds in a scratch copy of `sdk/octabam` with this folder copied to `modules/temp-save` and `static_stock=True` remixes:
 
 ```sh
 make bus REMIX=temp-save-stock BUILD=0     # TEMP SAVE + every stock effect
@@ -17,14 +19,17 @@ The build reports `jmp 0x4005e3d8 -> temp_save:ts_yes_hook` and `jmp 0x4005e1fc 
 
 | image (MAIN OS SHA-256, first 12) | remix | gate | result |
 |---|---|---|---|
-| `01b6df8c37bd` | temp-save-stock | verify.py, MKII | PASS, 35 checks |
-| `01b6df8c37bd` | temp-save-stock | verify.py, MKI | PASS, 34 checks (no PROJ/PART keys: PART opened with FUNC + MIDI) |
-| `cacf548ba078` | temp-save-combo | verify.py, MKII | PASS |
-| `cacf548ba078` | temp-save-combo | Apply Scene's verify.py | PASS, 264 checks |
+| `32417b06af3f` | temp-save-stock, 001fc493 | verify.py, MKII | PASS, 37 checks (with the quick double press and the cost measurement) |
+| `01b6df8c37bd` | temp-save-stock, 88b14625 | verify.py, MKII | PASS, 35 checks |
+| `01b6df8c37bd` | temp-save-stock, 88b14625 | verify.py, MKI | PASS, 34 checks (no PROJ/PART keys: PART opened with FUNC + MIDI) |
+| `cacf548ba078` | temp-save-combo, 88b14625 | verify.py, MKII | PASS |
+| `cacf548ba078` | temp-save-combo, 88b14625 | Apply Scene's verify.py | PASS, 264 checks |
+
+001fc493 changes only `ts_screen` (a popup that is the message no longer counts as a window); the MKI and combination runs were not repeated on it.
 
 `npm run modules:compat -- temp-save`, with the folder copied into `sdk/octabam/modules/` and a temporary `sdk/catalog.json` entry (both removed again): 30 active modules, 435 pairs and the whole set, 0 problems.
 
-**USB package (private, not committed).** `build.py --octabam temp-save --name "TEMP SAVE" --stock <1.40C .syx> --upstream <elekloader 3b31ef3c>`: module `84a2f52f`, 816 bytes of code and data, 42,892 bytes of bss, no relocations or hooks, two hashed stock-code sites, 988 bytes, SHA-256 `335e59da46e0ad66b5fb98031d30e84d35fad49fc67c89768cb8b352a4cfa07c`. The builder's strict stock-free scans passed. Not loaded on a unit.
+**USB packages (private, not committed).** `build.py --octabam temp-save --name "TEMP SAVE" --stock <1.40C .syx> --upstream <elekloader 3b31ef3c>`: module `84a2f52f`, no relocations or hooks, two hashed stock-code sites; the builder's strict stock-free scans passed. 88b14625: 816 bytes of code and data, 42,892 of bss, 988 bytes, SHA-256 `335e59da…` (hardware run 1). 001fc493: 824 bytes of code and data, 42,892 of bss, SHA-256 `f9f45010275476bd93960b402e4ea7c0d8248c553ba12819846af0327675a687` (hardware run 2).
 
 ## What verify.py checked
 
@@ -42,7 +47,13 @@ The fixture is octabam's TMPL project, staged unchanged. Edits are made with the
 - **Windows:** in AMP SETUP, MIXER, PROJECT and PART (MKII; AMP SETUP, MIXER and PART on the MKI) the hooks are reached on press and release, leave the keys to stock, show no module toast and change nothing.
 - **Key order:** FUNC let go before YES or NO. Under the port both releases still reached the hooks. Afterwards stock gets FUNC + YES and FUNC + NO in MIXER on press and on release.
 - **Stock flows:** YES alone reaches ARM ALL and NO alone DISARM ALL with no module toast; RELOAD PART (FUNC + CUE) restores the saved Part, not the temp save.
+- **Quick second presses** (001fc493): FUNC + YES twice and FUNC + NO twice inside the message's lifetime: TEMP SAVED, TEMP SAVED, RELOADED, RELOADED, and neither ARM ALL nor DISARM ALL runs.
+- **Cost:** executed ColdFire instructions, interrupts included (frame engine on), from the hook's entry: a save to its toast 16,287; a reload to the end of its screen refresh 637,251 stopped and 640,923 playing. Executed instructions, not chip cycles; not timed on the unit.
 - **Power cycle** (CS1 and card kept, `--cs1-in --no-post`): the copy is gone, FUNC + NO shows NO TEMP SAVE.
+
+## Screens
+
+`scripts/capture-module-ui.py` on image `32417b06…`, MKII panel, a card staged from octabam's TMPL project; FUNC is held through each capture because stock clears the message when FUNC is released. The plan and hashes are in `media/capture.json`.
 
 ## Code review
 
@@ -56,7 +67,7 @@ An independent review of `unit.s` against the stock disassembly (27 Oct 2026) fo
 
 ## Not tested
 
-- Any hardware run: MKII or MKI, over USB or as a card build. That includes timing on the unit and the length of the reload's pause while playing.
-- Audible output: a reload while playing, click-free or not.
+- The MKI and the card build on a unit; timing on the unit; the site's review/Keep/Undo flow (the hardware runs used timed trials).
+- Audible output in detail: a reload while playing worked by ear, but clicks were not specifically listened for.
 - `module:verify` (browser builder against native), the performance record (`evidence/performance.json`) and the browser package import.
 - A project save and reload after FUNC + NO; arranger mode and pattern chains; a pattern change queued at the moment of FUNC + NO; the 0x800000b8 mode itself (its stock meaning is not identified).

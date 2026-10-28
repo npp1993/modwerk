@@ -1,0 +1,173 @@
+{
+  "firmware": "1.40C",
+  "imageSha256": "32417b06af3f7af3f1601ea5c75ec5da91bd370bc43d473d30a25f6582e43ee5",
+  "emulatorSha256": "23ba6f6cdc6ec4b89b8cf206915e66d3160aec8499b1abfc9b475ac849152b28",
+  "setup": "Headless ot_emu; MKII panel; stopped transport; 128\u00d764 LCD at integer scale 6. Card staged from octabam's TMPL project (set CAPTURE, project TEMP); the SET DATE/TIME prompt dismissed with NO. Image: a private native build of TEMP SAVE 0.1.0 at commit 001fc493 alone beside every stock effect (static stock). FUNC is held through each capture: stock clears the message when FUNC is released.",
+  "palette": {
+    "on": [
+      240,
+      240,
+      240
+    ],
+    "off": [
+      24,
+      24,
+      24
+    ]
+  },
+  "keyMs": 150,
+  "plan": [
+    {
+      "press": [
+        "NO"
+      ]
+    },
+    {
+      "wait": 2000
+    },
+    {
+      "press": [
+        "REC"
+      ]
+    },
+    {
+      "press": [
+        "TRIG1"
+      ]
+    },
+    {
+      "press": [
+        "TRIG5"
+      ]
+    },
+    {
+      "press": [
+        "TRIG9"
+      ]
+    },
+    {
+      "press": [
+        "TRIG13"
+      ]
+    },
+    {
+      "press": [
+        "REC"
+      ]
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "hold": [
+        "FUNC"
+      ]
+    },
+    {
+      "press": [
+        "YES"
+      ]
+    },
+    {
+      "wait": 20
+    },
+    {
+      "capture": "ot-temp-saved.png"
+    },
+    {
+      "release": [
+        "FUNC"
+      ]
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "press": [
+        "REC"
+      ]
+    },
+    {
+      "press": [
+        "TRIG3"
+      ]
+    },
+    {
+      "press": [
+        "TRIG9"
+      ]
+    },
+    {
+      "press": [
+        "REC"
+      ]
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "hold": [
+        "FUNC"
+      ]
+    },
+    {
+      "press": [
+        "NO"
+      ]
+    },
+    {
+      "wait": 100
+    },
+    {
+      "capture": "ot-reloaded.png"
+    },
+    {
+      "release": [
+        "FUNC"
+      ]
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "press": [
+        "PTN",
+        "TRIG2"
+      ]
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "hold": [
+        "FUNC"
+      ]
+    },
+    {
+      "press": [
+        "NO"
+      ]
+    },
+    {
+      "wait": 20
+    },
+    {
+      "capture": "ot-no-temp-save.png"
+    },
+    {
+      "release": [
+        "FUNC"
+      ]
+    }
+  ],
+  "screenshots": {
+    "ot-temp-saved.png": "95c5b3c0c07d712d8df548f392ca28e29629c1a20dff89ae1db49c5c0f5d2308",
+    "ot-reloaded.png": "16b3c3296f913ca1fe9abb3c2c08982ca52796f1a7871b41cd5e4c66d3a4a033",
+    "ot-no-temp-save.png": "66b71bf8ddc6a2cf8a861938fd564c5145419da239c3fcb08dd06d7e95366e64"
+  },
+  "cardSha256": "a0fd7cfb0225a9e39f0933f96dd17a6a516bc0a6352f4e53a986aa513d9d1ca3",
+  "project": {
+    "set": "CAPTURE",
+    "name": "TEMP"
+  }
+}
