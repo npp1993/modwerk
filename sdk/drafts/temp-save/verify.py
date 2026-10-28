@@ -315,6 +315,19 @@ def main():
               f"the Part is marked unsaved (RAM {s3['unsaved']}, CS1 {cs1_unsaved}); has-saved {has_saved} as before")
         check(s3["W"][MACH:MACH + 8] == s0["W"][MACH:MACH + 8], f"machines {list(s3['W'][MACH:MACH + 8])}")
 
+        print("verify temp-save: quick second presses, while the message still shows")
+        e.watch([NOTIFY, ARM_ALL, DISARM_ALL])
+        for k in ("yes", "yes", "no", "no"):
+            e.key("func", True); e.run(120)
+            e.key(k, True); e.run(60)
+            e.key(k, False); e.run(60)
+            e.key("func", False); e.run(120)
+        h = e.hits()
+        t = [k for h1 in h if h1[1] == NOTIFY for k, a in texts.items() if a in h1]
+        check(t == ["saved", "saved", "reloaded", "reloaded"] and not any(x[1] in (ARM_ALL, DISARM_ALL) for x in h),
+              f"FUNC + YES twice, FUNC + NO twice, quickly: toasts {t}, no ARM/DISARM")
+        e.run(800)
+
         print("verify temp-save: the copy survives its reload")
         edit(e)
         e.key("scene_a", True)

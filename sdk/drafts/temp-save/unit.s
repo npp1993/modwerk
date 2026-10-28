@@ -66,6 +66,7 @@
         .set    POPUP,      0x460d175c  | the open popup's record, 0 with none
         .set    POPUP_FLAGS, 0x20       | its flags: 0x21 open, 0x01 closed
         .set    POPUP_OPEN, 0x20
+        .set    TOAST,      0x460d1e70  | the message's window (0x4005a2b8), 0 with none; the same record
         .set    YES_DIVERT, 0x460d1aec  | stock sends YES elsewhere while set
         .set    NO_SPECIAL, 0x460d172a  | stock's FUNC + NO has its own job while set
         .set    KEY_MODE,   0x800000b8  | while set, YES and NO alone do nothing
@@ -140,6 +141,8 @@ ts_screen:
         bne.s   1f
         move.l  (POPUP).l,%d1
         beq.s   1f                      | d0 = 0
+        cmp.l   (TOAST).l,%d1           | the popup is only a message (TEMP SAVED, ARM ALL): still the
+        beq.s   1f                      | pattern screen, so a quick second press saves or reloads again
         move.l  %d1,%a0
         move.l  POPUP_FLAGS(%a0),%d0
         andi.l  #POPUP_OPEN,%d0
