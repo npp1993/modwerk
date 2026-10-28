@@ -46,7 +46,7 @@
       "FUNC + YES and FUNC + NO no longer repeat ARM ALL and DISARM ALL on the pattern screen and in page and menu windows; YES and NO alone still do. In sample lists (FUNC + YES still previews), an audio track's SRC SETUP, AED, dialogs, RENAME, TEMPO and CHOOSE PROJECT both gestures stay stock.",
       "The reload replaces the pattern and the Part as a whole, including edits made since FUNC + YES on any track; the Part then counts as edited, as after a paste.",
       "Another project, or this one saved under another name, makes the copy unusable (NO TEMP SAVE).",
-      "Uses 890 bytes of code and a 42,892-byte buffer; over USB from the module pool all modules share."
+      "Uses 892 bytes of code and a 42,892-byte buffer; over USB from the module pool all modules share."
     ],
     "effectId": null
   },
@@ -54,11 +54,11 @@
     "recorded": "ot_emu and one MKII, 27-28 Oct 2026",
     "storage": {
       "label": "Storage",
-      "display": "836 B of code plus a 42,892 B copy buffer; no DSP code, no saved data",
-      "value": 43728,
+      "display": "892 B of code plus a 42,892 B copy buffer; no DSP code, no saved data",
+      "value": 43784,
       "unit": "bytes",
       "method": "static",
-      "conditions": "The published USB package: 836 bytes of code and data (5 self-relocations), 42,892 bytes of bss. On the card build the unit sits in the platform's DRAM reserve.",
+      "conditions": "The published USB package: 892 bytes of code and data (6 relocations), 42,892 bytes of bss. On the card build the unit sits in the platform's DRAM reserve.",
       "source": "TESTING.md"
     },
     "processing": {
@@ -87,7 +87,7 @@
       "memory": {
         "level": "moderate",
         "basis": "measured-comparison",
-        "rationale": "A 42,892-byte buffer for one pattern and one Part, plus 836 bytes of code: on USB about a sixth of the 256 KB module pool all modules share; no saved data.",
+        "rationale": "A 42,892-byte buffer for one pattern and one Part, plus 892 bytes of code: on USB about a sixth of the 256 KB module pool all modules share; no saved data.",
         "source": "TESTING.md"
       }
     }
@@ -126,9 +126,9 @@
           {
             "name": "ColdFire code and state (one linked unit)",
             "space": "sdram",
-            "words": 836,
+            "words": 892,
             "wordBits": 8,
-            "bytes": 836,
+            "bytes": 892,
             "scope": "shared"
           },
           {
@@ -141,10 +141,10 @@
           }
         ],
         "perInstanceBytes": 0,
-        "sharedBytes": 43728,
+        "sharedBytes": 43784,
         "maxInstances": 1,
-        "totalBytes": 43728,
-        "conditions": "The unit as the USB package carries it (836 bytes of code and data, 42,892 bytes of bss). No DSP memory, no saved data.",
+        "totalBytes": 43784,
+        "conditions": "The unit as the USB package carries it (892 bytes of code and data, 42,892 bytes of bss). No DSP memory, no saved data.",
         "report": "TESTING.md"
       },
       "hardware": {

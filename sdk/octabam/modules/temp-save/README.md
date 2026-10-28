@@ -64,7 +64,7 @@ If you moved the pattern to another Part after FUNC + YES, FUNC + NO brings back
 - One copy at a time, of one pattern and its Part. It is gone after a power-off and never written to the card.
 - The reload replaces the pattern and the Part as a whole, including edits since FUNC + YES on any track.
 - Saving the project under another name, or loading another project, makes the copy unusable (NO TEMP SAVE); reloading the same project keeps it.
-- Memory: 890 bytes of code and a 42,892-byte buffer (one pattern and one Part). Over USB that comes out of the module pool shared by all modules (256 KB).
+- Memory: 892 bytes of code and a 42,892-byte buffer (one pattern and one Part). Over USB that comes out of the module pool shared by all modules (256 KB).
 - No DSP code, no effect slot, no saved data. Installs beside every other module: patches two stock sites nobody else patches, separate from Apply Scene's YES site.
 
 ## Tests and measurements
