@@ -32,6 +32,15 @@ What it checks, on one interactive boot and then a power cycle:
      back on the saved pattern it reloads.
   4a. While the sequencer plays: FUNC + YES, edits, FUNC + NO: the pattern
      and the Part come back and the transport keeps running.
+  4b. The pattern moved to another Part (PART, DOWN, YES) after FUNC + YES:
+     FUNC + NO brings back the pattern's Part as well, the saved copy into
+     it with that Part's own scene selection; the other Part is untouched.
+  4c. Another bank (BANK, trig, trig): NO TEMP SAVE; there, on Parts with no
+     saved copy, FUNC + YES / FUNC + NO work and the Part still has no saved
+     copy afterwards (stock RELOAD PART still finds none).
+  4d. MIDI mode: the same save and reload with MIDI-track edits.
+  4e. Key order: FUNC released before YES or NO: the next stock FUNC + YES
+     and FUNC + NO in a window reach stock on press and on release.
   5. Stock flows: YES alone reaches ARM ALL and NO alone DISARM ALL; RELOAD
      PART (FUNC + CUE) still restores the saved Part, not the temp save.
   6. A power cycle (CS1 and card kept, the firmware's own power-up load):
@@ -70,9 +79,12 @@ CUR_TRACK, TRANSITION, POPUP = 0x80000000, 0x400972fc, 0x460d175c
 VOICE_BIND = 0x40006820              # stock binds a track's voice: a trig played
 TICK = 0x400a1e0c                    # the sequencer tick
 NOTIFY, ARM_ALL, DISARM_ALL = 0x4005a2b8, 0x4005e294, 0x4005e0e8
+YES_REJOIN, NO_REJOIN = 0x4005e3e0, 0x4005e204
+HAS_SAVED, PAT_PART, CUR_BANK = 0x9b312, 0x8e57, 0x80000002
+MKI = os.environ.get("TEMP_MODEL", "mkii").lower() == "mki"
 TEXTS = {"saved": "TEMP SAVED", "reloaded": "RELOADED", "none": "NO TEMP SAVE"}
 KEYS = {'scene_a': 0x19, 'scene_b': 0x1a, 'yes': 0x31, 'no': 0x32, 'func': 0x2d, 'cue': 0x2a, 'pattern': 0x2e,
-        'play': 0x28, 'down': 0x20, 'up': 0x33, 'proj': 0x1c, 'part': 0x1d, 'mixer': 0x30, 'stop': 0x27, 'rec': 0x29, 'pg_src': 0x22, 'pg_amp': 0x23, 'pg_fx1': 0x25,
+        'play': 0x28, 'bank': 0x2f, 'midi': 0x35, 'down': 0x20, 'up': 0x33, 'proj': 0x1c, 'part': 0x1d, 'mixer': 0x30, 'stop': 0x27, 'rec': 0x29, 'pg_src': 0x22, 'pg_amp': 0x23, 'pg_fx1': 0x25,
         **{f'trig{i + 1}': i for i in range(16)}}
 FAILS = []
 
@@ -102,7 +114,7 @@ class Emu:
 
     def __init__(self, card, log, extra=()):
         argv = [str(EMU), "--image", str(IMAGE), "--card", str(card), "--interactive", "--mount", "--set", "TEMPSAV",
-                "--project", "TSFIX", "--internal-clock", "--mkii", "--card-rw", *extra]
+                "--project", "TSFIX", "--internal-clock", *(() if MKI else ("--mkii",)), "--card-rw", *extra]
         self.err = open(log, "wb")
         self.p = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.err, bufsize=0)
         self.q = queue.Queue()
@@ -396,6 +408,107 @@ def main():
               and binds[0] > 0 and binds[1] > 0 and before[1] > 0, f"playing: toasts {t + t2}, pattern {diff(sq['P'], sp['P'])} and Part "
               f"{diff(sq['W'], want)} bytes off, the sequencer runs on")
         e.tap("stop", after=800)
+
+        print("verify temp-save: the pattern moved to another Part")
+        t, _, _ = gesture(e, "func", "yes", texts)
+        sa = e.state()
+        p0 = sa["p"]
+        if MKI:
+            e.chord("func", "midi", after=600)
+        else:
+            e.tap("part", after=600)
+        e.tap("down" if p0 < 3 else "up", after=300)
+        e.tap("yes", after=800)
+        sb = e.state()
+        other = lambda: e.peek(sb["bank"] + PARTS + sb["p"] * PART_LEN, PART_LEN)
+        edit(e)
+        e.key("scene_a", True)
+        e.run(150)
+        e.tap("trig11")                           # this Part's scene A := 11, unlike the saved Part's
+        e.key("scene_a", False)
+        e.run(400)
+        before_other = other()
+        own_sel = e.peek(sa["bank"] + PARTS + p0 * PART_LEN + SEL, 2)
+        t2, _, _ = gesture(e, "func", "no", texts)
+        sc = e.state()
+        want = bytearray(sa["W"])
+        want[SEL:SEL + 2] = own_sel
+        check(own_sel != before_other[SEL:SEL + 2], f"the two Parts' scene selections differ "
+              f"({list(own_sel)} / {list(before_other[SEL:SEL + 2])})")
+        check(sb["p"] != p0 and t2 == ["reloaded"] and sc["p"] == p0 and sc["P"] == sa["P"]
+              and sc["P"][PAT_PART] == p0 and sc["W"] == bytes(want),
+              f"Part {p0 + 1} -> {sb['p'] + 1}, FUNC + NO: toast {t2}, Part {sc['p'] + 1} again, pattern "
+              f"{diff(sc['P'], sa['P'])} and Part {diff(sc['W'], want)} bytes off")
+        after_other = other()
+        check(after_other == before_other,
+              f"Part {sb['p'] + 1}, where the edits went, is as the edits left it")
+        print("verify temp-save: another bank")
+        e.tap("bank", after=600)
+        e.tap("trig3", after=600)
+        e.tap("trig1", after=1500)
+        if is_open(e):
+            e.tap("no", after=600)
+        sd = e.state()
+        t, _, _ = gesture(e, "func", "no", texts)
+        check(e.peek(CUR_BANK, 1)[0] == 2 and t == ["none"] and e.state()["P"] == sd["P"], f"bank C: toast {t}, nothing changed")
+        hs = lambda: e.peek(e.u32(BANK_PTR) + HAS_SAVED + e.peek(CUR_PART, 1)[0], 1)[0]
+        hs0 = hs()
+        t, _, _ = gesture(e, "func", "yes", texts)
+        se = e.state()
+        edit(e)
+        t2, _, _ = gesture(e, "func", "no", texts)
+        sf = e.state()
+        want = bytearray(se["W"])
+        want[SEL:SEL + 2] = sf["W"][SEL:SEL + 2]
+        check(hs0 == 0 and t == ["saved"] and t2 == ["reloaded"] and sf["P"] == se["P"] and sf["W"] == bytes(want)
+              and hs() == 0 and sf["S"] == se["S"],
+              f"no saved Part (has-saved {hs0}): toasts {t + t2}, restored, has-saved {hs()} after, saved slot unchanged")
+        edit(e)
+        sg = e.state()
+        e.chord("func", "cue", after=800)
+        check(e.state()["W"] == sg["W"], "stock RELOAD PART still finds no saved copy there and changes nothing")
+
+        print("verify temp-save: MIDI mode")
+        e.tap("midi", after=600)
+        t, _, _ = gesture(e, "func", "yes", texts)
+        sh = e.state()
+        e.tap("rec", after=400)
+        e.tap("trig4")
+        e.tap("rec", after=400)
+        e.tap("pg_amp")
+        e.knob(0, 13)
+        si = e.state()
+        t2, _, _ = gesture(e, "func", "no", texts)
+        sj = e.state()
+        check(e.peek(0x80000012, 4) != b"\0\0\0\0" and t == ["saved"] and t2 == ["reloaded"]
+              and (diff(si["P"], sh["P"]) + diff(si["W"], sh["W"])) > 0 and sj["P"] == sh["P"]
+              and sj["W"][:SEL] + sj["W"][SEL + 2:] == sh["W"][:SEL] + sh["W"][SEL + 2:],
+              f"MIDI mode: toasts {t + t2}, edits moved {diff(si['P'], sh['P'])} pattern and {diff(si['W'], sh['W'])} "
+              f"Part bytes, restored")
+        e.tap("midi", after=600)
+
+        print("verify temp-save: key order")
+        for k in ("yes", "no"):
+            e.key("func", True); e.run(150)
+            e.key(k, True); e.run(150)
+            e.key("func", False); e.run(150)
+            e.key(k, False); e.run(600)
+        e.tap("mixer", after=800)
+        e.watch([YES_REJOIN, NO_REJOIN])
+        e.chord("func", "yes", after=400)
+        e.chord("func", "no", after=400)
+        h = e.hits()
+        ry, rn = sum(x[1] == YES_REJOIN for x in h), sum(x[1] == NO_REJOIN for x in h)
+        e.tap("mixer", after=800)
+        check(ry == 2 and rn == 2, f"after FUNC released first: in MIXER stock gets FUNC + YES {ry}/2 and FUNC + NO {rn}/2 "
+              "(press and release)")
+
+        e.tap("bank", after=600)                  # back to bank A, pattern 1
+        e.tap("trig1", after=600)
+        e.tap("trig1", after=1500)
+        if is_open(e):
+            e.tap("no", after=600)
+        check(e.peek(CUR_BANK, 1)[0] == 0, "back on bank A")
 
         print("verify temp-save: stock flows")
         e.watch([ARM_ALL, DISARM_ALL, NOTIFY])

@@ -196,10 +196,11 @@ ts_reload:
         cmp.l   4(%a2),%d0
         bne.w   .Lnone
 
-        | the scene selection live now, from the Part that plays
+        | the scene selection live now in the copy's own Part (the pattern
+        | may have been moved to another Part since)
         move.l  (BANK_PTR).l,%a0
         moveq   #0,%d0
-        move.b  (CUR_PART).l,%d0
+        move.b  3(%a2),%d0
         move.l  #PART_LEN,%d1
         mulu.l  %d1,%d0
         add.l   #PARTS,%d0
