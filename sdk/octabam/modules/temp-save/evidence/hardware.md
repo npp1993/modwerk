@@ -36,4 +36,16 @@ DSP STOPPED is the base's DSP code loader abandoning a transfer (dsp.c); a Part 
 | FUNC + CUE after a reload | on a Part never saved: stock's SAVE PART FIRST message; after a Part save: FUNC + YES, edit, FUNC + NO, more edits, FUNC + CUE: PART 1 RELOADED, back to the saved Part, no DSP STOPPED: pass |
 | Save, edit and reload while playing | pass |
 
+### Run 3: the published package  (commit eadd58a4, the release source)
+
+On the flashed base  (flashed by another development session; 14 kept modules, the 13 above plus Ringmod SC), after a power cycle, as a timed trial. eadd58a4 changes only how the code reaches its copy buffer (an absolute, load-relocated address).
+
+| Check | Result |
+| --- | --- |
+| FUNC + YES, trig and knob edits, FUNC + NO | TEMP SAVED, RELOADED, restored: pass |
+| The same while playing | pass |
+| FUNC + YES twice quickly, FUNC + NO twice quickly | TEMP SAVED twice, RELOADED twice: pass |
+| Machine change, FUNC + NO | the machine back: pass |
+| MIXER: FUNC + YES / FUNC + NO | stock ARM TRACK / DISARM TRACK, no Temp Save message: pass |
+
 Limits: one unit and one tester; MKI not tested; nothing timed; the card build not flashed; the site's review/Keep/Undo flow not used (timed trials only); a power cycle with the module kept, project save after a reload, MIDI mode and other banks were not run on the unit (they ran under the emulator, TESTING.md).
