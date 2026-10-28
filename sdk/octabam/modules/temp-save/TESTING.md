@@ -1,6 +1,6 @@
 # Temp Save testing
 
-**Hardware status: tested by hand on one MKII over USB, 28 October 2026** ([evidence/hardware.md](evidence/hardware.md)): every step passed with package `f9f45010…` (commit 001fc493). The first package failed one check, a quick second FUNC + YES / FUNC + NO, which 001fc493 fixes. The MKI and the card build have not run on a unit; nothing was timed on the unit.
+**Hardware status: tested by hand on one MKII over USB, 28 October 2026** ([evidence/hardware.md](evidence/hardware.md)): every step passed with package `f9f45010…` (commit 001fc493), and the published package `10784818…` (commit eadd58a4, the release source) passed the retest. The first package failed one check, a quick second FUNC + YES / FUNC + NO, which 001fc493 fixes. The MKI and the card build have not run on a unit; nothing was timed on the unit.
 
 The rest of this file is the ColdFire port (`ot_emu`) on native builds of OS 1.40C, which approximates the instrument: no real-time timing, no audio check.
 

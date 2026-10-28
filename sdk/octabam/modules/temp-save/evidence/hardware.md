@@ -36,9 +36,9 @@ DSP STOPPED is the base's DSP code loader abandoning a transfer (dsp.c); a Part 
 | FUNC + CUE after a reload | on a Part never saved: stock's SAVE PART FIRST message; after a Part save: FUNC + YES, edit, FUNC + NO, more edits, FUNC + CUE: PART 1 RELOADED, back to the saved Part, no DSP STOPPED: pass |
 | Save, edit and reload while playing | pass |
 
-### Run 3: the published package  (commit eadd58a4, the release source)
+### Run 3: the published package `1078481879f6853a874b79d8bd98959909ea5a882d6f14dedef817dc53af2880` (commit eadd58a4, the release source)
 
-On the flashed base  (flashed by another development session; 14 kept modules, the 13 above plus Ringmod SC), after a power cycle, as a timed trial. eadd58a4 changes only how the code reaches its copy buffer (an absolute, load-relocated address).
+On the flashed base `890d41e26a262381…` (flashed by another development session; 14 kept modules, the 13 above plus Ringmod SC), after a power cycle, as a timed trial. eadd58a4 changes only how the code reaches its copy buffer (an absolute, load-relocated address).
 
 | Check | Result |
 | --- | --- |
