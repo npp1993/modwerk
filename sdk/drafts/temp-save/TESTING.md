@@ -4,7 +4,7 @@
 
 ## Commands and exact revision
 
-Emulator only, 27 Oct 2026, on the source of this folder as committed after `da1623eb` (the commit that adds this file). The images are native builds in a scratch copy of `sdk/octabam` with this folder copied to `modules/temp-save` and `static_stock=True` remixes:
+Emulator only, 27 Oct 2026, on the source of this folder at commit `88b14625` (`unit.s` and `verify.py` as tested; this file was added in the same commit). The images are native builds in a scratch copy of `sdk/octabam` with this folder copied to `modules/temp-save` and `static_stock=True` remixes:
 
 ```sh
 make bus REMIX=temp-save-stock BUILD=0     # TEMP SAVE + every stock effect
