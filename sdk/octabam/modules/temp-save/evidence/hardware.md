@@ -64,4 +64,17 @@ On the flashed base `890d41e26a262381…` (14 kept modules), as a timed trial.
 
 Not run on the unit with this source: SCALE and the MIDI-track SETUP pages (emulator only).
 
-Limits: one unit and one tester; MKI not tested; nothing timed; the card build not flashed; the site's review/Keep/Undo flow not used (timed trials only); a power cycle with the module kept, project save after a reload, MIDI mode and other banks were not run on the unit (they ran under the emulator, TESTING.md).
+### Run 5: the published package `00b8d5ab…` again, module effects swapped, through the developer MCP (29 Oct 2026)
+
+On the flashed base `faa07d4f540d532c…` with no kept modules (the card's saved set belongs to the earlier base and does not load). Loaded through the developer MCP's site flow (`device_review`, `device_trial`, `device_undo`) with E-Verb `5f81e72f`, Mini Verb `eea25e6c`, FM Synth `6e571654` (in place of Analog BD, which this base refuses) and Temp Save `00b8d5ab`; each trial passed its self-test.
+
+| Check | Result |
+| --- | --- |
+| Review, trial, Undo | self-test passed, Undo restored the empty set: pass |
+| E-Verb on T1 FX2 with a set MIX, FM SYNTH on T2, trigs on both; FUNC + YES; T1 FX2 to Mini Verb, an FM SYNTH knob turned, FUNC + NO, playing | E-Verb back, the FM SYNTH sound back, no DSP STOPPED, no dropout: pass |
+| T2 changed to THRU, FUNC + NO | FM SYNTH back: pass |
+| Stopped: T1 FX2 to Spring Reverb, T2 to THRU, FUNC + NO | E-Verb with its MIX and FM SYNTH back, no DSP STOPPED: pass |
+
+After this, the unit refused the second trial's Undo (MCP warning "The Octatrack refused this step"); it reported a recovery state with E-Verb, Mini Verb and FM Synth listed and Temp Save already gone. A power cycle brought back the base with no modules. Keep was not run: the MCP refuses Keep while the card holds another base's saved set, and this base cannot back that set up (`device_saved_backup`: unsupported).
+
+Limits: one unit and one tester; MKI not tested; nothing timed; the card build not flashed; Keep and a power cycle with the module kept not run (run 5); project save after a reload, MIDI mode and other banks were not run on the unit (they ran under the emulator, TESTING.md).

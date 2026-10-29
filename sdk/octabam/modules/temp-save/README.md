@@ -8,7 +8,7 @@ Got a groove you like? Press FUNC + YES to keep a temporary copy of the active p
 
 The copy is separate from everything the Octatrack already keeps. Your saved Part stays your saved Part, so RELOAD PART (FUNC + CUE) still goes back to your last Part save. Copied patterns and tracks stay on the clipboard. Nothing is written to the card.
 
-**Hardware status.** Tested by hand on one MKII over USB on 28 October 2026 (save, reload, parameters, a machine change, playback, other patterns, a Part change, menus, sample preview, stock YES/NO and FUNC + CUE). The MKI and the card build have not run on a unit. Details: [TESTING.md](TESTING.md) and [evidence/hardware.md](evidence/hardware.md).
+**Hardware status.** Tested by hand on one MKII over USB on 28 and 29 October 2026 (save, reload, parameters, a machine change, playback, other patterns, a Part change, menus, sample preview, stock YES/NO, FUNC + CUE, and a reload that swaps module effects and a module machine). The MKI and the card build have not run on a unit. Details: [TESTING.md](TESTING.md) and [evidence/hardware.md](evidence/hardware.md).
 
 ## Controls
 
