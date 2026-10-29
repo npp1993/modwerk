@@ -32,7 +32,7 @@ MODULE = Module(
     kind=Kind.CF_PATCH,
     doc="FUNC + YES temp-saves the active pattern and its Part; FUNC + NO reloads them.",
     category=Category.PARTS, author="npp1993", author_url="https://github.com/npp1993",
-    proof=Proof.HARDWARE, proof_note="MKII over USB, flashed base 890d41e2, USB package 00b8d5ab, 28 Oct 2026; effect swap on base faa07d4f, 29 Oct (evidence/hardware.md); verify.py under ot_emu",
+    proof=Proof.HARDWARE, proof_note="MKII over USB, flashed base 890d41e2, USB package 00b8d5ab, 28 Oct 2026 (evidence/hardware.md); verify.py under ot_emu",
     # 892 bytes of code and data and 42,892 bytes of buffers (one pattern, one
     # Part), in the DRAM reserve as Apply Scene's unit; the buffers are reached
     # by absolute, load-relocated addresses.
