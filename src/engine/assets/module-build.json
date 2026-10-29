@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "kind": "source-packages",
-  "sourceCommit": "76538aeabb6a19dcee9dedd9ce4098550247eb5a",
+  "sourceCommit": "b18d1776b0d982081c2c69ef5796154fff0efbf9",
   "nativeRevision": "b8deefc88b2c3e5f3c6158e364eb741df1924e1d",
-  "sourceTreeSha256": "eb7c11dd558ede8f8e93529078cef86e4fd5e5ecc3749f27e51c2d661ac2d355",
-  "compilerSha256": "52ceca4b5ecc686447268b1427605125a48676478f040e9178e2f62b45e1070b",
+  "sourceTreeSha256": "567e4164b411efa282e4a485e44f46574da8011cfc4d12cecd9098eec858ed7c",
+  "compilerSha256": "6af1ca0e10e9f9ba64862600343675465a0f6cff40dac6a73501333647bca79a",
   "moduleVersions": {
     "spectrum": "0.1.1-experimental",
     "modulation": "0.1.1-experimental",
@@ -19,7 +19,7 @@
     "bbd": "0.1.1-experimental",
     "lofi2": "0.1.1-experimental",
     "ring-sc": "0.2.0-experimental",
-    "analog-bassdrum": "0.1.5-experimental",
+    "analog-bassdrum": "0.1.6-experimental",
     "midi-scenes": "0.2.5-experimental",
     "usb-audio-out-tracks-main-cue": "0.2.0-experimental",
     "quantizer": "0.1.3-experimental",
@@ -37,53 +37,52 @@
     "apply-scene": "0.2.0-experimental",
     "direct-jump-kyoti": "0.1.2-experimental",
     "dejavu": "0.1.0-experimental",
-    "arp-key-locks": "0.1.0-experimental",
-    "temp-save": "0.1.0-experimental"
+    "arp-key-locks": "0.1.0-experimental"
   },
   "files": {
     "dsp-packages.json": {
-      "bytes": 91892,
-      "sha256": "5cdb814ff75ea68fb10843b65e817b97cc451bb04542e07f540e47c1185a6877"
+      "bytes": 91853,
+      "sha256": "301bab722f975f6edb85642f53c1d05928ec232defb90b5cd8b02785c08b73cc"
     },
     "resident-dsp.json": {
-      "bytes": 25297,
-      "sha256": "1c5e51a693aa51d69fd0c9fce1d8f2743597e8fba6a9a6999c76a569b66670f6"
+      "bytes": 25258,
+      "sha256": "ae04b8b6ce5bc77f235022bec77943c1e72a2b8c4c0bf6323490863744dcb35b"
     },
     "coldfire-packages.json": {
-      "bytes": 353828,
-      "sha256": "1bc36f4bd6b88f5bef8e329950270b52683ffbdcfce3b93fe7e4273070056c3e"
+      "bytes": 353789,
+      "sha256": "ece5235851fee2d23f685a94d9739f1555dcdf0821c57a94fb82d76dc05571d0"
     },
     "rom-packages.json": {
-      "bytes": 33448,
-      "sha256": "94fd5e7eb98dcb172f3b0654687d2275deeacfb5512535bf5605a7c50371c5b7"
+      "bytes": 33409,
+      "sha256": "0569b717bdfa5b8c2915781406d81512d8d6aa7ad61ef40048f42a6a4323c44e"
     },
     "bootstrap-package.json": {
-      "bytes": 4031,
-      "sha256": "42684431f15448bc6166d3e60a05db6efea366edabb5586a338c45b835b1a882"
+      "bytes": 3992,
+      "sha256": "37d19d72368ec8e2f1eeec9f90dbc90585bb0a93ce7306616bc1ac5edea32308"
     },
     "menu-recipes.json": {
-      "bytes": 37690,
-      "sha256": "8ea8ba880ad41f6c59c03654ac3e34825fe5b41797bbbee1a68c8bced4ec5903"
+      "bytes": 37651,
+      "sha256": "ca1eaf307ee09c95a984fe8080779a347d326a546e45aed70ce64bc3584c725c"
     },
     "descriptor-recipes.json": {
-      "bytes": 85315,
-      "sha256": "0571cb758c1b60cc11742eff2df92bc249b4cc1e3ada69791530bc79375db95b"
+      "bytes": 85276,
+      "sha256": "f8006d06e3b7c5df2d950dba3364797e16b86e65c39fefc40b5cbef7570407cd"
     },
     "platform-writes.json": {
-      "bytes": 17774,
-      "sha256": "8f2b4137aa387a5a48814225a533a4b68baacbdd6ed37c8de889c2f489700298"
+      "bytes": 17735,
+      "sha256": "772a86e82549a928718814fcac99b016c7d08fe3d9d73c16913dc827df88af99"
     },
     "requested-packages.json": {
-      "bytes": 1152202,
-      "sha256": "4bf4b2c8895b77587e7c82d123dc354bac0e5a2759668f3739a66014730bab07"
+      "bytes": 1145826,
+      "sha256": "b9ce385797fd446031d3a488d3f767abba7cfb3f475eea3f134dc1394680fa57"
     },
     "utility-packages.json": {
-      "bytes": 13159,
-      "sha256": "acbb7024f874087dee42f59b574415e8461237afe95b44fb6f08d4549e0da75a"
+      "bytes": 13120,
+      "sha256": "4ce6455258aa59e2a474c0f0a4807e5a84d558d54b18be32c48aa6772f1a0701"
     },
     "usb-audio-packages.json": {
-      "bytes": 737801,
-      "sha256": "6a30dd8ddb73f04f50558aa3730ffa0f3ff9956c30c1e8457bda5bd21ba2d30b"
+      "bytes": 737762,
+      "sha256": "dba17acaa21b5fa451fe5f1900ea8fddfebb9b94d53fb6b0dff00588fd88af4c"
     }
   },
   "approval": null,
