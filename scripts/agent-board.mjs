@@ -45,9 +45,16 @@ export async function boardRequest(path, { method = 'GET', body, token, api = AP
   // Test runs and MODWERK_BOARD=off never reach the live board; a test passes its own fetch.
   if (send === fetch && (process.env.VITEST || process.env.MODWERK_BOARD === 'off')) throw new BoardUnavailable('The board is turned off for this run (MODWERK_BOARD=off or a test run).')
   let result
-  try {
-    result = await send(api + path, { method, redirect: 'error', signal: AbortSignal.timeout(15000), headers: { Accept: 'application/json', ...(method === 'GET' ? {} : { Origin: SITE() }), ...(token ? { 'X-Modwerk-Developer': token } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) })
-  } catch (error) { throw new BoardUnavailable('The board did not answer (' + (error.cause?.code ?? error.message) + ').') }
+  // A fresh process on a slow link (WSL, say) can lose Node's 250 ms per-family connect race and fail with ETIMEDOUT in half a
+  // second; the next attempt connects. Only failed connections are retried, never an answer, so a claim is never sent twice.
+  for (let attempt = 0; !result; attempt++) {
+    try {
+      result = await send(api + path, { method, redirect: 'error', signal: AbortSignal.timeout(15000), headers: { Accept: 'application/json', ...(method === 'GET' ? {} : { Origin: SITE() }), ...(token ? { 'X-Modwerk-Developer': token } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) })
+    } catch (error) {
+      if (attempt >= 2 || error.name === 'TimeoutError') throw new BoardUnavailable('The board did not answer (' + (error.cause?.code ?? error.message) + ').')
+      await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)))
+    }
+  }
   let value
   try { value = await result.json() } catch { throw new BoardUnavailable('The board is not available (HTTP ' + result.status + ').') }
   // Before the Worker carries the board, its routes answer the generic not-found.

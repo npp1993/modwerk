@@ -49,6 +49,10 @@ describe('the board client', () => {
     await expect(board.listClaims({}, { fetch: answer(404, { error: 'API route not found.' }) })).rejects.toBeInstanceOf(board.BoardUnavailable)
     await expect(board.listClaims({}, { fetch: answer(503, { error: 'down' }) })).rejects.toBeInstanceOf(board.BoardUnavailable)
     await expect(board.listClaims({}, { fetch: async () => { throw new TypeError('fetch failed') } })).rejects.toBeInstanceOf(board.BoardUnavailable)
+    // A lost connect race is retried; the answer after it counts.
+    let calls = 0
+    expect(await board.listClaims({}, { fetch: async () => { if (++calls < 3) throw new TypeError('fetch failed', { cause: { code: 'ETIMEDOUT' } }); return Response.json({ claims: [] }) } })).toEqual([])
+    expect(calls).toBe(3)
     await expect(board.claim({ kind: 'migration', key: '0084' }, { token: 'a'.repeat(64), fetch: answer(409, { error: 'migration 0084 is claimed by @bo.' }) })).rejects.toThrow('claimed by @bo')
     // Tests never reach the live board.
     await expect(board.listClaims()).rejects.toBeInstanceOf(board.BoardUnavailable)
