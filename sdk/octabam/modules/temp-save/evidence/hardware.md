@@ -54,7 +54,7 @@ On the flashed base `890d41e26a262381…` (14 kept modules), as a timed trial.
 
 | Check | Result |
 | --- | --- |
-| AMP, LFO and FX SETUP, MIXER, PATTERN SETTINGS, PART window, FUNC + PART menu, PROJECT and its INPUT page, ARRANGER, RECORDING SETUP: FUNC + YES, then FUNC + NO | TEMP SAVED, RELOADED, restored: pass |
+| AMP, LFO and FX SETUP, MIXER, PATTERN SETTINGS, TRACK TRIG EDIT, PART window, FUNC + PART menu, PROJECT and its INPUT page, ARRANGER, RECORDING SETUP: FUNC + YES, then FUNC + NO | TEMP SAVED, RELOADED, restored: pass |
 | SRC SETUP with the machine list, and its slot list (double-tap SRC, RIGHT) | FUNC + YES nothing / preview, FUNC + NO DISARM ALL (stock), no Temp Save message: pass |
 | The sample list (double-tap a TRACK key) | FUNC + YES previews, FUNC + NO DISARM ALL: pass |
 | AED | no Temp Save message; FUNC + NO DISARM ALL: pass |
@@ -62,6 +62,6 @@ On the flashed base `890d41e26a262381…` (14 kept modules), as a timed trial.
 | FUNC + PART > RENAME | holding FUNC opens the character menu; no Temp Save message: pass |
 | Pattern screen: save, edit, reload, stopped and playing | pass |
 
-Not run on the unit with this source: TRACK TRIG EDIT, SCALE, the MIDI-track SETUP pages (emulator only).
+Not run on the unit with this source: SCALE and the MIDI-track SETUP pages (emulator only).
 
 Limits: one unit and one tester; MKI not tested; nothing timed; the card build not flashed; the site's review/Keep/Undo flow not used (timed trials only); a power cycle with the module kept, project save after a reload, MIDI mode and other banks were not run on the unit (they ran under the emulator, TESTING.md).

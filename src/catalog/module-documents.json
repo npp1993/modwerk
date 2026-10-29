@@ -9790,7 +9790,7 @@
       },
       "tests": {
         "report": "TESTING.md",
-        "summary": "On one MKII over USB (28 Oct 2026), by hand on the flashed base: save and reload on the pattern screen and in ten page and menu windows, stock FUNC + YES/NO kept in SRC SETUP, both sample lists, AED, a yes/no dialog and RENAME; earlier sources also covered machine and Part changes, quick double presses, menus, YES/NO alone and FUNC + CUE. Under ot_emu (verify.py, 54 checks MKII, 45 MKI): the pattern and Part restored byte for byte in RAM and their battery copies, every page and menu window, each stock-only case, Part switch, bank without saved Parts, MIDI mode, power cycle; beside Apply Scene, Preview Vol and Direct Jump.",
+        "summary": "On one MKII over USB (28 Oct 2026), by hand on the flashed base: save and reload on the pattern screen and in eleven page and menu windows, stock FUNC + YES/NO kept in SRC SETUP, both sample lists, AED, a yes/no dialog and RENAME; earlier sources also covered machine and Part changes, quick double presses, menus, YES/NO alone and FUNC + CUE. Under ot_emu (verify.py, 54 checks MKII, 45 MKI): the pattern and Part restored byte for byte in RAM and their battery copies, every page and menu window, each stock-only case, Part switch, bank without saved Parts, MIDI mode, power cycle; beside Apply Scene, Preview Vol and Direct Jump.",
         "hardwareStatus": "reported",
         "evidenceRevision": "d88d7207f15df9277f8d8e74e88034b0f2b8b008",
         "gates": [],
@@ -9869,13 +9869,13 @@
             "tester": "npp1993",
             "sourceRevision": "d88d7207f15df9277f8d8e74e88034b0f2b8b008",
             "imageSha256": "00b8d5ab9bedca2e0d1d02add7540af43ce98cbfc0d8b3c06e40c9b18fe68c4a",
-            "summary": "On the contributor's Octatrack MKII (OS 1.40C) the published USB package of this source (SHA-256 above) ran as a timed trial on the flashed base 890d41e2 beside 14 kept modules. By hand: FUNC + YES saved and FUNC + NO reloaded in AMP, LFO and FX SETUP, MIXER, PATTERN SETTINGS, the PART window, the FUNC + PART menu, PROJECT and its INPUT page, ARRANGER and RECORDING SETUP; both stayed stock in SRC SETUP (machine list and slot list), the sample list reached by double-tapping a TRACK key (FUNC + YES previewed), AED, the RELOAD PROJECT dialog and the RENAME editor; save and reload on the pattern screen, stopped and playing, still worked. Earlier runs of this version's previous sources (evidence/hardware.md) covered parameters on several tracks, a machine change, a pattern moved to another Part, quick double presses, NO TEMP SAVE on another pattern, YES and NO alone, FUNC + CUE and Apply Scene.",
+            "summary": "On the contributor's Octatrack MKII (OS 1.40C) the published USB package of this source (SHA-256 above) ran as a timed trial on the flashed base 890d41e2 beside 14 kept modules. By hand: FUNC + YES saved and FUNC + NO reloaded in AMP, LFO and FX SETUP, MIXER, PATTERN SETTINGS, TRACK TRIG EDIT, the PART window, the FUNC + PART menu, PROJECT and its INPUT page, ARRANGER and RECORDING SETUP; both stayed stock in SRC SETUP (machine list and slot list), the sample list reached by double-tapping a TRACK key (FUNC + YES previewed), AED, the RELOAD PROJECT dialog and the RENAME editor; save and reload on the pattern screen, stopped and playing, still worked. Earlier runs of this version's previous sources (evidence/hardware.md) covered parameters on several tracks, a machine change, a pattern moved to another Part, quick double presses, NO TEMP SAVE on another pattern, YES and NO alone, FUNC + CUE and Apply Scene.",
             "limitations": [
               "One unit, tested by the contributor, not an independent reviewer; the MKI was not tested.",
               "USB only: the card build was not flashed.",
               "Nothing timed; reloads while playing were judged by ear only.",
               "Timed trials only: the site's review, Keep and Undo flow and a power cycle with the module kept were not used.",
-              "TRACK TRIG EDIT, SCALE and the MIDI-track SETUP pages, MIDI mode, other banks and a project save after a reload ran under the emulator only."
+              "SCALE and the MIDI-track SETUP pages, MIDI mode, other banks and a project save after a reload ran under the emulator only."
             ],
             "report": "evidence/hardware.md"
           }
