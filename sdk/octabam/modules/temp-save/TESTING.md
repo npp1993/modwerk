@@ -72,7 +72,7 @@ An independent review of `unit.s` against the stock disassembly (27 Oct 2026) fo
 - **No gate for the mode in which YES and NO alone do nothing** (`0x800000b8`), where FUNC + YES / NO are stock's only route to ARM ALL / DISARM ALL. **Fixed:** the module leaves both gestures to stock there.
 - **The unit's state sat in `.data`.** **Fixed:** it moved into `.text`, as in Apply Scene.
 - **The reload might not apply the Part when the pattern was moved to another Part.** Not reproduced: the Part-switch case above shows the current-Part branch running.
-- **Open:** `ts_pat(%pc)` is a 16-bit PC-relative reference into the shared DRAM link's bss. A very large card remix could fail to link ("relocation truncated"); it cannot misbehave at run time. Not seen in the builds above.
+- **The 16-bit `ts_pat(%pc)` reference into the shared DRAM link's bss** overflowed in the fullest card selections (`module:verify`: relocation truncated). **Fixed in eadd58a4:** the buffers are reached by absolute, load-relocated addresses; `module:verify` then matched native in all 166 selections.
 
 ## Not tested
 

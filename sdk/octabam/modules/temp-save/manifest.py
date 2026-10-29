@@ -10,15 +10,17 @@ back through stock's pattern writer 0x4002b9b0 (pattern paste and its
 undo), the Part through stock's Part Reload 0x4004aab4 with the copy
 swapped into the saved slot for the call and back out after it, then FUNC
 + CUE's screen refresh. The saved Part, the clipboard, the crossfader, the
-scene selection and the mutes stay as they were.
+live scene selection and the mutes stay as they were.
 
 Stock routines changed: two. The FUNCTION layer's YES handler 0x4005e3d8
-and NO handler 0x4005e1fc take a press while no sample list is open (and
-outside YES's divert and NO's special mode); there stock's FUNC + YES runs
-the plain-YES routine (ARM ALL) and FUNC + NO the plain-NO routine (DISARM
-ALL), which YES and NO alone still do. Everything else replays the two
-displaced instructions. Measured under ot_emu: see verify.py and
-TESTING.md.
+and NO handler 0x4005e1fc take a press on the pattern screen and in every
+page and menu window, where stock's FUNC + YES / FUNC + NO only repeat
+ARM ALL / DISARM ALL (which YES and NO alone still do). Sample and slot
+lists, an audio track's SRC SETUP, AED, yes/no dialogs, editors, browsers
+and progress screens, YES's divert and NO's special mode keep stock's
+(unit.s, ts_screen). Everything else replays the two displaced
+instructions. Measured under ot_emu (verify.py) and by hand on one MKII
+over USB: see TESTING.md and evidence/hardware.md.
 """
 
 from remix.schema import Category, Proof, Gate, Detour, Kind, Linked, Module
@@ -30,9 +32,10 @@ MODULE = Module(
     kind=Kind.CF_PATCH,
     doc="FUNC + YES temp-saves the active pattern and its Part; FUNC + NO reloads them.",
     category=Category.PARTS, author="npp1993", author_url="https://github.com/npp1993",
-    proof=Proof.UNTESTED, proof_note="draft; verify.py under ot_emu not yet run",
-    # 773 bytes of code and 42,892 bytes of buffers (one pattern, one Part),
-    # position-independent, in the DRAM reserve as Apply Scene's unit.
+    proof=Proof.HARDWARE, proof_note="MKII over USB, flashed base 890d41e2, USB package 00b8d5ab, 28 Oct 2026 (evidence/hardware.md); verify.py under ot_emu",
+    # 892 bytes of code and data and 42,892 bytes of buffers (one pattern, one
+    # Part), in the DRAM reserve as Apply Scene's unit; the buffers are reached
+    # by absolute, load-relocated addresses.
     linked=(Linked("temp_save", "modules/temp-save/unit.s", cpu="5475", dram=True),),
     detours=(
         Detour(0x4005E3D8, stock_guard(0x4005e3d8, 8, "74c5c24f09bf544b8fad303723b3935f248a9f48eefdbd230049cf63bd8fee5e"),
