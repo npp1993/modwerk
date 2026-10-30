@@ -1,6 +1,6 @@
 # QPERF
 
-An Analog Rytm MKII mod by Nathaniel Pavel (@npp1993). Version 0.1.0-experimental. Not tested on hardware.
+An Analog Rytm MKII mod by Nathaniel Pavel (@npp1993). Version 0.1.0-experimental. Hardware testing has started: see [TESTING.md](TESTING.md).
 
 Set performance locks from the QPER key, much faster than one performance at a time.
 
@@ -10,13 +10,13 @@ Link performances as on stock: hold QPER and press pads or trig keys. Then, with
 
 | Gesture | What it does |
 | --- | --- |
-| Turn a knob | The knob's travel since QPER went down becomes the parameter's offset. It replaces that parameter's lock in every linked performance, split evenly, so together they reach it at full QPER. A box shows the total. |
+| Turn a knob | The knob's travel since QPER went down becomes the parameter's offset. It replaces that parameter's lock in every linked performance, split evenly, so together they reach it at full QPER. A popup shows the total. |
 | PLAY | Clears every linked performance, with stock's clear. There is no undo. |
 | YES | Writes what the linked performances add at the QPER knob's position into the kit. The locks stay. |
 
 FUNC + QPER (mute) and linking are stock's.
 
-Boxes: NO LINKS (QPER links nothing), LOCKS FULL, CLEARED, APPLIED, NOTHING (nothing to apply: the knob is at zero), MUTED (QPER is muted, so YES does nothing).
+Popups, drawn by stock: NO LINKS (QPER links nothing), LOCKS FULL, CLEARED, APPLIED, NOTHING (nothing to apply: the knob is at zero), MUTED (QPER is muted, so YES does nothing).
 
 ## Things to know
 

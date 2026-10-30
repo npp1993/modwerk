@@ -38,7 +38,13 @@ typedef int (*container_index_t)(int id);
 typedef int (*id_for_index_t)(int index, int machine);
 typedef int (*set_read_t)(void *set, int id);
 typedef void (*set_value_t)(void *set, int id, int value, int track, int a, int b);
-typedef void (*fillrect_t)(void *bmp, int x0, int y0, int x1, int y1, int colour);
+typedef void (*string_from_cstr_t)(void *string, const char *text, void *allocator);
+typedef void (*string_dtor_t)(void *string);
+typedef word_t (*mem_new_t)(unsigned size);
+typedef void (*popup_ctor_t)(void *popup, void *string);
+typedef void (*shared_ptr_ctor_t)(void *shared, void *object);
+typedef void (*shared_ptr_release_t)(void *counts);
+typedef void (*show_popup_t)(void *views, void *shared, int flag);
 
 #define PROJECT_SINGLETON ((project_singleton_t)PROJECT_SINGLETON_AT)
 #define TRACK_INDEX_OF ((track_index_of_t)TRACK_INDEX_OF_AT)
@@ -51,7 +57,13 @@ typedef void (*fillrect_t)(void *bmp, int x0, int y0, int x1, int y1, int colour
 #define CONTAINER_INDEX ((container_index_t)CONTAINER_INDEX_AT)
 #define ID_FOR_INDEX ((id_for_index_t)ID_FOR_INDEX_AT)
 #define SET_VALUE ((set_value_t)SET_VALUE_AT)
-#define FILLRECT ((fillrect_t)FILLRECT_AT)
+#define STRING_FROM_CSTR ((string_from_cstr_t)STRING_FROM_CSTR_AT)
+#define STRING_DTOR ((string_dtor_t)STRING_DTOR_AT)
+#define MEM_NEW ((mem_new_t)MEM_NEW_AT)
+#define POPUP_CTOR ((popup_ctor_t)POPUP_CTOR_AT)
+#define SHARED_PTR_CTOR ((shared_ptr_ctor_t)SHARED_PTR_CTOR_AT)
+#define SHARED_PTR_RELEASE ((shared_ptr_release_t)SHARED_PTR_RELEASE_AT)
+#define SHOW_POPUP ((show_popup_t)SHOW_POPUP_AT)
 // The performances' amounts: at full, a lock adds its whole value.
 #define PERF_AMOUNT(p) (((volatile unsigned short *)PERF_AMOUNTS_AT)[p])
 #define AMOUNT_FULL 0x7f80
@@ -70,10 +82,11 @@ typedef void (*fillrect_t)(void *bmp, int x0, int y0, int x1, int y1, int colour
 #define KEY_PLAY 0x51
 #define KEY_FUNC 0x80
 #define EV_KEY 12                   // event + 12: the key
-#define EV_FLAGS 16                 // event + 16: 1 pressed, 0x10 released, 8 repeat
+#define EV_FLAGS 16                 // event + 16: bit 0 down (clear on release), 8 repeat
 #define PRESSED 1
 #define REPEAT 8
-#define RELEASED 0x10
+#define BRAIN_VIEWS 32              // brain + 32: the view manager
+#define POPUP_BYTES 0xa0
 
 #define PERFS 12
 #define SLOTS 48
@@ -93,50 +106,14 @@ static unsigned swallowed;          // bit 0 YES, bit 1 PLAY: their release is o
 static struct { short id; signed char track; int total; } turns[TURNS];
 static int nturns;
 
-// A short message box. Letters are 5 x 7, left to right, top row first.
-#define SHOW_TICKS 16               // ev_tick, about 20 Hz
-static int show_ticks;
+// Stock's popup, opened from ev_tick so a fast turn opens one, not dozens.
+static void *views;
 static const char *show_text;
 static char number[8];
-
-static const struct { char c; unsigned char rows[7]; } font[] = {
-    { 'A', { 0x0e, 0x11, 0x11, 0x1f, 0x11, 0x11, 0x11 } },
-    { 'C', { 0x0e, 0x11, 0x10, 0x10, 0x10, 0x11, 0x0e } },
-    { 'D', { 0x1e, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1e } },
-    { 'E', { 0x1f, 0x10, 0x10, 0x1e, 0x10, 0x10, 0x1f } },
-    { 'F', { 0x1f, 0x10, 0x10, 0x1e, 0x10, 0x10, 0x10 } },
-    { 'G', { 0x0e, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0e } },
-    { 'H', { 0x11, 0x11, 0x11, 0x1f, 0x11, 0x11, 0x11 } },
-    { 'I', { 0x1f, 0x04, 0x04, 0x04, 0x04, 0x04, 0x1f } },
-    { 'K', { 0x11, 0x12, 0x14, 0x18, 0x14, 0x12, 0x11 } },
-    { 'L', { 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1f } },
-    { 'M', { 0x11, 0x1b, 0x15, 0x15, 0x11, 0x11, 0x11 } },
-    { 'N', { 0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11 } },
-    { 'O', { 0x0e, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0e } },
-    { 'P', { 0x1e, 0x11, 0x11, 0x1e, 0x10, 0x10, 0x10 } },
-    { 'R', { 0x1e, 0x11, 0x11, 0x1e, 0x14, 0x12, 0x11 } },
-    { 'S', { 0x0f, 0x10, 0x10, 0x0e, 0x01, 0x01, 0x1e } },
-    { 'T', { 0x1f, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04 } },
-    { 'U', { 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0e } },
-    { '0', { 0x0e, 0x11, 0x13, 0x15, 0x19, 0x11, 0x0e } },
-    { '1', { 0x04, 0x0c, 0x04, 0x04, 0x04, 0x04, 0x0e } },
-    { '2', { 0x0e, 0x11, 0x01, 0x06, 0x08, 0x10, 0x1f } },
-    { '3', { 0x1e, 0x01, 0x01, 0x0e, 0x01, 0x01, 0x1e } },
-    { '4', { 0x02, 0x06, 0x0a, 0x12, 0x1f, 0x02, 0x02 } },
-    { '5', { 0x1f, 0x10, 0x1e, 0x01, 0x01, 0x11, 0x0e } },
-    { '6', { 0x06, 0x08, 0x10, 0x1e, 0x11, 0x11, 0x0e } },
-    { '7', { 0x1f, 0x01, 0x02, 0x04, 0x08, 0x08, 0x08 } },
-    { '8', { 0x0e, 0x11, 0x11, 0x0e, 0x11, 0x11, 0x0e } },
-    { '9', { 0x0e, 0x11, 0x11, 0x0f, 0x01, 0x02, 0x0c } },
-    { '+', { 0x00, 0x04, 0x04, 0x1f, 0x04, 0x04, 0x00 } },
-    { '-', { 0x00, 0x00, 0x00, 0x1f, 0x00, 0x00, 0x00 } },
-};
-#define FONT_LEN (sizeof(font) / sizeof(font[0]))
 
 static void show(const char *text)
 {
     show_text = text;
-    show_ticks = SHOW_TICKS;
 }
 
 static void show_offset(int total)
@@ -346,9 +323,9 @@ int qperf_key(void *brain, void *event)
 {
     int key = *(int *)((char *)event + EV_KEY);
     unsigned flags = *(unsigned *)((char *)event + EV_FLAGS), bit;
-    (void)brain;
+    views = *(void **)((char *)brain + BRAIN_VIEWS);
     if (key == KEY_QPER) {
-        if (flags & RELEASED)
+        if (!(flags & PRESSED))
             held = 0;
         else if ((flags & PRESSED) && !(flags & REPEAT) && !IS_KEY_HELD(KEY_FUNC)) {
             held = 1;
@@ -363,7 +340,7 @@ int qperf_key(void *brain, void *event)
         bit = 2;
     else
         return 0;
-    if (flags & RELEASED) {
+    if (!(flags & PRESSED)) {
         if (swallowed & bit) {
             swallowed &= ~bit;
             return 1;
@@ -382,43 +359,21 @@ int qperf_key(void *brain, void *event)
     return 1;
 }
 
+// As stock's clear shows its own.
 void qperf_tick(void *ctrl)
 {
-    if (show_ticks) {
-        show_ticks--;
-        ((unsigned char *)ctrl)[0x20] = 1;
-    }
-}
-
-static const unsigned char *glyph_rows(char c)
-{
-    unsigned i;
-    for (i = 0; i < FONT_LEN; i++)
-        if (font[i].c == c)
-            return font[i].rows;
-    return 0;
-}
-
-// y counts up from the bottom row.
-void qperf_draw(void *bmp, void *ctrl)
-{
-    const char *s;
-    int n = 0, x, r, c;
+    char string[4], allocator;
+    struct { void *object; void *counts; } shared;
+    void *popup;
     (void)ctrl;
-    if (!show_ticks || !show_text)
+    if (!show_text || !views)
         return;
-    for (s = show_text; *s; s++)
-        n++;
-    x = 64 - (n * 6 - 1) / 2;
-    FILLRECT(bmp, 14, 24, 113, 39, 1);
-    FILLRECT(bmp, 15, 25, 112, 38, 0);
-    for (s = show_text; *s; s++, x += 6) {
-        const unsigned char *rows = glyph_rows(*s);
-        if (!rows)
-            continue;
-        for (r = 0; r < 7; r++)
-            for (c = 0; c < 5; c++)
-                if (rows[r] >> (4 - c) & 1)
-                    FILLRECT(bmp, x + c, 35 - r, x + c, 35 - r, 1);
-    }
+    STRING_FROM_CSTR(string, show_text, &allocator);
+    show_text = 0;
+    popup = (void *)MEM_NEW(POPUP_BYTES);
+    POPUP_CTOR(popup, string);
+    SHARED_PTR_CTOR(&shared, popup);
+    SHOW_POPUP(views, &shared, 0);
+    SHARED_PTR_RELEASE(&shared.counts);
+    STRING_DTOR(string);
 }

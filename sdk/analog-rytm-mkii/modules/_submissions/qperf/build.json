@@ -16,11 +16,6 @@
       "event": "ev_tick",
       "fn": "qperf_tick",
       "order": 50
-    },
-    {
-      "event": "ev_draw",
-      "fn": "qperf_draw",
-      "order": 90
     }
   ],
   "contribute": [
@@ -63,10 +58,16 @@
         "-DCONTAINER_INDEX_AT=0x40006ea8",
         "-DID_FOR_INDEX_AT=0x40007028",
         "-DSET_VALUE_AT=0x400a906c",
-        "-DFILLRECT_AT=0x40070726",
         "-DIS_KEY_HELD_AT=0x40081c28",
         "-DPERF_AMOUNTS_AT=0x8000e57c",
-        "-DSOUND_PARAM_SET_VT=0x401dce24"
+        "-DSOUND_PARAM_SET_VT=0x401dce24",
+        "-DSTRING_FROM_CSTR_AT=0x401bcff0",
+        "-DSTRING_DTOR_AT=0x401bb540",
+        "-DMEM_NEW_AT=0x40082a40",
+        "-DPOPUP_CTOR_AT=0x40076754",
+        "-DSHARED_PTR_CTOR_AT=0x401832ec",
+        "-DSHARED_PTR_RELEASE_AT=0x40170bd8",
+        "-DSHOW_POPUP_AT=0x40079462"
       ],
       "sites": []
     }
