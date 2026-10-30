@@ -6,35 +6,33 @@
 // parameter, and the QPER knob sets the same amount on each linked performance.
 // So, with QPER held:
 //
-//   turn a knob   The knob's travel since QPER went down is the total offset:
-//                 it replaces the parameter's lock in every linked performance,
-//                 split evenly, so together they reach it at full QPER. The
-//                 kit has 48 lock slots for all performances. When a new
-//                 parameter does not fit in every linked one, nothing is written.
+//   turn a knob   Stock's own lock edit, through a locker that stands for all
+//                 linked performances: it reads their sum, and a write splits
+//                 evenly across them. Stock draws the locks as it does when a
+//                 performance pad is held. The kit has 48 lock slots for all
+//                 performances. When a new parameter does not fit in every
+//                 linked one, nothing is written.
 //   PLAY          stock's clear, once per linked performance.
 //   YES           each linked lock, at the QPER knob's position, goes into the
 //                 kit. The locks stay.
 //
 // FUNC + QPER (stock's mute) and pressing pads or trigs to link are untouched.
 //
+// Stock's amount is only written to performances linked when the knob moves, so
+// the knob's position comes from one site of our own, where stock reads it.
+//
 // Firmware routines are reached at fixed addresses given for each OS release
 // by build.json's cflags. Stock returns pointers in d0, while m68k-linux GCC
 // expects them in a0, so those routines are declared as returning a word.
 
-#include <stdint.h>
-
-#include "analog-rytm-mk2/pages.h"
-
 typedef unsigned long word_t;
 typedef word_t (*project_singleton_t)(void);
-typedef int (*track_index_of_t)(void *selection);
 typedef word_t (*kit_param_set_t)(void *kit, int track);
 typedef word_t (*kit_perf_t)(void *kit);
-typedef word_t (*page_set_t)(void *view, int track);
 typedef int (*kit_word_t)(void *kit);
 typedef int (*perf_set_t)(void *perf, int index, int track, int param, int value);
 typedef void (*perf_clear_t)(void *perf, int index);
-typedef int (*container_index_t)(int id);
+typedef void (*perf_clear_one_t)(void *perf, int index, int track, int param);
 typedef int (*id_for_index_t)(int index, int machine);
 typedef int (*set_read_t)(void *set, int id);
 typedef void (*set_value_t)(void *set, int id, int value, int track, int a, int b);
@@ -45,16 +43,20 @@ typedef void (*popup_ctor_t)(void *popup, void *string);
 typedef void (*shared_ptr_ctor_t)(void *shared, void *object);
 typedef void (*shared_ptr_release_t)(void *counts);
 typedef void (*show_popup_t)(void *views, void *shared, int flag);
+typedef word_t (*param_ui_t)(void);
+typedef void (*set_locker_t)(void *ui, void *locker);
+typedef word_t (*get_locker_t)(void *ui);
+typedef void (*lock_edit_t)(void *ui, int on);
+typedef void (*end_lock_edit_t)(void *ui);
 
 #define PROJECT_SINGLETON ((project_singleton_t)PROJECT_SINGLETON_AT)
-#define TRACK_INDEX_OF ((track_index_of_t)TRACK_INDEX_OF_AT)
 #define KIT_PARAM_SET ((kit_param_set_t)KIT_PARAM_SET_AT)
 #define KIT_PERF ((kit_perf_t)KIT_PERF_AT)
 #define KIT_QPER_MASK ((kit_word_t)KIT_QPER_MASK_AT)
 #define KIT_QPER_MUTED ((kit_word_t)KIT_QPER_MUTED_AT)
 #define PERF_SET ((perf_set_t)PERF_SET_AT)
 #define PERF_CLEAR ((perf_clear_t)PERF_CLEAR_AT)
-#define CONTAINER_INDEX ((container_index_t)CONTAINER_INDEX_AT)
+#define PERF_CLEAR_ONE ((perf_clear_one_t)PERF_CLEAR_ONE_AT)
 #define ID_FOR_INDEX ((id_for_index_t)ID_FOR_INDEX_AT)
 #define SET_VALUE ((set_value_t)SET_VALUE_AT)
 #define STRING_FROM_CSTR ((string_from_cstr_t)STRING_FROM_CSTR_AT)
@@ -64,15 +66,18 @@ typedef void (*show_popup_t)(void *views, void *shared, int flag);
 #define SHARED_PTR_CTOR ((shared_ptr_ctor_t)SHARED_PTR_CTOR_AT)
 #define SHARED_PTR_RELEASE ((shared_ptr_release_t)SHARED_PTR_RELEASE_AT)
 #define SHOW_POPUP ((show_popup_t)SHOW_POPUP_AT)
+#define PARAM_UI ((param_ui_t)PARAM_UI_AT)
+#define SET_LOCKER ((set_locker_t)SET_LOCKER_AT)
+#define GET_LOCKER ((get_locker_t)GET_LOCKER_AT)
+#define LOCK_EDIT ((lock_edit_t)LOCK_EDIT_AT)
+#define END_LOCK_EDIT ((end_lock_edit_t)END_LOCK_EDIT_AT)
 // The performances' amounts: at full, a lock adds its whole value.
 #define PERF_AMOUNT(p) (((volatile unsigned short *)PERF_AMOUNTS_AT)[p])
 #define AMOUNT_FULL 0x7f80
 
 #define PROJECT_KIT 352             // project + 352: the active kit
-#define PROJECT_TRACKSEL 48         // project + 48: the track selection
 #define PERF_TABLE 16               // performance object + 16: the lock table
 #define VT_READ 0x28                // parameter set: read(set, id)
-#define VT_PAGE_SET 0xa0            // page view: page_param_set(view, track)
 #define SET_SOUND 0x18              // sound set: its live sound's source
 #define VT_LIVE 0x28                // source: the live sound
 #define SOUND_MACHINE 0x68          // live sound: machine byte
@@ -94,37 +99,31 @@ typedef void (*show_popup_t)(void *views, void *shared, int flag);
 #define TRACK_NONE 12               // a slot's track byte above this is empty
 #define FX_TRACK 12
 #define PARAM_LAST 41               // a track's 42 parameter words
-#define ID_LAST 468
-#define OFFSET_MAX (127 * 256)      // 8.8
-#define TURNS SLOTS                 // parameters one hold can touch
 
 typedef unsigned (*is_key_held_t)(int key);
 #define IS_KEY_HELD ((is_key_held_t)IS_KEY_HELD_AT)
 
 static int held;                    // QPER is down, without FUNC
 static unsigned swallowed;          // bit 0 YES, bit 1 PLAY: their release is ours too
-static struct { short id; signed char track; int total; } turns[TURNS];
-static int nturns;
+int qperf_pot;                      // the QPER knob + 1, 0 until it first moves
 
-// Stock's popup, opened from ev_tick so a fast turn opens one, not dozens.
+// Stock's message for one pot: this replaces the 6-byte lea at its start.
+__asm__(
+    ".globl qperf_pot_gate\n"
+    "qperf_pot_gate:\n"
+    "    move.l %a2@(8),%d0\n"
+    "    addq.l #1,%d0\n"
+    "    move.l %d0,qperf_pot\n"
+    "    lea 0x4017fa0a,%a4\n"
+    "    rts\n");
+
+// Stock's popup, opened from ev_tick so repeats open one, not dozens.
 static void *views;
 static const char *show_text;
-static char number[8];
 
 static void show(const char *text)
 {
     show_text = text;
-}
-
-static void show_offset(int total)
-{
-    int v = (total < 0 ? -total : total) >> 8, n = 0, d;
-    number[n++] = total < 0 ? '-' : '+';
-    for (d = 100; d >= 1; d /= 10)
-        if (v >= d || d == 1)
-            number[n++] = (char)('0' + v / d % 10);
-    number[n] = 0;
-    show(number);
 }
 
 static void *active_kit(void)
@@ -174,85 +173,132 @@ static int slots_free(const unsigned char *t)
     return free_slots;
 }
 
-// The turn's running total for this parameter, 0 on its first turn this hold.
-static int *turn_total(int id, int track)
+// The locker stock edits through while QPER is held. Stock calls these slots.
+static int locker_has_any(void *self)
 {
+    void *kit = active_kit();
+    const unsigned char *t = lock_table((void *)KIT_PERF(kit));
+    unsigned mask = linked(kit);
     int i;
-    for (i = 0; i < nturns; i++)
-        if (turns[i].id == id && turns[i].track == track)
-            return &turns[i].total;
-    if (nturns == TURNS)
-        return 0;
-    turns[nturns].id = (short)id;
-    turns[nturns].track = (signed char)track;
-    turns[nturns].total = 0;
-    return &turns[nturns++].total;
+    (void)self;
+    for (i = 0; i < SLOTS; i++, t += SLOT_BYTES)
+        if (t[2] <= TRACK_NONE && t[4] < PERFS && (mask >> t[4] & 1))
+            return 1;
+    return 0;
 }
 
-// core_params: a turn with QPER held writes locks, and stock leaves the
-// parameter alone. Only a sound page's parameters have locks here: an id's
-// index means a lock byte only in a sound set. Everything else passes to stock.
-static int qperf_delta(void *view, int32_t id, int32_t delta, int32_t func)
+static void locker_clear(void *self, int track, int param)
 {
-    void *kit, *perf;
-    const unsigned char *table;
-    unsigned mask;
-    int *total, track, param, count, part, rest, i;
-    word_t project, set;
-    page_set_t page_set;
-    if (!held || func)
-        return 0;
-    page_set = *(page_set_t *)(*(word_t *)view + VT_PAGE_SET);
-    set = page_set(view, -1);
-    if (*(word_t *)set != SOUND_PARAM_SET_VT)
-        return 0;
-    param = CONTAINER_INDEX(id);
-    if (param < 0 || param > PARAM_LAST)
-        return 0;
-    project = PROJECT_SINGLETON();
-    kit = (char *)project + PROJECT_KIT;
-    track = TRACK_INDEX_OF((char *)project + PROJECT_TRACKSEL);
-    mask = linked(kit);
+    void *kit = active_kit();
+    void *perf = (void *)KIT_PERF(kit);
+    unsigned mask = linked(kit);
+    int i;
+    (void)self;
+    for (i = 0; i < PERFS; i++)
+        if (mask >> i & 1)
+            PERF_CLEAR_ONE(perf, i, track, param);
+}
+
+static void locker_clear_all(void *self)
+{
+    void *kit = active_kit();
+    void *perf = (void *)KIT_PERF(kit);
+    unsigned mask = linked(kit);
+    int i;
+    (void)self;
+    for (i = 0; i < PERFS; i++)
+        if (mask >> i & 1)
+            PERF_CLEAR(perf, i);
+}
+
+// Sums what stock shows back, so a turn carries on from the total on the knob.
+static void locker_set(void *self, int track, int param, int value)
+{
+    void *kit = active_kit();
+    void *perf = (void *)KIT_PERF(kit);
+    const unsigned char *table = lock_table(perf);
+    unsigned mask = linked(kit);
+    int count, part, rest, i;
+    (void)self;
     if (!mask) {
-        show("NO LINKS");
-        return 1;
+        show("NO PERFORMANCES LINKED");
+        return;
     }
-    perf = (void *)KIT_PERF(kit);
-    table = lock_table(perf);
     if (slots_needed(table, mask, track, param) > slots_free(table)) {
-        show("LOCKS FULL");
-        return 1;
+        show("LOCK MEM FULL!");
+        return;
     }
-    total = turn_total(id, track);
-    if (!total) {
-        show("LOCKS FULL");
-        return 1;
-    }
-    *total += delta;
-    if (*total > OFFSET_MAX)
-        *total = OFFSET_MAX;
-    if (*total < -OFFSET_MAX)
-        *total = -OFFSET_MAX;
     count = count_linked(mask);
-    part = *total / count;
-    rest = *total - part * count;       // the first ones carry what the split leaves
+    part = value / count;
+    rest = value - part * count;        // the first ones carry what the split leaves
     for (i = 0; i < PERFS; i++)
         if (mask >> i & 1) {
-            int value = part;
+            int one = part;
             if (rest > 0) {
-                value++;
+                one++;
                 rest--;
             } else if (rest < 0) {
-                value--;
+                one--;
                 rest++;
             }
-            PERF_SET(perf, i, track, param, value);
+            PERF_SET(perf, i, track, param, one);
         }
-    show_offset(*total);
-    return 1;
 }
 
-const struct core_param qperf_params_entry = { 1, ID_LAST, 0, qperf_delta, 0 };
+static int locker_get(void *self, int track, int param)
+{
+    void *kit = active_kit();
+    const unsigned char *t = lock_table((void *)KIT_PERF(kit));
+    unsigned mask = linked(kit);
+    int i, total = 0;
+    (void)self;
+    for (i = 0; i < SLOTS; i++, t += SLOT_BYTES)
+        if (t[2] == track && t[3] == param && t[4] < PERFS && (mask >> t[4] & 1))
+            total += (short)(t[0] << 8 | t[1]);
+    return total;
+}
+
+static int locker_has(void *self, int track, int param)
+{
+    void *kit = active_kit();
+    const unsigned char *t = lock_table((void *)KIT_PERF(kit));
+    unsigned mask = linked(kit);
+    int i;
+    (void)self;
+    for (i = 0; i < SLOTS; i++, t += SLOT_BYTES)
+        if (t[2] == track && t[3] == param && t[4] < PERFS && (mask >> t[4] & 1))
+            return 1;
+    return 0;
+}
+
+static void locker_never(void *self)
+{
+    (void)self;                         // the object is static: never destroyed
+}
+
+// PerformanceParamLocker's slots, its last two kept: relative, and lockable(id).
+static const void *const locker_vtable[] = {
+    locker_never, locker_never, locker_has_any, locker_clear, locker_clear_all,
+    locker_set, locker_get, locker_has,
+    (const void *)LOCKER_RELATIVE_AT, (const void *)LOCKER_LOCKABLE_AT,
+};
+static struct { const void *const *vtable; } locker = { locker_vtable };
+
+static void locker_install(void)
+{
+    void *ui = (void *)PARAM_UI();
+    if (GET_LOCKER(ui))
+        return;                         // a pad or trig holds it: stock's
+    SET_LOCKER(ui, &locker);
+    LOCK_EDIT(ui, 1);
+}
+
+static void locker_remove(void)
+{
+    void *ui = (void *)PARAM_UI();
+    if (GET_LOCKER(ui) == (word_t)&locker)
+        END_LOCK_EDIT(ui);
+}
 
 // A sound parameter's id on this track: machine parameters have one per machine.
 static int track_id(void *set, int param)
@@ -274,23 +320,29 @@ static void apply_linked(void *kit)
     void *perf = (void *)KIT_PERF(kit);
     const unsigned char *t = lock_table(perf);
     unsigned mask = linked(kit);
-    int i, changed = 0;
+    int i, seen = 0, fx = 0, changed = 0;
     if (!mask) {
-        show("NO LINKS");
+        show("NO PERFORMANCES LINKED");
         return;
     }
     if (KIT_QPER_MUTED(kit) & 0xff) {       // stock's result is its low byte
-        show("MUTED");
+        show("QPER IS MUTED");
         return;
     }
     for (i = 0; i < SLOTS; i++, t += SLOT_BYTES) {
-        int track = t[2], param = t[3], index = t[4], id, value;
+        int track = t[2], param = t[3], index = t[4], id, value, amount;
         void *set;
         set_read_t read;
-        if (track >= FX_TRACK || index >= PERFS || !(mask >> index & 1) || param > PARAM_LAST)
+        if (track > TRACK_NONE || index >= PERFS || !(mask >> index & 1) || param > PARAM_LAST)
             continue;
+        if (track == FX_TRACK) {
+            fx = 1;
+            continue;
+        }
+        seen = 1;
+        amount = qperf_pot ? (qperf_pot - 1) << 7 : (int)PERF_AMOUNT(index);
         value = (short)(t[0] << 8 | t[1]);
-        value = value * (int)PERF_AMOUNT(index) / AMOUNT_FULL;
+        value = value * amount / AMOUNT_FULL;
         if (!value)
             continue;
         set = (void *)KIT_PARAM_SET(kit, track);
@@ -301,21 +353,25 @@ static void apply_linked(void *kit)
         SET_VALUE(set, id, read(set, id) + value, track, 1, 1);
         changed = 1;
     }
-    show(changed ? "APPLIED" : "NOTHING");
+    if (changed)
+        show("APPLIED TO KIT");
+    else if (seen)
+        show(qperf_pot ? "QPER KNOB AT ZERO" : "MOVE THE QPER KNOB FIRST");
+    else
+        show(fx ? "N/A ON FX TRACK" : "NO LOCKS TO APPLY");
 }
 
 static void clear_linked(void *kit)
 {
-    void *perf = (void *)KIT_PERF(kit);
-    unsigned mask = linked(kit);
-    int i;
-    if (!mask) {
-        show("NO LINKS");
+    if (!linked(kit)) {
+        show("NO PERFORMANCES LINKED");
         return;
     }
-    for (i = 0; i < PERFS; i++)
-        if (mask >> i & 1)
-            PERF_CLEAR(perf, i);
+    if (!locker_has_any(0)) {
+        show("NO LOCKS TO CLEAR");
+        return;
+    }
+    locker_clear_all(0);
     show("CLEARED");
 }
 
@@ -325,12 +381,14 @@ int qperf_key(void *brain, void *event)
     unsigned flags = *(unsigned *)((char *)event + EV_FLAGS), bit;
     views = *(void **)((char *)brain + BRAIN_VIEWS);
     if (key == KEY_QPER) {
-        if (!(flags & PRESSED))
+        if (!(flags & PRESSED)) {
+            if (held)
+                locker_remove();
             held = 0;
-        else if ((flags & PRESSED) && !(flags & REPEAT) && !IS_KEY_HELD(KEY_FUNC)) {
+        } else if (!(flags & REPEAT) && !IS_KEY_HELD(KEY_FUNC)) {
             held = 1;
-            nturns = 0;
             swallowed = 0;
+            locker_install();
         }
         return 0;
     }

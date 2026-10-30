@@ -19,7 +19,7 @@
     "label": "QPERF",
     "family": "Performance",
     "summary": "Set performance locks by holding QPER and turning knobs, clear them, or apply them to the kit.",
-    "overview": "Hold QPER and turn a knob: the travel becomes that parameter's offset across every performance linked to QPER, split evenly so together they reach it at full QPER. QPER + PLAY clears the linked performances. QPER + YES writes what they add, at the QPER knob's position, into the kit and keeps the locks.",
+    "overview": "Hold QPER and turn a knob: it edits that parameter's offset across every performance linked to QPER, split evenly so together they reach it at full QPER, and the knob inverts and shows the total as it does for a held performance pad. QPER + PLAY clears the linked performances. QPER + YES writes what they add, at the QPER knob's position, into the kit and keeps the locks.",
     "highlights": [
       "Sets a lock in every linked performance with one turn",
       "QPER + PLAY clears all linked performances",
@@ -48,7 +48,8 @@
     "requires": [],
     "conflicts": [],
     "limitations": [
-      "QPER + knob works on sound pages only; QPER + YES skips the FX track.",
+      "QPER + YES skips FX track locks.",
+      "QPER + YES needs the QPER knob to have moved once since power on to know its position.",
       "Replaces stock's QPER + PLAY, which starts the sequencer."
     ]
   },

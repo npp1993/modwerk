@@ -18,21 +18,7 @@
       "order": 50
     }
   ],
-  "contribute": [
-    {
-      "to": "core_params",
-      "order": 10,
-      "data": "00000000",
-      "relocs": [
-        [
-          0,
-          "abs32",
-          "sym:qperf_params_entry",
-          0
-        ]
-      ]
-    }
-  ],
+  "contribute": [],
   "collections": {},
   "copied": [],
   "regions": [],
@@ -48,28 +34,41 @@
       "defsym": {},
       "cflags": [
         "-DPROJECT_SINGLETON_AT=0x4017fa0a",
-        "-DTRACK_INDEX_OF_AT=0x400b693e",
         "-DKIT_PARAM_SET_AT=0x400a648e",
         "-DKIT_PERF_AT=0x400a67fe",
         "-DKIT_QPER_MASK_AT=0x400a6e0e",
         "-DKIT_QPER_MUTED_AT=0x400a6d7a",
         "-DPERF_SET_AT=0x400ad1c8",
         "-DPERF_CLEAR_AT=0x400ad0de",
-        "-DCONTAINER_INDEX_AT=0x40006ea8",
         "-DID_FOR_INDEX_AT=0x40007028",
         "-DSET_VALUE_AT=0x400a906c",
         "-DIS_KEY_HELD_AT=0x40081c28",
         "-DPERF_AMOUNTS_AT=0x8000e57c",
-        "-DSOUND_PARAM_SET_VT=0x401dce24",
         "-DSTRING_FROM_CSTR_AT=0x401bcff0",
         "-DSTRING_DTOR_AT=0x401bb540",
         "-DMEM_NEW_AT=0x40082a40",
         "-DPOPUP_CTOR_AT=0x40076754",
         "-DSHARED_PTR_CTOR_AT=0x401832ec",
         "-DSHARED_PTR_RELEASE_AT=0x40170bd8",
-        "-DSHOW_POPUP_AT=0x40079462"
+        "-DSHOW_POPUP_AT=0x40079462",
+        "-DPERF_CLEAR_ONE_AT=0x400ad040",
+        "-DPARAM_UI_AT=0x401816f4",
+        "-DSET_LOCKER_AT=0x40036616",
+        "-DGET_LOCKER_AT=0x40036636",
+        "-DLOCK_EDIT_AT=0x4003613a",
+        "-DEND_LOCK_EDIT_AT=0x40036622",
+        "-DLOCKER_RELATIVE_AT=0x40199202",
+        "-DLOCKER_LOCKABLE_AT=0x400acca8"
       ],
-      "sites": []
+      "sites": [
+        {
+          "addr": "0x400a4994",
+          "len": 6,
+          "stockSha256": "1430eb1be5a7b46f3ea42e49fe4529cd7d36cb8e6bf4be05fa8d730282fde797",
+          "op": "jsr",
+          "target": "qperf_pot_gate"
+        }
+      ]
     }
   }
 }

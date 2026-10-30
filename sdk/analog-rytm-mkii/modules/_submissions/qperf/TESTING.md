@@ -10,7 +10,13 @@ Reported by the author on build QP01, Analog Rytm MKII, OS 1.74:
 - No sound.
 - The message boxes did not match stock's popups.
 
-Build QP02 fixes the first and the third. It has not run on hardware yet.
+Reported by the author on build QP02:
+
+- QPER + clear worked. A +30 turn with 3 linked split to +10 each. QPER + YES at full applied a lock, and +10 split across 2 then applied to one gave +5.
+- QPER + YES showed NOTHING with the knob at full after relinking, until the knob was moved: stock only writes the amount to performances linked when it moves.
+- The offset toast was not what a held performance shows.
+
+Build QP03 changes all of this. It has not run on hardware yet.
 
 ## Emulator
 
@@ -41,11 +47,28 @@ Build QP02 (sha256 008f2f89), key release read from bit 0 as stock does, message
 | QPER + YES, then PLAY while the popup is open | Sequencer started |
 | QPER held, turn 30 steps | Total popup, closes after release; no fault |
 
+Build QP03 (sha256 093064d6), base 0c92aa45, factory kit K001:
+
+| Check | Result |
+| --- | --- |
+| QPER held, 2 linked, turn SWD | Knob inverted, reads +34; 17.0 in each linked performance |
+| Turn back | +28, 14.0 in each |
+| QPER released, turn the knob | No lock written (31 locks) |
+| QPER + YES, knob poked to 127 | APPLIED TO KIT |
+| QPER + YES, knob poked to 0 | QPER KNOB AT ZERO |
+| QPER + YES, knob not moved since boot | MOVE THE QPER KNOB FIRST |
+| QPER + PLAY twice | CLEARED (31 locks to 18), then NO LOCKS TO CLEAR |
+| Links removed, QPER + YES | NO PERFORMANCES LINKED |
+| FUNC + QPER, then QPER + YES | QPER IS MUTED |
+
+The emulator has no QPER knob, so the position was poked: the site that reads it (0x400a4994) is patched but has not run.
+
 ## Not tested
 
 - The real QPER knob: the emulator has none, so amounts were poked. Full amount is taken as 0x7f80 from the code, not measured.
 - Knob turns on the FX track and the LFO page.
-- The LOCKS FULL and NO LINKS popups on screen (the writes were checked, not the frames).
+- LOCK MEM FULL! on screen.
+- The site that reads the QPER knob.
 - A build beside other modules. QPERF answers every parameter id in `core_params` while QPER is held.
 - Save and reload of the kit after a turn, clear or apply.
 - Hardware, audio, performance load.
