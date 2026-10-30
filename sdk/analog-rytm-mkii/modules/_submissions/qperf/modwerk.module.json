@@ -48,7 +48,7 @@
     "requires": [],
     "conflicts": [],
     "limitations": [
-      "QPER + YES skips the FX track.",
+      "QPER + knob works on sound pages only; QPER + YES skips the FX track.",
       "Replaces stock's QPER + PLAY, which starts the sequencer."
     ]
   },

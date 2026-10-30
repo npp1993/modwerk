@@ -30,6 +30,7 @@ typedef word_t (*project_singleton_t)(void);
 typedef int (*track_index_of_t)(void *selection);
 typedef word_t (*kit_param_set_t)(void *kit, int track);
 typedef word_t (*kit_perf_t)(void *kit);
+typedef word_t (*page_set_t)(void *view, int track);
 typedef int (*kit_word_t)(void *kit);
 typedef int (*perf_set_t)(void *perf, int index, int track, int param, int value);
 typedef void (*perf_clear_t)(void *perf, int index);
@@ -59,6 +60,7 @@ typedef void (*fillrect_t)(void *bmp, int x0, int y0, int x1, int y1, int colour
 #define PROJECT_TRACKSEL 48         // project + 48: the track selection
 #define PERF_TABLE 16               // performance object + 16: the lock table
 #define VT_READ 0x28                // parameter set: read(set, id)
+#define VT_PAGE_SET 0xa0            // page view: page_param_set(view, track)
 #define SET_SOUND 0x18              // sound set: its live sound's source
 #define VT_LIVE 0x28                // source: the live sound
 #define SOUND_MACHINE 0x68          // live sound: machine byte
@@ -81,7 +83,7 @@ typedef void (*fillrect_t)(void *bmp, int x0, int y0, int x1, int y1, int colour
 #define PARAM_LAST 41               // a track's 42 parameter words
 #define ID_LAST 468
 #define OFFSET_MAX (127 * 256)      // 8.8
-#define TURNS 16                    // parameters one hold can touch
+#define TURNS SLOTS                 // parameters one hold can touch
 
 typedef unsigned (*is_key_held_t)(int key);
 #define IS_KEY_HELD ((is_key_held_t)IS_KEY_HELD_AT)
@@ -163,14 +165,20 @@ static const unsigned char *lock_table(void *perf)
     return *(const unsigned char **)((char *)perf + PERF_TABLE);
 }
 
-// Slots a new lock for (track, param) would take, and those free.
-static int slots_needed(const unsigned char *t, unsigned mask, int track, int param)
+static int count_linked(unsigned mask)
 {
-    int i, needed = 0;
-    unsigned have = 0;
+    int i, count = 0;
     for (i = 0; i < PERFS; i++)
         if (mask >> i & 1)
-            needed++;
+            count++;
+    return count;
+}
+
+// Slots a new lock for (track, param) would take.
+static int slots_needed(const unsigned char *t, unsigned mask, int track, int param)
+{
+    int i, needed = count_linked(mask);
+    unsigned have = 0;
     for (i = 0; i < SLOTS; i++, t += SLOT_BYTES)
         if (t[2] == track && t[3] == param && t[4] < PERFS && (mask >> t[4] & 1)
             && !(have >> t[4] & 1)) {
@@ -205,16 +213,21 @@ static int *turn_total(int id, int track)
 }
 
 // core_params: a turn with QPER held writes locks, and stock leaves the
-// parameter alone. Everything else passes to stock.
+// parameter alone. Only a sound page's parameters have locks here: an id's
+// index means a lock byte only in a sound set. Everything else passes to stock.
 static int qperf_delta(void *view, int32_t id, int32_t delta, int32_t func)
 {
     void *kit, *perf;
     const unsigned char *table;
     unsigned mask;
-    int *total, track, param, count = 0, part, rest, i;
-    word_t project;
-    (void)view;
+    int *total, track, param, count, part, rest, i;
+    word_t project, set;
+    page_set_t page_set;
     if (!held || func)
+        return 0;
+    page_set = *(page_set_t *)(*(word_t *)view + VT_PAGE_SET);
+    set = page_set(view, -1);
+    if (*(word_t *)set != SOUND_PARAM_SET_VT)
         return 0;
     param = CONTAINER_INDEX(id);
     if (param < 0 || param > PARAM_LAST)
@@ -234,16 +247,16 @@ static int qperf_delta(void *view, int32_t id, int32_t delta, int32_t func)
         return 1;
     }
     total = turn_total(id, track);
-    if (!total)
+    if (!total) {
+        show("LOCKS FULL");
         return 1;
+    }
     *total += delta;
     if (*total > OFFSET_MAX)
         *total = OFFSET_MAX;
     if (*total < -OFFSET_MAX)
         *total = -OFFSET_MAX;
-    for (i = 0; i < PERFS; i++)
-        if (mask >> i & 1)
-            count++;
+    count = count_linked(mask);
     part = *total / count;
     rest = *total - part * count;       // the first ones carry what the split leaves
     for (i = 0; i < PERFS; i++)
@@ -340,6 +353,7 @@ int qperf_key(void *brain, void *event)
         else if ((flags & PRESSED) && !(flags & REPEAT) && !IS_KEY_HELD(KEY_FUNC)) {
             held = 1;
             nturns = 0;
+            swallowed = 0;
         }
         return 0;
     }
@@ -358,7 +372,7 @@ int qperf_key(void *brain, void *event)
     }
     if (swallowed & bit)
         return 1;                       // its repeats
-    if (!held || !(flags & PRESSED))
+    if (!held || !(flags & PRESSED) || (flags & REPEAT) || IS_KEY_HELD(KEY_FUNC))
         return 0;
     swallowed |= bit;
     if (key == KEY_YES)

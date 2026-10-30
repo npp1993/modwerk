@@ -16,11 +16,14 @@ rytm-emu c5732f0, `dtboot`, stock OS 1.74, Modwerk base 0c92aa45 with QPERF sour
 | FUNC + QPER | Stock's mute flag set |
 | QPER + pads | Stock's link mask changed (0x201 to 0x3) |
 | 47 locks used, a new parameter with 2 linked | Nothing written, parameters unchanged |
+| PLAY held, then QPER (key repeats) | Table unchanged |
+| QPER, then FUNC + PLAY | Table unchanged |
+| TRIG page, QPER + turn | No lock written |
 
 ## Not tested
 
 - The real QPER knob: the emulator has none, so amounts were poked. Full amount is taken as 0x7f80 from the code, not measured.
-- Knob turns on the FX track and on LFO or TRIG pages.
+- Knob turns on the FX track and the LFO page.
 - The LOCKS FULL and NO LINKS boxes on screen (the writes were checked, not the frames).
 - A build beside other modules. QPERF answers every parameter id in `core_params` while QPER is held.
 - Save and reload of the kit after a turn, clear or apply.
