@@ -27,7 +27,7 @@ Boxes: NO LINKS (QPER links nothing), LOCKS FULL, CLEARED, APPLIED, NOTHING (not
 
 ## Stock flows changed
 
-- **QPER + PLAY** starts the sequencer on stock. With this mod it clears instead, because PLAY is next to where the hand already is and QPER + PLAY has no other stock meaning. PLAY alone is unchanged. Remove the mod to get it back.
+- **QPER + PLAY** starts the sequencer on stock. With this mod it clears instead: PLAY alone still starts the sequencer, so stock loses only the combination. Remove the mod to get it back.
 - **QPER + knob** changes the parameter on stock. With this mod it writes locks and leaves the parameter alone. On a parameter that has no lock id, such as a trig page's, stock's behaviour stays.
 - **QPER + YES** did nothing visible on stock (rytm-emu, OS 1.74).
 
