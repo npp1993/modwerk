@@ -11,12 +11,12 @@ Link performances as on stock: hold QPER and press pads or trig keys. Then, with
 | Gesture | What it does |
 | --- | --- |
 | Turn a knob | Works as holding a performance pad does: the knob inverts and shows the offset, here the total of the linked performances. A turn carries on from that total and splits it evenly across them, so together they reach it at full QPER. |
-| PLAY | Clears every linked performance, with stock's clear. There is no undo. |
-| YES | Writes what the linked performances add at the QPER knob's position into the kit. The locks stay. |
+| PLAY | Clears every linked performance, with stock's clear. PLAY again undoes it, while the links and locks are as the clear left them. |
+| YES | Writes what the linked performances add at the QPER knob's position into the kit, muted or not. The locks stay. |
 
 FUNC + QPER (mute) and linking are stock's.
 
-Stock draws every message. NO PERFORMANCES LINKED, LOCK MEM FULL!, CLEARED, NO LOCKS TO CLEAR, APPLIED TO KIT, NO LOCKS TO APPLY, QPER KNOB AT ZERO, MOVE THE QPER KNOB FIRST (it has not moved since power on), QPER IS MUTED, N/A ON FX TRACK (only FX locks are linked: YES does not apply those).
+Stock draws every message. YES shows PERFORMANCE 3 APPLIED, or PERFORMANCES APPLIED with several linked, or NOTHING TO APPLY. PLAY shows the same with CLEARED, then UNDO CLEAR or NOTHING TO CLEAR. A turn with nothing linked shows NOTHING LINKED, and with no room LOCK MEM FULL!.
 
 ## Things to know
 

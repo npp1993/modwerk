@@ -63,11 +63,23 @@ Build QP03 (sha256 093064d6), base 0c92aa45, factory kit K001:
 
 The emulator has no QPER knob, so the position was poked: the site that reads it (0x400a4994) is patched but has not run.
 
+Build QP04 (sha256 ad915f44), same setup:
+
+| Check | Result |
+| --- | --- |
+| QPER + YES, 2 linked, knob poked to 0 | PERFORMANCES APPLIED |
+| FUNC + QPER to mute, then QPER + YES | PERFORMANCES APPLIED |
+| QPER + pad, QPER + YES | PERFORMANCE 1 APPLIED |
+| Links removed, QPER + YES | NOTHING TO APPLY |
+| QPER + PLAY twice | 31 locks to 18, then UNDO CLEAR and the same 31 locks |
+| QPER + PLAY three times | 18 locks: the third clears again |
+| QPER + PLAY, relink to another pad, PLAY | That pad's locks cleared, no undo of the first |
+
 ## Not tested
 
 - The real QPER knob: the emulator has none, so amounts were poked. Full amount is taken as 0x7f80 from the code, not measured.
 - Knob turns on the FX track and the LFO page.
-- LOCK MEM FULL! on screen.
+- LOCK MEM FULL! and NOTHING LINKED on screen.
 - The site that reads the QPER knob.
 - A build beside other modules.
 - The kit's power-on knob position: until the knob moves, QPER + YES falls back on stock's per-performance amounts.

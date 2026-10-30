@@ -12,7 +12,8 @@
 //                 performance pad is held. The kit has 48 lock slots for all
 //                 performances. When a new parameter does not fit in every
 //                 linked one, nothing is written.
-//   PLAY          stock's clear, once per linked performance.
+//   PLAY          stock's clear, once per linked performance. Stock keeps no
+//                 copy, so we do: PLAY again, with nothing changed, undoes it.
 //   YES           each linked lock, at the QPER knob's position, goes into the
 //                 kit. The locks stay.
 //
@@ -53,7 +54,6 @@ typedef void (*end_lock_edit_t)(void *ui);
 #define KIT_PARAM_SET ((kit_param_set_t)KIT_PARAM_SET_AT)
 #define KIT_PERF ((kit_perf_t)KIT_PERF_AT)
 #define KIT_QPER_MASK ((kit_word_t)KIT_QPER_MASK_AT)
-#define KIT_QPER_MUTED ((kit_word_t)KIT_QPER_MUTED_AT)
 #define PERF_SET ((perf_set_t)PERF_SET_AT)
 #define PERF_CLEAR ((perf_clear_t)PERF_CLEAR_AT)
 #define PERF_CLEAR_ONE ((perf_clear_one_t)PERF_CLEAR_ONE_AT)
@@ -120,6 +120,9 @@ __asm__(
 // Stock's popup, opened from ev_tick so repeats open one, not dozens.
 static void *views;
 static const char *show_text;
+static char message[24];
+static unsigned char undo_table[SLOTS * SLOT_BYTES];
+static unsigned undo_mask, undo_sum;    // the mask cleared, the table it left
 
 static void show(const char *text)
 {
@@ -221,7 +224,7 @@ static void locker_set(void *self, int track, int param, int value)
     int count, part, rest, i;
     (void)self;
     if (!mask) {
-        show("NO PERFORMANCES LINKED");
+        show("NOTHING LINKED");
         return;
     }
     if (slots_needed(table, mask, track, param) > slots_free(table)) {
@@ -315,30 +318,40 @@ static int track_id(void *set, int param)
     return ID_FOR_INDEX(param, *(unsigned char *)(sound + SOUND_MACHINE));
 }
 
+// PERFORMANCE 3 APPLIED, or PERFORMANCES APPLIED with several linked.
+static void show_performances(unsigned mask, const char *done)
+{
+    const char *name = count_linked(mask) == 1 ? "PERFORMANCE " : "PERFORMANCES ";
+    char *out = message;
+    int number = 1;
+    while (*name)
+        *out++ = *name++;
+    if (count_linked(mask) == 1) {
+        while (!(mask >> (number - 1) & 1))
+            number++;
+        if (number > 9)
+            *out++ = '1';
+        *out++ = (char)('0' + number % 10);
+        *out++ = ' ';
+    }
+    while (*done)
+        *out++ = *done++;
+    *out = 0;
+    show(message);
+}
+
 static void apply_linked(void *kit)
 {
     void *perf = (void *)KIT_PERF(kit);
     const unsigned char *t = lock_table(perf);
     unsigned mask = linked(kit);
-    int i, seen = 0, fx = 0, changed = 0;
-    if (!mask) {
-        show("NO PERFORMANCES LINKED");
-        return;
-    }
-    if (KIT_QPER_MUTED(kit) & 0xff) {       // stock's result is its low byte
-        show("QPER IS MUTED");
-        return;
-    }
+    int i, seen = 0;
     for (i = 0; i < SLOTS; i++, t += SLOT_BYTES) {
         int track = t[2], param = t[3], index = t[4], id, value, amount;
         void *set;
         set_read_t read;
-        if (track > TRACK_NONE || index >= PERFS || !(mask >> index & 1) || param > PARAM_LAST)
+        if (track >= FX_TRACK || index >= PERFS || !(mask >> index & 1) || param > PARAM_LAST)
             continue;
-        if (track == FX_TRACK) {
-            fx = 1;
-            continue;
-        }
         seen = 1;
         amount = qperf_pot ? (qperf_pot - 1) << 7 : (int)PERF_AMOUNT(index);
         value = (short)(t[0] << 8 | t[1]);
@@ -351,28 +364,45 @@ static void apply_linked(void *kit)
             continue;
         read = *(set_read_t *)(*(word_t *)set + VT_READ);
         SET_VALUE(set, id, read(set, id) + value, track, 1, 1);
-        changed = 1;
     }
-    if (changed)
-        show("APPLIED TO KIT");
-    else if (seen)
-        show(qperf_pot ? "QPER KNOB AT ZERO" : "MOVE THE QPER KNOB FIRST");
+    if (seen)
+        show_performances(mask, "APPLIED");
     else
-        show(fx ? "N/A ON FX TRACK" : "NO LOCKS TO APPLY");
+        show("NOTHING TO APPLY");
+}
+
+static unsigned table_sum(const unsigned char *t)
+{
+    unsigned sum = 0;
+    int i;
+    for (i = 0; i < SLOTS * SLOT_BYTES; i++)
+        sum = (sum << 1 | sum >> 31) + t[i];
+    return sum;
 }
 
 static void clear_linked(void *kit)
 {
-    if (!linked(kit)) {
-        show("NO PERFORMANCES LINKED");
-        return;
+    void *perf = (void *)KIT_PERF(kit);
+    const unsigned char *t = lock_table(perf);
+    unsigned mask = linked(kit);
+    int i;
+    if (locker_has_any(0)) {
+        for (i = 0; i < SLOTS * SLOT_BYTES; i++)
+            undo_table[i] = t[i];
+        locker_clear_all(0);
+        undo_mask = mask;
+        undo_sum = table_sum(t);
+        show_performances(mask, "CLEARED");
+    } else if (mask && mask == undo_mask && table_sum(t) == undo_sum) {
+        const unsigned char *u = undo_table;
+        for (i = 0; i < SLOTS; i++, u += SLOT_BYTES)
+            if (u[2] <= TRACK_NONE && u[4] < PERFS && (mask >> u[4] & 1))
+                PERF_SET(perf, u[4], u[2], u[3], (short)(u[0] << 8 | u[1]));
+        undo_mask = 0;
+        show("UNDO CLEAR");
+    } else {
+        show("NOTHING TO CLEAR");
     }
-    if (!locker_has_any(0)) {
-        show("NO LOCKS TO CLEAR");
-        return;
-    }
-    locker_clear_all(0);
-    show("CLEARED");
 }
 
 int qperf_key(void *brain, void *event)

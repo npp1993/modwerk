@@ -37,7 +37,6 @@
         "-DKIT_PARAM_SET_AT=0x400a648e",
         "-DKIT_PERF_AT=0x400a67fe",
         "-DKIT_QPER_MASK_AT=0x400a6e0e",
-        "-DKIT_QPER_MUTED_AT=0x400a6d7a",
         "-DPERF_SET_AT=0x400ad1c8",
         "-DPERF_CLEAR_AT=0x400ad0de",
         "-DID_FOR_INDEX_AT=0x40007028",

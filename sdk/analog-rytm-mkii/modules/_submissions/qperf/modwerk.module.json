@@ -35,7 +35,7 @@
     "steps": [
       "Hold QPER and press pads to link performances, as on stock.",
       "Keep QPER held and turn a knob to set its offset.",
-      "QPER + PLAY clears the linked performances.",
+      "QPER + PLAY clears the linked performances; press PLAY again to undo.",
       "QPER + YES applies them to the kit."
     ],
     "screenshots": []
@@ -49,7 +49,7 @@
     "conflicts": [],
     "limitations": [
       "QPER + YES skips FX track locks.",
-      "QPER + YES needs the QPER knob to have moved once since power on to know its position.",
+      "Until the QPER knob moves after power on, QPER + YES uses the amounts stock holds.",
       "Replaces stock's QPER + PLAY, which starts the sequencer."
     ]
   },
