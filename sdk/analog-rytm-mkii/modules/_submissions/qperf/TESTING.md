@@ -16,7 +16,18 @@ Reported by the author on build QP02:
 - QPER + YES showed NOTHING with the knob at full after relinking, until the knob was moved: stock only writes the amount to performances linked when it moves.
 - The offset toast was not what a held performance shows.
 
-Build QP03 changes all of this. It has not run on hardware yet.
+Build QP03 changes all of this. 
+
+Reported by the author on build QP05:
+
+- Link 3, overdrive +30, relink to one, QPER + YES with the knob untouched: PERFORMANCE 5 APPLIED, overdrive +10. The knob position reached the apply.
+- Half knob added about half the offset. Fine tune stopped at its maximum of 63 on repeated applies, still showing APPLIED.
+- Locked knobs inverted while QPER held. Hold again and turn from +30 to +40 with 3 linked.
+- QPER + PLAY cleared; PLAY again showed UNDO CLEAR. Whether undone locks follow the knob: unsure.
+- After a restart, QPER + YES showed PERFORMANCE 12 APPLIED. The value was not reported.
+- LOCK MEM FULL! appeared. Linking on FX track and LFO pages seemed fine. FUNC + QPER muted. Linking by pads worked. Kit reload seemed right.
+- At full knob, QPER + YES stacks the offset on what the performance still adds, so the sound jumps.
+- Unsure or not run: release back to stock, unequal locks, undo across kits, the NO PERFORMANCE LINKED turn, QPER + YES with FX locks, power cycle.
 
 ## Emulator
 
