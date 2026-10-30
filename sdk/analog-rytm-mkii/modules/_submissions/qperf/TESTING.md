@@ -69,6 +69,7 @@ The emulator has no QPER knob, so the position was poked: the site that reads it
 - Knob turns on the FX track and the LFO page.
 - LOCK MEM FULL! on screen.
 - The site that reads the QPER knob.
-- A build beside other modules. QPERF answers every parameter id in `core_params` while QPER is held.
+- A build beside other modules.
+- The kit's power-on knob position: until the knob moves, QPER + YES falls back on stock's per-performance amounts.
 - Save and reload of the kit after a turn, clear or apply.
 - Hardware, audio, performance load.
