@@ -39,7 +39,7 @@ Handlers use the C calling convention: arguments on the stack, d0–d1/a0–a1 f
 | --- | --- | --- |
 | `ev_tick` | the UI compose check, about 20 Hz (the Digitakt's runs at 30) | `void f(void *ctrl)`; set `ctrl + 0x20` to 1 to request a redraw. Not an audio-rate clock. |
 | `ev_draw` | after the OS composes the 128 × 64 screen | `void f(void *bmp, void *ctrl)`; y counts up from the bottom row (0) to the top (63), x runs left to right |
-| `ev_key` | a UI key event | `int f(void *brain, void *event)`; nonzero consumes it. `event + 12` is the key id (trig keys 0x00–0x0f, BANK A–H 0xc0–0xc7, FUNC 0x80, NO 0x45), `event + 16` the flags: 1 pressed, 0x10 released; a held key repeats with 8 set (a 2 s BANK hold gave 15 events) |
+| `ev_key` | a UI key event | `int f(void *brain, void *event)`; nonzero consumes it. `event + 12` is the key id (trig keys 0x00–0x0f, BANK A–H 0xc0–0xc7, FUNC 0x80, NO 0x45), `event + 16` the flags: bit 0 set while down, clear on the release (stock tests that bit; 0x10 is missing when another key went down during the hold, so never test it for a release); a held key repeats with 8 set (a 2 s BANK hold gave 15 events) |
 | `ev_enc` | a UI encoder event | `int f(void *brain, void *event)`; nonzero consumes it. `event + 12` is the encoder, 0–7 for A–H (not 1–8 as elekloader's ADAPTING.md gives for the Digitakt), `event + 16` the count after the encoder's acceleration, which can be 0 for a slow first turn |
 | `ev_settings` | building the SETTINGS menu | `void f(void *menu)`; add rows with `core_additem(menu, row)` |
 | `ev_render_in` / `ev_render_out` | entry and exit of the ColdFire's audio block: 32 frames, about 1,500 blocks a second | `void f(void)` |
