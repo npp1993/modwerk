@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    "src/main.c"
+  ],
+  "defsym": {},
+  "cflags": [],
+  "weak": [],
+  "subscribe": [
+    {
+      "event": "ev_key",
+      "fn": "qperf_key",
+      "order": 40
+    },
+    {
+      "event": "ev_tick",
+      "fn": "qperf_tick",
+      "order": 50
+    },
+    {
+      "event": "ev_draw",
+      "fn": "qperf_draw",
+      "order": 90
+    }
+  ],
+  "contribute": [
+    {
+      "to": "core_params",
+      "order": 10,
+      "data": "00000000",
+      "relocs": [
+        [
+          0,
+          "abs32",
+          "sym:qperf_params_entry",
+          0
+        ]
+      ]
+    }
+  ],
+  "collections": {},
+  "copied": [],
+  "regions": [],
+  "claims": [
+    "ui:QPER + knob",
+    "ui:QPER + PLAY",
+    "ui:QPER + YES"
+  ],
+  "requires": [],
+  "derive": null,
+  "releases": {
+    "1.74": {
+      "defsym": {},
+      "cflags": [
+        "-DPROJECT_SINGLETON_AT=0x4017fa0a",
+        "-DTRACK_INDEX_OF_AT=0x400b693e",
+        "-DKIT_PARAM_SET_AT=0x400a648e",
+        "-DKIT_PERF_AT=0x400a67fe",
+        "-DKIT_QPER_MASK_AT=0x400a6e0e",
+        "-DKIT_QPER_MUTED_AT=0x400a6d7a",
+        "-DPERF_SET_AT=0x400ad1c8",
+        "-DPERF_CLEAR_AT=0x400ad0de",
+        "-DCONTAINER_INDEX_AT=0x40006ea8",
+        "-DID_FOR_INDEX_AT=0x40007028",
+        "-DSET_VALUE_AT=0x400a906c",
+        "-DFILLRECT_AT=0x40070726",
+        "-DIS_KEY_HELD_AT=0x40081c28",
+        "-DPERF_AMOUNTS_AT=0x8000e57c"
+      ],
+      "sites": []
+    }
+  }
+}
