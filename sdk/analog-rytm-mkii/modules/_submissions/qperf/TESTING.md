@@ -75,11 +75,13 @@ Build QP04 (sha256 ad915f44), same setup:
 | QPER + PLAY three times | 18 locks: the third clears again |
 | QPER + PLAY, relink to another pad, PLAY | That pad's locks cleared, no undo of the first |
 
+Build QP05 is QP04 with one message changed. Links removed, QPER held, turn a knob: NO PERFORMANCE LINKED, no lock written.
+
 ## Not tested
 
 - The real QPER knob: the emulator has none, so amounts were poked. Full amount is taken as 0x7f80 from the code, not measured.
 - Knob turns on the FX track and the LFO page.
-- LOCK MEM FULL! and NOTHING LINKED on screen.
+- LOCK MEM FULL! on screen.
 - The site that reads the QPER knob.
 - A build beside other modules.
 - The kit's power-on knob position: until the knob moves, QPER + YES falls back on stock's per-performance amounts.

@@ -16,7 +16,7 @@ Link performances as on stock: hold QPER and press pads or trig keys. Then, with
 
 FUNC + QPER (mute) and linking are stock's.
 
-Stock draws every message. YES shows PERFORMANCE 3 APPLIED, or PERFORMANCES APPLIED with several linked, or NOTHING TO APPLY. PLAY shows the same with CLEARED, then UNDO CLEAR or NOTHING TO CLEAR. A turn with nothing linked shows NOTHING LINKED, and with no room LOCK MEM FULL!.
+Stock draws every message. YES shows PERFORMANCE 3 APPLIED, or PERFORMANCES APPLIED with several linked, or NOTHING TO APPLY. PLAY shows the same with CLEARED, then UNDO CLEAR or NOTHING TO CLEAR. A turn with nothing linked shows NO PERFORMANCE LINKED, and with no room LOCK MEM FULL!.
 
 ## Things to know
 

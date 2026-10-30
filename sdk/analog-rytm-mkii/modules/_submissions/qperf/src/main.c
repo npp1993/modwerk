@@ -224,7 +224,7 @@ static void locker_set(void *self, int track, int param, int value)
     int count, part, rest, i;
     (void)self;
     if (!mask) {
-        show("NOTHING LINKED");
+        show("NO PERFORMANCE LINKED");
         return;
     }
     if (slots_needed(table, mask, track, param) > slots_free(table)) {
