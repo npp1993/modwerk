@@ -24,8 +24,11 @@
   "regions": [],
   "claims": [
     "ui:QPER + knob",
+    "ui:QPER + pads and trigs",
     "ui:QPER + PLAY",
-    "ui:QPER + YES"
+    "ui:QPER + YES",
+    "ui:QPER + RECORD",
+    "ui:QPER + STOP"
   ],
   "requires": [],
   "derive": null,
@@ -57,7 +60,14 @@
         "-DLOCK_EDIT_AT=0x4003613a",
         "-DEND_LOCK_EDIT_AT=0x40036622",
         "-DLOCKER_RELATIVE_AT=0x40199202",
-        "-DLOCKER_LOCKABLE_AT=0x400acca8"
+        "-DLOCKER_LOCKABLE_AT=0x400acca8",
+        "-DPERF_UNDO_AT=0x400ad652",
+        "-DPERF_CLEAR_KEEP_AT=0x400ad56a",
+        "-DPERF_PASTE_AT=0x400ad800",
+        "-DPERF_COPY_AT=0x400ad74a",
+        "-DKIT_SET_MASK_AT=0x400a6ea0",
+        "-DAMOUNT_SET_AT=0x400b2c6a",
+        "-DFX_ID_AT=0x4000708a"
       ],
       "sites": [
         {

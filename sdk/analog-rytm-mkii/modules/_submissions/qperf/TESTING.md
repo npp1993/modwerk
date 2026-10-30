@@ -88,12 +88,27 @@ Build QP04 (sha256 ad915f44), same setup:
 
 Build QP05 is QP04 with one message changed. Links removed, QPER held, turn a knob: NO PERFORMANCE LINKED, no lock written.
 
+Build QP06 (sha256 3305266d), same setup:
+
+| Check | Result |
+| --- | --- |
+| Hold QPER on a kit linked to 2 | Mask drops to the lowest one |
+| QPER + SD, knob poked to full | Link moves; new performance's amount 0x7f80, old 0 |
+| QPER + SD twice | Unlinked, amount 0 |
+| QPER + trig 3 | Link moves to performance 3 |
+| QPER + YES, knob full | Locks read 0, 31 slots kept, PERFORMANCE 1 APPLIED |
+| QPER + YES, knob about half | Locks halved (22272 to 11180) |
+| QPER + PLAY twice | Stock's clear, then undo: 31 locks back |
+| RECORD, link SD, STOP, STOP | COPY PERFORMANCE 1; pasted (35 locks); undone (31 locks) |
+
+FX apply was not reached: the emulator did not select the FX track.
+
 ## Not tested
 
 - The real QPER knob: the emulator has none, so amounts were poked. Full amount is taken as 0x7f80 from the code, not measured.
 - Knob turns on the FX track and the LFO page.
 - LOCK MEM FULL! on screen.
-- The site that reads the QPER knob.
+- QPER + YES on FX track locks.
 - A build beside other modules.
 - The kit's power-on knob position: until the knob moves, QPER + YES falls back on stock's per-performance amounts.
 - Save and reload of the kit after a turn, clear or apply.

@@ -19,7 +19,7 @@
     "label": "QPERF",
     "family": "Performance",
     "summary": "Set performance locks by holding QPER and turning knobs, clear them, or apply them to the kit.",
-    "overview": "Hold QPER and turn a knob: it edits that parameter's offset across every performance linked to QPER, split evenly so together they reach it at full QPER, and the knob inverts and shows the total as it does for a held performance pad. QPER + PLAY clears the linked performances. QPER + YES writes what they add, at the QPER knob's position, into the kit and keeps the locks.",
+    "overview": "Hold QPER and turn a knob: it edits that parameter's offset in the performance linked to QPER, and the knob inverts and shows it as it does for a held performance pad. QPER + PLAY clears the linked performances. QPER + YES writes what they add, at the QPER knob's position, into the kit and keeps the locks.",
     "highlights": [
       "Sets a lock in every linked performance with one turn",
       "QPER + PLAY clears all linked performances",
@@ -35,7 +35,7 @@
     "steps": [
       "Hold QPER and press pads to link performances, as on stock.",
       "Keep QPER held and turn a knob to set its offset.",
-      "QPER + PLAY clears the linked performances; press PLAY again to undo.",
+      "QPER + PLAY clears the linked performance; press PLAY again to undo. QPER + RECORD copies it, QPER + STOP pastes.",
       "QPER + YES applies them to the kit."
     ],
     "screenshots": []
@@ -48,7 +48,7 @@
     "requires": [],
     "conflicts": [],
     "limitations": [
-      "QPER + YES skips FX track locks.",
+      "QPER links one performance at a time, unlike stock.",
       "Until the QPER knob moves after power on, QPER + YES uses the amounts stock holds.",
       "Replaces stock's QPER + PLAY, which starts the sequencer."
     ]

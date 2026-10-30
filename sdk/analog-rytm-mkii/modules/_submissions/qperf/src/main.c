@@ -1,26 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // QPERF for the Analog Rytm MKII: set performance locks from the QPER key.
 //
-// The QPER key's links are a 12-bit mask of performances. Stock adds their
-// offsets together on top of the sound: every lock adds amount * value to its
-// parameter, and the QPER knob sets the same amount on each linked performance.
-// So, with QPER held:
+// Stock lets QPER link several performances, which add up. Here it links one:
+// with QPER held, a pad or trig moves the link to that performance, and the
+// linked one unlinks it. So, with QPER held:
 //
-//   turn a knob   Stock's own lock edit, through a locker that stands for all
-//                 linked performances: it reads their sum, and a write splits
-//                 evenly across them. Stock draws the locks as it does when a
-//                 performance pad is held. The kit has 48 lock slots for all
-//                 performances. When a new parameter does not fit in every
-//                 linked one, nothing is written.
-//   PLAY          stock's clear, once per linked performance. Stock keeps no
-//                 copy, so we do: PLAY again, with nothing changed, undoes it.
-//   YES           each linked lock, at the QPER knob's position, goes into the
-//                 kit. The locks stay.
+//   turn a knob   Stock's own lock edit on the linked performance, drawn as when
+//                 a performance pad is held. The kit has 48 lock slots for all
+//                 performances.
+//   PLAY          stock's clear, then its undo.
+//   REC, STOP     stock's copy, then paste and its undo, on the linked performance.
+//   YES           what the lock adds at the QPER knob's position goes into the
+//                 kit and comes off the lock, so full QPER still lands where it did.
 //
-// FUNC + QPER (stock's mute) and pressing pads or trigs to link are untouched.
+// FUNC + QPER (stock's mute) is untouched.
 //
 // Stock's amount is only written to performances linked when the knob moves, so
-// the knob's position comes from one site of our own, where stock reads it.
+// the knob's position comes from one site of our own, where stock reads it, and
+// a moved link hands the amount over.
 //
 // Firmware routines are reached at fixed addresses given for each OS release
 // by build.json's cflags. Stock returns pointers in d0, while m68k-linux GCC
@@ -32,6 +29,11 @@ typedef word_t (*kit_param_set_t)(void *kit, int track);
 typedef word_t (*kit_perf_t)(void *kit);
 typedef int (*kit_word_t)(void *kit);
 typedef int (*perf_set_t)(void *perf, int index, int track, int param, int value);
+typedef int (*perf_op_t)(void *perf, int index, int flag);
+typedef int (*perf_copy_t)(void *perf, int index);
+typedef void (*kit_set_mask_t)(void *kit, int mask);
+typedef void (*amount_set_t)(word_t project, int index, int amount, int a, int b);
+typedef int (*fx_id_t)(int index);
 typedef void (*perf_clear_t)(void *perf, int index);
 typedef void (*perf_clear_one_t)(void *perf, int index, int track, int param);
 typedef int (*id_for_index_t)(int index, int machine);
@@ -56,6 +58,13 @@ typedef void (*end_lock_edit_t)(void *ui);
 #define KIT_QPER_MASK ((kit_word_t)KIT_QPER_MASK_AT)
 #define PERF_SET ((perf_set_t)PERF_SET_AT)
 #define PERF_CLEAR ((perf_clear_t)PERF_CLEAR_AT)
+#define PERF_UNDO ((perf_op_t)PERF_UNDO_AT)
+#define PERF_CLEAR_KEEP ((perf_op_t)PERF_CLEAR_KEEP_AT)
+#define PERF_PASTE ((perf_op_t)PERF_PASTE_AT)
+#define PERF_COPY ((perf_copy_t)PERF_COPY_AT)
+#define KIT_SET_MASK ((kit_set_mask_t)KIT_SET_MASK_AT)
+#define AMOUNT_SET ((amount_set_t)AMOUNT_SET_AT)
+#define FX_ID ((fx_id_t)FX_ID_AT)
 #define PERF_CLEAR_ONE ((perf_clear_one_t)PERF_CLEAR_ONE_AT)
 #define ID_FOR_INDEX ((id_for_index_t)ID_FOR_INDEX_AT)
 #define SET_VALUE ((set_value_t)SET_VALUE_AT)
@@ -85,11 +94,16 @@ typedef void (*end_lock_edit_t)(void *ui);
 #define KEY_QPER 0xb1
 #define KEY_YES 0x44
 #define KEY_PLAY 0x51
+#define KEY_REC 0x50
+#define KEY_STOP 0x52
+#define KEY_PAD 0x90
 #define KEY_FUNC 0x80
 #define EV_KEY 12                   // event + 12: the key
 #define EV_FLAGS 16                 // event + 16: bit 0 down (clear on release), 8 repeat
 #define PRESSED 1
 #define REPEAT 8
+#define UNDO_CLEAR 1                 // what stock's undo reverses
+#define UNDO_PASTE 2
 #define BRAIN_VIEWS 32              // brain + 32: the view manager
 #define POPUP_BYTES 0xa0
 
@@ -98,13 +112,12 @@ typedef void (*end_lock_edit_t)(void *ui);
 #define SLOT_BYTES 5
 #define TRACK_NONE 12               // a slot's track byte above this is empty
 #define FX_TRACK 12
-#define PARAM_LAST 41               // a track's 42 parameter words
 
 typedef unsigned (*is_key_held_t)(int key);
 #define IS_KEY_HELD ((is_key_held_t)IS_KEY_HELD_AT)
 
 static int held;                    // QPER is down, without FUNC
-static unsigned swallowed;          // bit 0 YES, bit 1 PLAY: their release is ours too
+static unsigned swallowed;          // YES, PLAY, REC and STOP: their release is ours too
 int qperf_pot;                      // the QPER knob + 1, 0 until it first moves
 
 // Stock's message for one pot: this replaces the 6-byte lea at its start.
@@ -121,8 +134,6 @@ __asm__(
 static void *views;
 static const char *show_text;
 static char message[24];
-static unsigned char undo_table[SLOTS * SLOT_BYTES];
-static unsigned undo_mask, undo_sum;    // the mask cleared, the table it left
 
 static void show(const char *text)
 {
@@ -144,27 +155,12 @@ static const unsigned char *lock_table(void *perf)
     return *(const unsigned char **)((char *)perf + PERF_TABLE);
 }
 
-static int count_linked(unsigned mask)
+static int lowest_linked(unsigned mask)
 {
-    int i, count = 0;
-    for (i = 0; i < PERFS; i++)
-        if (mask >> i & 1)
-            count++;
-    return count;
-}
-
-// Slots a new lock for (track, param) would take.
-static int slots_needed(const unsigned char *t, unsigned mask, int track, int param)
-{
-    int i, needed = count_linked(mask);
-    unsigned have = 0;
-    for (i = 0; i < SLOTS; i++, t += SLOT_BYTES)
-        if (t[2] == track && t[3] == param && t[4] < PERFS && (mask >> t[4] & 1)
-            && !(have >> t[4] & 1)) {
-            have |= 1u << t[4];
-            needed--;
-        }
-    return needed;
+    int i = 0;
+    while (!(mask >> i & 1))
+        i++;
+    return i;
 }
 
 static int slots_free(const unsigned char *t)
@@ -214,38 +210,22 @@ static void locker_clear_all(void *self)
             PERF_CLEAR(perf, i);
 }
 
-// Sums what stock shows back, so a turn carries on from the total on the knob.
+static int locker_has(void *self, int track, int param);
+
 static void locker_set(void *self, int track, int param, int value)
 {
     void *kit = active_kit();
     void *perf = (void *)KIT_PERF(kit);
-    const unsigned char *table = lock_table(perf);
     unsigned mask = linked(kit);
-    int count, part, rest, i;
-    (void)self;
     if (!mask) {
         show("NO PERFORMANCE LINKED");
         return;
     }
-    if (slots_needed(table, mask, track, param) > slots_free(table)) {
+    if (!locker_has(self, track, param) && !slots_free(lock_table(perf))) {
         show("LOCK MEM FULL!");
         return;
     }
-    count = count_linked(mask);
-    part = value / count;
-    rest = value - part * count;        // the first ones carry what the split leaves
-    for (i = 0; i < PERFS; i++)
-        if (mask >> i & 1) {
-            int one = part;
-            if (rest > 0) {
-                one++;
-                rest--;
-            } else if (rest < 0) {
-                one--;
-                rest++;
-            }
-            PERF_SET(perf, i, track, param, one);
-        }
+    PERF_SET(perf, lowest_linked(mask), track, param, value);
 }
 
 static int locker_get(void *self, int track, int param)
@@ -318,26 +298,35 @@ static int track_id(void *set, int param)
     return ID_FOR_INDEX(param, *(unsigned char *)(sound + SOUND_MACHINE));
 }
 
-// PERFORMANCE 3 APPLIED, or PERFORMANCES APPLIED with several linked.
-static void show_performances(unsigned mask, const char *done)
+// A message with the linked performance's number in it.
+static void show_numbered(const char *before, unsigned mask, const char *after)
 {
-    const char *name = count_linked(mask) == 1 ? "PERFORMANCE " : "PERFORMANCES ";
     char *out = message;
-    int number = 1;
-    while (*name)
-        *out++ = *name++;
-    if (count_linked(mask) == 1) {
-        while (!(mask >> (number - 1) & 1))
-            number++;
-        if (number > 9)
-            *out++ = '1';
-        *out++ = (char)('0' + number % 10);
-        *out++ = ' ';
-    }
-    while (*done)
-        *out++ = *done++;
+    int number = lowest_linked(mask) + 1;
+    while (*before)
+        *out++ = *before++;
+    if (number > 9)
+        *out++ = '1';
+    *out++ = (char)('0' + number % 10);
+    while (*after)
+        *out++ = *after++;
     *out = 0;
     show(message);
+}
+
+// Links one performance, or none. An unlinked one stops adding, and the new one
+// takes over at the knob's position.
+static void link_only(void *kit, unsigned mask)
+{
+    word_t project = PROJECT_SINGLETON();
+    unsigned old = linked(kit);
+    int i, amount = qperf_pot ? (qperf_pot - 1) << 7 : old ? (int)PERF_AMOUNT(lowest_linked(old)) : 0;
+    KIT_SET_MASK(kit, (int)mask);
+    for (i = 0; i < PERFS; i++)
+        if ((old & ~mask) >> i & 1)
+            AMOUNT_SET(project, i, 0, 1, 1);
+    if (mask & ~old)
+        AMOUNT_SET(project, lowest_linked(mask), amount, 1, 1);
 }
 
 static void apply_linked(void *kit)
@@ -347,68 +336,94 @@ static void apply_linked(void *kit)
     unsigned mask = linked(kit);
     int i, seen = 0;
     for (i = 0; i < SLOTS; i++, t += SLOT_BYTES) {
-        int track = t[2], param = t[3], index = t[4], id, value, amount;
+        int track = t[2], param = t[3], index = t[4], lock, id, value, amount;
         void *set;
         set_read_t read;
-        if (track >= FX_TRACK || index >= PERFS || !(mask >> index & 1) || param > PARAM_LAST)
+        if (track > TRACK_NONE || index >= PERFS || !(mask >> index & 1))
+            continue;
+        lock = (short)(t[0] << 8 | t[1]);
+        if (!lock)
             continue;
         seen = 1;
         amount = qperf_pot ? (qperf_pot - 1) << 7 : (int)PERF_AMOUNT(index);
-        value = (short)(t[0] << 8 | t[1]);
-        value = value * amount / AMOUNT_FULL;
+        value = lock * amount / AMOUNT_FULL;
         if (!value)
             continue;
         set = (void *)KIT_PARAM_SET(kit, track);
-        id = track_id(set, param);
+        id = track == FX_TRACK ? FX_ID(param) : track_id(set, param);
         if (!id)
             continue;
         read = *(set_read_t *)(*(word_t *)set + VT_READ);
         SET_VALUE(set, id, read(set, id) + value, track, 1, 1);
+        PERF_SET(perf, index, track, param, lock - value);
     }
     if (seen)
-        show_performances(mask, "APPLIED");
+        show_numbered("PERFORMANCE ", mask, " APPLIED");
     else
         show("NOTHING TO APPLY");
 }
 
-static unsigned table_sum(const unsigned char *t)
+// As stock's own menu rows do: undo if there is one, then the action.
+static void clear_linked(void *perf, int index)
 {
-    unsigned sum = 0;
-    int i;
-    for (i = 0; i < SLOTS * SLOT_BYTES; i++)
-        sum = (sum << 1 | sum >> 31) + t[i];
-    return sum;
+    if (PERF_UNDO(perf, index, UNDO_CLEAR))
+        show("UNDO CLEAR");
+    else if (PERF_CLEAR_KEEP(perf, index, 1))
+        show("CLEAR PERFORMANCE");
+    else
+        show("NOTHING TO CLEAR");
 }
 
-static void clear_linked(void *kit)
+static void paste_linked(void *perf, int index)
 {
+    if (PERF_UNDO(perf, index, UNDO_PASTE))
+        show("UNDO PASTE");
+    else if (PERF_PASTE(perf, index, 1))
+        show("PASTE PERFORMANCE");
+    else
+        show("NOTHING TO PASTE");
+}
+
+static void perf_action(int key)
+{
+    void *kit = active_kit();
     void *perf = (void *)KIT_PERF(kit);
-    const unsigned char *t = lock_table(perf);
     unsigned mask = linked(kit);
-    int i;
-    if (locker_has_any(0)) {
-        for (i = 0; i < SLOTS * SLOT_BYTES; i++)
-            undo_table[i] = t[i];
-        locker_clear_all(0);
-        undo_mask = mask;
-        undo_sum = table_sum(t);
-        show_performances(mask, "CLEARED");
-    } else if (mask && mask == undo_mask && table_sum(t) == undo_sum) {
-        const unsigned char *u = undo_table;
-        for (i = 0; i < SLOTS; i++, u += SLOT_BYTES)
-            if (u[2] <= TRACK_NONE && u[4] < PERFS && (mask >> u[4] & 1))
-                PERF_SET(perf, u[4], u[2], u[3], (short)(u[0] << 8 | u[1]));
-        undo_mask = 0;
-        show("UNDO CLEAR");
-    } else {
-        show("NOTHING TO CLEAR");
+    int index;
+    if (key == KEY_YES) {
+        apply_linked(kit);
+        return;
     }
+    if (!mask) {
+        show("NO PERFORMANCE LINKED");
+        return;
+    }
+    index = lowest_linked(mask);
+    if (key == KEY_PLAY)
+        clear_linked(perf, index);
+    else if (key == KEY_STOP)
+        paste_linked(perf, index);
+    else if (PERF_COPY(perf, index))
+        show_numbered("COPY PERFORMANCE ", mask, "");
+    else
+        show("NOTHING TO COPY");
+}
+
+// A pad or trig key's performance, or -1.
+static int link_key(int key)
+{
+    if (key >= 0 && key < PERFS)
+        return key;
+    if (key >= KEY_PAD && key < KEY_PAD + PERFS)
+        return key - KEY_PAD;
+    return -1;
 }
 
 int qperf_key(void *brain, void *event)
 {
     int key = *(int *)((char *)event + EV_KEY);
     unsigned flags = *(unsigned *)((char *)event + EV_FLAGS), bit;
+    int perf;
     views = *(void **)((char *)brain + BRAIN_VIEWS);
     if (key == KEY_QPER) {
         if (!(flags & PRESSED)) {
@@ -416,16 +431,33 @@ int qperf_key(void *brain, void *event)
                 locker_remove();
             held = 0;
         } else if (!(flags & REPEAT) && !IS_KEY_HELD(KEY_FUNC)) {
+            void *kit = active_kit();
+            unsigned mask = linked(kit);
             held = 1;
             swallowed = 0;
+            if (mask & (mask - 1))
+                link_only(kit, mask & -mask);   // a kit saved with several
             locker_install();
         }
         return 0;
+    }
+    perf = link_key(key);
+    if (held && perf >= 0) {
+        if ((flags & PRESSED) && !(flags & REPEAT)) {
+            void *kit = active_kit();
+            unsigned bit = 1u << perf;
+            link_only(kit, linked(kit) == bit ? 0 : bit);
+        }
+        return 1;
     }
     if (key == KEY_YES)
         bit = 1;
     else if (key == KEY_PLAY)
         bit = 2;
+    else if (key == KEY_REC)
+        bit = 4;
+    else if (key == KEY_STOP)
+        bit = 8;
     else
         return 0;
     if (!(flags & PRESSED)) {
@@ -437,13 +469,10 @@ int qperf_key(void *brain, void *event)
     }
     if (swallowed & bit)
         return 1;                       // its repeats
-    if (!held || !(flags & PRESSED) || (flags & REPEAT) || IS_KEY_HELD(KEY_FUNC))
+    if (!held || (flags & REPEAT) || IS_KEY_HELD(KEY_FUNC))
         return 0;
     swallowed |= bit;
-    if (key == KEY_YES)
-        apply_linked(active_kit());
-    else
-        clear_linked(active_kit());
+    perf_action(key);
     return 1;
 }
 

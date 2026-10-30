@@ -6,25 +6,26 @@ Set performance locks from the QPER key, much faster than one performance at a t
 
 ## Controls
 
-Link performances as on stock: hold QPER and press pads or trig keys. Then, with QPER still held:
+QPER links one performance at a time. Hold QPER and press a pad or trig key: the link moves there. Press the linked one to unlink it. With QPER still held:
 
 | Gesture | What it does |
 | --- | --- |
-| Turn a knob | Works as holding a performance pad does: the knob inverts and shows the offset, here the total of the linked performances. A turn carries on from that total and splits it evenly across them, so together they reach it at full QPER. |
-| PLAY | Clears every linked performance, with stock's clear. PLAY again undoes it, while the links and locks are as the clear left them. |
-| YES | Writes what the linked performances add at the QPER knob's position into the kit, muted or not. The locks stay. |
+| Turn a knob | Edits the linked performance's lock, as holding a performance pad does: the knob inverts and shows the offset. |
+| PLAY | CLEAR PERFORMANCE, with stock's clear. PLAY again: UNDO CLEAR. |
+| YES | What the lock adds at the QPER knob's position goes into the kit and comes off the lock, so full QPER still lands where it did. At full, the sound holds and the lock reads +0. |
+| RECORD | COPY PERFORMANCE n. |
+| STOP | PASTE PERFORMANCE onto the linked one. STOP again: UNDO PASTE. |
 
-FUNC + QPER (mute) and linking are stock's.
+FUNC + QPER (mute) is stock's.
 
-Stock draws every message. YES shows PERFORMANCE 3 APPLIED, or PERFORMANCES APPLIED with several linked, or NOTHING TO APPLY. PLAY shows the same with CLEARED, then UNDO CLEAR or NOTHING TO CLEAR. A turn with nothing linked shows NO PERFORMANCE LINKED, and with no room LOCK MEM FULL!.
+Stock draws every message. YES shows PERFORMANCE n APPLIED, or NOTHING TO APPLY when no lock has a value. A key or turn with nothing linked shows NO PERFORMANCE LINKED, and with no room LOCK MEM FULL!.
 
 ## Things to know
 
-- **Linked performances add up.** That is why a turn is split across them.
+- **One link only.** A kit saved with several drops to the lowest one when QPER is held. An unlinked performance stops adding, and the newly linked one takes the knob's position, so the sound follows the link.
 - **48 locks a kit.** All 12 performances share them. A new parameter takes one lock in each linked performance. If they do not all fit, the turn writes nothing and shows LOCK MEM FULL!. Turning a parameter already locked in all of them needs no new lock.
 - **After YES the sound moves further.** The kit now holds the offsets and the locks still add them on top, until you turn QPER down or clear with QPER + PLAY.
-- **FX track.** QPER + knob sets FX locks as a performance pad does. QPER + YES skips them.
-- **Changing links while you hold QPER** changes what the knob shows: it is always the total of the performances linked now.
+- **YES and later edits.** The target holds through YES. Turn the parameter by hand afterwards and the target moves with it, because locks are offsets.
 
 ## Stock flows changed
 
