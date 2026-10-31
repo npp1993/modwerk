@@ -67,7 +67,7 @@ OS 1.74, read from the code unless marked.
 - **Range.** Stock lets a lock pass its parameter's range. Writing the sum to the kit stops at the limit (`0x400a906c`, ranges in the id table at `0x401bfbc8`), so baking such a lock changes the sound.
 - **Lock edit.** The parameter pages edit through a locker at offset 440 of the object `0x401816f4` returns; its vtable slots run from +8 (has any) to +36 (lockable). A module can install its own while a key is held.
 - **Clear, copy, paste.** `0x400ad56a`, `0x400ad74a` and `0x400ad800`, with undo at `0x400ad652` (kind 1 clear, 2 paste). Stock drops the undo after a later edit [reported].
-- **Whole-kit changes.** `0x400a65a4` runs after each one: load, reload, SysEx receive and restores. Too early for stock's amount writes, as is `ev_project`: acting there left the kit blank at boot. Set a flag and act on the tick.
+- **Whole-kit changes.** `0x400a65a4` runs after each one: load, reload, SysEx receive and restores. Writing amounts directly from it and from `ev_project` left the kit blank at boot [measured, the two not separated]. Set a flag in both and act on the tick.
 
 ## The audio block
 
