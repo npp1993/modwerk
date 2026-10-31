@@ -11,7 +11,7 @@ Analog Rytm MKII, stock OS 1.74, Modwerk base 0c92aa45, Temp Save alone, build T
 | FUNC + YES, edit trigs, FUNC + NO | Trigs come back |
 | Trigs with locks, FUNC + YES, remove them, FUNC + NO | Locked trigs come back |
 | FUNC + NO on a sound while playing | Reported as working |
-| FUNC + YES, then FUNC + NO while TEMP SAVED shows | RELOADED does not appear and the reload does not run (TS06; changed in TS09, not yet run on a unit) |
+| FUNC + YES, then FUNC + NO while TEMP SAVED shows | RELOADED does not appear and the reload does not run (TS06; changed in TS09) |
 | FUNC + NO on the main parameter pages | RELOADED after a save, NO TEMP SAVE without one |
 | Load a fresh kit, FUNC + YES | TEMP SAVED |
 | Load a worked-on kit and save it, then FUNC + NO | NO TEMP SAVE. The report does not settle whether the save was FUNC + YES or stock's YES + kit key; the emulator gives this result for stock's kit save and RELOADED for FUNC + YES |
@@ -32,6 +32,17 @@ Then build TS07 (sha256 79eeb2d3), same setup, reported by the tester, 31 Oct 20
 | Locks on trigs, RECORD + PLAY, hold FUNC + NO past a bar | Locks gone, trigs stay, no message. The locked values were heard while FUNC + NO was held |
 | FUNC + YES, edit the kit, power cycle, NO + PLAY MODE | First try: the kit did not return; the tester puts this down to a wrong key. Two further runs with the filter as the marker: the edit survived the power cycle, FUNC + NO gave NO TEMP SAVE with no change, and NO + PLAY MODE gave KIT RELOADED with the filter as at FUNC + YES |
 | After that, FUNC + NO | NO TEMP SAVE (test of a project load, reported in passing) |
+
+Then build TS09 (sha256 b94ff0d8), same setup, reported by the tester, 31 Oct 2026:
+
+| Check | Result |
+| --- | --- |
+| FUNC + YES, FUNC + NO straight away, and the other way round | The second message appears over the first; the actions were judged to go through |
+| FUNC + NO, then NO + SCNE straight away | PATTERN RELOADED appears over RELOADED |
+| Sampler: record, stop, FUNC + YES | Previews the sample |
+| Sampler: FUNC + NO on the recorded sample | Discards it |
+| Any of those on the sampler screen | No TEMP SAVED, RELOADED or NO TEMP SAVE |
+| Live-recorded locks, hold FUNC + NO | Locks gone, as on TS07 |
 
 ## Emulator
 
@@ -73,8 +84,8 @@ Read from stock's code, not run: performance locks at kit record + 1950 and scen
 
 ## Not tested
 
-- On the unit: TS09, and the sampler after a recording. Stock FUNC + YES and FUNC + NO without the module on every screen, audio during a reload, timing.
-- The song and chain modes while they play. In the sampler, FUNC + YES preview and FUNC + NO discard on a recorded sample: rytm-emu has no audio to record.
+- On the unit: stock FUNC + YES and FUNC + NO without the module on every screen, audio during a reload, timing.
+- The song and chain modes while they play.
 - Whether stock's own flows reach KIT NOT LINKED: a kit load and a saved kit both link the kit to the pattern.
 - A project save after FUNC + YES, and this beside other modules. Memory and load were not measured.
 - Mutes, the tempo and the performance knob across a reload.
