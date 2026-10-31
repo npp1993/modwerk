@@ -165,6 +165,8 @@ Reverted at the author's request: QPER + knob no longer stops at a parameter's r
 
 Combined build QC08 (sha256 14de2dcc): boot and knob lock passed; QPER + YES at half left the engine words identical. Linked with `link-image.mjs` after #1094.
 
+Reported by the author on QC08: tune locked to +127 under QPER, QPER + YES set it to +32 as expected.
+
 ## Not tested
 
 - SysEx kit receive.

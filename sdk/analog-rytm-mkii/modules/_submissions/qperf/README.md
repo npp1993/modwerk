@@ -32,6 +32,7 @@ Stock draws every message. YES shows PERFORMANCE n APPLIED, or NOTHING TO APPLY 
 ## Stock flows changed
 
 - **QPER + pads and trigs** link several performances on stock. With this mod a press moves the one link, and the linked one unlinks it. Why: linked offsets add up, so several made the knob's total and QPER + YES hard to follow.
+- **Kits with several links** keep them on stock. With this mod a kit loads with its lowest link only, and saving it stores that. What was considered: leaving them, but then the rule breaks as soon as such a kit plays.
 - **QPER + PLAY** starts the sequencer on stock. With this mod it clears instead. PLAY alone still starts it.
 - **QPER + STOP and QPER + RECORD** act as STOP and RECORD on stock. With this mod they paste and copy.
 - **QPER + knob** changes the parameter on stock. With this mod it edits locks and leaves the parameter alone.

@@ -104,7 +104,7 @@ typedef void (*end_lock_edit_t)(void *ui);
 #define EV_FLAGS 16                 // event + 16: bit 0 down (clear on release), 8 repeat
 #define PRESSED 1
 #define REPEAT 8
-#define UNDO_CLEAR 1                 // what stock's undo reverses
+#define UNDO_CLEAR 1                // what stock's undo reverses
 #define UNDO_PASTE 2
 #define BRAIN_VIEWS 32              // brain + 32: the view manager
 #define POPUP_BYTES 0xa0
@@ -305,7 +305,7 @@ static void locker_install(void)
 {
     void *ui = (void *)PARAM_UI();
     if (GET_LOCKER(ui))
-        return;                         // a pad or trig holds it: stock's
+        return;                         // a performance or scene pad holds it: stock's
     SET_LOCKER(ui, &locker);
     LOCK_EDIT(ui, 1);
 }
