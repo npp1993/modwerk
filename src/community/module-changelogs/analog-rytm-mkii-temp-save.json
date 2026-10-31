@@ -5,7 +5,7 @@
     "changes": [
       "FUNC + YES saves the pattern and its kit, performance and scene locks included.",
       "FUNC + NO brings both back, stopped or playing.",
-      "A save lasts until you change pattern or kit or load a project; after that FUNC + NO shows NO TEMP SAVE.",
+      "A save lasts until you change pattern or kit, load a project or power off; after that FUNC + NO shows NO TEMP SAVE.",
       "When the pattern links another kit than the active one, FUNC + YES saves nothing and shows KIT NOT LINKED."
     ]
   }
