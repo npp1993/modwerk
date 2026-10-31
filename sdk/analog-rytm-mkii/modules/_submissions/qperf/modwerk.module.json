@@ -21,8 +21,8 @@
     "summary": "Set performance locks by holding QPER and turning knobs, clear them, or apply them to the kit.",
     "overview": "Hold QPER and turn a knob: it edits that parameter's offset in the performance linked to QPER, and the knob inverts and shows it as it does for a held performance pad. QPER + PLAY clears the linked performances. QPER + YES writes what they add, at the QPER knob's position, into the kit and keeps the locks.",
     "highlights": [
-      "Sets a lock in every linked performance with one turn",
-      "QPER + PLAY clears all linked performances",
+      "Sets a lock in the linked performance with one turn",
+      "QPER + PLAY clears the linked performance",
       "QPER + YES applies them to the kit"
     ],
     "usage": [

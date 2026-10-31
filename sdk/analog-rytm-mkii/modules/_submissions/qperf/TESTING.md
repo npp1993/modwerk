@@ -103,12 +103,23 @@ Build QP06 (sha256 3305266d), same setup:
 
 FX apply was not reached: the emulator did not select the FX track.
 
+Reported by the author on build QP06:
+
+- Single link works. Holding several pads in performance mode still works as on stock.
+- Overdrive +12, QPER + YES at full: overdrive 12, lock +0, second YES NOTHING TO APPLY, knob down changed nothing.
+- Pan +40 at about half: kit +21, lock +18. Repeated YES crept closer until NOTHING TO APPLY.
+- Clear and undo, copy, paste and undo paste all worked.
+- FX track volume +53, QPER + YES at full: APPLIED, but the lock stayed and the sound still followed the knob. Cause: wrong stock id table. Fixed in QP07.
+- Pad 1 stays dim green, brighter when linked.
+
+Build QP07 (sha256 95ef219d): a +40 lock poked into the FX track at index 22, QPER + YES at full: lock 0, kit byte 78 to 118. Index 34 also went to 0 and its kit value moved. The FX track was not selected on screen.
+
 ## Not tested
 
 - The real QPER knob: the emulator has none, so amounts were poked. Full amount is taken as 0x7f80 from the code, not measured.
 - Knob turns on the FX track and the LFO page.
 - LOCK MEM FULL! on screen.
-- QPER + YES on FX track locks.
+- QPER + YES on FX track locks on hardware.
 - A build beside other modules.
 - The kit's power-on knob position: until the knob moves, QPER + YES falls back on stock's per-performance amounts.
 - Save and reload of the kit after a turn, clear or apply.

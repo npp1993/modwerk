@@ -67,7 +67,7 @@
         "-DPERF_COPY_AT=0x400ad74a",
         "-DKIT_SET_MASK_AT=0x400a6ea0",
         "-DAMOUNT_SET_AT=0x400b2c6a",
-        "-DFX_ID_AT=0x4000708a"
+        "-DFX_ID_AT=0x40007070"
       ],
       "sites": [
         {

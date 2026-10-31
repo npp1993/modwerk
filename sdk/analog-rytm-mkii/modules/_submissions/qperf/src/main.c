@@ -344,14 +344,14 @@ static void apply_linked(void *kit)
         lock = (short)(t[0] << 8 | t[1]);
         if (!lock)
             continue;
+        set = (void *)KIT_PARAM_SET(kit, track);
+        id = track == FX_TRACK ? FX_ID(param) : track_id(set, param);
+        if (!id)
+            continue;
         seen = 1;
         amount = qperf_pot ? (qperf_pot - 1) << 7 : (int)PERF_AMOUNT(index);
         value = lock * amount / AMOUNT_FULL;
         if (!value)
-            continue;
-        set = (void *)KIT_PARAM_SET(kit, track);
-        id = track == FX_TRACK ? FX_ID(param) : track_id(set, param);
-        if (!id)
             continue;
         read = *(set_read_t *)(*(word_t *)set + VT_READ);
         SET_VALUE(set, id, read(set, id) + value, track, 1, 1);
