@@ -151,9 +151,11 @@ Reported by the author on QC04: knob turns under QPER did nothing. Cause: stock 
 
 Combined build QC05 (sha256 dff83fad): QPER + knob writes locks on knobs A, B, D and F again. Tune still stops at +39.5 from -7.5. SWD, already at its top, stays at +0 turning up.
 
+Reported by the author on QC05: knob turns work. Tune stopped at +32 and QPER + YES held the sound. Knob zero showed NOTHING TO APPLY. Clear, a new lock, QPER + PLAY: CLEAR PERFORMANCE, so stock's undo does not replace later locks.
+
 ## Not tested
 
 - A kit loaded with another link or several, on a unit.
 - QPER gestures inside a menu or dialog: they still fire there.
-- A clear, new locks, then QPER + PLAY: whether stock's undo replaces them.
+- QPER + YES after a PERF mode pad press on the linked performance.
 - Performance load.
