@@ -18,7 +18,7 @@
     "npp1993"
   ],
   "presentation": {
-    "label": "RETRIG REC",
+    "label": "LIVE REC RETRIG FIX",
     "family": "Sequencer recording",
     "summary": "LIVE RECORDING records every pad retrig hit as a real trig, with the velocity and timing you played.",
     "overview": "Stock records a retrig hold as one trig and a few locks that its held-note erase mostly removes, so what plays back is not what you played. With Live Rec Retrig Fix every hit of a roll, from RTRG + pad or a pad set to ALWAYS ON, records a real trig at the velocity it sounded and the time it sounded, quantize live rec on or off. Rates faster than a step record a trig with a step retrig, because a step holds one trig. There is nothing to set.",
