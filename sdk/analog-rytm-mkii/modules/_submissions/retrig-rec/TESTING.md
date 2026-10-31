@@ -71,7 +71,7 @@ The release race, the note-off flags and the queue guard were changed from readi
 
 ### Not tested
 
-External MIDI clock. Where hits land when the pattern changes during a roll (the live hits matched stock). Load was not measured. RR11 and RR12 have not run on a unit.
+External MIDI clock. Where hits land when the pattern changes during a roll (the live hits matched stock). Load was not measured. RR12 has not run on a unit.
 
 ## On the unit: RR09 (Nathaniel Pavel, 31 October 2026)
 
@@ -90,3 +90,10 @@ Analog Rytm MKII, OS 1.74, flashed with RR09. Reported by the author from playin
 | VEL.CUR +127 at 1/32 | each trig velocity 127 with RETRIG 1/32 and VEL.CUR 127, hits inside a trig equal (127 cannot rise) |
 | VEL.CUR -127 at 1/32, LENGTH 1/4 | trigs 127, 95, 63, 31, 1, 1, each with VEL.CUR -127 and LEN 1/16; playback reported to differ from the live roll: the fade restarts inside each trig. Fixed in RR11, not yet on the unit |
 | NO + BD in LIVE RECORDING | reported: trigs did not erase (the emulator erased them). Not compared with stock on the unit |
+
+On RR11 (sha256 c6e0a9510d03991b…), same unit, same day:
+
+| Case | Result |
+| --- | --- |
+| VEL.CUR -127 at 1/32, LENGTH 1/4, FIX off | playback one smooth fade, no restart inside a step. Trigs: 127, 95, 63, 31 each with RETRIG 1/32, LEN 1/16 and VEL.CUR -32; from the trig at velocity 1 on, VEL.CUR 0 |
+| VEL.CUR OFF, 1/16 roll with pressure | velocities are the pad pressure, no curve on the trigs, as RR09 |
