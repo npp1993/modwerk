@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
-  "id": "retrig-rec",
-  "name": "Retrig Rec",
+  "id": "live-rec-retrig-fix",
+  "name": "Live Rec Retrig Fix",
   "version": "0.1.0-experimental",
   "machine": "analog-rytm-mkii",
   "category": "machines",
@@ -21,7 +21,7 @@
     "label": "RETRIG REC",
     "family": "Sequencer recording",
     "summary": "LIVE RECORDING records every pad retrig hit as a real trig, with the velocity and timing you played.",
-    "overview": "Stock records a retrig hold as one trig and a few locks that its held-note erase mostly removes, so what plays back is not what you played. With Retrig Rec every hit of a roll, from RTRG + pad or a pad set to ALWAYS ON, records a real trig at the velocity it sounded and the time it sounded, quantize live rec on or off. Rates faster than a step record a trig with a step retrig, because a step holds one trig. There is nothing to set.",
+    "overview": "Stock records a retrig hold as one trig and a few locks that its held-note erase mostly removes, so what plays back is not what you played. With Live Rec Retrig Fix every hit of a roll, from RTRG + pad or a pad set to ALWAYS ON, records a real trig at the velocity it sounded and the time it sounded, quantize live rec on or off. Rates faster than a step record a trig with a step retrig, because a step holds one trig. There is nothing to set.",
     "highlights": [
       "One real trig for each hit at 1/16 and slower, velocity following pressure.",
       "ALWAYS ON pads record the same way.",
@@ -101,7 +101,7 @@
     {
       "path": "media/thumbnail.svg",
       "kind": "thumbnail",
-      "caption": "Retrig Rec: a roll recorded as one trig for each hit, with its velocity",
+      "caption": "Live Rec Retrig Fix: a roll recorded as one trig for each hit, with its velocity",
       "alt": "A row of step trigs whose heights follow a pressure line.",
       "credit": "npp1993",
       "license": "GPL-3.0-or-later",

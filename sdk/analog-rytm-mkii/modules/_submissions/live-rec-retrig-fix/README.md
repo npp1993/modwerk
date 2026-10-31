@@ -1,4 +1,4 @@
-# Retrig Rec
+# Live Rec Retrig Fix
 
 An Analog Rytm MKII mod by Nathaniel Pavel (@npp1993). Version 0.1.0-experimental, for OS 1.74 with core-ar2 0.7. Tested in rytm-emu only; it has not run on a unit.
 
@@ -6,7 +6,7 @@ An Analog Rytm MKII mod by Nathaniel Pavel (@npp1993). Version 0.1.0-experimenta
 
 Hold RTRG and a pad in LIVE RECORDING, or play a pad set to ALWAYS ON, and vary the pressure. Stock records one trig for the press and tries to add a trigless lock on the steps after it. Its held-note erase removes most of those again, so the recording is sparse and the velocities do not follow what you played.
 
-With Retrig Rec, every retrig hit records a real trig, with the velocity it sounded at and the timing it sounded at. Stop recording and the pattern plays the roll back as you played it.
+With Live Rec Retrig Fix, every retrig hit records a real trig, with the velocity it sounded at and the timing it sounded at. Stop recording and the pattern plays the roll back as you played it.
 
 ## Controls
 
@@ -16,7 +16,7 @@ One gesture. The RETRIG menu keeps its stock rows, and what they do to a recordi
 | --- | --- |
 | RTRG + YES | Turns ALWAYS ON over for the track the RETRIG menu shows (the selected track, or the TRIG key pressed while RTRG is held), whichever row is lit. The row shows the new state. |
 
-| Stock control | With Retrig Rec |
+| Stock control | With Live Rec Retrig Fix |
 | --- | --- |
 | RETRIG | The rate played and recorded. Change it while you hold a roll and the trigs follow. |
 | VEL.CUR | Any value but OFF turns pad pressure off, as on stock, so the roll fades from the press over LENGTH, and each recorded trig takes the velocity the fade had at its hit. Trigs that carry a step retrig (rates faster than a step) also get the slice of the curve that falls inside them, so played back in a row they follow the one fade you heard. OFF: one velocity for the hits of a trig. |

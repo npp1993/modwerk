@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sources": [
-    "src/retrig-rec.c",
-    "src/retrig-rec.s"
+    "src/live-rec-retrig-fix.c",
+    "src/live-rec-retrig-fix.s"
   ],
   "defsym": {},
   "cflags": [],
@@ -10,7 +10,7 @@
   "subscribe": [
     {
       "event": "ev_render_out",
-      "fn": "retrig_rec_render",
+      "fn": "retrig_fix_render",
       "order": 40
     }
   ],
@@ -67,35 +67,35 @@
           "len": 6,
           "stockSha256": "524ab35165c13e344966031469e62cbe73cc1cb22ffd34bed0f855a1614675d9",
           "op": "jmp",
-          "target": "retrig_rec_menu"
+          "target": "retrig_fix_menu"
         },
         {
           "addr": "0x400e2b3e",
           "len": 6,
           "stockSha256": "a232dd09a8abc0dcb2622d83155305da95999bc534b95bd9b890dd4e5351a3a2",
           "op": "jsr",
-          "target": "retrig_rec_yes"
+          "target": "retrig_fix_yes"
         },
         {
           "addr": "0x400b4692",
           "len": 8,
           "stockSha256": "929c0bfcfc6374a61c38ea78e4cd13f5393f774241f07151a52b2419d5eb6eb7",
           "op": "jmp",
-          "target": "retrig_rec_timing"
+          "target": "retrig_fix_timing"
         },
         {
           "addr": "0x400b470e",
           "len": 6,
           "stockSha256": "be28db20013e9298a17482a6a95c6fdc686944541fd473e09b5aaa7624388c72",
           "op": "jsr",
-          "target": "retrig_rec_rate"
+          "target": "retrig_fix_rate"
         },
         {
           "addr": "0x400b43d8",
           "len": 6,
           "stockSha256": "3053914c49697b92072c6a990e2f2e9bf2f12e185db4b9e8d013a29dfc068ce1",
           "op": "jsr",
-          "target": "retrig_rec_length"
+          "target": "retrig_fix_length"
         }
       ]
     }

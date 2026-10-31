@@ -1,4 +1,4 @@
-// Retrig Rec for the Analog Rytm MKII (OS 1.74): a Modwerk elemod module.
+// Live Rec Retrig Fix for the Analog Rytm MKII (OS 1.74): a Modwerk elemod module.
 //
 // In LIVE RECORDING stock records a retrig hold as one trig, then tries to add a
 // trigless lock on each later step, and its held-note wipe removes most of those.
@@ -16,7 +16,7 @@
 // first hit of each whole block of steps, with the step retrig that plays the rest:
 // two hits a step at 1/32, three hits in two steps at 1/24.
 //
-// The stock sites, in retrig-rec.s: the RETRIG menu's step writes off, a press at a rate
+// The stock sites, in live-rec-retrig-fix.s: the RETRIG menu's step writes off, a press at a rate
 // that fits the steps records a plain trig, a recorded retrig takes the menu's VEL.CUR,
 // and the note-off that sets its LEN cuts that curve to the trig's share. Quantize live
 // rec applies to every note, retrig hits included, as stock has it.
@@ -263,7 +263,7 @@ static void keep_steps(void)
 
 // ev_render_out: stock's series state for this block in place. Nothing but four
 // reads a block until a pad is pressed.
-void retrig_rec_render(void)
+void retrig_fix_render(void)
 {
     const volatile uint32_t *active = (const volatile uint32_t *)RT_ACTIVE;
     int t;
@@ -311,21 +311,21 @@ void retrig_rec_render(void)
         keep_steps();
 }
 
-// The recorder, for a press with a retrig (retrig-rec.s): at a rate that fits the steps
+// The recorder, for a press with a retrig (live-rec-retrig-fix.s): at a rate that fits the steps
 // each hit gets its own trig, so the press is a plain one too.
-int retrig_rec_press_rate(int rate, int t)
+int retrig_fix_press_rate(int rate, int t)
 {
     if (rate > 16 || period[rate] >= step_ticks(t))
         return -1;
     return rate;
 }
 
-// The RETRIG menu's YES (retrig-rec.s): ALWAYS ON turned over for the menu's track, as
+// The RETRIG menu's YES (live-rec-retrig-fix.s): ALWAYS ON turned over for the menu's track, as
 // the ALWAYS ON row's own action does it, whichever row is lit. Returns 0 so the menu
 // takes its "not a press" exit and runs no row action.
 #define MENU_TRACK 404          // the RETRIG menu: the track it edits
 
-int retrig_rec_menu_yes(uint32_t event, uint32_t view)
+int retrig_fix_menu_yes(uint32_t event, uint32_t view)
 {
     uint32_t kit;
     int track;
@@ -366,11 +366,11 @@ static int step_velocity(uint32_t track, int step)
     return *(volatile uint8_t *)(data + STEP_VELOCITY + step);
 }
 
-// The recorder's call that sets a step's retrig rate (retrig-rec.s): also the menu's
+// The recorder's call that sets a step's retrig rate (live-rec-retrig-fix.s): also the menu's
 // VEL.CUR, for now in full. The note-off below cuts it to the trig's share.
 static uint8_t scale_curve[TRACKS];    // step + 1 of a trig whose curve awaits its LEN
 
-void retrig_rec_step_rate(uint32_t track, int step, int rate, int t)
+void retrig_fix_step_rate(uint32_t track, int step, int rate, int t)
 {
     STOCK_STEP_SET_RATE(track, step, rate);
     if (t >= TRACKS)
@@ -380,11 +380,11 @@ void retrig_rec_step_rate(uint32_t track, int step, int rate, int t)
 }
 
 // The recorder's note-off call that sets a recorded retrig's LEN from the hold
-// (retrig-rec.s). The live fade runs VEL.CUR over the menu's LENGTH from the press; each
+// (live-rec-retrig-fix.s). The live fade runs VEL.CUR over the menu's LENGTH from the press; each
 // trig's velocity is the fade's value at its hit, and stock runs the trig's own curve over
 // this LEN, about a step. The curve's speed is the engine's table at the length, so the
 // slice that keeps the trigs on the live fade is VEL.CUR times the two speeds' ratio.
-void retrig_rec_step_length(uint32_t track, int step, int len, int t)
+void retrig_fix_step_length(uint32_t track, int step, int len, int t)
 {
     uint32_t kit;
     int curve, length;

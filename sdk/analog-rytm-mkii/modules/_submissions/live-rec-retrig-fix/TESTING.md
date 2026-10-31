@@ -1,4 +1,4 @@
-# Retrig Rec testing
+# Live Rec Retrig Fix testing
 
 ## 0.1.0-experimental (rytm-emu, 31 October 2026)
 
@@ -20,6 +20,7 @@ Owner-supplied OS 1.74 (stock sha256 cb0f99d6…e123), core-ar2 0.7 (`vendor/ele
 - RR14: RR13 with the review fixes (guard dropped outside LIVE RECORDING, the fade's end taken only once the velocity has stopped moving), sha256 16daec12a612e5fb…; the fade, early-roll and pre-rec cases matched RR11 and RR13, the end now zeroes from the second level trig
 - RR15: RR12 with the same, sha256 f86752dc986c8f4e…
 - RR16: RR14 with RTRG + YES turning ALWAYS ON over, sha256 d4b991ef3a9a630e…
+- RF17: RR16 under the module's final name (id `live-rec-retrig-fix`), sha256 a67e4adb57cedfb9…; the two images differ only in the sysex header's version tag (`cmp`: four bytes, all before offset 64), so RR16's unit results hold for it.
 
 Emulator: rytm-emu c5732f0.
 
