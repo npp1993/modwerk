@@ -355,7 +355,10 @@ static void apply_linked(void *kit)
             continue;
         read = *(set_read_t *)(*(word_t *)set + VT_READ);
         SET_VALUE(set, id, read(set, id) + value, track, 1, 1);
-        PERF_SET(perf, index, track, param, lock - value);
+        if (lock == value)
+            PERF_CLEAR_ONE(perf, index, track, param);
+        else
+            PERF_SET(perf, index, track, param, lock - value);
     }
     if (seen)
         show_numbered("PERFORMANCE ", mask, " APPLIED");

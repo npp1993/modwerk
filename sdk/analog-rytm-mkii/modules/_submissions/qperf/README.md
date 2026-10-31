@@ -12,7 +12,7 @@ QPER links one performance at a time. Hold QPER and press a pad or trig key: the
 | --- | --- |
 | Turn a knob | Edits the linked performance's lock, as holding a performance pad does: the knob inverts and shows the offset. |
 | PLAY | CLEAR PERFORMANCE, with stock's clear. PLAY again: UNDO CLEAR. |
-| YES | What the lock adds at the QPER knob's position goes into the kit and comes off the lock, so full QPER still lands where it did. At full, the sound holds and the lock reads +0. |
+| YES | What the lock adds at the QPER knob's position goes into the kit and comes off the lock, so full QPER still lands where it did. At full, the sound holds and the lock goes away, freeing its slot. |
 | RECORD | COPY PERFORMANCE n. |
 | STOP | PASTE PERFORMANCE onto the linked one. STOP again: UNDO PASTE. |
 

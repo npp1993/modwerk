@@ -112,14 +112,23 @@ Reported by the author on build QP06:
 - FX track volume +53, QPER + YES at full: APPLIED, but the lock stayed and the sound still followed the knob. Cause: wrong stock id table. Fixed in QP07.
 - Pad 1 stays dim green, brighter when linked.
 
+Reported by the author on build QP07:
+
+- Pad 1's dim green went out after CLEAR PERFORMANCE: stock's marker for a performance with locks.
+- Clear in kit 1, load kit 2, QPER + PLAY: CLEAR PERFORMANCE, no undo, and kit 1's locks did not appear.
+- +127 at half knob, saved, power cycled, kit reloaded: applied value and reduced lock both back.
+- After power on, QPER + YES before moving the knob: APPLIED, no crash, value unchanged. After moving the knob it followed the position.
+
 Build QP07 (sha256 95ef219d): a +40 lock poked into the FX track at index 22, QPER + YES at full: lock 0, kit byte 78 to 118. Index 34 also went to 0 and its kit value moved. The FX track was not selected on screen.
+
+Build QP08 (sha256 951dade2): QPER + YES at full removed all 13 of performance 1's locks (31 slots to 18); at about half all 13 stayed.
 
 ## Not tested
 
 - The real QPER knob: the emulator has none, so amounts were poked. Full amount is taken as 0x7f80 from the code, not measured.
 - Knob turns on the FX track and the LFO page.
 - LOCK MEM FULL! on screen.
-- QPER + YES on FX track locks on hardware.
+- QPER + YES on FX track locks on hardware (QP07 or later).
 - A build beside other modules.
 - The kit's power-on knob position: until the knob moves, QPER + YES falls back on stock's per-performance amounts.
 - Save and reload of the kit after a turn, clear or apply.
