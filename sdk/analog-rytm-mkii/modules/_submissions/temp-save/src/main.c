@@ -19,6 +19,8 @@
 #define KEY_FUNC 0x80
 #define TOOK 2                      // not stock's true or false: we took the key
 #define VIEW_MANAGER 44             // view + 44: the view manager
+#define MANAGER_LAST 24             // view manager + 24: the top view's list node
+#define NODE_VIEW 8                 // list node + 8: its view
 #define PROJECT_KIT 352             // project + 352: the active kit
 #define TRIG_KEYS 16                // the trig keys are keys 0 to 15
 #define VT_INDEX 108                // kit: index(kit)
@@ -135,10 +137,17 @@ static int save_holds(void *project)
         && active_kit(project) == saved_kit && reload_kit(project) == saved_kit;
 }
 
-static int ours(void)
+// The RECORDER leaves FUNC + NO to the views below it.
+static int on_recorder(void *view)
+{
+    void *top = FIELD(FIELD(FIELD(view, VIEW_MANAGER), MANAGER_LAST), NODE_VIEW);
+    return *(word_t *)top == RECORDER_VTABLE;
+}
+
+static int ours(void *view)
 {
     int key;
-    if (!IS_KEY_HELD(KEY_FUNC))
+    if (!IS_KEY_HELD(KEY_FUNC) || on_recorder(view))
         return 0;
     for (key = 0; key < TRIG_KEYS; key++)
         if (IS_KEY_HELD(key))
@@ -167,7 +176,7 @@ unsigned temp_save_yes_key(void *view, void *event)
     unsigned pressed = PRESSED_ONCE(event) & 0xff;
     void *project;
     int pattern, kit;
-    if (!pressed || !ours())
+    if (!pressed || !ours(view))
         return pressed;
     EVENT_TAKEN(event);
     project = (void *)PROJECT_SINGLETON();
@@ -189,7 +198,7 @@ unsigned temp_save_yes_key(void *view, void *event)
 unsigned temp_save_no_key(void *view, void *event)
 {
     unsigned pressed = PRESSED_ONCE(event) & 0xff;
-    if (!pressed || !ours())
+    if (!pressed || !ours(view))
         return pressed;
     return reload(view, event);
 }
@@ -197,7 +206,7 @@ unsigned temp_save_no_key(void *view, void *event)
 unsigned temp_save_page_no_key(void *view, void *event)
 {
     unsigned func = FUNC_FLAG(event) & 0xff;
-    if (!func || !(PRESSED_ONCE(event) & 0xff) || !ours()
+    if (!func || !(PRESSED_ONCE(event) & 0xff) || !ours(view)
         || LIVE_REC((void *)APP_SINGLETON()))
         return func;
     return reload(view, event);

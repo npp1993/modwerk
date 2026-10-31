@@ -59,13 +59,17 @@ rytm-emu c5732f0, `dtboot`, stock OS 1.74, Modwerk base 0c92aa45, Temp Save alon
 | Stopped, no save, FUNC + NO (TS07, sha256 79eeb2d3) | NO TEMP SAVE |
 | RECORD + PLAY with a locked trig on the active track, hold FUNC + NO past a bar (TS07) | The lock is erased, the trigs stay; no RELOADED |
 | FUNC + YES, add a trig and turn TUN, FUNC + NO (TS07) | Pattern and kit record byte-identical to the save |
+| Stock OS 1.74 against TS07, same presses: TEMPO FUNC + NO, song edit FUNC + NO, sound browser FUNC + YES, naming FUNC + NO, RECORDER FUNC + YES | Same screens |
+| Stock OS 1.74 against TS07: RECORDER FUNC + NO | Stock nothing; TS07 NO TEMP SAVE, fixed in TS08 |
+| RECORDER FUNC + NO with and without a save (TS08, sha256 fcbf7f45) | No message, the RECORDER stays, as stock |
+| FUNC + YES, FUNC + NO on the main screen and AMP page (TS08) | TEMP SAVED, then RELOADED on both |
 
 Read from stock's code, not run: performance locks at kit record + 1950 and scene locks at + 2190, inside the bytes compared above. The locks heard while FUNC + NO erases them in LIVE RECORDING are stock's: the sequencer builds a step, locks included, a step ahead, and the erase reaches it afterwards.
 
 ## Not tested
 
 - On the unit: stock FUNC + YES and FUNC + NO without the module on every screen, audio during a reload, timing.
-- The sound browser, the song and chain modes.
+- The song and chain modes while they play. In the sampler, FUNC + YES preview and FUNC + NO discard on a recorded sample: rytm-emu has no audio to record.
 - Whether stock's own flows reach KIT NOT LINKED: a kit load and a saved kit both link the kit to the pattern.
 - A project save after FUNC + YES, and this beside other modules. Memory and load were not measured.
 - Mutes, the tempo and the performance knob across a reload.
