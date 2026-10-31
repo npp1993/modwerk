@@ -19,6 +19,7 @@ Owner-supplied OS 1.74 (stock sha256 cb0f99d6…e123), core-ar2 0.7 (`vendor/ele
 - RR13: RR11 with quantize live rec applied to retrig hits, sha256 256743db1c92d0a1…
 - RR14: RR13 with the review fixes (guard dropped outside LIVE RECORDING, the fade's end taken only once the velocity has stopped moving), sha256 16daec12a612e5fb…; the fade, early-roll and pre-rec cases matched RR11 and RR13, the end now zeroes from the second level trig
 - RR15: RR12 with the same, sha256 f86752dc986c8f4e…
+- RR16: RR14 with RTRG + YES turning ALWAYS ON over, sha256 d4b991ef3a9a630e…
 
 Emulator: rytm-emu c5732f0.
 
@@ -67,6 +68,8 @@ Velocity: the 1/16 velocity word at each playback hit equalled the recorded lock
 VEL.CUR at 1/32, RR05 to RR10: each trig stored the menu's value in full and velocities followed the fade, not the pressure (stock's pressure path is off with VEL.CUR set). OFF stored 0. On the unit (below) that played back as a fade restarted inside every trig. **Certain** (disassembly): the engine runs a curve at the speed its length table (0x402907b0, 128 entries) gives for the length; the live series takes the menu's LENGTH, a recorded trig its own retrig LEN, which stock's note-off sets from the hold (0x400b43d8); the two differ (menu 1/4, trig 1/16 on the unit; emulator: default LENGTH 46, a one-step hold 14). RR11: VEL.CUR -10 with LENGTH at 54 and a 1/32 roll; live velocities (engine word per hit) 127, 126, 125 … 117 then level; recorded trigs 118, 117 … with curve -2 on the first and 0 once the fade's end (press + VEL.CUR) was reached, -1 on a shorter trig; playback pairs 123/121, 122/120, 118/116, 117/116 then level at 117, against RR09's -10 on every trig and pairs 123/117, 122/116 … 117/111. A roll without VEL.CUR and an early 1/16 roll on RR11 matched RR09.
 
 A held pad without a retrig gave the same trig word on RR07 as on RR05. Other cases in the table ran on RR05 or RR06, not again on RR07 or RR09. A roll on a track other than the one the recorder follows was not produced: a pad press selects its track, and no other path to a retrig series was tried.
+
+RTRG + YES on RR16: after one press, a plain BD hold in LIVE RECORDING recorded a trig on every step, the roll from the hold; after two presses, one trig, as a plain hold without the gesture. Stock's YES in the menu was not compared.
 
 Quantize live rec on RR13: on (the project's default), rolls pressed 0.28 step late and 0.40 step early at 1/16, and one at 1/32, recorded every hit at micro 0 and played back on the grid, that far from the live roll; off, the same late press recorded micro +7 on every trig and played back within 0.02 step of live. Up to RR12 a retrig hit kept its micro timing with quantize on. Plain pad hits still quantize with quantize on. Against stock: a held pad without a retrig over plain trigs, identical trig words. NO + pad removes the roll's trigs. NO + SCNE reloads the pattern and removes the recording, as stock.
 

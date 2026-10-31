@@ -20,7 +20,8 @@
   "regions": [],
   "claims": [
     "ui:RETRIG menu step writes in LIVE RECORDING",
-    "ui:live recording of pad retrigs"
+    "ui:live recording of pad retrigs",
+    "key:RTRG+YES"
   ],
   "requires": [],
   "derive": null,
@@ -38,7 +39,11 @@
         "STOCK_SEQ_STEP": "0x4003532c",
         "STOCK_KIT": "0x400ae4ca",
         "STOCK_KIT_CURVE": "0x400a72f6",
-        "STOCK_STEP_SET_LENGTH": "0x400c0a02"
+        "STOCK_STEP_SET_LENGTH": "0x400c0a02",
+        "STOCK_KEY_DOWN": "0x40071f54",
+        "STOCK_ALWAYS_ON": "0x400a7020",
+        "STOCK_SET_ALWAYS_ON": "0x400a708a",
+        "STOCK_VIEW_REDRAW": "0x40078580"
       },
       "cflags": [
         "-DRT_ACTIVE_AT=0x8000fe44",
@@ -63,6 +68,13 @@
           "stockSha256": "524ab35165c13e344966031469e62cbe73cc1cb22ffd34bed0f855a1614675d9",
           "op": "jmp",
           "target": "retrig_rec_menu"
+        },
+        {
+          "addr": "0x400e2b3e",
+          "len": 6,
+          "stockSha256": "a232dd09a8abc0dcb2622d83155305da95999bc534b95bd9b890dd4e5351a3a2",
+          "op": "jsr",
+          "target": "retrig_rec_yes"
         },
         {
           "addr": "0x400b4692",

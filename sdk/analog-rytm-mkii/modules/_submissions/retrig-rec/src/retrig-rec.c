@@ -70,6 +70,10 @@ extern uint32_t STOCK_SEQ(void);
 extern int32_t STOCK_SEQ_STEP(uint32_t seq, int32_t track);
 extern uint32_t STOCK_KIT(uint32_t recorder);
 extern int32_t STOCK_KIT_CURVE(uint32_t kit, int32_t track);
+extern int32_t STOCK_KEY_DOWN(uint32_t event);                   // a byte: the key went down
+extern int32_t STOCK_ALWAYS_ON(uint32_t kit, int32_t track);
+extern void STOCK_SET_ALWAYS_ON(uint32_t kit, int32_t track, int32_t on);
+extern void STOCK_VIEW_REDRAW(uint32_t view);
 
 // RETRIG 1/1 .. 1/80, in ticks
 static const int16_t period[17] = { 960, 480, 320, 240, 192, 160, 120, 96, 80, 60, 48, 40, 30, 24, 20, 15, 12 };
@@ -314,6 +318,25 @@ int retrig_rec_press_rate(int rate, int t)
     if (rate > 16 || period[rate] >= step_ticks(t))
         return -1;
     return rate;
+}
+
+// The RETRIG menu's YES (retrig-rec.s): ALWAYS ON turned over for the menu's track, as
+// the ALWAYS ON row's own action does it, whichever row is lit. Returns 0 so the menu
+// takes its "not a press" exit and runs no row action.
+#define MENU_TRACK 404          // the RETRIG menu: the track it edits
+
+int retrig_rec_menu_yes(uint32_t event, uint32_t view)
+{
+    uint32_t kit;
+    int track;
+
+    if (!(STOCK_KEY_DOWN(event) & 0xff))
+        return 0;
+    kit = STOCK_KIT(STOCK_RECORDER());
+    track = *(volatile int32_t *)(view + MENU_TRACK);
+    STOCK_SET_ALWAYS_ON(kit, track, (STOCK_ALWAYS_ON(kit, track) & 1) ^ 1);
+    STOCK_VIEW_REDRAW(view);
+    return 0;
 }
 
 // The RETRIG menu's LENGTH for track t, read as stock's VEL.CUR getter reads its byte:

@@ -10,7 +10,11 @@ With Retrig Rec, every retrig hit records a real trig, with the velocity it soun
 
 ## Controls
 
-None: there is nothing to set. The RETRIG menu keeps its stock rows, and what they do to a recording is below.
+One gesture. The RETRIG menu keeps its stock rows, and what they do to a recording is below.
+
+| Control | Action |
+| --- | --- |
+| RTRG + YES | Turns ALWAYS ON over for the track the RETRIG menu shows (the selected track, or the TRIG key pressed while RTRG is held), whichever row is lit. The row shows the new state. |
 
 | Stock control | With Retrig Rec |
 | --- | --- |
@@ -47,18 +51,19 @@ Stock's pad retrig series runs in the audio block and reaches no recorder. The m
 
 A hit that lands just before a step is recorded on that step while the playhead is still on the step before. Stock's held-note wipe would then remove the hit before it, so until the playhead arrives the module sets the byte stock's own note-off sets for that case. The playhead it watches is the one stock's wipe runs on, the track the recorder follows (a pad press makes it that pad's track), and the guard outlives the release: it ends when that step arrives or the recorder lets the note go.
 
-The module patches four stock sites, all its own: the RETRIG menu's writes to steps in LIVE RECORDING are off; the recorder records a retrig press as a plain trig at rates that fit the steps (its quantize branch, left as stock has it); the recorder's call that sets a step's retrig rate also sets the kit's VEL.CUR; and its note-off call that sets the trig's retrig LEN from the hold cuts that curve to the trig's share. Stock's engine runs a curve at a speed set by its length, so the share is VEL.CUR times the ratio of the engine's speeds at the trig's LEN and the menu's LENGTH, and 0 once the fade has reached its end. No hook or other module is involved.
+The module patches five stock sites, all its own: the RETRIG menu's writes to steps in LIVE RECORDING are off, and its YES turns ALWAYS ON over through the kit's own getter and setter; the recorder records a retrig press as a plain trig at rates that fit the steps (its quantize branch, left as stock has it); the recorder's call that sets a step's retrig rate also sets the kit's VEL.CUR; and its note-off call that sets the trig's retrig LEN from the hold cuts that curve to the trig's share. Stock's engine runs a curve at a speed set by its length, so the share is VEL.CUR times the ratio of the engine's speeds at the trig's LEN and the menu's LENGTH, and 0 once the fade has reached its end. No hook or other module is involved.
 
 ## Changes to stock flows
 
 - **LIVE RECORDING with pad retrigs** (RTRG held, or ALWAYS ON): real trigs replace the trigless locks. That is the mod's job. To get stock's behaviour, leave the mod out.
 - **RETRIG menu in LIVE RECORDING**: turning RETRIG or pressing a pad no longer writes the rate or a lock to the current step. The RETRIG menu's values still apply to what you play.
+- **YES in the RETRIG menu**: turns ALWAYS ON over on every row, in place of the lit row's own YES action (on stock the ALWAYS ON row's YES does the same; the other rows' YES is not used by the module's author). LEFT, RIGHT, UP, DOWN and the TRIG keys are as stock. Needed so a roll can be armed without taking a hand off the pads; considered a new page, which would not be reachable with RTRG held.
 - **Quantize live rec**: applies to retrig hits as to any note. Plain pad hits and TRIG keys are as stock.
 - **Everything else**: NO + pad, RELOAD PATTERN, a held pad without a retrig and plain pad hits matched stock in the tests. The module does not touch GRID RECORDING, per-step retrigs set with TRIG + RTRG or rolls outside LIVE RECORDING; those were not exercised.
 
 ## Compatibility and limitations
 
-- Analog Rytm MKII, OS 1.74, core-ar2 0.7. Event: `ev_render_out`. Four stock sites, 0x400e29ac, 0x400b4692, 0x400b470e and 0x400b43d8, which no other module patches.
+- Analog Rytm MKII, OS 1.74, core-ar2 0.7. Event: `ev_render_out`. Five stock sites, 0x400e29ac, 0x400e2b3e, 0x400b4692, 0x400b470e and 0x400b43d8, which no other module patches. Key gesture: RTRG + YES.
 - Beside Retrig Grid the retrigs after the first hit fall on its grid, and they record there.
 - Rates faster than a step: the hits of a trig share its velocity, or follow VEL.CUR. Pressure changes land once a trig.
 - A rate change during a roll starts a new trig at the next hit.

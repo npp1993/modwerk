@@ -42,6 +42,17 @@ retrig_rec_rate:
         lea     16(%sp),%sp
         rts
 
+        | Over the RETRIG menu's key-down test in its YES branch (the event at 4(sp),
+        | a2 the menu): the menu's track gets ALWAYS ON turned over. 0 back takes
+        | stock's "not a press" exit, so the row's own YES action does not run.
+        .globl  retrig_rec_yes
+retrig_rec_yes:
+        move.l  %a2,-(%sp)
+        move.l  8(%sp),-(%sp)
+        jsr     retrig_rec_menu_yes
+        addq.l  #8,%sp
+        rts
+
         | Over the recorder's note-off call that sets a retrig's LEN (track, step, len):
         | d6 is the note's track.
         .globl  retrig_rec_length
