@@ -127,6 +127,7 @@ static int held;                    // QPER is down, without FUNC
 static unsigned swallowed;          // YES, PLAY, REC and STOP: their release is ours too
 static unsigned known;              // the link as we last set or saw it
 static int ready;                   // a project is loaded
+static int kit_changed;             // stock changed the whole kit
 int qperf_pot;                      // the QPER knob + 1, 0 until it first moves
 
 // Stock's message for one pot: this replaces the 6-byte lea at its start.
@@ -140,6 +141,16 @@ __asm__(
     "    move.l %d0,qperf_pot\n"
     "    lea " ADDRESS(PROJECT_SINGLETON_AT) ",%a4\n"
     "    rts\n");
+
+// Stock runs this routine after every change of the whole kit: load, reload,
+// SysEx and its restores. This replaces its first two instructions.
+__asm__(
+    ".globl qperf_kit_gate\n"
+    "qperf_kit_gate:\n"
+    "    jsr qperf_kit_changed\n"
+    "    lea %sp@(-16),%sp\n"
+    "    move.l %a2,%sp@-\n"
+    "    jmp " ADDRESS(KIT_CHANGED_RESUME_AT) "\n");
 
 // Stock's popup, opened from ev_tick so repeats open one, not dozens.
 static void *views;
@@ -496,15 +507,21 @@ int qperf_key(void *brain, void *event)
     return 1;
 }
 
+// A kit can bring another link, or several: keep one. Stock's kit routine and
+// the project event run too early for stock's amount writes, so they only ask.
+void qperf_kit_changed(void)
+{
+    kit_changed = 1;
+}
+
 void qperf_project(int how, unsigned dropped)
 {
     (void)how;
     (void)dropped;
     ready = 1;
+    kit_changed = 1;
 }
 
-// Catches a kit loaded with another link, or with several, then opens the popup
-// as stock's clear shows its own.
 void qperf_tick(void *ctrl)
 {
     word_t string;
@@ -512,11 +529,10 @@ void qperf_tick(void *ctrl)
     struct { void *object; void *counts; } shared;
     void *popup;
     (void)ctrl;
-    if (!ready)
-        return;
-    {
+    if (ready && kit_changed) {
         void *kit = active_kit();
         unsigned mask = linked(kit);
+        kit_changed = 0;
         if (mask != known)
             link_only(kit, mask & -mask);
     }

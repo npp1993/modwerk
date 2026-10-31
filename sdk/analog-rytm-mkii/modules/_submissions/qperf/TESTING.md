@@ -155,8 +155,11 @@ Reported by the author on QC05: knob turns work. Tune stopped at +32 and QPER + 
 
 Also on QC05: lock at full knob, PERF mode, press and release the linked pad: on release the lock stopped sounding and stayed off with the knob still at full. QPER + YES then said NOTHING TO APPLY and the sound held. Not compared with stock, but the pad path is stock's own.
 
+Combined build QC06 (sha256 a25ee0f4): the link check runs after stock's routine at 0x400a65a4, which every kit change reaches (load, reload, SysEx and restores), through a flag read on the UI tick. Boot, KIT RELOADED! and KIT LOADED! each left one link. A first build acted during `ev_project` and left the kit blank at boot, so stock's amount writes wait for the tick. Knob lock, QPER + YES at half (engine words identical) and playback passed.
+
 ## Not tested
 
-- A kit loaded with another link or several, on a unit.
+- Pattern changes that bring a kit, and SysEx kit receive.
+- Kit load on a unit (QC06).
 - QPER gestures inside a menu or dialog: they still fire there.
 - Performance load.
