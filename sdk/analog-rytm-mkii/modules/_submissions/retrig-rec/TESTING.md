@@ -95,7 +95,7 @@ Analog Rytm MKII, OS 1.74, flashed with RR09. Reported by the author from playin
 | Lift and re-hit BD during a roll | the re-hit's trigs at the new velocity, roll continues |
 | VEL.CUR +127 at 1/32 | each trig velocity 127 with RETRIG 1/32 and VEL.CUR 127, hits inside a trig equal (127 cannot rise) |
 | VEL.CUR -127 at 1/32, LENGTH 1/4 | trigs 127, 95, 63, 31, 1, 1, each with VEL.CUR -127 and LEN 1/16; playback reported to differ from the live roll: the fade restarts inside each trig. Fixed in RR11, not yet on the unit |
-| NO + BD in LIVE RECORDING | first reported as not erasing; ALWAYS ON was on for BD from the test before, so the press under NO started a roll the module recorded. On RR16 with ALWAYS ON off: trigs erase as the playhead passes. Reported: NO then BD plays each trig and erases it, BD then NO erases silently after the press. Not compared with stock on the unit |
+| NO + BD in LIVE RECORDING | first reported as not erasing; ALWAYS ON was on for BD from the test before, so the press under NO started a roll the module recorded. On RR16 with ALWAYS ON off: trigs erase as the playhead passes. NO then BD plays each trig once and erases it; BD then NO records the press and erases silently from there. Read from code: with NO held in LIVE RECORDING the pad handler returns at once (0x400c7b58), and the erase is the recorder's own erase mode (kind 3 at recorder + 360, set from held keys, cleared at the step reached, 0x400c7f72); a pad pressed first opens a held note, whose wipe (0x400c81ec) clears each step before it sounds. rytm-emu: BD then NO equals a plain hold; NO then BD erases nothing there, its key poll is not modelled. The module touches neither path |
 
 On RR11 (sha256 c6e0a9510d03991b…), same unit, same day:
 
