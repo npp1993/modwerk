@@ -93,6 +93,11 @@ typedef void (*end_lock_edit_t)(void *ui);
 #define VT_LIVE 0x28                // source: the live sound
 #define SOUND_MACHINE 0x68          // live sound: machine byte
 
+// Stock's parameter table: each id's row, its range in 8.8.
+struct param_row { int kind, index, min, max, rest[9]; };
+#define PARAM_ROWS ((const struct param_row *)PARAM_ROWS_AT)
+#define ID_LAST 468
+
 #define KEY_QPER 0xb1
 #define KEY_YES 0x44
 #define KEY_PLAY 0x51
@@ -178,6 +183,31 @@ static int slots_free(const unsigned char *t)
     return free_slots;
 }
 
+// A sound parameter's id on this track: machine parameters have one per machine.
+static int track_id(void *set, int param)
+{
+    word_t source = *(word_t *)((char *)set + SET_SOUND), sound;
+    typedef word_t (*live_t)(word_t self);
+    live_t live;
+    if (!source)
+        return 0;
+    live = *(live_t *)(*(word_t *)source + VT_LIVE);
+    sound = live(source);
+    if (!sound)
+        return 0;
+    return ID_FOR_INDEX(param, *(unsigned char *)(sound + SOUND_MACHINE));
+}
+
+static int param_id(void *set, int track, int param)
+{
+    return track == FX_TRACK ? FX_ID(param) : track_id(set, param);
+}
+
+static int param_read(void *set, int id)
+{
+    return (*(set_read_t *)(*(word_t *)set + VT_READ))(set, id);
+}
+
 // The linked performance's lock on (track, param), 0 for none.
 static const unsigned char *find_lock(void *kit, int track, int param)
 {
@@ -226,7 +256,9 @@ static void locker_set(void *self, int track, int param, int value)
 {
     void *kit = active_kit();
     void *perf = (void *)KIT_PERF(kit);
+    void *set;
     unsigned mask = linked(kit);
+    int id;
     (void)self;
     if (!mask) {
         show("NO PERFORMANCE LINKED");
@@ -235,6 +267,18 @@ static void locker_set(void *self, int track, int param, int value)
     if (!find_lock(kit, track, param) && !slots_free(lock_table(perf))) {
         show("LOCK MEM FULL!");
         return;
+    }
+    set = (void *)KIT_PARAM_SET(kit, track);
+    id = param_id(set, track, param);
+    if (id && id <= ID_LAST) {           // stops where the parameter does
+        const struct param_row *row = &PARAM_ROWS[id];
+        int base = param_read(set, id);
+        if (value > row->max - base)
+            value = row->max - base;
+        if (value < row->min - base)
+            value = row->min - base;
+        if (!value && !find_lock(kit, track, param))
+            return;
     }
     PERF_SET(perf, lowest_linked(mask), track, param, value);
 }
@@ -281,21 +325,6 @@ static void locker_remove(void)
         END_LOCK_EDIT(ui);
 }
 
-// A sound parameter's id on this track: machine parameters have one per machine.
-static int track_id(void *set, int param)
-{
-    word_t source = *(word_t *)((char *)set + SET_SOUND), sound;
-    typedef word_t (*live_t)(word_t self);
-    live_t live;
-    if (!source)
-        return 0;
-    live = *(live_t *)(*(word_t *)source + VT_LIVE);
-    sound = live(source);
-    if (!sound)
-        return 0;
-    return ID_FOR_INDEX(param, *(unsigned char *)(sound + SOUND_MACHINE));
-}
-
 // A message with the linked performance's number in it.
 static void show_numbered(const char *before, unsigned mask, const char *after)
 {
@@ -334,30 +363,27 @@ static void apply_linked(void *kit)
     void *perf = (void *)KIT_PERF(kit);
     const unsigned char *t = lock_table(perf);
     unsigned mask = linked(kit);
-    int i, seen = 0;
+    int i, changed = 0;
     for (i = 0; i < SLOTS; i++, t += SLOT_BYTES) {
-        int track = t[2], param = t[3], index = t[4], lock, id, value, amount;
+        int track = t[2], param = t[3], index = t[4], lock, id, value;
         void *set;
-        set_read_t read;
         if (track > TRACK_NONE || index >= PERFS || !(mask >> index & 1))
             continue;
         lock = (short)(t[0] << 8 | t[1]);
         if (!lock)
             continue;
         set = (void *)KIT_PARAM_SET(kit, track);
-        id = track == FX_TRACK ? FX_ID(param) : track_id(set, param);
+        id = param_id(set, track, param);
         if (!id)
             continue;
-        seen = 1;
-        amount = qperf_pot ? (qperf_pot - 1) << 7 : (int)PERF_AMOUNT(index);
-        value = lock * amount >> AMOUNT_SCALE;
+        value = lock * (int)PERF_AMOUNT(index) >> AMOUNT_SCALE;     // as the engine adds it
         if (!value)
             continue;
-        read = *(set_read_t *)(*(word_t *)set + VT_READ);
-        SET_VALUE(set, id, read(set, id) + value, track, 1, 1);
+        SET_VALUE(set, id, param_read(set, id) + value, track, 1, 1);
         PERF_CLEAR_ONE(perf, index, track, param);
+        changed = 1;
     }
-    if (seen)
+    if (changed)
         show_numbered("PERFORMANCE ", mask, " APPLIED");
     else
         show("NOTHING TO APPLY");

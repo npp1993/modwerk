@@ -10,21 +10,22 @@ QPER links one performance at a time. Hold QPER and press a pad or trig key: the
 
 | Gesture | What it does |
 | --- | --- |
-| Turn a knob | Edits the linked performance's lock, as holding a performance pad does: the knob inverts and shows the offset. |
+| Turn a knob | Edits the linked performance's lock, as holding a performance pad does: the knob inverts and shows the offset. It stops where the parameter does, so tune at -7.5 reaches +39.5, not +127. |
 | PLAY | CLEAR PERFORMANCE, with stock's clear. PLAY again: UNDO CLEAR. |
-| YES | Writes what you hear into the kit, at the QPER knob's position, and removes those locks. The sound holds at any position. At knob zero nothing is added and the locks stay. |
+| YES | Writes what you hear into the kit and removes those locks. The sound holds at any position. Muted, it still applies, so the sound moves by what the knob would add. At knob zero nothing is added and the locks stay. |
 | RECORD | COPY PERFORMANCE n. |
 | STOP | PASTE PERFORMANCE onto the linked one. STOP again: UNDO PASTE. |
 
 FUNC + QPER (mute) is stock's.
 
-Stock draws every message. YES shows PERFORMANCE n APPLIED, or NOTHING TO APPLY when no lock has a value. A key or turn with nothing linked shows NO PERFORMANCE LINKED, and with no room LOCK MEM FULL!.
+Stock draws every message. YES shows PERFORMANCE n APPLIED, or NOTHING TO APPLY when no value would change. A key or turn with nothing linked shows NO PERFORMANCE LINKED, and with no room LOCK MEM FULL!.
 
 ## Things to know
 
 - **One link only.** A kit saved with several, or loaded with another, drops to the lowest one. An unlinked performance stops adding, and the newly linked one takes the knob's position, so the sound follows the link.
 - **48 locks a kit.** All 12 performances share them. A new parameter with none left shows LOCK MEM FULL! and writes nothing.
 - **Power on.** Stock does not know the QPER knob until it moves, so the amount is 0 and YES adds nothing until then.
+- **Locks past a parameter's range.** Set by stock's performance edit, they can still exceed it. YES stops at the limit, so the sound can change.
 - **YES uses up the lock.** Full QPER no longer reaches the old offset, because the part you did not apply is gone. Stock's undo does not bring it back; reloading an unsaved kit does.
 
 ## Stock flows changed

@@ -143,9 +143,13 @@ QC02 (sha256 562c8c76): the link check now starts from `ev_project`. Booted with
 
 Combined build QC03 (sha256 a19cccb3): QPER + YES writes what the locks add into the kit and removes them. Amount poked to half (0x3f80) and full (0x7f80): 13 locks removed (31 slots to 18), and the audio engine's parameter words were identical before and after. Amount 0: all locks stayed. The first build scaled by 0x7f80 and landed up to a quarter step off; stock's scale is 0x8000, measured here.
 
+Reported by the author on QC03: LFO depth +30 at half knob and at full held the sound. Normal and FX track parameters at full held, and moving the knob after changed nothing. Knob zero said APPLIED with no change. Tune locked to +127, past its +32 limit: YES changed the sound.
+
+Combined build QC04 (sha256 ade8229a): knob stops at the parameter's limit (tune from -7.5 stops at +39.5, and at its top SWD writes no lock); knob zero says NOTHING TO APPLY with locks kept; YES reads stock's amount, the value the engine plays, not the knob. After YES at half the audio engine's parameter words were identical.
+
 ## Not tested
 
 - A kit loaded with another link or several, on a unit.
 - QPER gestures inside a menu or dialog: they still fire there.
-- Knob turns on the LFO page, and parameters with wide ranges.
+- A clear, new locks, then QPER + PLAY: whether stock's undo replaces them.
 - Performance load.
