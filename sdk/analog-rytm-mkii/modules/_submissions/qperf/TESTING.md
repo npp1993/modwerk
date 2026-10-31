@@ -145,7 +145,11 @@ Combined build QC03 (sha256 a19cccb3): QPER + YES writes what the locks add into
 
 Reported by the author on QC03: LFO depth +30 at half knob and at full held the sound. Normal and FX track parameters at full held, and moving the knob after changed nothing. Knob zero said APPLIED with no change. Tune locked to +127, past its +32 limit: YES changed the sound.
 
-Combined build QC04 (sha256 ade8229a): knob stops at the parameter's limit (tune from -7.5 stops at +39.5, and at its top SWD writes no lock); knob zero says NOTHING TO APPLY with locks kept; YES reads stock's amount, the value the engine plays, not the knob. After YES at half the audio engine's parameter words were identical.
+Combined build QC04 (sha256 ade8229a): knob stops at the parameter's limit (tune from -7.5 stops at +39.5); knob zero says NOTHING TO APPLY with locks kept; YES reads stock's amount, the value the engine plays, not the knob. After YES at half the audio engine's parameter words were identical.
+
+Reported by the author on QC04: knob turns under QPER did nothing. Cause: stock starts a lock at 0 and adds to it, and QC04 refused a new +0 lock. Removed in QC05.
+
+Combined build QC05 (sha256 dff83fad): QPER + knob writes locks on knobs A, B, D and F again. Tune still stops at +39.5 from -7.5. SWD, already at its top, stays at +0 turning up.
 
 ## Not tested
 

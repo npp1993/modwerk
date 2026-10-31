@@ -277,8 +277,6 @@ static void locker_set(void *self, int track, int param, int value)
             value = row->max - base;
         if (value < row->min - base)
             value = row->min - base;
-        if (!value && !find_lock(kit, track, param))
-            return;
     }
     PERF_SET(perf, lowest_linked(mask), track, param, value);
 }
