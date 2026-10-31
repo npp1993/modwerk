@@ -26,7 +26,7 @@ Stock draws every message. YES shows PERFORMANCE n APPLIED, or NOTHING TO APPLY 
 - **48 locks a kit.** All 12 performances share them. A new parameter with none left shows LOCK MEM FULL! and writes nothing.
 - **Power on.** Stock does not know the QPER knob until it moves, so the amount is 0 and YES adds nothing until then.
 - **Locks past a parameter's range.** Set by stock's performance edit, they can still exceed it. YES stops at the limit, so the sound can change.
-- **Full QPER falls just short of the whole lock.** YES keeps what plays, so +54 at full reads 53.
+- **Full QPER is at most 99.6% of a lock.** Stock's knob value is 8 bits, times 128, and the engine's full scale is 32768. YES keeps what plays, so +54 at full reads 53.
 - **YES uses up the lock.** Full QPER no longer reaches the old offset, because the part you did not apply is gone. Stock's undo does not bring it back; reloading an unsaved kit does.
 
 ## Stock flows changed
