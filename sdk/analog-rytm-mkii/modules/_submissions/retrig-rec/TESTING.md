@@ -74,7 +74,7 @@ The release race, the note-off flags and the queue guard were changed from readi
 
 ### Not tested
 
-External MIDI clock. Where hits land when the pattern changes during a roll (the live hits matched stock). Load was not measured. RR12 has not run on a unit.
+External MIDI clock. Where hits land when the pattern changes during a roll (the live hits matched stock). Load was not measured. RR12, RR13 and RR15 have not run on a unit.
 
 ## On the unit: RR09 (Nathaniel Pavel, 31 October 2026)
 
@@ -100,3 +100,12 @@ On RR11 (sha256 c6e0a9510d03991b…), same unit, same day:
 | --- | --- |
 | VEL.CUR -127 at 1/32, LENGTH 1/4, FIX off | playback one smooth fade, no restart inside a step. Trigs: 127, 95, 63, 31 each with RETRIG 1/32, LEN 1/16 and VEL.CUR -32; from the trig at velocity 1 on, VEL.CUR 0 |
 | VEL.CUR OFF, 1/16 roll with pressure | velocities are the pad pressure, no curve on the trigs, as RR09 |
+
+On RR14 (sha256 16daec12a612e5fb…), same unit, same day:
+
+| Case | Result |
+| --- | --- |
+| Quantize live rec on, RTRG + BD pressed between steps, 1/16, slow tempo | live roll where played; trigs on the steps, playback on the grid |
+| Quantize live rec off, same | trigs off the grid, as played |
+| VEL.CUR -127 at 1/32, LENGTH 1/4, FIX off | one smooth fade; trigs 103, 71, 39, 7, 1, 1 with VEL.CUR -32 on the first five and 0 on the last |
+| STOP during a roll, then RECORD + PLAY and a new roll | recorded normally |
