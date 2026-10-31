@@ -32,6 +32,7 @@
 #define RT_COUNT ((volatile int32_t *)RT_COUNT_AT)          // [t] 960..1
 #define RT_RATE(t) (*(volatile int32_t *)(RT_TEMPLATE_AT + 56 * (t) + 36))  // RETRIG 0..16
 #define RT_LENGTHS ((const int32_t *)RT_LENGTHS_AT)        // [length + 1] the curve's speed
+#define LENGTH_INF 127                                      // the last length: speed 0
 #define KIT_RETRIG(t) (4 * (610 + (t)))                     // kit data: a track's RETRIG menu
 #define KIT_LENGTH 4                                        // LENGTH; VEL.CUR is at 5
 #define RT_VELOCITY ((volatile uint16_t *)RT_VELOCITY_AT)   // [t] the hit's, 8.8
@@ -85,6 +86,7 @@ static uint32_t started[TRACKS];    // this hit's time, clock / 2
 static uint8_t ring_seen;
 static uint8_t running;             // a series has run since the last idle pass
 static uint8_t guarding;            // some ahead[t] is set
+static uint8_t last_velocity[TRACKS];  // the track's last recorded retrig's; 0: none
 
 // The events this module queues: stock's own ring has no lock for the audio block.
 static uint8_t events[32][32];
@@ -119,6 +121,7 @@ static void watch_presses(void)
         rearmed[t] = RT_ACTIVE[t];
         rate_seen[t] = -1;
         hits[t] = 0;
+        last_velocity[t] = 0;
         have[t] = 1;
     }
 }
@@ -236,7 +239,7 @@ static void hit(int t)
 static void keep_steps(void)
 {
     uint32_t recorder = STOCK_RECORDER();
-    int step = wipe_step(), t;
+    int step = wipe_step(), live = STOCK_LIVE_REC(STOCK_APP()) != 0, t;
 
     guarding = 0;
     for (t = 0; t < TRACKS; t++) {
@@ -245,8 +248,8 @@ static void keep_steps(void)
         if (!ahead[t])
             continue;
         held = (volatile uint32_t *)(recorder + HELD + 40 * t);
-        if (step == ahead[t] - 1 || held[2] == held[6]) {
-            ahead[t] = 0;
+        if (!live || step == ahead[t] - 1 || held[2] == held[6]) {
+            ahead[t] = 0;       // outside LIVE RECORDING nothing is wiped
             continue;
         }
         *(volatile uint8_t *)(recorder + WIPE_SKIP + t) = 1;
@@ -347,6 +350,8 @@ static uint8_t scale_curve[TRACKS];    // step + 1 of a trig whose curve awaits 
 void retrig_rec_step_rate(uint32_t track, int step, int rate, int t)
 {
     STOCK_STEP_SET_RATE(track, step, rate);
+    if (t >= TRACKS)
+        return;
     STOCK_STEP_SET_CURVE(track, step, STOCK_KIT_CURVE(STOCK_KIT(STOCK_RECORDER()), t));
     scale_curve[t] = step + 1;
 }
@@ -368,20 +373,26 @@ void retrig_rec_step_length(uint32_t track, int step, int len, int t)
     kit = STOCK_KIT(STOCK_RECORDER());
     curve = STOCK_KIT_CURVE(kit, t);
     length = kit_length(kit, t);
-    if (!curve || length < 0 || length > 127 || len < 0 || len >= 127)   // the table ends in a 0
+    if (!curve || length < 0 || length > LENGTH_INF || len < 0 || len > LENGTH_INF)
         return;
+    if (len == LENGTH_INF)
+        return;                 // the trig's curve runs at speed 0: whatever it holds
     {
         int speed = RT_LENGTHS[len + 1];
         int end = press[t][17] + curve, velocity = step_velocity(track, step);
 
-        // past the fade's end the live roll stays level
+        // Past the fade's end the live roll stays level: the velocity has stopped moving
+        // at the end's side. With pad pressure on it keeps moving, and the curve stays.
         if (end < 1)
             end = 1;
         if (end > 127)
             end = 127;
-        if (velocity >= 0 && (curve < 0 ? velocity <= end : velocity >= end))
+        if (velocity >= 0 && velocity == last_velocity[t] &&
+            (curve < 0 ? velocity <= end : velocity >= end))
             curve = 0;
-        curve = curve * RT_LENGTHS[length + 1];
+        if (velocity >= 0)
+            last_velocity[t] = velocity;
+        curve = curve * RT_LENGTHS[length + 1];     // 0 at LENGTH INF: no live fade
         curve = (curve + (curve < 0 ? -speed : speed) / 2) / speed;
         if (curve > 127)
             curve = 127;
