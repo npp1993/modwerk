@@ -25,6 +25,14 @@ Analog Rytm MKII, stock OS 1.74, Modwerk base 0c92aa45, Temp Save alone, build T
 | FUNC + YES while editing a performance macro | Nothing happens |
 | Kit 5, FUNC + YES, power cycle, FUNC + NO | Still on kit 5; NO TEMP SAVE. Whether the kit's saved copy kept the save was not checked |
 
+Then build TS07 (sha256 79eeb2d3), same setup, reported by the tester, 31 Oct 2026:
+
+| Check | Result |
+| --- | --- |
+| Locks on trigs, RECORD + PLAY, hold FUNC + NO past a bar | Locks gone, trigs stay, no message. The locked values were heard while FUNC + NO was held |
+| FUNC + YES, edit the kit, power cycle, NO + PLAY MODE | First try: the kit did not return, not explained. Second try, filter as the marker: the edit survived the power cycle, FUNC + NO gave NO TEMP SAVE, and NO + kit key gave KIT RELOADED with the filter as at FUNC + YES |
+| After that, FUNC + NO | NO TEMP SAVE (test of a project load, reported in passing) |
+
 ## Emulator
 
 rytm-emu c5732f0, `dtboot`, stock OS 1.74, Modwerk base 0c92aa45, Temp Save alone, build TS06 (sha256 fbf0b2bf), factory kit K001 RYTMLINJE, pattern A01. Pattern, stored buffer and kit records read from snapshots with `dtpeek`. Screens read from `dtboot`'s output. The emulator's boot leaves a calibration warning open that takes YES and NO until it is closed; these runs close it first.
@@ -56,8 +64,8 @@ Read from stock's code, not run: performance locks at kit record + 1950 and scen
 
 ## Not tested
 
-- On the unit: TS07 at all, so FUNC + NO in running LIVE RECORDING. Stock FUNC + YES and FUNC + NO without the module on every screen, audio during a reload, timing.
+- On the unit: stock FUNC + YES and FUNC + NO without the module on every screen, audio during a reload, timing.
 - The sound browser, the song and chain modes.
-- Whether stock's own flows reach KIT NOT LINKED: a kit load and a saved kit both link the kit to the pattern. Project load dropping the save.
-- A project save after FUNC + YES, the kit's saved copy after a power cycle, and this beside other modules. Memory and load were not measured.
+- Whether stock's own flows reach KIT NOT LINKED: a kit load and a saved kit both link the kit to the pattern.
+- A project save after FUNC + YES, and this beside other modules. Memory and load were not measured.
 - Mutes, the tempo and the performance knob across a reload.
