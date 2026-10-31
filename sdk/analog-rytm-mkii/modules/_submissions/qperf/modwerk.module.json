@@ -19,14 +19,14 @@
     "label": "QPERF",
     "family": "Performance",
     "summary": "Set performance locks by holding QPER and turning knobs, clear them, or apply them to the kit.",
-    "overview": "Hold QPER and turn a knob: it edits that parameter's offset in the performance linked to QPER, and the knob inverts and shows it as it does for a held performance pad. QPER + PLAY clears the linked performances. QPER + YES writes what they add, at the QPER knob's position, into the kit and keeps the locks.",
+    "overview": "Hold QPER and turn a knob: it edits that parameter's offset in the performance linked to QPER, and the knob inverts and shows it as it does for a held performance pad. QPER + PLAY clears it and PLAY again undoes that. QPER + RECORD and STOP copy and paste it. QPER + YES moves what it adds, at the QPER knob's position, into the kit.",
     "highlights": [
       "Sets a lock in the linked performance with one turn",
       "QPER + PLAY clears the linked performance",
-      "QPER + YES applies them to the kit"
+      "QPER + YES moves them into the kit"
     ],
     "usage": [
-      "Link performances with QPER + pads, hold QPER and turn knobs to shape one macro on the QPER knob.",
+      "Link a performance with QPER + a pad, hold QPER and turn knobs to shape one macro on the QPER knob.",
       "Sweep the QPER knob, then QPER + YES when a sound is worth keeping."
     ]
   },
@@ -36,7 +36,7 @@
       "Hold QPER and press pads to link performances, as on stock.",
       "Keep QPER held and turn a knob to set its offset.",
       "QPER + PLAY clears the linked performance; press PLAY again to undo. QPER + RECORD copies it, QPER + STOP pastes.",
-      "QPER + YES applies them to the kit."
+      "QPER + YES moves them into the kit."
     ],
     "screenshots": []
   },
@@ -58,14 +58,16 @@
     "core": "0.7",
     "build": "build.json",
     "events": [
-      "ev_draw",
       "ev_key",
       "ev_tick"
     ],
     "claims": [
       "ui:QPER + knob",
+      "ui:QPER + pads and trigs",
       "ui:QPER + PLAY",
-      "ui:QPER + YES"
+      "ui:QPER + YES",
+      "ui:QPER + RECORD",
+      "ui:QPER + STOP"
     ]
   },
   "resources": {

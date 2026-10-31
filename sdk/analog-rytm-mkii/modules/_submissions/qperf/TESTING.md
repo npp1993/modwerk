@@ -125,12 +125,21 @@ Build QP08 (sha256 951dade2): QPER + YES at full removed all 13 of performance 1
 
 Reported by the author on build QP08: FX track threshold +127, QPER + YES at full: PERFORMANCE 4 APPLIED, the lock went away, the sound held. Locks set on BD, snare and RS show as red pads on the performance page, as stock.
 
+Combined build QC01 (sha256 493d5fa2): core 0.7 base 0c92aa45, Filter Hz 1.2.0, Pipo Loop 0.1.0-experimental, QPERF, Silent Pad+Trig 0.5.1-experimental. Linked with no overlap and booted in rytm-emu:
+
+| Check | Result |
+| --- | --- |
+| Any key on a kit linked to 2 | Mask drops to the lowest one on the next tick |
+| Mask poked to 2 links | Drops to the lowest one |
+| QPER + SD, turn SWD | Lock in performance 2, knob inverted, reads +28 |
+| FLTR page, turn FRQ | Reads 21.1kHz |
+| Trigs placed, PLAY | Sequencer ran, output peak 11229 |
+
+Pipo Loop and Silent Pad+Trig were not exercised, only booted beside it.
+
 ## Not tested
 
-- The real QPER knob: the emulator has none, so amounts were poked. Full amount is taken as 0x7f80 from the code, not measured.
-- Knob turns on the FX track and the LFO page.
-- LOCK MEM FULL! on screen.
-- A build beside other modules.
-- The kit's power-on knob position: until the knob moves, QPER + YES falls back on stock's per-performance amounts.
-- Save and reload of the kit after a turn, clear or apply.
-- Hardware, audio, performance load.
+- A kit loaded with another link or several, on a unit.
+- QPER gestures inside a menu or dialog: they still fire there.
+- Knob turns on the LFO page, and parameters with wide ranges.
+- Performance load.

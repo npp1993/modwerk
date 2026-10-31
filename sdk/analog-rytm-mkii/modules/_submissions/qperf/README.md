@@ -1,6 +1,6 @@
 # QPERF
 
-An Analog Rytm MKII mod by Nathaniel Pavel (@npp1993). Version 0.1.0-experimental. Hardware testing has started: see [TESTING.md](TESTING.md).
+An Analog Rytm MKII mod by Nathaniel Pavel (@npp1993). Version 0.1.0-experimental. See [TESTING.md](TESTING.md) for what ran on a unit.
 
 Set performance locks from the QPER key, much faster than one performance at a time.
 
@@ -22,21 +22,25 @@ Stock draws every message. YES shows PERFORMANCE n APPLIED, or NOTHING TO APPLY 
 
 ## Things to know
 
-- **One link only.** A kit saved with several drops to the lowest one when QPER is held. An unlinked performance stops adding, and the newly linked one takes the knob's position, so the sound follows the link.
-- **48 locks a kit.** All 12 performances share them. A new parameter takes one lock in each linked performance. If they do not all fit, the turn writes nothing and shows LOCK MEM FULL!. Turning a parameter already locked in all of them needs no new lock.
-- **After YES the sound moves further.** The kit now holds the offsets and the locks still add them on top, until you turn QPER down or clear with QPER + PLAY.
+- **One link only.** A kit saved with several, or loaded with another, drops to the lowest one. An unlinked performance stops adding, and the newly linked one takes the knob's position, so the sound follows the link.
+- **48 locks a kit.** All 12 performances share them. A new parameter with none left shows LOCK MEM FULL! and writes nothing.
+- **Power on.** Stock does not know the QPER knob until it moves, so the amount is 0 and YES adds nothing until then.
 - **YES and later edits.** The target holds through YES. Turn the parameter by hand afterwards and the target moves with it, because locks are offsets.
 
 ## Stock flows changed
 
-- **QPER + PLAY** starts the sequencer on stock. With this mod it clears instead: PLAY alone still starts the sequencer, so stock loses only the combination. Remove the mod to get it back.
+- **QPER + pads and trigs** link several performances on stock. With this mod a press moves the one link, and the linked one unlinks it. Why: linked offsets add up, so several made the knob's total and QPER + YES hard to follow.
+- **QPER + PLAY** starts the sequencer on stock. With this mod it clears instead. PLAY alone still starts it.
+- **QPER + STOP and QPER + RECORD** act as STOP and RECORD on stock. With this mod they paste and copy.
 - **QPER + knob** changes the parameter on stock. With this mod it edits locks and leaves the parameter alone.
 - **QPER + YES** did nothing visible on stock (rytm-emu, OS 1.74).
 
+Remove the mod to get these back.
+
 ## Tutorial
 
-1. Hold QPER, press pads 1 and 2 to link two performances, and keep holding.
+1. Hold QPER, press pad 1 to link its performance, and keep holding.
 2. Turn FLTR's cutoff up and the resonance a little, and let go of QPER.
 3. Sweep the QPER knob. Both moves come in together.
 4. When a position sounds right, hold QPER and press YES to keep it in the kit.
-5. Turn the QPER knob down, and hold QPER and press PLAY to clear the locks.
+5. Hold QPER and press RECORD, press pad 2, then STOP to start another performance from this one.

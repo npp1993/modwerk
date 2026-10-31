@@ -20,8 +20,10 @@
 // a moved link hands the amount over.
 //
 // Firmware routines are reached at fixed addresses given for each OS release
-// by build.json's cflags. Stock returns pointers in d0, while m68k-linux GCC
+// by ar2-1.74.h. Stock returns pointers in d0, while m68k-linux GCC
 // expects them in a0, so those routines are declared as returning a word.
+
+#include "ar2-1.74.h"
 
 typedef unsigned long word_t;
 typedef word_t (*project_singleton_t)(void);
@@ -118,16 +120,19 @@ typedef unsigned (*is_key_held_t)(int key);
 
 static int held;                    // QPER is down, without FUNC
 static unsigned swallowed;          // YES, PLAY, REC and STOP: their release is ours too
+static unsigned known;              // the link as we last set or saw it
 int qperf_pot;                      // the QPER knob + 1, 0 until it first moves
 
 // Stock's message for one pot: this replaces the 6-byte lea at its start.
+#define TEXT(x) #x
+#define ADDRESS(x) TEXT(x)
 __asm__(
     ".globl qperf_pot_gate\n"
     "qperf_pot_gate:\n"
     "    move.l %a2@(8),%d0\n"
     "    addq.l #1,%d0\n"
     "    move.l %d0,qperf_pot\n"
-    "    lea 0x4017fa0a,%a4\n"
+    "    lea " ADDRESS(PROJECT_SINGLETON_AT) ",%a4\n"
     "    rts\n");
 
 // Stock's popup, opened from ev_tick so repeats open one, not dozens.
@@ -172,6 +177,18 @@ static int slots_free(const unsigned char *t)
     return free_slots;
 }
 
+// The linked performance's lock on (track, param), 0 for none.
+static const unsigned char *find_lock(void *kit, int track, int param)
+{
+    const unsigned char *t = lock_table((void *)KIT_PERF(kit));
+    unsigned mask = linked(kit);
+    int i;
+    for (i = 0; i < SLOTS; i++, t += SLOT_BYTES)
+        if (t[2] == track && t[3] == param && t[4] < PERFS && (mask >> t[4] & 1))
+            return t;
+    return 0;
+}
+
 // The locker stock edits through while QPER is held. Stock calls these slots.
 static int locker_has_any(void *self)
 {
@@ -189,39 +206,32 @@ static int locker_has_any(void *self)
 static void locker_clear(void *self, int track, int param)
 {
     void *kit = active_kit();
-    void *perf = (void *)KIT_PERF(kit);
     unsigned mask = linked(kit);
-    int i;
     (void)self;
-    for (i = 0; i < PERFS; i++)
-        if (mask >> i & 1)
-            PERF_CLEAR_ONE(perf, i, track, param);
+    if (mask)
+        PERF_CLEAR_ONE((void *)KIT_PERF(kit), lowest_linked(mask), track, param);
 }
 
 static void locker_clear_all(void *self)
 {
     void *kit = active_kit();
-    void *perf = (void *)KIT_PERF(kit);
     unsigned mask = linked(kit);
-    int i;
     (void)self;
-    for (i = 0; i < PERFS; i++)
-        if (mask >> i & 1)
-            PERF_CLEAR(perf, i);
+    if (mask)
+        PERF_CLEAR((void *)KIT_PERF(kit), lowest_linked(mask));
 }
-
-static int locker_has(void *self, int track, int param);
 
 static void locker_set(void *self, int track, int param, int value)
 {
     void *kit = active_kit();
     void *perf = (void *)KIT_PERF(kit);
     unsigned mask = linked(kit);
+    (void)self;
     if (!mask) {
         show("NO PERFORMANCE LINKED");
         return;
     }
-    if (!locker_has(self, track, param) && !slots_free(lock_table(perf))) {
+    if (!find_lock(kit, track, param) && !slots_free(lock_table(perf))) {
         show("LOCK MEM FULL!");
         return;
     }
@@ -230,28 +240,15 @@ static void locker_set(void *self, int track, int param, int value)
 
 static int locker_get(void *self, int track, int param)
 {
-    void *kit = active_kit();
-    const unsigned char *t = lock_table((void *)KIT_PERF(kit));
-    unsigned mask = linked(kit);
-    int i, total = 0;
+    const unsigned char *t = find_lock(active_kit(), track, param);
     (void)self;
-    for (i = 0; i < SLOTS; i++, t += SLOT_BYTES)
-        if (t[2] == track && t[3] == param && t[4] < PERFS && (mask >> t[4] & 1))
-            total += (short)(t[0] << 8 | t[1]);
-    return total;
+    return t ? (short)(t[0] << 8 | t[1]) : 0;
 }
 
 static int locker_has(void *self, int track, int param)
 {
-    void *kit = active_kit();
-    const unsigned char *t = lock_table((void *)KIT_PERF(kit));
-    unsigned mask = linked(kit);
-    int i;
     (void)self;
-    for (i = 0; i < SLOTS; i++, t += SLOT_BYTES)
-        if (t[2] == track && t[3] == param && t[4] < PERFS && (mask >> t[4] & 1))
-            return 1;
-    return 0;
+    return find_lock(active_kit(), track, param) != 0;
 }
 
 static void locker_never(void *self)
@@ -319,14 +316,16 @@ static void show_numbered(const char *before, unsigned mask, const char *after)
 static void link_only(void *kit, unsigned mask)
 {
     word_t project = PROJECT_SINGLETON();
-    unsigned old = linked(kit);
+    unsigned old = known;
     int i, amount = qperf_pot ? (qperf_pot - 1) << 7 : old ? (int)PERF_AMOUNT(lowest_linked(old)) : 0;
-    KIT_SET_MASK(kit, (int)mask);
+    if (linked(kit) != mask)
+        KIT_SET_MASK(kit, (int)mask);
     for (i = 0; i < PERFS; i++)
         if ((old & ~mask) >> i & 1)
             AMOUNT_SET(project, i, 0, 1, 1);
     if (mask & ~old)
         AMOUNT_SET(project, lowest_linked(mask), amount, 1, 1);
+    known = mask;
 }
 
 static void apply_linked(void *kit)
@@ -434,12 +433,8 @@ int qperf_key(void *brain, void *event)
                 locker_remove();
             held = 0;
         } else if (!(flags & REPEAT) && !IS_KEY_HELD(KEY_FUNC)) {
-            void *kit = active_kit();
-            unsigned mask = linked(kit);
             held = 1;
             swallowed = 0;
-            if (mask & (mask - 1))
-                link_only(kit, mask & -mask);   // a kit saved with several
             locker_install();
         }
         return 0;
@@ -448,8 +443,8 @@ int qperf_key(void *brain, void *event)
     if (held && perf >= 0) {
         if ((flags & PRESSED) && !(flags & REPEAT)) {
             void *kit = active_kit();
-            unsigned bit = 1u << perf;
-            link_only(kit, linked(kit) == bit ? 0 : bit);
+            unsigned one = 1u << perf;
+            link_only(kit, linked(kit) == one ? 0 : one);
         }
         return 1;
     }
@@ -479,21 +474,31 @@ int qperf_key(void *brain, void *event)
     return 1;
 }
 
-// As stock's clear shows its own.
+// Catches a kit loaded with another link, or with several, then opens the popup
+// as stock's clear shows its own.
 void qperf_tick(void *ctrl)
 {
-    char string[4], allocator;
+    word_t string;
+    char allocator;
     struct { void *object; void *counts; } shared;
     void *popup;
     (void)ctrl;
-    if (!show_text || !views)
+    if (!views)
         return;
-    STRING_FROM_CSTR(string, show_text, &allocator);
+    {
+        void *kit = active_kit();
+        unsigned mask = linked(kit);
+        if (mask != known)
+            link_only(kit, mask & -mask);
+    }
+    if (!show_text)
+        return;
+    STRING_FROM_CSTR(&string, show_text, &allocator);
     show_text = 0;
     popup = (void *)MEM_NEW(POPUP_BYTES);
-    POPUP_CTOR(popup, string);
+    POPUP_CTOR(popup, &string);
     SHARED_PTR_CTOR(&shared, popup);
     SHOW_POPUP(views, &shared, 0);
     SHARED_PTR_RELEASE(&shared.counts);
-    STRING_DTOR(string);
+    STRING_DTOR(&string);
 }
