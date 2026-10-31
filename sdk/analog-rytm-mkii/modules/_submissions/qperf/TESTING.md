@@ -161,6 +161,8 @@ Reported by the author on QC06: normal boot, kit load and reload, and pattern ch
 
 Build QC07 applied the whole lock at full knob; the author chose to keep the played sound instead, so that was reverted. The source is QC06's again.
 
+Reverted at the author's request: QPER + knob no longer stops at a parameter's range, so it matches stock's performance edit.
+
 ## Not tested
 
 - SysEx kit receive.

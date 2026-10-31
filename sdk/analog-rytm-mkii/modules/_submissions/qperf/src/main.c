@@ -93,11 +93,6 @@ typedef void (*end_lock_edit_t)(void *ui);
 #define VT_LIVE 0x28                // source: the live sound
 #define SOUND_MACHINE 0x68          // live sound: machine byte
 
-// Stock's parameter table: each id's row, its range in 8.8.
-struct param_row { int kind, index, min, max, rest[9]; };
-#define PARAM_ROWS ((const struct param_row *)PARAM_ROWS_AT)
-#define ID_LAST 468
-
 #define KEY_QPER 0xb1
 #define KEY_YES 0x44
 #define KEY_PLAY 0x51
@@ -267,9 +262,7 @@ static void locker_set(void *self, int track, int param, int value)
 {
     void *kit = active_kit();
     void *perf = (void *)KIT_PERF(kit);
-    void *set;
     unsigned mask = linked(kit);
-    int id;
     (void)self;
     if (!mask) {
         show("NO PERFORMANCE LINKED");
@@ -278,16 +271,6 @@ static void locker_set(void *self, int track, int param, int value)
     if (!find_lock(kit, track, param) && !slots_free(lock_table(perf))) {
         show("LOCK MEM FULL!");
         return;
-    }
-    set = (void *)KIT_PARAM_SET(kit, track);
-    id = param_id(set, track, param);
-    if (id && id <= ID_LAST) {           // stops where the parameter does
-        const struct param_row *row = &PARAM_ROWS[id];
-        int base = param_read(set, id);
-        if (value > row->max - base)
-            value = row->max - base;
-        if (value < row->min - base)
-            value = row->min - base;
     }
     PERF_SET(perf, lowest_linked(mask), track, param, value);
 }
