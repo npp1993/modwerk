@@ -40,6 +40,8 @@
 #define QUEUED(q) (*(volatile uint32_t *)((q) + 4))      // events waiting
 #define NOTE_START ((volatile uint32_t *)NOTE_START_AT)     // [t * 128 + note] clock / 2
 #define WIPE_SKIP 251756        // recorder + track: 1 skips the next held-note wipe
+#define HELD 251236             // recorder + 40 * track: its held notes, begin at +8, end at +24
+#define REC_TRACK 64            // recorder: the track whose step the wipe runs on (index at +8)
 #define SEQ_PATTERN (*(volatile int8_t *)SEQ_PATTERN_AT)
 #define SPEED_PULSES ((const int32_t *)SPEED_PULSES_AT)     // 3, 4, 6, 8, 12, 24, 48
 
@@ -71,12 +73,13 @@ static uint8_t press[TRACKS][32];   // the track's latest press: its note event
 static uint8_t have[TRACKS];
 static uint8_t open_note[TRACKS];   // the recorder holds a note of this track
 static uint8_t rearmed[TRACKS];     // pressed again: the next 960 is not a hit
-static uint8_t ahead[TRACKS];       // step + 1 of a hit the playhead has not reached
+static uint8_t ahead[TRACKS];       // step + 1 of a hit the wipe's step has not reached
 static int8_t rate_seen[TRACKS];    // -1: none yet this press
 static uint16_t hits[TRACKS];
 static uint32_t started[TRACKS];    // this hit's time, clock / 2
 static uint8_t ring_seen;
 static uint8_t running;             // a series has run since the last idle pass
+static uint8_t guarding;            // some ahead[t] is set
 
 // The events this module queues: stock's own ring has no lock for the audio block.
 static uint8_t events[32][32];
@@ -109,7 +112,6 @@ static void watch_presses(void)
         started[t] = NOTE_START[(t << 7) + press[t][16]];
         open_note[t] = STOCK_LIVE_REC(STOCK_APP()) != 0;
         rearmed[t] = RT_ACTIVE[t];
-        ahead[t] = 0;
         rate_seen[t] = -1;
         hits[t] = 0;
         have[t] = 1;
@@ -145,6 +147,14 @@ static int hits_in_block(int ticks, int step)
         b = c;
     }
     return step / a;
+}
+
+// The step stock's held-note wipe runs on: its recorder track's, not the hit's track's.
+static int wipe_step(void)
+{
+    uint32_t track = *(volatile uint32_t *)(STOCK_RECORDER() + REC_TRACK);
+
+    return STOCK_SEQ_STEP(STOCK_SEQ(), track ? *(volatile int32_t *)(track + 8) : 0);
 }
 
 // Hit: close the one before it, as a release would, and start this one.
@@ -207,21 +217,37 @@ static void hit(int t)
 
     open_note[t] = 1;
     started[t] = now;
-    ahead[t] = place[0] != STOCK_SEQ_STEP(STOCK_SEQ(), t) ? place[0] + 1 : 0;
+    ahead[t] = place[0] != wipe_step() ? place[0] + 1 : 0;
+    guarding |= ahead[t] != 0;
     // the release closes the last hit; -1 here means the release has come
     if ((int32_t)NOTE_START[(t << 7) + press[t][16]] >= 0)
         NOTE_START[(t << 7) + press[t][16]] = now;
 }
 
-// A hit placed on the next step is the recorder's held note before the playhead gets
-// there. Until then any sequencer change runs the held-note wipe on the playhead's step,
-// which holds the hit before it. Stock's note-off skips the wipe for the same case.
-static void keep_step(int t)
+// A hit placed on the next step is the recorder's held note before the wipe's step gets
+// there. Until then any sequencer change runs the held-note wipe on that step, which
+// holds the hit before it. Stock's note-off skips the wipe for the same case. The guard
+// outlives the series: a release keeps the note held until its step, and ends once the
+// recorder has let it go.
+static void keep_steps(void)
 {
-    if (STOCK_SEQ_STEP(STOCK_SEQ(), t) == ahead[t] - 1)
-        ahead[t] = 0;
-    else
-        *(volatile uint8_t *)(STOCK_RECORDER() + WIPE_SKIP + t) = 1;
+    uint32_t recorder = STOCK_RECORDER();
+    int step = wipe_step(), t;
+
+    guarding = 0;
+    for (t = 0; t < TRACKS; t++) {
+        volatile uint32_t *held;
+
+        if (!ahead[t])
+            continue;
+        held = (volatile uint32_t *)(recorder + HELD + 40 * t);
+        if (step == ahead[t] - 1 || held[2] == held[6]) {
+            ahead[t] = 0;
+            continue;
+        }
+        *(volatile uint8_t *)(recorder + WIPE_SKIP + t) = 1;
+        guarding = 1;
+    }
 }
 
 // ev_render_out: stock's series state for this block in place. Nothing but four
@@ -234,11 +260,13 @@ void retrig_rec_render(void)
     if (ring_seen != (NOTE_RING_NEXT & 15))
         watch_presses();
     if (!(active[0] | active[1] | active[2])) {
-        if (!running)
-            return;
-        running = 0;
-        for (t = 0; t < TRACKS; t++)
-            seen[t] = -1;
+        if (running) {
+            running = 0;
+            for (t = 0; t < TRACKS; t++)
+                seen[t] = -1;
+        }
+        if (guarding)
+            keep_steps();
         return;
     }
     running = 1;
@@ -267,9 +295,9 @@ void retrig_rec_render(void)
             }
         }
         seen[t] = c;
-        if (ahead[t])
-            keep_step(t);
     }
+    if (guarding)
+        keep_steps();
 }
 
 // The recorder, for a press with a retrig (retrig-rec.s): at a rate that fits the steps

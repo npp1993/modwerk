@@ -12,6 +12,8 @@ Owner-supplied OS 1.74 (stock sha256 cb0f99d6…e123), core-ar2 0.7 (`vendor/ele
 - RR06: this module and Retrig Grid 0.2.0-experimental, sha256 90a996197948a5cd…
 - RR07: RR05 with the early-hit fix, sha256 bdc962d64cc82566…
 - RR08: RR06 with the early-hit fix, sha256 c97bd28f65c01ab8…
+- RR09: RR07 with the guard on the recorder track's step, kept past the release, sha256 56094153e36ac7e8…
+- RR10: RR08 with the same, sha256 c36b3f55527005d6…
 
 Emulator: rytm-emu c5732f0.
 
@@ -22,6 +24,7 @@ Emulator: rytm-emu c5732f0.
 - **Certain** (disassembly): stock's retrig series fires in the audio block and queues no note event to the recorder, so a roll's hits never reach it.
 - **Certain** (rytm-emu): live retrigs are not quantized. A press 0.23 of a step early or 0.15 late keeps the whole roll that far off the grid.
 - **Certain** (disassembly and rytm-emu, RR05): a hit placed on the next step becomes the recorder's held note before the playhead gets there. A sequencer notification in that gap runs the held-note wipe on the playhead's step and removes the hit before it. Runs at micro -10 lost steps 5 and 11 (roll from before LIVE RECORDING) and step 0 (roll from inside it); with the wipe call disabled none were lost. Micro -6 and later lost none here, and the emulator's notifications came about 0.4 step before a step, one every 6 steps. What sends them was not identified, so a unit may lose hits at other timings without the fix.
+- **Certain** (disassembly): the wipe's "current step" is the step of the track the recorder follows (recorder + 64, its index at + 8), the same for every track it loops over, and the tick clears the skip byte of every track each pass. A pad press sets that track to the pad's (rytm-emu: index 0, then 1 after an SD press). RR09 reads that step, and keeps the guard after a release until the step arrives or the track's held notes are gone.
 
 ### Method
 
@@ -51,12 +54,14 @@ Hits closer than 100 samples count as one: a trigger's switch takes up to 64 sam
 | 1/16 pass, then a 1/8 pass over it (RR07) | the wipe still clears the steps between hits, same trig words as RR05 | not compared |
 | Retrig Grid, early press and roll from before LIVE RECORDING (RR08) | no step lost | first hit at the press, rest on the grid |
 | Retrig Grid beside it (RR06) | plain trigs on all 15 steps | first hit at the press, rest on the grid |
+| RR09 rerun: roll from before LIVE RECORDING at micro -10, +3, +10; inside it at -10, -6, +7; ALWAYS ON early; re-press early; 1/10 early; 2x; 1/16 pass then a slower pass over it | trig words identical to RR07 in every case | identical to RR07 |
+| RR10 rerun: Retrig Grid, roll from before LIVE RECORDING and early press inside it | identical to RR08 | identical to RR08 |
 
 Velocity: the 1/16 velocity word at each playback hit equalled the recorded locks in order, on the prototype (PR12, 2026-10-31). Recorded velocities follow the scripted pressure at half its raw value.
 
 VEL.CUR -8 at 1/32: each trig stored -8 and velocities followed the fade, not the pressure (stock's pressure path is off with VEL.CUR set). OFF stored 0.
 
-A held pad without a retrig gave the same trig word on RR07 as on RR05. Other cases in the table ran on RR05 or RR06, not again on RR07.
+A held pad without a retrig gave the same trig word on RR07 as on RR05. Other cases in the table ran on RR05 or RR06, not again on RR07 or RR09. A roll on a track other than the one the recorder follows was not produced: a pad press selects its track, and no other path to a retrig series was tried.
 
 Plain pad hits still quantize with quantize on. Against stock: a held pad without a retrig over plain trigs, identical trig words. NO + pad removes the roll's trigs. NO + SCNE reloads the pattern and removes the recording, as stock.
 
