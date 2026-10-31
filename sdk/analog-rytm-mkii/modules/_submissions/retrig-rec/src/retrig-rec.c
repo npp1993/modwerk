@@ -39,6 +39,7 @@
 #define NOTE_QUEUE (*(volatile uint32_t *)NOTE_QUEUE_AT)
 #define QUEUED(q) (*(volatile uint32_t *)((q) + 4))      // events waiting
 #define NOTE_START ((volatile uint32_t *)NOTE_START_AT)     // [t * 128 + note] clock / 2
+#define WIPE_SKIP 251756        // recorder + track: 1 skips the next held-note wipe
 #define SEQ_PATTERN (*(volatile int8_t *)SEQ_PATTERN_AT)
 #define SPEED_PULSES ((const int32_t *)SPEED_PULSES_AT)     // 3, 4, 6, 8, 12, 24, 48
 
@@ -57,6 +58,8 @@ extern void STOCK_STEP_PLACE(uint32_t clock, int32_t track, uint8_t *place);
 extern void STOCK_STEP_SET_RATE(uint32_t track, int32_t step, int32_t rate);
 extern void STOCK_STEP_SET_CURVE(uint32_t track, int32_t step, int32_t curve);
 extern uint32_t STOCK_RECORDER(void);
+extern uint32_t STOCK_SEQ(void);
+extern int32_t STOCK_SEQ_STEP(uint32_t seq, int32_t track);
 extern uint32_t STOCK_KIT(uint32_t recorder);
 extern int32_t STOCK_KIT_CURVE(uint32_t kit, int32_t track);
 
@@ -68,6 +71,7 @@ static uint8_t press[TRACKS][32];   // the track's latest press: its note event
 static uint8_t have[TRACKS];
 static uint8_t open_note[TRACKS];   // the recorder holds a note of this track
 static uint8_t rearmed[TRACKS];     // pressed again: the next 960 is not a hit
+static uint8_t ahead[TRACKS];       // step + 1 of a hit the playhead has not reached
 static int8_t rate_seen[TRACKS];    // -1: none yet this press
 static uint16_t hits[TRACKS];
 static uint32_t started[TRACKS];    // this hit's time, clock / 2
@@ -105,6 +109,7 @@ static void watch_presses(void)
         started[t] = NOTE_START[(t << 7) + press[t][16]];
         open_note[t] = STOCK_LIVE_REC(STOCK_APP()) != 0;
         rearmed[t] = RT_ACTIVE[t];
+        ahead[t] = 0;
         rate_seen[t] = -1;
         hits[t] = 0;
         have[t] = 1;
@@ -202,9 +207,21 @@ static void hit(int t)
 
     open_note[t] = 1;
     started[t] = now;
+    ahead[t] = place[0] != STOCK_SEQ_STEP(STOCK_SEQ(), t) ? place[0] + 1 : 0;
     // the release closes the last hit; -1 here means the release has come
     if ((int32_t)NOTE_START[(t << 7) + press[t][16]] >= 0)
         NOTE_START[(t << 7) + press[t][16]] = now;
+}
+
+// A hit placed on the next step is the recorder's held note before the playhead gets
+// there. Until then any sequencer change runs the held-note wipe on the playhead's step,
+// which holds the hit before it. Stock's note-off skips the wipe for the same case.
+static void keep_step(int t)
+{
+    if (STOCK_SEQ_STEP(STOCK_SEQ(), t) == ahead[t] - 1)
+        ahead[t] = 0;
+    else
+        *(volatile uint8_t *)(STOCK_RECORDER() + WIPE_SKIP + t) = 1;
 }
 
 // ev_render_out: stock's series state for this block in place. Nothing but four
@@ -250,6 +267,8 @@ void retrig_rec_render(void)
             }
         }
         seen[t] = c;
+        if (ahead[t])
+            keep_step(t);
     }
 }
 

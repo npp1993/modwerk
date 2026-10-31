@@ -45,6 +45,8 @@ The rates follow the track's speed: at 2x, 1/32 is one trig a hit.
 
 Stock's pad retrig series runs in the audio block and reaches no recorder. The module subscribes to core-ar2's `ev_render_out`, follows each pad's tick counter and, for each hit, queues to the sequencer task the note-off and note-on a press and release would queue. Stock's recorder writes the trig. The count is read before Retrig Grid sets it for the next tick (order 40 against 50), and a count that did not step down is not taken for a hit. The module follows each press in stock's note ring, so pressing again during a roll, or a new note in CHROMATIC mode, starts from that press.
 
+A hit that lands just before a step is recorded on that step while the playhead is still on the step before. Stock's held-note wipe would then remove the hit before it, so until the playhead arrives the module sets the byte stock's own note-off sets for that case.
+
 The module patches three stock sites, all its own: the RETRIG menu's writes to steps in LIVE RECORDING are off; the recorder keeps the micro timing of a retrig press and a queued hit, and records the press as a plain trig at rates that fit the steps; and the recorder's call that sets a step's retrig rate also sets the kit's VEL.CUR. No hook or other module is involved.
 
 ## Changes to stock flows
@@ -62,7 +64,7 @@ The module patches three stock sites, all its own: the RETRIG menu's writes to s
 - A rate change during a roll starts a new trig at the next hit.
 - Micro timing has 24 units a step, so a hit can land up to 1/48 of a step from where it sounded.
 - A roll over a step that already has a retrig keeps that step's retrig.
-- A roll started before LIVE RECORDING records from the first hit after it starts, with no press trig. In the emulator two of three such runs lost 2 of about 17 hits, cause not found. Stock records nothing there.
+- A roll started before LIVE RECORDING records from the first hit after it starts, with no press trig. Stock records nothing there.
 - If the sequencer task falls more than 30 events behind, hits are dropped rather than recorded wrongly.
 - Not tested: a unit, external MIDI clock, and what lands in the next pattern when the pattern changes during a roll.
 
