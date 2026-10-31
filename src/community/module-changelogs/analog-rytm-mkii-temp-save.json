@@ -1,0 +1,11 @@
+[
+  {
+    "version": "0.1.0-experimental",
+    "date": "2026-10-31",
+    "changes": [
+      "FUNC + YES saves the pattern and its kit, performance and scene locks included.",
+      "FUNC + NO brings both back, stopped or playing.",
+      "A save lasts until you change pattern or load a project; after that FUNC + NO shows NO TEMP SAVE."
+    ]
+  }
+]
