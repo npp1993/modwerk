@@ -153,9 +153,10 @@ Combined build QC05 (sha256 dff83fad): QPER + knob writes locks on knobs A, B, D
 
 Reported by the author on QC05: knob turns work. Tune stopped at +32 and QPER + YES held the sound. Knob zero showed NOTHING TO APPLY. Clear, a new lock, QPER + PLAY: CLEAR PERFORMANCE, so stock's undo does not replace later locks.
 
+Also on QC05: lock at full knob, PERF mode, press and release the linked pad: on release the lock stopped sounding and stayed off with the knob still at full. QPER + YES then said NOTHING TO APPLY and the sound held. Not compared with stock, but the pad path is stock's own.
+
 ## Not tested
 
 - A kit loaded with another link or several, on a unit.
 - QPER gestures inside a menu or dialog: they still fire there.
-- QPER + YES after a PERF mode pad press on the linked performance.
 - Performance load.
