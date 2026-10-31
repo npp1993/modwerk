@@ -85,6 +85,7 @@ typedef void (*end_lock_edit_t)(void *ui);
 // The performances' amounts: a lock adds value * amount / 0x8000.
 #define PERF_AMOUNT(p) (((volatile unsigned short *)PERF_AMOUNTS_AT)[p])
 #define AMOUNT_SCALE 15
+#define AMOUNT_FULL 0x7f80          // the knob at full: 99.6%, applied as the whole lock
 
 #define PROJECT_KIT 352             // project + 352: the active kit
 #define PERF_TABLE 16               // performance object + 16: the lock table
@@ -374,7 +375,7 @@ static void apply_linked(void *kit)
     unsigned mask = linked(kit);
     int i, changed = 0;
     for (i = 0; i < SLOTS; i++, t += SLOT_BYTES) {
-        int track = t[2], param = t[3], index = t[4], lock, id, value;
+        int track = t[2], param = t[3], index = t[4], lock, id, value, amount;
         void *set;
         if (track > TRACK_NONE || index >= PERFS || !(mask >> index & 1))
             continue;
@@ -385,7 +386,8 @@ static void apply_linked(void *kit)
         id = param_id(set, track, param);
         if (!id)
             continue;
-        value = lock * (int)PERF_AMOUNT(index) >> AMOUNT_SCALE;     // as the engine adds it
+        amount = PERF_AMOUNT(index);
+        value = amount >= AMOUNT_FULL ? lock : lock * amount >> AMOUNT_SCALE;   // as the engine adds it
         if (!value)
             continue;
         SET_VALUE(set, id, param_read(set, id) + value, track, 1, 1);

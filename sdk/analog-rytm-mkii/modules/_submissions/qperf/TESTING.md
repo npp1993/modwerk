@@ -157,9 +157,12 @@ Also on QC05: lock at full knob, PERF mode, press and release the linked pad: on
 
 Combined build QC06 (sha256 a25ee0f4): the link check runs after stock's routine at 0x400a65a4, which every kit change reaches (load, reload, SysEx and restores), through a flag read on the UI tick. Boot, KIT RELOADED! and KIT LOADED! each left one link. A first build acted during `ev_project` and left the kit blank at boot, so stock's amount writes wait for the tick. Knob lock, QPER + YES at half (engine words identical) and playback passed.
 
+Reported by the author on QC06: normal boot, kit load and reload, and pattern changes that bring a kit all passed. Resonance +54 at full knob, QPER + YES: 53, because full knob is 99.6%.
+
+Combined build QC07 (sha256 f2eccb1a): full knob applies the whole lock. In rytm-emu, +28 took a kit value from 99 to 127 and +87 from 1 to 88.
+
 ## Not tested
 
-- Pattern changes that bring a kit, and SysEx kit receive.
-- Kit load on a unit (QC06).
+- SysEx kit receive.
 - QPER gestures inside a menu or dialog: they still fire there.
 - Performance load.
