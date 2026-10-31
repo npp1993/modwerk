@@ -1,0 +1,10 @@
+[
+  {
+    "version": "0.1.0-experimental",
+    "date": "2026-10-31",
+    "changes": [
+      "First release, for Analog Rytm MKII OS 1.74. LIVE RECORDING records every pad retrig hit as a real trig, with the velocity and timing you played, from RTRG + pad and from ALWAYS ON pads.",
+      "Rates faster than a step record a trig with a step retrig, and VEL.CUR with it."
+    ]
+  }
+]
