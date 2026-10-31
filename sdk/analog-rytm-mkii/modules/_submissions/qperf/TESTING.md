@@ -141,6 +141,8 @@ Reported by the author on QC01: Filter Hz, Silent Pad+Trig, Pipo Loop and QPERF'
 
 QC02 (sha256 562c8c76): the link check now starts from `ev_project`. Booted with no key pressed, the factory kit's two links dropped to one. QPER + SD and a knob turn wrote a lock.
 
+Combined build QC03 (sha256 a19cccb3): QPER + YES writes what the locks add into the kit and removes them. Amount poked to half (0x3f80) and full (0x7f80): 13 locks removed (31 slots to 18), and the audio engine's parameter words were identical before and after. Amount 0: all locks stayed. The first build scaled by 0x7f80 and landed up to a quarter step off; stock's scale is 0x8000, measured here.
+
 ## Not tested
 
 - A kit loaded with another link or several, on a unit.

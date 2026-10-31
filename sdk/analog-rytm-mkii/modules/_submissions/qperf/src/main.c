@@ -10,8 +10,8 @@
 //                 performances.
 //   PLAY          stock's clear, then its undo.
 //   REC, STOP     stock's copy, then paste and its undo, on the linked performance.
-//   YES           what the lock adds at the QPER knob's position goes into the
-//                 kit and comes off the lock, so full QPER still lands where it did.
+//   YES           what the locks add at the QPER knob's position goes into the
+//                 kit and those locks go, so the sound holds at any position.
 //
 // FUNC + QPER (stock's mute) is untouched.
 //
@@ -82,9 +82,9 @@ typedef void (*end_lock_edit_t)(void *ui);
 #define GET_LOCKER ((get_locker_t)GET_LOCKER_AT)
 #define LOCK_EDIT ((lock_edit_t)LOCK_EDIT_AT)
 #define END_LOCK_EDIT ((end_lock_edit_t)END_LOCK_EDIT_AT)
-// The performances' amounts: at full, a lock adds its whole value.
+// The performances' amounts: a lock adds value * amount / 0x8000.
 #define PERF_AMOUNT(p) (((volatile unsigned short *)PERF_AMOUNTS_AT)[p])
-#define AMOUNT_FULL 0x7f80
+#define AMOUNT_SCALE 15
 
 #define PROJECT_KIT 352             // project + 352: the active kit
 #define PERF_TABLE 16               // performance object + 16: the lock table
@@ -350,15 +350,12 @@ static void apply_linked(void *kit)
             continue;
         seen = 1;
         amount = qperf_pot ? (qperf_pot - 1) << 7 : (int)PERF_AMOUNT(index);
-        value = lock * amount / AMOUNT_FULL;
+        value = lock * amount >> AMOUNT_SCALE;
         if (!value)
             continue;
         read = *(set_read_t *)(*(word_t *)set + VT_READ);
         SET_VALUE(set, id, read(set, id) + value, track, 1, 1);
-        if (lock == value)
-            PERF_CLEAR_ONE(perf, index, track, param);
-        else
-            PERF_SET(perf, index, track, param, lock - value);
+        PERF_CLEAR_ONE(perf, index, track, param);
     }
     if (seen)
         show_numbered("PERFORMANCE ", mask, " APPLIED");

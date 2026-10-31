@@ -12,7 +12,7 @@ QPER links one performance at a time. Hold QPER and press a pad or trig key: the
 | --- | --- |
 | Turn a knob | Edits the linked performance's lock, as holding a performance pad does: the knob inverts and shows the offset. |
 | PLAY | CLEAR PERFORMANCE, with stock's clear. PLAY again: UNDO CLEAR. |
-| YES | What the lock adds at the QPER knob's position goes into the kit and comes off the lock, so full QPER still lands where it did. At full, the sound holds and the lock goes away, freeing its slot. |
+| YES | Writes what you hear into the kit, at the QPER knob's position, and removes those locks. The sound holds at any position. At knob zero nothing is added and the locks stay. |
 | RECORD | COPY PERFORMANCE n. |
 | STOP | PASTE PERFORMANCE onto the linked one. STOP again: UNDO PASTE. |
 
@@ -25,7 +25,7 @@ Stock draws every message. YES shows PERFORMANCE n APPLIED, or NOTHING TO APPLY 
 - **One link only.** A kit saved with several, or loaded with another, drops to the lowest one. An unlinked performance stops adding, and the newly linked one takes the knob's position, so the sound follows the link.
 - **48 locks a kit.** All 12 performances share them. A new parameter with none left shows LOCK MEM FULL! and writes nothing.
 - **Power on.** Stock does not know the QPER knob until it moves, so the amount is 0 and YES adds nothing until then.
-- **YES and later edits.** The target holds through YES. Turn the parameter by hand afterwards and the target moves with it, because locks are offsets.
+- **YES uses up the lock.** Full QPER no longer reaches the old offset, because the part you did not apply is gone. Stock's undo does not bring it back; reloading an unsaved kit does.
 
 ## Stock flows changed
 
