@@ -5,8 +5,9 @@
 // The sites sit in the views' own YES and NO cases, not in ev_key, so a screen
 // that takes YES or NO itself keeps it: this code only runs for a key the
 // views above let through. Parameter pages take FUNC + NO before the main view
-// does, so NO has a site in each. Stock's page case acts on a held trig, and a
-// held trig leaves both keys to stock.
+// does, so NO has a site in each. That page case erases the active track's
+// locks in LIVE RECORDING, which stays stock, and a held trig leaves both keys
+// to stock.
 //
 // Stock's saved pattern is one buffer, which every pattern change refills, and
 // stock's kit reload reads the kit the pattern links. So a save belongs to its
@@ -29,6 +30,7 @@ typedef unsigned char (*event_test_t)(void *event);
 typedef void (*event_taken_t)(void *event);
 typedef unsigned (*is_key_held_t)(int key);
 typedef word_t (*singleton_t)(void);
+typedef unsigned char (*live_rec_t)(void *app);
 typedef int (*pattern_index_t)(void *patterns);
 typedef void (*pattern_save_t)(void *project, int pattern);
 typedef void (*project_op_t)(void *project);
@@ -49,6 +51,8 @@ typedef void (*show_popup_t)(void *views, void *shared, int flag);
 #define EVENT_TAKEN ((event_taken_t)EVENT_TAKEN_AT)
 #define IS_KEY_HELD ((is_key_held_t)IS_KEY_HELD_AT)
 #define PROJECT_SINGLETON ((singleton_t)PROJECT_SINGLETON_AT)
+#define APP_SINGLETON ((singleton_t)APP_SINGLETON_AT)
+#define LIVE_REC ((live_rec_t)LIVE_REC_AT)
 #define PATTERN_SELECTION ((singleton_t)PATTERN_SELECTION_AT)
 #define PATTERN_INDEX ((pattern_index_t)PATTERN_INDEX_AT)
 #define PATTERN_SAVE ((pattern_save_t)PATTERN_SAVE_AT)
@@ -193,7 +197,8 @@ unsigned temp_save_no_key(void *view, void *event)
 unsigned temp_save_page_no_key(void *view, void *event)
 {
     unsigned func = FUNC_FLAG(event) & 0xff;
-    if (!func || !(PRESSED_ONCE(event) & 0xff) || !ours())
+    if (!func || !(PRESSED_ONCE(event) & 0xff) || !ours()
+        || LIVE_REC((void *)APP_SINGLETON()))
         return func;
     return reload(view, event);
 }

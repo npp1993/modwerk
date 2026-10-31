@@ -13,13 +13,13 @@ Save the pattern and its kit with one gesture, try something, and get back.
 | FUNC + NO with no save for this pattern and kit | Nothing changes. | NO TEMP SAVE |
 | FUNC + YES when the pattern links another kit than the active one | Nothing is saved, and an earlier save is dropped. | KIT NOT LINKED |
 
-Both work on the main screen and the sound pages, stopped or playing. There are no settings, no effect slot and no knob.
+Both work on the main screen and the sound pages, stopped or playing. In running LIVE RECORDING, FUNC + NO stays stock's: it erases the active track's locks. There are no settings, no effect slot and no knob.
 
 ## What it saves
 
 It runs stock's pattern save and kit save, then stock's pattern reload and kit reload. The kit's record holds its performance and scene locks, so they come back too.
 
-- **The pattern's copy is one buffer in RAM.** Stock refills it on every pattern change, so a save belongs to its pattern and its kit. Change either and come back, or load a project, and FUNC + NO shows NO TEMP SAVE. The module uses no memory for the copy: a pattern is 85,760 bytes, more than the room modules share.
+- **The pattern's copy is one buffer in RAM.** Stock refills it on every pattern change, so a save belongs to its pattern and its kit. Change either and come back, load a project or power off, and FUNC + NO shows NO TEMP SAVE. The module uses no memory for the copy: a pattern is 85,760 bytes, more than the room modules share.
 - **The kit's copy is the kit's saved copy.** FUNC + YES replaces what stock's kit reload returns to, and a project save keeps it. This is the difference from the Octatrack module of the same name.
 - **Stock's kit reload reads the kit the pattern links.** A save needs that kit to be the active one, or a reload would bring back a different kit.
 - **While a message shows,** the message takes FUNC + NO, so wait for it to go and press again.
@@ -28,7 +28,7 @@ It runs stock's pattern save and kit save, then stock's pattern reload and kit r
 
 | Change | For whom | Why | Neighbouring flows |
 | --- | --- | --- | --- |
-| FUNC + NO on a sound page no longer does stock's FUNC + NO, unless a trig is held. | Anyone with the module installed. | The gesture matches Digitakt and Digitone and the Octatrack module. With no trig held stock's case changes nothing that was seen, and a held trig leaves the keys to stock. | RANDOMIZE PAGE (page key + YES) and the sample slot list were run with the module in; see TESTING.md. |
+| FUNC + NO on a sound page reloads instead of setting stock's lock erase, unless LIVE RECORDING is running or a trig is held. | Anyone with the module installed. | The gesture matches Digitakt and Digitone and the Octatrack module. Stock's erase only acts in running LIVE RECORDING, and there FUNC + NO stays stock's. | Erasing locks in LIVE RECORDING, RANDOMIZE PAGE (page key + YES) and the sample slot list were run with the module in; see TESTING.md. |
 | FUNC + YES saves where stock does nothing visible. | Anyone with the module installed. | The gesture itself. | Menus and lists take YES first and keep it. |
 
 ## Compatibility
