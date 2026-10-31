@@ -25,6 +25,7 @@
 #define TRIG_KEYS 16                // the trig keys are keys 0 to 15
 #define VT_INDEX 108                // kit: index(kit)
 #define POPUP_BYTES 0xa0
+#define VT_POPUP_TAKES_NO 84         // popup: takes_no(popup, on)
 
 typedef unsigned word_t;
 
@@ -44,6 +45,7 @@ typedef void (*string_from_cstr_t)(void *string, const char *text, void *allocat
 typedef void (*string_dtor_t)(void *string);
 typedef word_t (*mem_new_t)(unsigned size);
 typedef void (*popup_ctor_t)(void *popup, void *string);
+typedef void (*popup_takes_no_t)(void *popup, int on);
 typedef void (*shared_ptr_ctor_t)(void *shared, void *object);
 typedef void (*shared_ptr_release_t)(void *counts);
 typedef void (*show_popup_t)(void *views, void *shared, int flag);
@@ -107,6 +109,8 @@ static void show(void *view, const char *text)
     STRING_FROM_CSTR(&string, text, &allocator);
     popup = (void *)MEM_NEW(POPUP_BYTES);
     POPUP_CTOR(popup, &string);
+    // As stock's reload messages: NO reaches the views below.
+    ((popup_takes_no_t)FIELD(*(void **)popup, VT_POPUP_TAKES_NO))(popup, 0);
     SHARED_PTR_CTOR(&shared, popup);
     SHOW_POPUP(FIELD(view, VIEW_MANAGER), &shared, 0);
     SHARED_PTR_RELEASE(&shared.counts);
@@ -155,6 +159,12 @@ static int ours(void *view)
     return 1;
 }
 
+// Stock's sound pages erase locks with FUNC + NO in LIVE RECORDING.
+static int ours_no(void *view)
+{
+    return ours(view) && !LIVE_REC((void *)APP_SINGLETON());
+}
+
 // The pattern first: a reloaded pattern can name another kit, and the kit
 // reload follows the pattern's.
 static unsigned reload(void *view, void *event)
@@ -198,7 +208,7 @@ unsigned temp_save_yes_key(void *view, void *event)
 unsigned temp_save_no_key(void *view, void *event)
 {
     unsigned pressed = PRESSED_ONCE(event) & 0xff;
-    if (!pressed || !ours(view))
+    if (!pressed || !ours_no(view))
         return pressed;
     return reload(view, event);
 }
@@ -206,8 +216,7 @@ unsigned temp_save_no_key(void *view, void *event)
 unsigned temp_save_page_no_key(void *view, void *event)
 {
     unsigned func = FUNC_FLAG(event) & 0xff;
-    if (!func || !(PRESSED_ONCE(event) & 0xff) || !ours(view)
-        || LIVE_REC((void *)APP_SINGLETON()))
+    if (!func || !(PRESSED_ONCE(event) & 0xff) || !ours_no(view))
         return func;
     return reload(view, event);
 }

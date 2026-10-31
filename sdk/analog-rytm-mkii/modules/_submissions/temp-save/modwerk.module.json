@@ -47,9 +47,8 @@
   "requires": [],
   "conflicts": [],
   "limitations": [
-   "FUNC + YES overwrites the kit's saved copy, the one stock's kit reload returns to. A project save keeps it.",
+   "FUNC + YES overwrites the pattern's and the kit's saved copies, the ones stock's reloads return to. A project save keeps the kit's.",
    "A save lasts until the pattern or kit changes, a project loads or the power goes off.",
-   "While a message shows, FUNC + NO is ignored: press it again when the message has gone.",
    "With a trig held, both keys stay stock's. In running LIVE RECORDING, FUNC + NO erases locks as in stock."
   ]
  },
@@ -85,7 +84,7 @@
  },
  "tests": {
   "report": "TESTING.md",
-  "summary": "Emulator only, not tested on hardware."
+  "summary": "Emulator and a functional pass on an Analog Rytm MKII."
  },
  "license": {
   "spdx": "GPL-3.0-or-later",
