@@ -514,8 +514,9 @@ void qperf_tick(void *ctrl)
     (void)ctrl;
     if (ready && kit_changed) {
         void *kit = active_kit();
-        unsigned mask = linked(kit);
-        kit_changed = 0;
+        unsigned mask;
+        kit_changed = 0;                // first, so a change after this asks again
+        mask = linked(kit);
         if (mask != known)
             link_only(kit, mask & -mask);
     }

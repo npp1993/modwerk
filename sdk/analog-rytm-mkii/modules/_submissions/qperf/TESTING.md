@@ -167,6 +167,8 @@ Combined build QC08 (sha256 14de2dcc): boot and knob lock passed; QPER + YES at 
 
 Reported by the author on QC08: tune locked to +127 under QPER, QPER + YES set it to +32 as expected.
 
+Combined build QC09 (sha256 4bbc13f1): the tick clears its flag before reading the link, so a kit change at that moment asks again. Boot, reload, load and a knob lock passed in rytm-emu. Not run on a unit.
+
 ## Not tested
 
 - SysEx kit receive.
