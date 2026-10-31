@@ -9864,7 +9864,7 @@
               "One unit, tested by the contributor, not an independent reviewer; the MKI was not tested.",
               "USB only: the card build was not flashed.",
               "Nothing timed; reloads while playing were judged by ear only.",
-              "Timed trials only: the site's review, Keep and Undo flow and a power cycle with the module kept were not used.",
+              "Review, trial and Undo ran through the developer MCP (run 5); Keep and a power cycle with the module kept were not run yet.",
               "SCALE and the MIDI-track SETUP pages, MIDI mode, other banks and a project save after a reload ran under the emulator only."
             ],
             "report": "evidence/hardware.md"
