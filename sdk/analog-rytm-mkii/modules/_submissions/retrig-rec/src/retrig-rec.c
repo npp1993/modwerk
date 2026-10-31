@@ -16,15 +16,15 @@
 // first hit of each whole block of steps, with the step retrig that plays the rest:
 // two hits a step at 1/32, three hits in two steps at 1/24.
 //
-// The stock sites, in retrig-rec.s: the RETRIG menu's step writes off, recorded retrig
-// hits keep their timing with quantize on, a press at a rate that fits the steps records
-// a plain trig, and a recorded retrig takes the menu's VEL.CUR.
+// The stock sites, in retrig-rec.s: the RETRIG menu's step writes off, a press at a rate
+// that fits the steps records a plain trig, a recorded retrig takes the menu's VEL.CUR,
+// and the note-off that sets its LEN cuts that curve to the trig's share. Quantize live
+// rec applies to every note, retrig hits included, as stock has it.
 
 #include <stdint.h>
 
 #define TRACKS 12
 #define WHOLE 960               // ticks in a whole note: the counter's span
-#define KEEP_TIMING 256         // added to a queued hit's micro timing: see retrig-rec.s
 #define EV_NOTE 0x0d
 
 // OS 1.74 locations (build.json release cflags)
@@ -215,8 +215,7 @@ static void hit(int t)
     on[20] = period[rate] < step ? rate : 0xff;
     on[28] = 0;
     on[29] = place[0];
-    micro += KEEP_TIMING;
-    on[30] = micro >> 8;
+    on[30] = micro < 0 ? 0xff : 0;
     on[31] = micro;
     queue(on);
 

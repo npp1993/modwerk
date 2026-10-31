@@ -16,6 +16,7 @@ Owner-supplied OS 1.74 (stock sha256 cb0f99d6…e123), core-ar2 0.7 (`vendor/ele
 - RR10: RR08 with the same, sha256 c36b3f55527005d6…
 - RR11: RR09 with VEL.CUR cut to each trig's share, sha256 c6e0a9510d03991b…
 - RR12: RR10 with the same, sha256 5b18868508563ba4…
+- RR13: RR11 with quantize live rec applied to retrig hits, sha256 256743db1c92d0a1…
 
 Emulator: rytm-emu c5732f0.
 
@@ -65,7 +66,7 @@ VEL.CUR at 1/32, RR05 to RR10: each trig stored the menu's value in full and vel
 
 A held pad without a retrig gave the same trig word on RR07 as on RR05. Other cases in the table ran on RR05 or RR06, not again on RR07 or RR09. A roll on a track other than the one the recorder follows was not produced: a pad press selects its track, and no other path to a retrig series was tried.
 
-Plain pad hits still quantize with quantize on. Against stock: a held pad without a retrig over plain trigs, identical trig words. NO + pad removes the roll's trigs. NO + SCNE reloads the pattern and removes the recording, as stock.
+Quantize live rec on RR13: on (the project's default), rolls pressed 0.28 step late and 0.40 step early at 1/16, and one at 1/32, recorded every hit at micro 0 and played back on the grid, that far from the live roll; off, the same late press recorded micro +7 on every trig and played back within 0.02 step of live. Up to RR12 a retrig hit kept its micro timing with quantize on. Plain pad hits still quantize with quantize on. Against stock: a held pad without a retrig over plain trigs, identical trig words. NO + pad removes the roll's trigs. NO + SCNE reloads the pattern and removes the recording, as stock.
 
 The release race, the note-off flags and the queue guard were changed from reading the code. No test reaches them.
 
