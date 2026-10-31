@@ -159,7 +159,7 @@ Combined build QC06 (sha256 a25ee0f4): the link check runs after stock's routine
 
 Reported by the author on QC06: normal boot, kit load and reload, and pattern changes that bring a kit all passed. Resonance +54 at full knob, QPER + YES: 53, because full knob is 99.6%.
 
-Combined build QC07 (sha256 f2eccb1a): full knob applies the whole lock. In rytm-emu, +28 took a kit value from 99 to 127 and +87 from 1 to 88.
+Build QC07 applied the whole lock at full knob; the author chose to keep the played sound instead, so that was reverted. The source is QC06's again.
 
 ## Not tested
 
