@@ -30,7 +30,7 @@ Then build TS07 (sha256 79eeb2d3), same setup, reported by the tester, 31 Oct 20
 | Check | Result |
 | --- | --- |
 | Locks on trigs, RECORD + PLAY, hold FUNC + NO past a bar | Locks gone, trigs stay, no message. The locked values were heard while FUNC + NO was held |
-| FUNC + YES, edit the kit, power cycle, NO + PLAY MODE | First try: the kit did not return, not explained. Second try, filter as the marker: the edit survived the power cycle, FUNC + NO gave NO TEMP SAVE, and NO + kit key gave KIT RELOADED with the filter as at FUNC + YES |
+| FUNC + YES, edit the kit, power cycle, NO + PLAY MODE | First try: the kit did not return; the tester puts this down to a wrong key. Two further runs with the filter as the marker: the edit survived the power cycle, FUNC + NO gave NO TEMP SAVE with no change, and NO + PLAY MODE gave KIT RELOADED with the filter as at FUNC + YES |
 | After that, FUNC + NO | NO TEMP SAVE (test of a project load, reported in passing) |
 
 ## Emulator
@@ -60,7 +60,7 @@ rytm-emu c5732f0, `dtboot`, stock OS 1.74, Modwerk base 0c92aa45, Temp Save alon
 | RECORD + PLAY with a locked trig on the active track, hold FUNC + NO past a bar (TS07) | The lock is erased, the trigs stay; no RELOADED |
 | FUNC + YES, add a trig and turn TUN, FUNC + NO (TS07) | Pattern and kit record byte-identical to the save |
 
-Read from stock's code, not run: performance locks at kit record + 1950 and scene locks at + 2190, inside the bytes compared above.
+Read from stock's code, not run: performance locks at kit record + 1950 and scene locks at + 2190, inside the bytes compared above. The locks heard while FUNC + NO erases them in LIVE RECORDING are stock's: the sequencer builds a step, locks included, a step ahead, and the erase reaches it afterwards.
 
 ## Not tested
 
