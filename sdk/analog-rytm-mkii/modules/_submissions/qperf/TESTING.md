@@ -163,6 +163,8 @@ Build QC07 applied the whole lock at full knob; the author chose to keep the pla
 
 Reverted at the author's request: QPER + knob no longer stops at a parameter's range, so it matches stock's performance edit.
 
+Combined build QC08 (sha256 14de2dcc): boot and knob lock passed; QPER + YES at half left the engine words identical. Linked with `link-image.mjs` after #1094.
+
 ## Not tested
 
 - SysEx kit receive.
