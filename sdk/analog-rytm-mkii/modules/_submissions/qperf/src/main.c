@@ -121,6 +121,7 @@ typedef unsigned (*is_key_held_t)(int key);
 static int held;                    // QPER is down, without FUNC
 static unsigned swallowed;          // YES, PLAY, REC and STOP: their release is ours too
 static unsigned known;              // the link as we last set or saw it
+static int ready;                   // a project is loaded
 int qperf_pot;                      // the QPER knob + 1, 0 until it first moves
 
 // Stock's message for one pot: this replaces the 6-byte lea at its start.
@@ -474,6 +475,13 @@ int qperf_key(void *brain, void *event)
     return 1;
 }
 
+void qperf_project(int how, unsigned dropped)
+{
+    (void)how;
+    (void)dropped;
+    ready = 1;
+}
+
 // Catches a kit loaded with another link, or with several, then opens the popup
 // as stock's clear shows its own.
 void qperf_tick(void *ctrl)
@@ -483,7 +491,7 @@ void qperf_tick(void *ctrl)
     struct { void *object; void *counts; } shared;
     void *popup;
     (void)ctrl;
-    if (!views)
+    if (!ready)
         return;
     {
         void *kit = active_kit();
@@ -491,7 +499,7 @@ void qperf_tick(void *ctrl)
         if (mask != known)
             link_only(kit, mask & -mask);
     }
-    if (!show_text)
+    if (!show_text || !views)
         return;
     STRING_FROM_CSTR(&string, show_text, &allocator);
     show_text = 0;

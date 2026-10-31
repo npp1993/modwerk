@@ -59,7 +59,8 @@
     "build": "build.json",
     "events": [
       "ev_key",
-      "ev_tick"
+      "ev_tick",
+      "ev_project"
     ],
     "claims": [
       "ui:QPER + knob",

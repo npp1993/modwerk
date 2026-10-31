@@ -137,6 +137,10 @@ Combined build QC01 (sha256 493d5fa2): core 0.7 base 0c92aa45, Filter Hz 1.2.0, 
 
 Pipo Loop and Silent Pad+Trig were not exercised, only booted beside it.
 
+Reported by the author on QC01: Filter Hz, Silent Pad+Trig, Pipo Loop and QPERF's knob and YES looked good. LFO depth +30, QPER + YES at half knob: the sound moved up. Half knob leaves half the lock, which adds a quarter more at that position, so this is the expected step, not shown to be LFO-specific.
+
+QC02 (sha256 562c8c76): the link check now starts from `ev_project`. Booted with no key pressed, the factory kit's two links dropped to one. QPER + SD and a knob turn wrote a lock.
+
 ## Not tested
 
 - A kit loaded with another link or several, on a unit.

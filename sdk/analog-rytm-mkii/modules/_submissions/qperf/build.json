@@ -16,6 +16,11 @@
       "event": "ev_tick",
       "fn": "qperf_tick",
       "order": 50
+    },
+    {
+      "event": "ev_project",
+      "fn": "qperf_project",
+      "order": 50
     }
   ],
   "contribute": [],
