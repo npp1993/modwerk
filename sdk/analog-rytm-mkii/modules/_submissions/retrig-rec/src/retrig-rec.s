@@ -46,3 +46,15 @@ retrig_rec_rate:
         jsr     retrig_rec_step_rate
         lea     16(%sp),%sp
         rts
+
+        | Over the recorder's note-off call that sets a retrig's LEN (track, step, len):
+        | d6 is the note's track.
+        .globl  retrig_rec_length
+retrig_rec_length:
+        move.l  %d6,-(%sp)
+        move.l  16(%sp),-(%sp)
+        move.l  16(%sp),-(%sp)
+        move.l  16(%sp),-(%sp)
+        jsr     retrig_rec_step_length
+        lea     16(%sp),%sp
+        rts

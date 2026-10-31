@@ -2,7 +2,7 @@
 
 ## 0.1.0-experimental (rytm-emu, 31 October 2026)
 
-Not tested on a unit. These are emulator results only: pad pressure is a scripted stream, not a real pad.
+Emulator results first; pad pressure there is a scripted stream, not a real pad. The unit's results, on RR09, are at the end.
 
 ### Builds
 
@@ -14,6 +14,8 @@ Owner-supplied OS 1.74 (stock sha256 cb0f99d6…e123), core-ar2 0.7 (`vendor/ele
 - RR08: RR06 with the early-hit fix, sha256 c97bd28f65c01ab8…
 - RR09: RR07 with the guard on the recorder track's step, kept past the release, sha256 56094153e36ac7e8…
 - RR10: RR08 with the same, sha256 c36b3f55527005d6…
+- RR11: RR09 with VEL.CUR cut to each trig's share, sha256 c6e0a9510d03991b…
+- RR12: RR10 with the same, sha256 5b18868508563ba4…
 
 Emulator: rytm-emu c5732f0.
 
@@ -59,7 +61,7 @@ Hits closer than 100 samples count as one: a trigger's switch takes up to 64 sam
 
 Velocity: the 1/16 velocity word at each playback hit equalled the recorded locks in order, on the prototype (PR12, 2026-10-31). Recorded velocities follow the scripted pressure at half its raw value.
 
-VEL.CUR -8 at 1/32: each trig stored -8 and velocities followed the fade, not the pressure (stock's pressure path is off with VEL.CUR set). OFF stored 0.
+VEL.CUR at 1/32, RR05 to RR10: each trig stored the menu's value in full and velocities followed the fade, not the pressure (stock's pressure path is off with VEL.CUR set). OFF stored 0. On the unit (below) that played back as a fade restarted inside every trig. **Certain** (disassembly): the engine runs a curve at the speed its length table (0x402907b0, 128 entries) gives for the length; the live series takes the menu's LENGTH, a recorded trig its own retrig LEN, which stock's note-off sets from the hold (0x400b43d8); the two differ (menu 1/4, trig 1/16 on the unit; emulator: default LENGTH 46, a one-step hold 14). RR11: VEL.CUR -10 with LENGTH at 54 and a 1/32 roll; live velocities (engine word per hit) 127, 126, 125 … 117 then level; recorded trigs 118, 117 … with curve -2 on the first and 0 once the fade's end (press + VEL.CUR) was reached, -1 on a shorter trig; playback pairs 123/121, 122/120, 118/116, 117/116 then level at 117, against RR09's -10 on every trig and pairs 123/117, 122/116 … 117/111. A roll without VEL.CUR and an early 1/16 roll on RR11 matched RR09.
 
 A held pad without a retrig gave the same trig word on RR07 as on RR05. Other cases in the table ran on RR05 or RR06, not again on RR07 or RR09. A roll on a track other than the one the recorder follows was not produced: a pad press selects its track, and no other path to a retrig series was tried.
 
@@ -69,4 +71,22 @@ The release race, the note-off flags and the queue guard were changed from readi
 
 ### Not tested
 
-A unit. External MIDI clock. Where hits land when the pattern changes during a roll (the live hits matched stock). Load was not measured.
+External MIDI clock. Where hits land when the pattern changes during a roll (the live hits matched stock). Load was not measured. RR11 and RR12 have not run on a unit.
+
+## On the unit: RR09 (Nathaniel Pavel, 31 October 2026)
+
+Analog Rytm MKII, OS 1.74, flashed with RR09. Reported by the author from playing; velocities read from the trigs in GRID RECORDING.
+
+| Case | Result |
+| --- | --- |
+| Plain pad hits, quantize off; a held pad without RTRG | as stock |
+| RTRG + BD for a bar with varying pressure, quantize off | a trig on every step, off the grid as played, a velocity lock on each (100 with FIX on, as stock; the pressure with FIX off), note length 1/16 on each; playback as played |
+| Roll started before LIVE RECORDING | recorded from entry, no gap |
+| Several rolls started at random moments, some ahead of the beat | no gaps |
+| RETRIG turned during the roll | 1/8: a trig every two steps, length 1/8; 1/12: plain trigs, micro-timed; 1/32: a trig a step with the step retrig; the trig before a change cut short (0.813); rolls sound as played across the change |
+| ALWAYS ON pad | as RTRG + pad |
+| Hold across the pattern end, release after a hit | all trigs survived |
+| Lift and re-hit BD during a roll | the re-hit's trigs at the new velocity, roll continues |
+| VEL.CUR +127 at 1/32 | each trig velocity 127 with RETRIG 1/32 and VEL.CUR 127, hits inside a trig equal (127 cannot rise) |
+| VEL.CUR -127 at 1/32, LENGTH 1/4 | trigs 127, 95, 63, 31, 1, 1, each with VEL.CUR -127 and LEN 1/16; playback reported to differ from the live roll: the fade restarts inside each trig. Fixed in RR11, not yet on the unit |
+| NO + BD in LIVE RECORDING | reported: trigs did not erase (the emulator erased them). Not compared with stock on the unit |

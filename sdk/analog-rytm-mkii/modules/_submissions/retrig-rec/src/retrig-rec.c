@@ -31,6 +31,9 @@
 #define RT_ACTIVE ((volatile uint8_t *)RT_ACTIVE_AT)        // [t] 1: a pad's series
 #define RT_COUNT ((volatile int32_t *)RT_COUNT_AT)          // [t] 960..1
 #define RT_RATE(t) (*(volatile int32_t *)(RT_TEMPLATE_AT + 56 * (t) + 36))  // RETRIG 0..16
+#define RT_LENGTHS ((const int32_t *)RT_LENGTHS_AT)        // [length + 1] the curve's speed
+#define KIT_RETRIG(t) (4 * (610 + (t)))                     // kit data: a track's RETRIG menu
+#define KIT_LENGTH 4                                        // LENGTH; VEL.CUR is at 5
 #define RT_VELOCITY ((volatile uint16_t *)RT_VELOCITY_AT)   // [t] the hit's, 8.8
 #define RT_FIRES ((const uint16_t *)RT_FIRES_AT)            // [count] the rates firing there
 #define CLOCK (*(volatile uint32_t *)CLOCK_AT)
@@ -50,6 +53,7 @@
 #define PAT_SCALE 85689         // 1: ADVANCED, each track its own length and speed
 #define PAT_SPEED 85690         // 0..6, as SPEED_PULSES
 #define TRK_SPEED 711
+#define STEP_VELOCITY 192       // a track's data: velocity byte per step
 #define PULSE_TICKS 10
 
 // Stock routines (build.json defsym). They return pointers in d0, so these return integers.
@@ -59,6 +63,7 @@ extern void STOCK_QUEUE_POST(uint32_t queue, void *event);
 extern void STOCK_STEP_PLACE(uint32_t clock, int32_t track, uint8_t *place);
 extern void STOCK_STEP_SET_RATE(uint32_t track, int32_t step, int32_t rate);
 extern void STOCK_STEP_SET_CURVE(uint32_t track, int32_t step, int32_t curve);
+extern void STOCK_STEP_SET_LENGTH(uint32_t track, int32_t step, int32_t len);   // retrig LEN
 extern uint32_t STOCK_RECORDER(void);
 extern uint32_t STOCK_SEQ(void);
 extern int32_t STOCK_SEQ_STEP(uint32_t seq, int32_t track);
@@ -309,9 +314,80 @@ int retrig_rec_press_rate(int rate, int t)
     return rate;
 }
 
-// The recorder's call that sets a step's retrig rate (retrig-rec.s): also the menu's VEL.CUR.
+// The RETRIG menu's LENGTH for track t, read as stock's VEL.CUR getter reads its byte:
+// the kit's data through its object's method, then the track's record. The series
+// template is no use here: the recorded trigs playing back re-arm it with their own LEN.
+static int kit_length(uint32_t kit, int t)
+{
+    uint32_t (**methods)(uint32_t) = *(uint32_t (***)(uint32_t))kit;
+    uint32_t data = methods[13](kit);
+
+    if (!data)
+        return -1;
+    if (t > 11)
+        t = 11;
+    return *(volatile uint8_t *)(data + KIT_RETRIG(t) + KIT_LENGTH);
+}
+
+// A step's recorded velocity, read as stock's step setters reach their bytes: the track's
+// data through its object's method, then the step. -1 without data.
+static int step_velocity(uint32_t track, int step)
+{
+    uint32_t (**methods)(uint32_t) = *(uint32_t (***)(uint32_t))track;
+    uint32_t data = methods[10](track);
+
+    if (!data || step < 0 || step > 63)
+        return -1;
+    return *(volatile uint8_t *)(data + STEP_VELOCITY + step);
+}
+
+// The recorder's call that sets a step's retrig rate (retrig-rec.s): also the menu's
+// VEL.CUR, for now in full. The note-off below cuts it to the trig's share.
+static uint8_t scale_curve[TRACKS];    // step + 1 of a trig whose curve awaits its LEN
+
 void retrig_rec_step_rate(uint32_t track, int step, int rate, int t)
 {
     STOCK_STEP_SET_RATE(track, step, rate);
     STOCK_STEP_SET_CURVE(track, step, STOCK_KIT_CURVE(STOCK_KIT(STOCK_RECORDER()), t));
+    scale_curve[t] = step + 1;
+}
+
+// The recorder's note-off call that sets a recorded retrig's LEN from the hold
+// (retrig-rec.s). The live fade runs VEL.CUR over the menu's LENGTH from the press; each
+// trig's velocity is the fade's value at its hit, and stock runs the trig's own curve over
+// this LEN, about a step. The curve's speed is the engine's table at the length, so the
+// slice that keeps the trigs on the live fade is VEL.CUR times the two speeds' ratio.
+void retrig_rec_step_length(uint32_t track, int step, int len, int t)
+{
+    uint32_t kit;
+    int curve, length;
+
+    STOCK_STEP_SET_LENGTH(track, step, len);
+    if (t >= TRACKS || scale_curve[t] != step + 1)
+        return;
+    scale_curve[t] = 0;
+    kit = STOCK_KIT(STOCK_RECORDER());
+    curve = STOCK_KIT_CURVE(kit, t);
+    length = kit_length(kit, t);
+    if (!curve || length < 0 || length > 127 || len < 0 || len >= 127)   // the table ends in a 0
+        return;
+    {
+        int speed = RT_LENGTHS[len + 1];
+        int end = press[t][17] + curve, velocity = step_velocity(track, step);
+
+        // past the fade's end the live roll stays level
+        if (end < 1)
+            end = 1;
+        if (end > 127)
+            end = 127;
+        if (velocity >= 0 && (curve < 0 ? velocity <= end : velocity >= end))
+            curve = 0;
+        curve = curve * RT_LENGTHS[length + 1];
+        curve = (curve + (curve < 0 ? -speed : speed) / 2) / speed;
+        if (curve > 127)
+            curve = 127;
+        if (curve < -127)
+            curve = -127;
+    }
+    STOCK_STEP_SET_CURVE(track, step, curve);
 }

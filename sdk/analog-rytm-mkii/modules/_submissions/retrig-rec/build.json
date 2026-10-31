@@ -37,7 +37,8 @@
         "STOCK_SEQ": "0x40181790",
         "STOCK_SEQ_STEP": "0x4003532c",
         "STOCK_KIT": "0x400ae4ca",
-        "STOCK_KIT_CURVE": "0x400a72f6"
+        "STOCK_KIT_CURVE": "0x400a72f6",
+        "STOCK_STEP_SET_LENGTH": "0x400c0a02"
       },
       "cflags": [
         "-DRT_ACTIVE_AT=0x8000fe44",
@@ -52,7 +53,8 @@
         "-DNOTE_START_AT=0x418f3220",
         "-DSEQ_PATTERN_AT=0x405c8d04",
         "-DSPEED_PULSES_AT=0x401db6f8",
-        "-DPATTERNS_AT=0x407dd8e3"
+        "-DPATTERNS_AT=0x407dd8e3",
+        "-DRT_LENGTHS_AT=0x402907b0"
       ],
       "sites": [
         {
@@ -75,6 +77,13 @@
           "stockSha256": "be28db20013e9298a17482a6a95c6fdc686944541fd473e09b5aaa7624388c72",
           "op": "jsr",
           "target": "retrig_rec_rate"
+        },
+        {
+          "addr": "0x400b43d8",
+          "len": 6,
+          "stockSha256": "3053914c49697b92072c6a990e2f2e9bf2f12e185db4b9e8d013a29dfc068ce1",
+          "op": "jsr",
+          "target": "retrig_rec_length"
         }
       ]
     }
