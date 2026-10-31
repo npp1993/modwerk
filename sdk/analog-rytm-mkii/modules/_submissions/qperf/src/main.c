@@ -490,8 +490,9 @@ int qperf_key(void *brain, void *event)
     return 1;
 }
 
-// A kit can bring another link, or several: keep one. Stock's kit routine and
-// the project event run too early for stock's amount writes, so they only ask.
+// A kit can bring another link, or several: keep one. Fixing it directly from
+// stock's kit routine and the project event left the kit blank at boot, so they
+// only ask and the tick acts.
 void qperf_kit_changed(void)
 {
     kit_changed = 1;

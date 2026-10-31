@@ -155,7 +155,7 @@ Reported by the author on QC05: knob turns work. Tune stopped at +32 and QPER + 
 
 Also on QC05: lock at full knob, PERF mode, press and release the linked pad: on release the lock stopped sounding and stayed off with the knob still at full. QPER + YES then said NOTHING TO APPLY and the sound held. Not compared with stock, but the pad path is stock's own.
 
-Combined build QC06 (sha256 a25ee0f4): the link check runs after stock's routine at 0x400a65a4, which every kit change reaches (load, reload, SysEx and restores), through a flag read on the UI tick. Boot, KIT RELOADED! and KIT LOADED! each left one link. A first build acted during `ev_project` and left the kit blank at boot, so stock's amount writes wait for the tick. Knob lock, QPER + YES at half (engine words identical) and playback passed.
+Combined build QC06 (sha256 a25ee0f4): the link check runs after stock's routine at 0x400a65a4, which every kit change reaches (load, reload, SysEx and restores), through a flag read on the UI tick. Boot, KIT RELOADED! and KIT LOADED! each left one link. A first build acted directly in that routine and in `ev_project` and left the kit blank at boot; which of the two did it was not separated. Both now only set the flag. Knob lock, QPER + YES at half (engine words identical) and playback passed.
 
 Reported by the author on QC06: normal boot, kit load and reload, and pattern changes that bring a kit all passed. Resonance +54 at full knob, QPER + YES: 53, because full knob is 99.6%.
 
@@ -167,7 +167,7 @@ Combined build QC08 (sha256 14de2dcc): boot and knob lock passed; QPER + YES at 
 
 Reported by the author on QC08: tune locked to +127 under QPER, QPER + YES set it to +32 as expected.
 
-Combined build QC09 (sha256 4bbc13f1): the tick clears its flag before reading the link, so a kit change at that moment asks again. Boot, reload, load and a knob lock passed in rytm-emu. Not run on a unit.
+Combined build QC09 (sha256 4bbc13f1): the tick clears its flag before reading the link, so a kit change at that moment asks again. Boot, reload, load and a knob lock passed in rytm-emu. Reported by the author on QC09: it boots and kits load.
 
 ## Not tested
 
