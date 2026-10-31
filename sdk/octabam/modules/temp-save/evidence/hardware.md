@@ -77,4 +77,17 @@ On the flashed base `faa07d4f540d532c…` with no kept modules (the card's saved
 
 After this, the unit refused the second trial's Undo (MCP warning "The Octatrack refused this step"); it reported a recovery state with E-Verb, Mini Verb and FM Synth listed and Temp Save already gone. A power cycle brought back the base with no modules. Keep was not run: the MCP refuses Keep while the card holds another base's saved set, and this base cannot back that set up (`device_saved_backup`: unsupported).
 
-Limits: one unit and one tester; MKI not tested; nothing timed; the card build not flashed; Keep and a power cycle with the module kept not run (run 5); project save after a reload, MIDI mode and other banks were not run on the unit (they ran under the emulator, TESTING.md).
+### Run 6: Keep, a kept power cycle and Undo through the developer MCP (31 Oct 2026)
+
+On the flashed base `56a02a0a364eb410…`, package `00b8d5ab…`. The unit held 16 kept modules, three of them private (LIFT, BS WAVESHAPER, E16 LINK); the contributor accepted that Keep would drop those and reinstalled them afterwards. `device_saved_backup` reports unsupported on this base too, so no backup was taken. The first trial expired on the unit while the pattern was being tested, and its Keep was refused ("Trial identity changed"; the unit had reverted to the earlier set); the second trial was kept at once.
+
+| Check | Result |
+| --- | --- |
+| Trial of 13 public modules incl. Temp Save, with no track playing a module effect (the first attempt was refused while one did) | self-test passed: pass |
+| FUNC + YES, a trig edit, FUNC + NO in the trial | RELOADED, the edit undone: pass |
+| Keep (`device_keep`) | "MCP reviewed set stays on your Octatrack, also after a restart": pass |
+| FUNC + YES, power cycle, same project and pattern, FUNC + NO | NO TEMP SAVE, nothing changed: pass |
+| After the power cycle | all 13 modules still listed and working; FUNC + YES and FUNC + NO work again: pass |
+| Trial of the same set plus FM Synth, then `device_undo` | "Undone. Your Octatrack is back to how it was.", the 13 modules as before: pass |
+
+Limits: one unit and one tester; MKI not tested; nothing timed; the card build not flashed; project save after a reload, MIDI mode and other banks were not run on the unit (they ran under the emulator, TESTING.md).

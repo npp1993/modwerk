@@ -77,6 +77,6 @@ An independent review of `unit.s` against the stock disassembly (27 Oct 2026) fo
 
 ## Not tested
 
-- The MKI and the card build on a unit; timing on the unit; Keep, and a power cycle with the module kept: the developer MCP refuses Keep while the card holds another base's saved set (hardware run 5); review, trial and Undo ran through it.
+- The MKI and the card build on a unit; timing on the unit. Keep, a power cycle with the module kept (NO TEMP SAVE after boot) and Undo ran through the developer MCP on the flashed base `56a02a0a` (hardware run 6).
 - Audible output in detail: a reload while playing worked by ear, but clicks were not specifically listened for.
 - A project save and reload after FUNC + NO; arranger mode and pattern chains; a pattern change queued at the moment of FUNC + NO; the 0x800000b8 mode itself (its stock meaning is not identified).
