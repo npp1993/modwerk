@@ -8,16 +8,17 @@
 // does, so NO has a site in each. Stock's page case acts on a held trig, and a
 // held trig leaves both keys to stock.
 //
-// Stock's saved pattern is one buffer, which every pattern change refills. So a
-// save belongs to its pattern: leaving the pattern or loading a project drops
-// it, and FUNC + NO without one changes nothing.
+// Stock's saved pattern is one buffer, which every pattern change refills, and
+// stock's kit reload reads the kit the pattern links. So a save belongs to its
+// pattern and its kit: changing either or loading a project drops it, and
+// FUNC + NO without one changes nothing.
 
 #include "ar2-1.74.h"
 
 #define KEY_FUNC 0x80
 #define TOOK 2                      // not stock's true or false: we took the key
 #define VIEW_MANAGER 44             // view + 44: the view manager
-#define VIEW_KIT 124                // main view + 124: the active kit
+#define PROJECT_KIT 352             // project + 352: the active kit
 #define TRIG_KEYS 16                // the trig keys are keys 0 to 15
 #define VT_INDEX 108                // kit: index(kit)
 #define POPUP_BYTES 0xa0
@@ -33,6 +34,8 @@ typedef void (*pattern_save_t)(void *project, int pattern);
 typedef void (*project_op_t)(void *project);
 typedef void (*kit_save_t)(void *project, int kit, const char *name);
 typedef int (*kit_index_t)(void *kit);
+typedef word_t (*object_part_t)(void *object);
+typedef int (*kit_link_t)(void *pattern_kit);
 typedef void (*string_from_cstr_t)(void *string, const char *text, void *allocator);
 typedef void (*string_dtor_t)(void *string);
 typedef word_t (*mem_new_t)(unsigned size);
@@ -52,6 +55,9 @@ typedef void (*show_popup_t)(void *views, void *shared, int flag);
 #define PATTERN_RELOAD ((project_op_t)PATTERN_RELOAD_AT)
 #define KIT_SAVE ((kit_save_t)KIT_SAVE_AT)
 #define KIT_RELOAD ((project_op_t)KIT_RELOAD_AT)
+#define CURRENT_PATTERN ((object_part_t)CURRENT_PATTERN_AT)
+#define PATTERN_KIT ((object_part_t)PATTERN_KIT_AT)
+#define KIT_LINK ((kit_link_t)KIT_LINK_AT)
 #define STRING_FROM_CSTR ((string_from_cstr_t)STRING_FROM_CSTR_AT)
 #define STRING_DTOR ((string_dtor_t)STRING_DTOR_AT)
 #define MEM_NEW ((mem_new_t)MEM_NEW_AT)
@@ -63,6 +69,7 @@ typedef void (*show_popup_t)(void *views, void *shared, int flag);
 #define FIELD(object, offset) (*(void **)((char *)(object) + (offset)))
 
 static int saved;                   // the temp-saved pattern + 1, 0 for none
+static int saved_kit;
 
 // Each replaces a 6-byte call to one of stock's event tests. a2 is the view.
 // A key we took leaves the event handler as handled.
@@ -105,6 +112,25 @@ static int current_pattern(void)
     return PATTERN_INDEX((void *)PATTERN_SELECTION());
 }
 
+static int active_kit(void *project)
+{
+    void *kit = (char *)project + PROJECT_KIT;
+    return ((kit_index_t)FIELD(*(void **)kit, VT_INDEX))(kit);
+}
+
+// The kit stock's reload reads: the pattern's, else the active one.
+static int reload_kit(void *project)
+{
+    int link = KIT_LINK((void *)PATTERN_KIT((void *)CURRENT_PATTERN(project)));
+    return link < 0 ? active_kit(project) : link;
+}
+
+static int save_holds(void *project)
+{
+    return saved == current_pattern() + 1
+        && active_kit(project) == saved_kit && reload_kit(project) == saved_kit;
+}
+
 static int ours(void)
 {
     int key;
@@ -122,7 +148,7 @@ static unsigned reload(void *view, void *event)
 {
     void *project = (void *)PROJECT_SINGLETON();
     EVENT_TAKEN(event);
-    if (saved != current_pattern() + 1) {
+    if (!saved || !save_holds(project)) {
         show(view, "NO TEMP SAVE");
         return TOOK;
     }
@@ -135,19 +161,23 @@ static unsigned reload(void *view, void *event)
 unsigned temp_save_yes_key(void *view, void *event)
 {
     unsigned pressed = PRESSED_ONCE(event) & 0xff;
-    void *project, *kit;
-    int pattern;
-    int (*kit_index)(void *);
+    void *project;
+    int pattern, kit;
     if (!pressed || !ours())
         return pressed;
     EVENT_TAKEN(event);
     project = (void *)PROJECT_SINGLETON();
-    kit = FIELD(view, VIEW_KIT);
-    kit_index = (kit_index_t)FIELD(*(void **)kit, VT_INDEX);
+    kit = active_kit(project);
+    if (reload_kit(project) != kit) {   // a reload would read another kit
+        saved = 0;
+        show(view, "KIT NOT LINKED");
+        return TOOK;
+    }
     pattern = current_pattern();
     PATTERN_SAVE(project, pattern);
-    KIT_SAVE(project, kit_index(kit), 0);
+    KIT_SAVE(project, kit, 0);
     saved = pattern + 1;
+    saved_kit = kit;
     show(view, "TEMP SAVED");
     return TOOK;
 }
@@ -171,7 +201,7 @@ unsigned temp_save_page_no_key(void *view, void *event)
 void temp_save_tick(void *ctrl)
 {
     (void)ctrl;
-    if (saved && saved != current_pattern() + 1)
+    if (saved && !save_holds((void *)PROJECT_SINGLETON()))
         saved = 0;
 }
 

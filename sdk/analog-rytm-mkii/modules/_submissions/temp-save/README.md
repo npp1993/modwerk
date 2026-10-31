@@ -10,7 +10,8 @@ Save the pattern and its kit with one gesture, try something, and get back.
 | --- | --- | --- |
 | FUNC + YES | Saves the active pattern and its kit. | TEMP SAVED |
 | FUNC + NO | Reloads both. | RELOADED |
-| FUNC + NO with no save for this pattern | Nothing changes. | NO TEMP SAVE |
+| FUNC + NO with no save for this pattern and kit | Nothing changes. | NO TEMP SAVE |
+| FUNC + YES when the pattern links another kit than the active one | Nothing is saved, and an earlier save is dropped. | KIT NOT LINKED |
 
 Both work on the main screen and the sound pages, stopped or playing. There are no settings, no effect slot and no knob.
 
@@ -18,8 +19,9 @@ Both work on the main screen and the sound pages, stopped or playing. There are 
 
 It runs stock's pattern save and kit save, then stock's pattern reload and kit reload. The kit's record holds its performance and scene locks, so they come back too.
 
-- **The pattern's copy is one buffer in RAM.** Stock refills it on every pattern change, so a save belongs to its pattern. Change pattern and come back, or load a project, and FUNC + NO shows NO TEMP SAVE. The module uses no memory for the copy: a pattern is 85,760 bytes, more than the room modules share.
+- **The pattern's copy is one buffer in RAM.** Stock refills it on every pattern change, so a save belongs to its pattern and its kit. Change either and come back, or load a project, and FUNC + NO shows NO TEMP SAVE. The module uses no memory for the copy: a pattern is 85,760 bytes, more than the room modules share.
 - **The kit's copy is the kit's saved copy.** FUNC + YES replaces what stock's kit reload returns to, and a project save keeps it. This is the difference from the Octatrack module of the same name.
+- **Stock's kit reload reads the kit the pattern links.** A save needs that kit to be the active one, or a reload would bring back a different kit.
 - **While a message shows,** the message takes FUNC + NO, so wait for it to go and press again.
 
 ## Changes to stock flows
