@@ -123,12 +123,13 @@ Build QP07 (sha256 95ef219d): a +40 lock poked into the FX track at index 22, QP
 
 Build QP08 (sha256 951dade2): QPER + YES at full removed all 13 of performance 1's locks (31 slots to 18); at about half all 13 stayed.
 
+Reported by the author on build QP08: FX track threshold +127, QPER + YES at full: PERFORMANCE 4 APPLIED, the lock went away, the sound held. Locks set on BD, snare and RS show as red pads on the performance page, as stock.
+
 ## Not tested
 
 - The real QPER knob: the emulator has none, so amounts were poked. Full amount is taken as 0x7f80 from the code, not measured.
 - Knob turns on the FX track and the LFO page.
 - LOCK MEM FULL! on screen.
-- QPER + YES on FX track locks on hardware (QP07 or later).
 - A build beside other modules.
 - The kit's power-on knob position: until the knob moves, QPER + YES falls back on stock's per-performance amounts.
 - Save and reload of the kit after a turn, clear or apply.
