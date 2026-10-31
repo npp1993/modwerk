@@ -3,8 +3,10 @@
     "version": "0.1.0-experimental",
     "date": "2026-10-31",
     "changes": [
-      "First release, for Analog Rytm MKII OS 1.74. LIVE RECORDING records every pad retrig hit as a real trig, with the velocity and timing you played, from RTRG + pad and from ALWAYS ON pads.",
-      "Rates faster than a step record a trig with a step retrig, and VEL.CUR with it."
+      "First release, for Analog Rytm MKII OS 1.74. LIVE RECORDING records every pad retrig hit as a real trig with the velocity you played, from RTRG + pad and from ALWAYS ON pads; stop recording and the roll plays back as you played it.",
+      "Quantize live rec on puts the hits on the steps; off keeps your timing. The live roll sounds where you played it either way.",
+      "Rates faster than a step record a trig per step with a step retrig. VEL.CUR records as one fade across the roll, not one per trig.",
+      "RTRG + YES turns ALWAYS ON over for the track the RETRIG menu shows."
     ]
   }
 ]
