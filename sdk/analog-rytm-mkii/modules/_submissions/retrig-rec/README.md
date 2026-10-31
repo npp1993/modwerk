@@ -15,7 +15,7 @@ None: there is nothing to set. The RETRIG menu keeps its stock rows, and what th
 | Stock control | With Retrig Rec |
 | --- | --- |
 | RETRIG | The rate played and recorded. Change it while you hold a roll and the trigs follow. |
-| VEL.CUR | Recorded on trigs that carry a step retrig (rates faster than a step). OFF means one velocity for the hits of that trig. |
+| VEL.CUR | Recorded on trigs that carry a step retrig (rates faster than a step). OFF means one velocity for the hits of that trig. Any other value turns pad pressure off, as on stock, so recorded velocities follow the fade. |
 | ALWAYS ON | Records like RTRG + pad. |
 | Quantize live rec | Pad hits still quantize. Retrig hits, and the press that starts them, keep the timing you played. |
 
@@ -43,9 +43,9 @@ A step holds one trig, so the rate decides what is recorded.
 
 The rates follow the track's speed: at 2x, 1/32 is one trig a hit.
 
-Stock's pad retrig series runs in the audio block and reaches no recorder. The module subscribes to core-ar2's `ev_render_out`, follows each pad's tick counter and, for each hit, queues to the sequencer task the note-off and note-on a press and release would queue. Stock's recorder writes the trig. The count is read before Retrig Grid sets it for the next tick (order 40 against 50), and a count that did not step down is not taken for a hit.
+Stock's pad retrig series runs in the audio block and reaches no recorder. The module subscribes to core-ar2's `ev_render_out`, follows each pad's tick counter and, for each hit, queues to the sequencer task the note-off and note-on a press and release would queue. Stock's recorder writes the trig. The count is read before Retrig Grid sets it for the next tick (order 40 against 50), and a count that did not step down is not taken for a hit. The module follows each press in stock's note ring, so pressing again during a roll, or a new note in CHROMATIC mode, starts from that press.
 
-The module patches three stock sites, all its own: the RETRIG menu's writes to steps in LIVE RECORDING are off, the recorder keeps the micro timing of a retrig press and a queued hit, and the recorder's call that sets a step's retrig rate also sets VEL.CUR. No hook or other module is involved.
+The module patches three stock sites, all its own: the RETRIG menu's writes to steps in LIVE RECORDING are off; the recorder keeps the micro timing of a retrig press and a queued hit, and records the press as a plain trig at rates that fit the steps; and the recorder's call that sets a step's retrig rate also sets the kit's VEL.CUR. No hook or other module is involved.
 
 ## Changes to stock flows
 
@@ -59,9 +59,11 @@ The module patches three stock sites, all its own: the RETRIG menu's writes to s
 - Analog Rytm MKII, OS 1.74, core-ar2 0.7. Event: `ev_render_out`. Three stock sites, 0x400e29ac, 0x400b4692 and 0x400b470e, which no other module patches.
 - Beside Retrig Grid the retrigs after the first hit fall on its grid, and they record there.
 - Rates faster than a step: the hits of a trig share its velocity, or follow VEL.CUR. Pressure changes land once a trig.
+- A rate change during a roll starts a new trig at the next hit.
 - Micro timing has 24 units a step, so a hit can land up to 1/48 of a step from where it sounded.
 - A roll over a step that already has a retrig keeps that step's retrig.
-- The press keeps the step retrig stock gives it, at the rate played. In the tests below it adds no hit.
+- A roll started before LIVE RECORDING records from the first hit after it starts, with no press trig. In the emulator two of three such runs lost 2 of about 17 hits, cause not found. Stock records nothing there.
+- If the sequencer task falls more than 30 events behind, hits are dropped rather than recorded wrongly.
 - Not tested: a unit, external MIDI clock, and what lands in the next pattern when the pattern changes during a roll.
 
 ## Tests and measurements

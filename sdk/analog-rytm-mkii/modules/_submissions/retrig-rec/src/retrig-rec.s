@@ -13,21 +13,27 @@ retrig_rec_menu:
 
         | The recorder drops a note's micro timing with quantize on. Over `tstb d0;
         | seq d0; mvsb d0,d0; andl d0,d5`: d0 the quantize, d5 the micro timing, d7 the
-        | step retrig rate. A retrig press (a rate) and a queued hit (micro + 256, see
-        | KEEP_TIMING) keep it.
+        | step retrig rate or -1. A queued hit (micro + 256, see KEEP_TIMING) and a
+        | retrig press keep it, and the press may lose its rate here.
         .globl  retrig_rec_timing
 retrig_rec_timing:
         cmpi.l  #128,%d5
         blt.s   1f
         subi.l  #256,%d5
-        bra.s   2f
+        bra.s   3f
 1:      tst.l   %d7
         bge.s   2f
         tst.b   %d0
         seq     %d0
         extb.l  %d0
         and.l   %d0,%d5
-2:      jmp     TIMING_DONE
+        bra.s   3f
+2:      move.l  %d4,-(%sp)
+        move.l  %d7,-(%sp)
+        jsr     retrig_rec_press_rate
+        addq.l  #8,%sp
+        move.l  %d0,%d7
+3:      jmp     TIMING_DONE
 
         | Over the recorder's call to set the step's retrig rate (track, step, rate):
         | d4 is the pad's track.

@@ -17,8 +17,8 @@
 // two hits a step at 1/32, three hits in two steps at 1/24.
 //
 // The stock sites, in retrig-rec.s: the RETRIG menu's step writes off, recorded retrig
-// hits keep their timing with quantize on, and a recorded retrig takes the menu's
-// VEL.CUR.
+// hits keep their timing with quantize on, a press at a rate that fits the steps records
+// a plain trig, and a recorded retrig takes the menu's VEL.CUR.
 
 #include <stdint.h>
 
@@ -31,13 +31,13 @@
 #define RT_ACTIVE ((volatile uint8_t *)RT_ACTIVE_AT)        // [t] 1: a pad's series
 #define RT_COUNT ((volatile int32_t *)RT_COUNT_AT)          // [t] 960..1
 #define RT_RATE(t) (*(volatile int32_t *)(RT_TEMPLATE_AT + 56 * (t) + 36))  // RETRIG 0..16
-#define RT_CURVE(t) (*(volatile int32_t *)(RT_TEMPLATE_AT + 56 * (t) + 44)) // VEL.CUR
 #define RT_VELOCITY ((volatile uint16_t *)RT_VELOCITY_AT)   // [t] the hit's, 8.8
 #define RT_FIRES ((const uint16_t *)RT_FIRES_AT)            // [count] the rates firing there
 #define CLOCK (*(volatile uint32_t *)CLOCK_AT)
 #define NOTE_RING ((volatile uint8_t *)NOTE_RING_AT)        // 16 events of 32 bytes
 #define NOTE_RING_NEXT (*(volatile uint32_t *)NOTE_RING_NEXT_AT)
 #define NOTE_QUEUE (*(volatile uint32_t *)NOTE_QUEUE_AT)
+#define QUEUED(q) (*(volatile uint32_t *)((q) + 4))      // events waiting
 #define NOTE_START ((volatile uint32_t *)NOTE_START_AT)     // [t * 128 + note] clock / 2
 #define SEQ_PATTERN (*(volatile int8_t *)SEQ_PATTERN_AT)
 #define SPEED_PULSES ((const int32_t *)SPEED_PULSES_AT)     // 3, 4, 6, 8, 12, 24, 48
@@ -56,15 +56,23 @@ extern void STOCK_QUEUE_POST(uint32_t queue, void *event);
 extern void STOCK_STEP_PLACE(uint32_t clock, int32_t track, uint8_t *place);
 extern void STOCK_STEP_SET_RATE(uint32_t track, int32_t step, int32_t rate);
 extern void STOCK_STEP_SET_CURVE(uint32_t track, int32_t step, int32_t curve);
+extern uint32_t STOCK_RECORDER(void);
+extern uint32_t STOCK_KIT(uint32_t recorder);
+extern int32_t STOCK_KIT_CURVE(uint32_t kit, int32_t track);
 
 // RETRIG 1/1 .. 1/80, in ticks
 static const int16_t period[17] = { 960, 480, 320, 240, 192, 160, 120, 96, 80, 60, 48, 40, 30, 24, 20, 15, 12 };
 
 static int32_t seen[TRACKS];
-static uint8_t press[TRACKS][32];   // the press's note event
+static uint8_t press[TRACKS][32];   // the track's latest press: its note event
 static uint8_t have[TRACKS];
+static uint8_t open_note[TRACKS];   // the recorder holds a note of this track
+static uint8_t rearmed[TRACKS];     // pressed again: the next 960 is not a hit
+static int8_t rate_seen[TRACKS];    // -1: none yet this press
 static uint16_t hits[TRACKS];
 static uint32_t started[TRACKS];    // this hit's time, clock / 2
+static uint8_t ring_seen;
+static uint8_t running;             // a series has run since the last idle pass
 
 // The events this module queues: stock's own ring has no lock for the audio block.
 static uint8_t events[32][32];
@@ -81,21 +89,25 @@ static void queue(const uint8_t *event)
 }
 
 // A press queues its note event before the audio block arms the series.
-static void find_press(int t)
+static void watch_presses(void)
 {
-    unsigned slot = (NOTE_RING_NEXT - 1) & 15, n, i;
+    unsigned next = NOTE_RING_NEXT & 15;
 
-    for (n = 0; n < 8; n++, slot = (slot - 1) & 15) {
-        volatile uint8_t *e = NOTE_RING + 32 * slot;
+    while (ring_seen != next) {
+        volatile uint8_t *e = NOTE_RING + 32 * ring_seen;
+        int t = e[8], i;
 
-        if (e[0] == EV_NOTE && e[7] == 0 && e[8] == t) {
-            for (i = 0; i < 32; i++)
-                press[t][i] = e[i];
-            started[t] = NOTE_START[(t << 7) + press[t][16]];
-            hits[t] = 0;
-            have[t] = 1;
-            return;
-        }
+        ring_seen = (ring_seen + 1) & 15;
+        if (e[0] != EV_NOTE || e[7] != 0 || t >= TRACKS)
+            continue;
+        for (i = 0; i < 32; i++)
+            press[t][i] = e[i];
+        started[t] = NOTE_START[(t << 7) + press[t][16]];
+        open_note[t] = STOCK_LIVE_REC(STOCK_APP()) != 0;
+        rearmed[t] = RT_ACTIVE[t];
+        rate_seen[t] = -1;
+        hits[t] = 0;
+        have[t] = 1;
     }
 }
 
@@ -137,14 +149,19 @@ static void hit(int t)
     uint32_t now = CLOCK >> 1, held;
     int rate = RT_RATE(t), step, block, velocity, micro, i;
 
-    if (!have[t])
-        find_press(t);
     if (!have[t] || rate < 0 || rate > 16)
         return;
     step = step_ticks(t);
     block = hits_in_block(period[rate], step);
+    if (rate != rate_seen[t]) {
+        if (rate_seen[t] >= 0)
+            hits[t] = block - 1;        // a new rate starts a block at this hit
+        rate_seen[t] = rate;
+    }
     if (++hits[t] % block)
         return;
+    if (QUEUED(NOTE_QUEUE) > 30)
+        return;                         // the task is held up: every slot may be waiting
     STOCK_STEP_PLACE(CLOCK, t, place);
     velocity = RT_VELOCITY[t] >> 8;
     if (velocity < 1)
@@ -154,23 +171,23 @@ static void hit(int t)
     micro = (int8_t)place[1];
     held = now - started[t];
 
-    for (i = 0; i < 32; i++)
-        off[i] = 0;
-    off[0] = EV_NOTE;
-    off[7] = 1;
-    off[8] = t;
-    off[15] = press[t][15];
-    off[16] = press[t][16];
-    off[20] = held >> 24;
-    off[21] = held >> 16;
-    off[22] = held >> 8;
-    off[23] = held;
-    off[24] = 1;
-    off[25] = 1;
-    off[29] = place[0];
-    off[30] = micro < 0 ? 0xff : 0;
-    off[31] = place[1];
-    queue(off);
+    if (open_note[t]) {
+        for (i = 0; i < 32; i++)
+            off[i] = 0;
+        off[0] = EV_NOTE;
+        off[7] = 1;
+        off[8] = t;
+        off[15] = press[t][15];
+        off[16] = press[t][16];
+        off[20] = held >> 24;
+        off[21] = held >> 16;
+        off[22] = held >> 8;
+        off[23] = held;
+        off[29] = place[0];
+        off[30] = micro < 0 ? 0xff : 0;
+        off[31] = place[1];
+        queue(off);
+    }
 
     for (i = 0; i < 32; i++)
         on[i] = press[t][i];
@@ -183,50 +200,71 @@ static void hit(int t)
     on[31] = micro;
     queue(on);
 
-    started[t] = now;                   // the release closes the last hit
-    NOTE_START[(t << 7) + press[t][16]] = now;
+    open_note[t] = 1;
+    started[t] = now;
+    // the release closes the last hit; -1 here means the release has come
+    if ((int32_t)NOTE_START[(t << 7) + press[t][16]] >= 0)
+        NOTE_START[(t << 7) + press[t][16]] = now;
 }
 
-// ev_render_out: stock's series state for this block in place. Nothing but three
-// reads a block until a pad retriggers.
+// ev_render_out: stock's series state for this block in place. Nothing but four
+// reads a block until a pad is pressed.
 void retrig_rec_render(void)
 {
     const volatile uint32_t *active = (const volatile uint32_t *)RT_ACTIVE;
     int t;
 
+    if (ring_seen != (NOTE_RING_NEXT & 15))
+        watch_presses();
     if (!(active[0] | active[1] | active[2])) {
-        for (t = 0; t < TRACKS; t++) {
+        if (!running)
+            return;
+        running = 0;
+        for (t = 0; t < TRACKS; t++)
             seen[t] = -1;
-            have[t] = 0;
-        }
         return;
     }
+    running = 1;
     for (t = 0; t < TRACKS; t++) {
         int32_t c;
 
         if (!RT_ACTIVE[t]) {
             seen[t] = -1;
-            have[t] = 0;
             continue;
         }
         c = RT_COUNT[t];
-        if (seen[t] >= 0 && c != seen[t]) {
+        if (c == WHOLE && rearmed[t]) {
+            rearmed[t] = 0;
+        } else if (seen[t] >= 0 && c != seen[t]) {
             int fired = c == WHOLE && seen[t] == 1;
             int rate = RT_RATE(t);
 
             // a count that did not step down was set by another module
             if (c == seen[t] - 1 && rate >= 0 && rate <= 16)
                 fired = ((RT_FIRES[c] * 2) >> rate) & 1;
-            if (fired && STOCK_LIVE_REC(STOCK_APP()))
-                hit(t);
+            if (fired) {
+                if (STOCK_LIVE_REC(STOCK_APP()))
+                    hit(t);
+                else
+                    open_note[t] = 0;
+            }
         }
         seen[t] = c;
     }
+}
+
+// The recorder, for a press with a retrig (retrig-rec.s): at a rate that fits the steps
+// each hit gets its own trig, so the press is a plain one too.
+int retrig_rec_press_rate(int rate, int t)
+{
+    if (rate > 16 || period[rate] >= step_ticks(t))
+        return -1;
+    return rate;
 }
 
 // The recorder's call that sets a step's retrig rate (retrig-rec.s): also the menu's VEL.CUR.
 void retrig_rec_step_rate(uint32_t track, int step, int rate, int t)
 {
     STOCK_STEP_SET_RATE(track, step, rate);
-    STOCK_STEP_SET_CURVE(track, step, RT_CURVE(t));
+    STOCK_STEP_SET_CURVE(track, step, STOCK_KIT_CURVE(STOCK_KIT(STOCK_RECORDER()), t));
 }

@@ -32,7 +32,10 @@
         "STOCK_QUEUE_POST": "0x400013b2",
         "STOCK_STEP_PLACE": "0x4009cb2c",
         "STOCK_STEP_SET_RATE": "0x400c0978",
-        "STOCK_STEP_SET_CURVE": "0x400c0a8c"
+        "STOCK_STEP_SET_CURVE": "0x400c0a8c",
+        "STOCK_RECORDER": "0x4017fa0a",
+        "STOCK_KIT": "0x400ae4ca",
+        "STOCK_KIT_CURVE": "0x400a72f6"
       },
       "cflags": [
         "-DRT_ACTIVE_AT=0x8000fe44",

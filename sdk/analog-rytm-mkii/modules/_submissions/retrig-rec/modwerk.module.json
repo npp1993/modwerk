@@ -53,6 +53,7 @@
     "limitations": [
       "Rates faster than a step record one velocity for each trig's hits, or VEL.CUR's fade.",
       "Micro timing has 24 units a step.",
+      "A roll started before LIVE RECORDING can miss hits.",
       "Not tested on a unit; pad pressure was scripted in rytm-emu.",
       "External MIDI clock not tested."
     ]

@@ -8,8 +8,8 @@ Not tested on a unit. These are emulator results only: pad pressure is a scripte
 
 Owner-supplied OS 1.74 (stock sha256 cb0f99d6…e123), core-ar2 0.7 (`vendor/elekloader/catalog/core-ar2-0.7.elemod`), linked with `scripts/link-image.mjs`, `m68k-elf-` toolchain.
 
-- RR03: this module alone, sha256 08292d31567a7288…
-- RR04: this module and Retrig Grid 0.2.0-experimental, sha256 770546b71198c36e…
+- RR05: this module alone, sha256 90a9f2e9d0b48134…
+- RR06: this module and Retrig Grid 0.2.0-experimental, sha256 90a996197948a5cd…
 
 Emulator: rytm-emu c5732f0.
 
@@ -26,25 +26,31 @@ Factory project (RYTMLINJE, 127 BPM, ADVANCED scale), BD at 1x, swing set to 50 
 
 ### Results
 
+Hits closer than 100 samples count as one: a trigger's switch takes up to 64 samples. All on RR05 unless noted.
+
 | Case | Recorded | Playback against live |
 | --- | --- | --- |
-| 1/16, press 0.15 step late | a trig on all 15 steps | same spacing, within 0.02 step |
-| 1/8 | a trig every 2 steps | same spacing, within 0.02 step |
-| 1/12 | a trig for each hit, micro timing kept | same spacing, within 0.05 step |
-| 1/32 | a trig a step, step retrig 1/32 | 2 hits a step, within 0.02 step |
-| 1/24, 1/20 | a trig every 2 and 4 steps, step retrig | 0.67 and 0.80 step apart |
+| 1/16, press 0.15 step late | plain trigs on all 15 steps, press included | 1.00 step apart, within 0.02 step |
+| 1/8 | a plain trig every 2 steps | 2.00 steps apart, within 0.02 step |
+| 1/12 | a plain trig for each hit, micro timing kept | 1.29-1.38 steps apart |
+| 1/32 | a trig a step, step retrig 1/32 | 0.50 step apart |
+| 1/24, 1/20 | a trig every 2 and 4 steps, step retrig | 0.67 and 0.80 step apart, within 0.05 |
 | ALWAYS ON, 1/16 | as RTRG + pad | as RTRG + pad |
-| Track at 2x and 1/2x | rates follow the track's step | spacing as played |
-| Retrig Rate changed during the roll | trigs follow, no locks | not measured |
-| Retrig Grid beside it (RR04) | a trig on all 15 steps | first hit at the press, rest on the grid |
+| Track at 2x, 1/2x | rates follow the track's step | as played, within 0.02 step |
+| 1/16 to 1/24 during the roll | plain trigs, then a trig with step retrig from the next hit | spacing as played |
+| Press again during a roll, also with Retrig Grid | a new press trig at 0x7f, the roll goes on from it | as played, within 0.02 step |
+| CHROMATIC, a second note during the roll | hits follow the new note | not measured |
+| Hold of 30 steps, past the 16-step loop | second pass overwrites, no step lost | 1.00 step apart |
+| Roll started before LIVE RECORDING | trigs from the first hit on; two of three runs lost 2 of about 17 hits, cause not found | not measured |
+| Retrig Grid beside it (RR06) | plain trigs on all 15 steps | first hit at the press, rest on the grid |
 
-1/24, 1/20, 2x, 1/2x, the rate change and ALWAYS ON ran on RR01/RR02 or the prototype with the same recording code, not on RR03.
+Velocity: the 1/16 velocity word at each playback hit equalled the recorded locks in order, on the prototype (PR12, 2026-10-31). Recorded velocities follow the scripted pressure at half its raw value.
 
-Velocity: the 1/16 velocity word at each playback hit equalled the recorded locks in order, on the prototype (PR12). Recorded velocities follow the scripted pressure at half its raw value.
+VEL.CUR -8 at 1/32: each trig stored -8 and velocities followed the fade, not the pressure (stock's pressure path is off with VEL.CUR set). OFF stored 0.
 
-VEL.CUR -8 at 1/32 (RR01): each trig stored -8. OFF stored 0.
+Plain pad hits still quantize with quantize on. Against stock: a held pad without a retrig over plain trigs, identical trig words. NO + pad removes the roll's trigs. NO + SCNE reloads the pattern and removes the recording, as stock.
 
-Plain pad hits still quantize with quantize on (RR01). Against stock, on RR03: a held pad without a retrig over plain trigs, identical. NO + pad removes the roll's trigs. NO + SCNE reloads the pattern and removes the recording, as stock.
+The release race, the note-off flags and the queue guard were changed from reading the code. No test reaches them.
 
 ### Not tested
 
